@@ -165,6 +165,8 @@ static int myctrlControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lPar
 
 void myStatusBmpsLoad(MyCtrlStatus *ctrls,char *local_path)
 {
+    if (ctrls->images)
+        return;
     int i;
     char image_path[128] = {0};
     ctrls->images = (BITMAP *)calloc(ctrls->total_level,sizeof(BITMAP));
