@@ -35,11 +35,12 @@
 /* ----------------------------------------------------------------*
  *                  internal functions declare
  *-----------------------------------------------------------------*/
-static int myButtonControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lParam);
+static int myctrlControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lParam);
 
 /* ----------------------------------------------------------------*
  *                        macro define
  *-----------------------------------------------------------------*/
+#define CTRL_NAME CTRL_MYSTATUS
 
 /* ----------------------------------------------------------------*
  *                      variables define
@@ -47,33 +48,33 @@ static int myButtonControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
 
 /* ---------------------------------------------------------------------------*/
 /**
- * @brief myButtonRegist 注册控件
+ * @brief myStatusRegist 注册控件
  *
  * @returns 
  */
 /* ---------------------------------------------------------------------------*/
-BOOL myButtonRegist (void)
+BOOL myStatusRegist (void)
 {
     WNDCLASS WndClass;
 
-    WndClass.spClassName = CTRL_MYSTATUS;
+    WndClass.spClassName = CTRL_NAME;
     WndClass.dwStyle     = WS_NONE;
     WndClass.dwExStyle   = WS_EX_NONE;
     WndClass.hCursor     = GetSystemCursor (IDC_ARROW);
     WndClass.iBkColor    = 0;
-    WndClass.WinProc     = myButtonControlProc;
+    WndClass.WinProc     = myctrlControlProc;
 
     return RegisterWindowClass(&WndClass);
 }
 
 /* ---------------------------------------------------------------------------*/
 /**
- * @brief myButtonCleanUp 卸载控件
+ * @brief myStatusCleanUp 卸载控件
  */
 /* ---------------------------------------------------------------------------*/
-void myButtonCleanUp (void)
+void myStatusCleanUp (void)
 {
-    UnregisterWindowClass(CTRL_MYSTATUS);
+    UnregisterWindowClass(CTRL_NAME);
 }
 
 /* ---------------------------------------------------------------------------*/
@@ -105,7 +106,7 @@ static void paint(HWND hWnd,HDC hdc)
 
 /* ---------------------------------------------------------------------------*/
 /**
- * @brief myButtonControlProc 控件主回调函数
+ * @brief myctrlControlProc 控件主回调函数
  *
  * @param hwnd
  * @param message
@@ -115,7 +116,7 @@ static void paint(HWND hWnd,HDC hdc)
  * @returns 
  */
 /* ---------------------------------------------------------------------------*/
-static int myButtonControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lParam)
+static int myctrlControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lParam)
 {
     HDC         hdc;
     PCONTROL    pCtrl;
@@ -135,11 +136,8 @@ static int myButtonControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
 		if (pInfo == NULL)
 			return -1;
 		memset(pInfo,0,sizeof(MyStatusCtrlInfo));
-		pInfo->image_press = data->image_press;
-		pInfo->image_normal = data->image_normal;
-		pInfo->state = data->state;
-		pInfo->select.mode = data->select.mode;
-		pInfo->select.state = data->select.state;
+		pInfo->images = data->images;
+		pInfo->level = data->level;
 		pCtrl->dwAddData2 = (DWORD)pInfo;
 		return 0;
 	}
@@ -155,9 +153,9 @@ static int myButtonControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
 
 
     case MSG_MYSTATU_SET_LEVEL:
-		pInfo->level = wParam;
-		InvalidateRect (hwnd, NULL, FALSE);
-		return 0;
+        pInfo->level = wParam;
+        InvalidateRect (hwnd, NULL, FALSE);
+        return 0;
 	default:
 		break;
     }
@@ -165,15 +163,27 @@ static int myButtonControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
     return DefaultControlProc (hwnd, message, wParam, lParam);
 }
 
-HWND createMyStatus(HWND hWnd,MgCtrlButton *button)
+void myStatusBmpsLoad(MyCtrlStatus *ctrls,char *local_path)
+{
+    int i;
+    char image_path[128] = {0};
+    ctrls->images = (BITMAP *)calloc(ctrls->total_level,sizeof(BITMAP));
+    for (i=0; i<ctrls->total_level; i++) {
+        sprintf(image_path,"%s%s-%d.png",local_path,ctrls->img_name,i);
+        bmpLoad(ctrls->images + i, image_path);
+    }
+}
+
+HWND createMyStatus(HWND hWnd,MyCtrlStatus *ctrl)
 {
 	HWND hCtrl;
 	MyStatusCtrlInfo pInfo;
-	pInfo.image_normal = &button->image_normal;
-	pInfo.image_press = &button->image_press;
+    memset(&pInfo,0,sizeof(MyStatusCtrlInfo));
+    pInfo.total_level = ctrl->total_level;
+    pInfo.images = ctrl->images;
 
-	hCtrl = CreateWindowEx(CTRL_MYSTATUS,"",WS_VISIBLE|WS_CHILD,WS_EX_TRANSPARENT,
-			button->idc,button->x,button->y,button->w,button->h, hWnd,(DWORD)&pInfo);
+	hCtrl = CreateWindowEx(CTRL_NAME,"",WS_VISIBLE|WS_CHILD,WS_EX_TRANSPARENT,
+			ctrl->idc,ctrl->x,ctrl->y,ctrl->w,ctrl->h, hWnd,(DWORD)&pInfo);
     return hCtrl;
 }
 

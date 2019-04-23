@@ -40,7 +40,7 @@ static int myButtonControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
 /* ----------------------------------------------------------------*
  *                        macro define
  *-----------------------------------------------------------------*/
-
+#define CTRL_NAME CTRL_MYBUTTON
 /* ----------------------------------------------------------------*
  *                      variables define
  *-----------------------------------------------------------------*/
@@ -56,7 +56,7 @@ BOOL myButtonRegist (void)
 {
     WNDCLASS WndClass;
 
-    WndClass.spClassName = CTRL_MYBUTTON;
+    WndClass.spClassName = CTRL_NAME;
     WndClass.dwStyle     = WS_NONE;
     WndClass.dwExStyle   = WS_EX_NONE;
     WndClass.hCursor     = GetSystemCursor (IDC_ARROW);
@@ -73,7 +73,7 @@ BOOL myButtonRegist (void)
 /* ---------------------------------------------------------------------------*/
 void myButtonCleanUp (void)
 {
-    UnregisterWindowClass(CTRL_MYBUTTON);
+    UnregisterWindowClass(CTRL_NAME);
 }
 
 /* ---------------------------------------------------------------------------*/
@@ -328,24 +328,24 @@ void myButtonBmpsLoad(MyCtrlButton *controls,char *local_path)
  * @param notif_proc   回调函数
  */
 /* ---------------------------------------------------------------------------*/
-HWND createSkinButton(HWND hWnd,MyCtrlButton *button, int display, int mode)
+HWND createSkinButton(HWND hWnd,MyCtrlButton *ctrl, int display, int mode)
 {
 	HWND hCtrl;
 	MyButtonCtrlInfo pInfo;
-	pInfo.image_normal = &button->image_normal;
-	pInfo.image_press = &button->image_press;
+	pInfo.image_normal = &ctrl->image_normal;
+	pInfo.image_press = &ctrl->image_press;
 	pInfo.select.mode = mode;
 	pInfo.state = BUT_NORMAL;
 	pInfo.select.state = display;
 
 	if (pInfo.select.state == BUT_STATE_SELECT)
-		hCtrl = CreateWindowEx(CTRL_MYBUTTON,"",WS_VISIBLE|WS_CHILD,WS_EX_TRANSPARENT,
-				button->idc,button->x,button->y,button->w,button->h, hWnd,(DWORD)&pInfo);
+		hCtrl = CreateWindowEx(CTRL_NAME,"",WS_VISIBLE|WS_CHILD,WS_EX_TRANSPARENT,
+				ctrl->idc,ctrl->x,ctrl->y,ctrl->w,ctrl->h, hWnd,(DWORD)&pInfo);
 	else
-		hCtrl = CreateWindowEx(CTRL_MYBUTTON,"",WS_CHILD,WS_EX_TRANSPARENT,
-				button->idc,button->x,button->y,button->w,button->h, hWnd,(DWORD)&pInfo);
-	if(button->notif_proc) {
-		SetNotificationCallback (hCtrl, button->notif_proc);
+		hCtrl = CreateWindowEx(CTRL_NAME,"",WS_CHILD,WS_EX_TRANSPARENT,
+				ctrl->idc,ctrl->x,ctrl->y,ctrl->w,ctrl->h, hWnd,(DWORD)&pInfo);
+	if(ctrl->notif_proc) {
+		SetNotificationCallback (hCtrl, ctrl->notif_proc);
 	}
     return hCtrl;
 }

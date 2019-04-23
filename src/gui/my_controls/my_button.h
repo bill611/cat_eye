@@ -54,7 +54,6 @@ extern "C" {
 		int state;		//BUTTON状态
 	}MyButtonCtrlInfo;
 
-	// 控件结构体
 	typedef struct _MyCtrlButton{
 		HWND idc;		// 控件ID
 		char *img_name; 	// 常态图片名字,不带扩展名,完整路径由循环赋值

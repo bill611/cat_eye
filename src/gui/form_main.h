@@ -22,10 +22,6 @@ extern "C" {
 #endif  /* __cplusplus */
 
 #include "commongdi.h"
-	enum {
-		IDC_TIMER_1S ,	// 1s定时器
-		IDC_TIMER_NUM,
-	};
 
 	typedef struct _FormMainTimers {
 		void (*proc)(void);
@@ -38,7 +34,6 @@ extern "C" {
 		int (*loop)(void);
 
         void (*setNetWorkState)(int state);
-		int (*timerProc1s)(void);
 		void (*timerStart)(int idc_timer);
 		void (*timerStop)(int idc_timer);
 		int (*timerGetState)(int idc_timer);

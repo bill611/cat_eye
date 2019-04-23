@@ -40,6 +40,7 @@ extern void formVersionLoadLock(void);
  *                  internal functions declare
  *----------------------------------------------------------------------------*/
 static void formMainLoadBmp(void);
+static int formMainTimerProc1s(void);
 
 /* ---------------------------------------------------------------------------*
  *                        macro define
@@ -61,6 +62,11 @@ struct _RegistFunc {
 
 #define TIME_1S (10 * 5)
 #define TIME_100MS (TIME_1S / 10)
+
+enum {
+    IDC_TIMER_1S ,	// 1s定时器
+    IDC_TIMER_NUM,
+};
 
 enum {
     IDC_TOOLBAR_WIFI = 100,
@@ -94,7 +100,8 @@ static BmpLocation base_bmps[] = {
 };
 
 
-static MyCtrlButton ctrls_toolbar[] = {
+static MyCtrlStatus ctrls_toolbar[] = {
+	{IDC_TOOLBAR_WIFI,	"wifi",10,50,50,50,4},
 	{0},
 };
 
@@ -114,7 +121,7 @@ static InitBmpFunc load_bmps_func[] = {
 
 static HWND hwnd_main = HWND_INVALID;
 static FormMainTimers timers_tbl[] = {
-	// {timer1s,               10},
+    {formMainTimerProc1s,               10},
 };
 
 /* ---------------------------------------------------------------------------*/
@@ -164,6 +171,11 @@ static int formMainTimerGetState(int idc_timer)
 /* ---------------------------------------------------------------------------*/
 static int formMainTimerProc1s(void)
 {
+    // static int count = 0;
+    // if (count >= 4)
+        // count = 0;
+    // SendMessage(GetDlgItem (hwnd_main, IDC_TOOLBAR_WIFI), MSG_MYSTATU_SET_LEVEL,count++,0);
+    // printf("%s\n",__FUNCTION__ );
 	return 0;
 }
 
@@ -229,6 +241,8 @@ static void formMainCreateControl(HWND hWnd)
 	int i;
 	for (i=0; ctrls_button[i].idc != 0; i++)
         createSkinButton(hWnd,&ctrls_button[i], 1, 0);
+	for (i=0; ctrls_toolbar[i].idc != 0; i++)
+        createMyStatus(hWnd,&ctrls_toolbar[i]);
 }
 /* ---------------------------------------------------------------------------*/
 /**
@@ -240,6 +254,7 @@ static void formMainLoadBmp(void)
 	printf("[%s]\n", __FUNCTION__);
     bmpsLoad(base_bmps);
 	myButtonBmpsLoad(ctrls_button,BMP_LOCAL_PATH);
+    myStatusBmpsLoad(ctrls_toolbar,BMP_LOCAL_PATH);
 }
 
 static void * loadBmpsThread(void *arg)
@@ -277,7 +292,7 @@ static int formMainProc(HWND hWnd, int message, WPARAM wParam, LPARAM lParam)
 				formMainLoadBmp();
 				createThread(loadBmpsThread,"1");
 				formMainCreateControl(hWnd);
-				// formMainTimerStart(IDC_TIMER_1S);
+                formMainTimerStart(IDC_TIMER_1S);
 				// screensaverStart(LCD_ON);
 			} break;
 
@@ -420,7 +435,6 @@ FormMain * formMainCreate(void)
 	this->timerStart = formMainTimerStart;
 	this->timerStop = formMainTimerStop;
 	this->timerGetState = formMainTimerGetState;
-	this->timerProc1s = formMainTimerProc1s;
     this->setNetWorkState = formMainSetNetWorkState;
 
 	return this;
