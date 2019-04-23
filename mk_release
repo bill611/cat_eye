@@ -1,0 +1,14 @@
+#!/bin/bash
+# TOOLS_PATH="/home/xubin/work/tools/platform/anyka/platform/rootfs"    
+source path
+mkdir -p update/
+mkdir -p out/bin
+set -e
+
+make PLATFORM=RV1108 DBG=0
+if [ "$?" == 0 ]; then
+	echo "Release build finished!"
+else
+	echo "make error!"
+fi
+
