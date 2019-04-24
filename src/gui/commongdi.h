@@ -29,6 +29,8 @@ extern "C" {
 
 #include <stdint.h>
 
+#include "form_idcs.h"
+
 #define BMP_RES_PATH "res/image/"
 
 #define SCR_WIDTH 1024           /*LCD Width     */

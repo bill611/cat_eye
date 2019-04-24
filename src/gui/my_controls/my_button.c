@@ -44,6 +44,7 @@ static int myButtonControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
 /* ----------------------------------------------------------------*
  *                      variables define
  *-----------------------------------------------------------------*/
+MyControls *my_button;
 
 /* ---------------------------------------------------------------------------*/
 /**
@@ -247,7 +248,7 @@ static int myButtonControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
         ReleaseCapture ();
 		if(!(dwStyle & BS_CHECKBOX)) {
 			pInfo->state = BUT_NORMAL;
-#ifdef PC
+#ifdef X86
 			if (pInfo->select.mode){
 				if (pInfo->select.state == BUT_STATE_SELECT) 
 					pInfo->select.state = BUT_STATE_UNSELECT;
@@ -302,11 +303,11 @@ static int myButtonControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
   * @param controls
 **/
 /* ---------------------------------------------------------------------------*/
-static void myButtonBmpsLoad(struct _MyControls * This)
+static void myButtonBmpsLoad(void *ctrls)
 {
     int i;
     char image_path[128] = {0};
-	MyCtrlButton *controls = (MyCtrlButton *)This->ctrls;
+	MyCtrlButton *controls = (MyCtrlButton *)ctrls;
     for (i=0; controls->idc != 0; i++) {
         sprintf(image_path,"%s%s-0.png",controls->relative_img_path,controls->img_name);
         bmpLoad(&controls->image_normal, image_path);
@@ -315,10 +316,10 @@ static void myButtonBmpsLoad(struct _MyControls * This)
 		controls++;
     }
 }
-static void myButtonBmpsRelease(struct _MyControls *This)
+static void myButtonBmpsRelease(void *ctrls)
 {
     int i;
-	MyCtrlButton *controls = (MyCtrlButton *)This->ctrls;
+	MyCtrlButton *controls = (MyCtrlButton *)ctrls;
     for (i=0; controls->idc != 0; i++) {
 		bmpRelease(&controls->image_normal);
 		bmpRelease(&controls->image_press);
@@ -327,7 +328,7 @@ static void myButtonBmpsRelease(struct _MyControls *This)
 }
 /* ---------------------------------------------------------------------------*/
 /**
- * @brief createSkinButton 创建单个皮肤按钮
+ * @brief createMyButton 创建单个皮肤按钮
  *
  * @param hWnd
  * @param id
@@ -339,7 +340,7 @@ static void myButtonBmpsRelease(struct _MyControls *This)
  * @param notif_proc   回调函数
  */
 /* ---------------------------------------------------------------------------*/
-HWND createSkinButton(HWND hWnd,MyCtrlButton *ctrl, int display, int mode)
+HWND createMyButton(HWND hWnd,MyCtrlButton *ctrl, int display, int mode)
 {
 	HWND hCtrl;
 	MyButtonCtrlInfo pInfo;
@@ -361,16 +362,13 @@ HWND createSkinButton(HWND hWnd,MyCtrlButton *ctrl, int display, int mode)
     return hCtrl;
 }
 
-MyControls * initMyButton(void *controls)
+void initMyButton(void)
 {
-	MyControls *This = (MyControls *)malloc(sizeof(MyControls));
-	This->ctrls = controls;
-	This->regist = myButtonRegist;
-	This->unregist = myButtonCleanUp;
-	This->bmpsLoad = myButtonBmpsLoad;
-	This->bmpsRelease = myButtonBmpsRelease;
-
-	return This;
+	my_button = (MyControls *)malloc(sizeof(MyControls));
+	my_button->regist = myButtonRegist;
+	my_button->unregist = myButtonCleanUp;
+	my_button->bmpsLoad = myButtonBmpsLoad;
+	my_button->bmpsRelease = myButtonBmpsRelease;
 }
 
 

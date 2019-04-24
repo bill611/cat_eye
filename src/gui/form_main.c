@@ -33,14 +33,18 @@
  *----------------------------------------------------------------------------*/
 extern int createFormVersion(HWND hMainWnd);
 
-extern void formVersionLoadBmp(void);
+extern void formSettingLoadBmp(void);
 
-extern void formVersionLoadLock(void);
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
  *----------------------------------------------------------------------------*/
-static void formMainLoadBmp(void);
 static void formMainTimerProc1s(void);
+
+static void buttonRecordPress(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonCapturePress(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonCallPress(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonVideoPress(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonSettingPress(HWND hwnd, int id, int nc, DWORD add_data);
 
 /* ---------------------------------------------------------------------------*
  *                        macro define
@@ -53,12 +57,6 @@ static void formMainTimerProc1s(void);
 
 typedef void (*InitBmpFunc)(void) ;
 
-struct _RegistFunc {
-	MyControls * (*initControl)(void *); // 初始化控件
-	void * ctrls;  // 具体控件对象
-	MyControls * control; // 控件类对象
-};
-
 #define BMP_LOCAL_PATH "main/"
 
 #define TIME_1S (10 * 5)
@@ -70,7 +68,7 @@ enum {
 };
 
 enum {
-    IDC_TOOLBAR_WIFI = 100,
+    IDC_TOOLBAR_WIFI = IDC_FORM_MAIN_START,
     IDC_TOOLBAR_SDCARD,
     IDC_TOOLBAR_DATE,
     IDC_TOOLBAR_BATTERY,
@@ -87,38 +85,30 @@ enum {
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
-static BITMAP bmp_wifi; // wifi
-
 static BmpLocation base_bmps[] = {
 	{NULL},
 };
 
 
 static MyCtrlStatus ctrls_toolbar[] = {
-	{IDC_TOOLBAR_WIFI,	BMP_LOCAL_PATH,"wifi",10,50,50,50,4,NULL},
+	{IDC_TOOLBAR_WIFI,	BMP_LOCAL_PATH,"main_wifi",10,50,50,50,4},
+	{IDC_TOOLBAR_SDCARD,BMP_LOCAL_PATH,"main_sdcard",80,50,50,50,2},
 	{0},
 };
 
 static MyCtrlButton ctrls_button[] = {
-	{IDC_BUTTON_RECORD,	BMP_LOCAL_PATH,"record",40,400,95,85},
-	{IDC_BUTTON_CAPTURE,BMP_LOCAL_PATH,"capture",160,400,95,85},
-	{IDC_BUTTON_CALL,	BMP_LOCAL_PATH,"call",280,400,95,85},
-	{IDC_BUTTON_VIDEO,	BMP_LOCAL_PATH,"video",400,400,95,85},
-	{IDC_BUTTON_SETTING,BMP_LOCAL_PATH,"setting",520,400,95,85},
+	{IDC_BUTTON_RECORD,	BMP_LOCAL_PATH,"record", 40,400,95,85,buttonRecordPress},
+	{IDC_BUTTON_CAPTURE,BMP_LOCAL_PATH,"capture",160,400,95,85,buttonCapturePress},
+	{IDC_BUTTON_CALL,	BMP_LOCAL_PATH,"call",   280,400,95,85,buttonCallPress},
+	{IDC_BUTTON_VIDEO,	BMP_LOCAL_PATH,"video",  400,400,95,85,buttonVideoPress},
+	{IDC_BUTTON_SETTING,BMP_LOCAL_PATH,"setting",520,400,95,85,buttonSettingPress},
 	{0},
 };
 
 static InitBmpFunc load_bmps_func[] = {
+    formSettingLoadBmp,
 	NULL,
-    // formVersionLoadBmp,
 };
-// 注册自定义控件
-static struct _RegistFunc my_controls[] = {
-	{initMyButton,ctrls_button},
-	{initMyStatus,ctrls_toolbar},
-	{NULL}
-};
-
 
 static HWND hwnd_main = HWND_INVALID;
 static FormMainTimers timers_tbl[] = {
@@ -172,10 +162,10 @@ static int formMainTimerGetState(int idc_timer)
 /* ---------------------------------------------------------------------------*/
 static void formMainTimerProc1s(void)
 {
-	static int count = 0;
-	if (count >= 4)
-		count = 0;
-	SendMessage(GetDlgItem (hwnd_main, IDC_TOOLBAR_WIFI), MSG_MYSTATUS_SET_LEVEL,count++,0);
+	// static int count = 0;
+	// if (count >= 4)
+		// count = 0;
+	// SendMessage(GetDlgItem (hwnd_main, IDC_TOOLBAR_WIFI), MSG_MYSTATUS_SET_LEVEL,count++,0);
 }
 
 /* ---------------------------------------------------------------------------*/
@@ -185,32 +175,41 @@ static void formMainTimerProc1s(void)
  * @param state 0未连接 1连接
  */
 /* ---------------------------------------------------------------------------*/
-static void formMainSetNetWorkState(int state)
+static void formMainSetNetWorkState(int level)
 {
-	static int state_old = 0;
-	if (state_old == state) {
+	static int level_old = 0;
+	if (level_old == level)
 		return;
-	}
-	state_old = state;
-    // if (state)
-        // ShowWindow(GetDlgItem (hwnd_main, IDC_WIFI), SW_SHOWNORMAL);
-    // else
-        // ShowWindow(GetDlgItem (hwnd_main, IDC_WIFI), SW_HIDE);
-
+	level_old = level;
+    SendMessage(GetDlgItem (hwnd_main, IDC_TOOLBAR_WIFI),
+            MSG_MYSTATUS_SET_LEVEL,level,0);
 }
 
-static void optControlsNotify(HWND hwnd, int id, int nc, DWORD add_data)
+static void buttonRecordPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
-	HWND parent_hwnd = GetParent(hwnd);
-    switch (id) {
-        // case IDC_SYSTEM:
-			// createFormVersion(parent_hwnd);
-			   // break;
-        default:
-            break;
-    }
+}
+static void buttonCapturePress(HWND hwnd, int id, int nc, DWORD add_data)
+{
+	if (nc != BN_CLICKED)
+		return;
+}
+static void buttonCallPress(HWND hwnd, int id, int nc, DWORD add_data)
+{
+	if (nc != BN_CLICKED)
+		return;
+}
+static void buttonVideoPress(HWND hwnd, int id, int nc, DWORD add_data)
+{
+	if (nc != BN_CLICKED)
+		return;
+}
+static void buttonSettingPress(HWND hwnd, int id, int nc, DWORD add_data)
+{
+	if (nc != BN_CLICKED)
+		return;
+    createFormSetting(hwnd_main);
 }
 
 static void showNormal(HWND hWnd)
@@ -239,7 +238,7 @@ static void formMainCreateControl(HWND hWnd)
 {
 	int i;
 	for (i=0; ctrls_button[i].idc != 0; i++)
-        createSkinButton(hWnd,&ctrls_button[i], 1, 0);
+        createMyButton(hWnd,&ctrls_button[i], 1, 0);
 	for (i=0; ctrls_toolbar[i].idc != 0; i++)
         createMyStatus(hWnd,&ctrls_toolbar[i]);
 }
@@ -252,10 +251,8 @@ static void formMainLoadBmp(void)
 {
 	printf("[%s]\n", __FUNCTION__);
     bmpsLoad(base_bmps);
-	int i;
-	for (i=0; my_controls[i].initControl != NULL; i++) {
-		my_controls[i].control->bmpsLoad(my_controls[i].control);	
-	}
+    my_button->bmpsLoad(ctrls_button);	
+    my_status->bmpsLoad(ctrls_toolbar);	
 }
 static void formMainReleaseBmp(void)
 {
@@ -389,11 +386,11 @@ static int formMainLoop(void)
 		TranslateMessage(&Msg);
 		DispatchMessage(&Msg);
 	}
-	int i;
-	for (i=0; my_controls[i].initControl != NULL; i++) {
-		my_controls[i].control->unregist();	
-		my_controls[i].control->bmpsRelease(my_controls[i].control);	
-	}
+    my_button->unregist();
+    my_status->unregist();
+    my_button->bmpsRelease(ctrls_button);	
+    my_status->bmpsRelease(ctrls_toolbar);	
+
     MainWindowThreadCleanup (hwnd_main);
 	hwnd_main = Screen.hMainWnd = 0;
 	formMainReleaseBmp();
@@ -412,11 +409,11 @@ static int formMainLoop(void)
 FormMain * formMainCreate(void)
 {
     MAINWINCREATE CreateInfo;
-	int i;
-	for (i=0; my_controls[i].initControl != NULL; i++) {
-		my_controls[i].control = my_controls[i].initControl(my_controls[i].ctrls);	
-		my_controls[i].control->regist();	
-	}
+
+    initMyButton();
+    my_button->regist();
+    initMyStatus();
+    my_status->regist();
 
     CreateInfo.dwStyle = WS_NONE;
 	CreateInfo.dwExStyle = WS_EX_AUTOSECONDARYDC;

@@ -28,11 +28,10 @@ extern "C" {
 #include <minigui/control.h>
 
 	typedef struct _MyControls {
-		void *ctrls;
 		BOOL (*regist)(void);	
 		void (*unregist)(void);	
-		void (*bmpsLoad)(struct _MyControls *);	
-		void (*bmpsRelease)(struct _MyControls *);	
+		void (*bmpsLoad)(void *);	
+		void (*bmpsRelease)(void *);	
 	}MyControls;
 
 #ifdef __cplusplus

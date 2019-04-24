@@ -92,6 +92,8 @@ static void *gpioRegistThread(void *arg)
 static void * timer1sThread(void *arg)
 {
 	while(1) {
+        if (form_main)
+            form_main->setNetWorkState(net_detect());
 		sleep(1);
 	}	
 	return NULL;

@@ -45,6 +45,7 @@ static int myctrlControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lPar
 /* ----------------------------------------------------------------*
  *                      variables define
  *-----------------------------------------------------------------*/
+MyControls * my_status;
 
 /* ---------------------------------------------------------------------------*/
 /**
@@ -161,9 +162,9 @@ static int myctrlControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lPar
     return DefaultControlProc (hwnd, message, wParam, lParam);
 }
 
-static void myStatusBmpsLoad(struct _MyControls * This)
+static void myStatusBmpsLoad(void *ctrls)
 {
-	MyCtrlStatus *controls = (MyCtrlStatus *)This->ctrls;
+	MyCtrlStatus *controls = (MyCtrlStatus *)ctrls;
     if (controls->images)
         return;
     int i;
@@ -174,10 +175,10 @@ static void myStatusBmpsLoad(struct _MyControls * This)
         bmpLoad(controls->images + i, image_path);
     }
 }
-static void myStatusBmpsRelease(struct _MyControls *This)
+static void myStatusBmpsRelease(void *ctrls)
 {
     int i;
-	MyCtrlStatus *controls = (MyCtrlStatus *)This->ctrls;
+	MyCtrlStatus *controls = (MyCtrlStatus *)ctrls;
     for (i=0; controls->idc != 0; i++) {
 		bmpRelease(controls->images + i);
 		free(controls->images + i);
@@ -198,16 +199,13 @@ HWND createMyStatus(HWND hWnd,MyCtrlStatus *ctrl)
     return hCtrl;
 }
 
-MyControls * initMyStatus(void *controls)
+void initMyStatus(void)
 {
-	MyControls *This = (MyControls *)malloc(sizeof(MyControls));
-	This->ctrls = controls;
-	This->regist = myStatusRegist;
-	This->unregist = myStatusCleanUp;
-	This->bmpsLoad = myStatusBmpsLoad;
-	This->bmpsRelease = myStatusBmpsRelease;
-
-	return This;
+	my_status = (MyControls *)malloc(sizeof(MyControls));
+	my_status->regist = myStatusRegist;
+	my_status->unregist = myStatusCleanUp;
+	my_status->bmpsLoad = myStatusBmpsLoad;
+	my_status->bmpsRelease = myStatusBmpsRelease;
 }
 
 

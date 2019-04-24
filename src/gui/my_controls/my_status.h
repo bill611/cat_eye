@@ -42,7 +42,8 @@ extern "C" {
 	}MyCtrlStatus;
 
     HWND createMyStatus(HWND hWnd,MyCtrlStatus *ctrl);
-	MyControls * initMyStatus(void *);
+    MyControls * my_status;
+	void initMyStatus(void);
 
 #ifdef __cplusplus
 }

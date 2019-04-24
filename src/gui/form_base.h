@@ -27,8 +27,8 @@ extern "C" {
 #define FORM_SETTING_ONTIME      60 // 设置界面60秒无操作，则关闭窗口
 
 	enum {
-		STOP = 0,
-		CONTINUE = 1,
+		FORM_STOP = 0,
+		FORM_CONTINUE = 1,
 	};
 
 	typedef struct _FormBasePriv {

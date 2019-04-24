@@ -562,30 +562,11 @@ time_t MyGetTickCount(void)
 /* ---------------------------------------------------------------------------*/
 int net_detect(void)
 {
-#if (defined ANYKA)
-	FILE *fd;
-	char buf[64] = {0};
-	char net_type[16] = {0};
-	char connect_status[8] = {0};
-	fd = fopen("/mnt/public/net_status","rb");
-	if (fd) {
-		int ret = fread(buf,sizeof(buf),1,fd);	
-		sscanf(buf,"net=%s,connect=%s",net_type,connect_status);
-		fclose(fd);
-		if (atoi(connect_status))
-			return 0;
-		else
-			return -1;
-	} else {
-		return -1;
-	}
-#else
 	int ret = access("ip_ok",0);
 	if (ret == 0)
 		return 0;
 	else
 		return -1;
-#endif
 }
 
 /* ----------------------------------------------------------------*/

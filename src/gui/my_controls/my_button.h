@@ -59,8 +59,9 @@ extern "C" {
 		BITMAP image_press;	// 按下状态图片
 	}MyCtrlButton;
 
-	HWND createSkinButton(HWND hWnd,MyCtrlButton *button, int display, int mode);
-	MyControls * initMyButton(void *);
+	HWND createMyButton(HWND hWnd,MyCtrlButton *button, int display, int mode);
+    MyControls *my_button;
+	void initMyButton(void);
 
 #ifdef __cplusplus
 }
