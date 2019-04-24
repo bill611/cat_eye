@@ -64,7 +64,7 @@ extern "C" {
     void bmpLoad(BITMAP *bmp,char *path);
     void bmpsLoad(BmpLocation *bmp);
     void bmpRelease(BITMAP *bmp);
-    void bmpsRelease(BmpLocation *bmp,int num);
+    void bmpsRelease(BmpLocation *bmp);
 #ifdef __cplusplus
 }
 #endif  /* __cplusplus */

@@ -40,7 +40,7 @@ extern void formVersionLoadLock(void);
  *                  internal functions declare
  *----------------------------------------------------------------------------*/
 static void formMainLoadBmp(void);
-static int formMainTimerProc1s(void);
+static void formMainTimerProc1s(void);
 
 /* ---------------------------------------------------------------------------*
  *                        macro define
@@ -54,8 +54,9 @@ static int formMainTimerProc1s(void);
 typedef void (*InitBmpFunc)(void) ;
 
 struct _RegistFunc {
-	BOOL (*registControl)(void);
-	void (*unregistControl)(void);
+	MyControls * (*initControl)(void *); // 初始化控件
+	void * ctrls;  // 具体控件对象
+	MyControls * control; // 控件类对象
 };
 
 #define BMP_LOCAL_PATH "main/"
@@ -88,29 +89,22 @@ enum {
  *----------------------------------------------------------------------------*/
 static BITMAP bmp_wifi; // wifi
 
-// 注册自定义控件
-static struct _RegistFunc regist_my_controls[] = {
-	{myButtonRegist,myButtonCleanUp},
-	{myStatusRegist,myStatusCleanUp},
-	{NULL}
-};
-
 static BmpLocation base_bmps[] = {
 	{NULL},
 };
 
 
 static MyCtrlStatus ctrls_toolbar[] = {
-	{IDC_TOOLBAR_WIFI,	"wifi",10,50,50,50,4},
+	{IDC_TOOLBAR_WIFI,	BMP_LOCAL_PATH,"wifi",10,50,50,50,4,NULL},
 	{0},
 };
 
 static MyCtrlButton ctrls_button[] = {
-	{IDC_BUTTON_RECORD,	"record",40,400,95,85},
-	{IDC_BUTTON_CAPTURE,"capture",160,400,95,85},
-	{IDC_BUTTON_CALL,	"call",280,400,95,85},
-	{IDC_BUTTON_VIDEO,	"video",400,400,95,85},
-	{IDC_BUTTON_SETTING,"setting",520,400,95,85},
+	{IDC_BUTTON_RECORD,	BMP_LOCAL_PATH,"record",40,400,95,85},
+	{IDC_BUTTON_CAPTURE,BMP_LOCAL_PATH,"capture",160,400,95,85},
+	{IDC_BUTTON_CALL,	BMP_LOCAL_PATH,"call",280,400,95,85},
+	{IDC_BUTTON_VIDEO,	BMP_LOCAL_PATH,"video",400,400,95,85},
+	{IDC_BUTTON_SETTING,BMP_LOCAL_PATH,"setting",520,400,95,85},
 	{0},
 };
 
@@ -118,6 +112,13 @@ static InitBmpFunc load_bmps_func[] = {
 	NULL,
     // formVersionLoadBmp,
 };
+// 注册自定义控件
+static struct _RegistFunc my_controls[] = {
+	{initMyButton,ctrls_button},
+	{initMyStatus,ctrls_toolbar},
+	{NULL}
+};
+
 
 static HWND hwnd_main = HWND_INVALID;
 static FormMainTimers timers_tbl[] = {
@@ -169,14 +170,12 @@ static int formMainTimerGetState(int idc_timer)
  * @returns 1按键超时退出 0未超时退出
  */
 /* ---------------------------------------------------------------------------*/
-static int formMainTimerProc1s(void)
+static void formMainTimerProc1s(void)
 {
-    // static int count = 0;
-    // if (count >= 4)
-        // count = 0;
-    // SendMessage(GetDlgItem (hwnd_main, IDC_TOOLBAR_WIFI), MSG_MYSTATU_SET_LEVEL,count++,0);
-    // printf("%s\n",__FUNCTION__ );
-	return 0;
+	static int count = 0;
+	if (count >= 4)
+		count = 0;
+	SendMessage(GetDlgItem (hwnd_main, IDC_TOOLBAR_WIFI), MSG_MYSTATUS_SET_LEVEL,count++,0);
 }
 
 /* ---------------------------------------------------------------------------*/
@@ -253,8 +252,15 @@ static void formMainLoadBmp(void)
 {
 	printf("[%s]\n", __FUNCTION__);
     bmpsLoad(base_bmps);
-	myButtonBmpsLoad(ctrls_button,BMP_LOCAL_PATH);
-    myStatusBmpsLoad(ctrls_toolbar,BMP_LOCAL_PATH);
+	int i;
+	for (i=0; my_controls[i].initControl != NULL; i++) {
+		my_controls[i].control->bmpsLoad(my_controls[i].control);	
+	}
+}
+static void formMainReleaseBmp(void)
+{
+	printf("[%s]\n", __FUNCTION__);
+	bmpsRelease(base_bmps);
 }
 
 static void * loadBmpsThread(void *arg)
@@ -384,11 +390,13 @@ static int formMainLoop(void)
 		DispatchMessage(&Msg);
 	}
 	int i;
-	for (i=0; regist_my_controls[i].unregistControl != NULL; i++)
-		regist_my_controls[i].unregistControl();	
+	for (i=0; my_controls[i].initControl != NULL; i++) {
+		my_controls[i].control->unregist();	
+		my_controls[i].control->bmpsRelease(my_controls[i].control);	
+	}
     MainWindowThreadCleanup (hwnd_main);
 	hwnd_main = Screen.hMainWnd = 0;
-	bmpsRelease(base_bmps,NELEMENTS(base_bmps));
+	formMainReleaseBmp();
 	return 0;
 }
 
@@ -405,8 +413,10 @@ FormMain * formMainCreate(void)
 {
     MAINWINCREATE CreateInfo;
 	int i;
-	for (i=0; regist_my_controls[i].unregistControl != NULL; i++)
-		regist_my_controls[i].registControl();	
+	for (i=0; my_controls[i].initControl != NULL; i++) {
+		my_controls[i].control = my_controls[i].initControl(my_controls[i].ctrls);	
+		my_controls[i].control->regist();	
+	}
 
     CreateInfo.dwStyle = WS_NONE;
 	CreateInfo.dwExStyle = WS_EX_AUTOSECONDARYDC;

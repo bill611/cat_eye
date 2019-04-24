@@ -430,7 +430,9 @@ void bmpLoad(BITMAP *bmp,char *path)
         // sync();
         // if (LoadBitmap (HDC_SCREEN,bmp, path_src))
             // printf ("LoadBitmaps(%s)fail-again!!.\n",path);
-    }
+	} else {
+        printf ("LoadBitmap(%s)ok.\n",path_src);
+	}
 }
 void bmpsLoad(BmpLocation *bmp)
 {
@@ -454,10 +456,10 @@ void bmpRelease(BITMAP *bmp)
     UnloadBitmap(bmp);
 }
 
-void bmpsRelease(BmpLocation *bmp,int num)
+void bmpsRelease(BmpLocation *bmp)
 {
 	int i;
-	for (i=0; i<num; i++) {
+	for (i=0; bmp->bmp != NULL; i++) {
 		bmpRelease(bmp[i].bmp);
 	}
 }

@@ -21,12 +21,7 @@
 extern "C" {
 #endif  /* __cplusplus */
 
-#include <minigui/common.h>
-#include <minigui/minigui.h>
-#include <minigui/gdi.h>
-#include <minigui/window.h>
-#include <minigui/control.h>
-
+#include "my_controls.h"
 #include "commongdi.h"
 #define CTRL_MYBUTTON         ("mybutton")
 
@@ -56,6 +51,7 @@ extern "C" {
 
 	typedef struct _MyCtrlButton{
 		HWND idc;		// 控件ID
+		char *relative_img_path; // 图片相对位置
 		char *img_name; 	// 常态图片名字,不带扩展名,完整路径由循环赋值
 		int16_t x,y,w,h;
 		NOTIFPROC notif_proc; 	// 回调函数
@@ -63,11 +59,8 @@ extern "C" {
 		BITMAP image_press;	// 按下状态图片
 	}MyCtrlButton;
 
-	BOOL myButtonRegist(void);
-	void myButtonCleanUp(void);
-
-	void myButtonBmpsLoad(MyCtrlButton *controls,char *local_path);
 	HWND createSkinButton(HWND hWnd,MyCtrlButton *button, int display, int mode);
+	MyControls * initMyButton(void *);
 
 #ifdef __cplusplus
 }

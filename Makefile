@@ -29,7 +29,6 @@ OBJ_DIR = $(MAKEROOT)/obj
 BIN_DIR = $(MAKEROOT)/out
 
 CC =$(PREFIX)gcc
-STRIP = $(PREFIX)strip $(BIN_TARGET)
 
 # INC_DIR 目录下为相应库的头文件
 INC_DIR += \
@@ -64,10 +63,12 @@ CP_TARGET = $(MAKEROOT)/../nand/v2.0/nand1-2/
 ifeq ($(DBG), 1)
 	CFLAGS += -g -O0 -DWATCHDOG_DEBUG
 	LINKFLAGS += -g -O0
+	STRIP =
 	# CP_TARGET := ${HOME}/arm_share/ankgw
 else
 	CFLAGS += -O2
 	LINKFLAGS += -O2
+	STRIP = $(PREFIX)strip $(BIN_TARGET) $@
 endif
 
 
@@ -96,7 +97,7 @@ make_C:
 # 在指定目录下，将所有的.c文件编译为相应的同名.o文件
 ${BIN_TARGET}:${OBJ}
 	@$(CC) $(LINKFLAGS) -o $@ $(OBJ) ${addprefix -L,${LIB_DIR}} ${XLINKER}
-	@${STRIP} $@
+	@${STRIP}
 
 debug:
 	make -C src debug

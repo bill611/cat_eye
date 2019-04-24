@@ -21,16 +21,11 @@
 extern "C" {
 #endif  /* __cplusplus */
 
-#include <minigui/common.h>
-#include <minigui/minigui.h>
-#include <minigui/gdi.h>
-#include <minigui/window.h>
-#include <minigui/control.h>
-
+#include "my_controls.h"
 #include "commongdi.h"
 #define CTRL_MYSTATUS         ("mystatus")
 
-#define MSG_MYSTATU_SET_LEVEL (MSG_USER + 1)
+#define MSG_MYSTATUS_SET_LEVEL (MSG_USER + 1)
 	typedef struct {
 		BITMAP *images;		// 状态图片数组
 		int total_level;	// 总共几组状态
@@ -39,17 +34,15 @@ extern "C" {
 
 	typedef struct _MyCtrlStatus{
 		HWND idc;		// 控件ID
+		char *relative_img_path; // 图片相对位置
 		char *img_name; 	// 常态图片名字,不带扩展名,完整路径由循环赋值
 		int16_t x,y,w,h;
 		int total_level;	// 总共几组状态
 		BITMAP *images;		// 状态图片数组
 	}MyCtrlStatus;
 
-	BOOL myStatusRegist(void);
-	void myStatusCleanUp(void);
-
     HWND createMyStatus(HWND hWnd,MyCtrlStatus *ctrl);
-	// HWND createSkinButton(HWND hWnd,MgCtrlButton *button, int display, int mode);
+	MyControls * initMyStatus(void *);
 
 #ifdef __cplusplus
 }

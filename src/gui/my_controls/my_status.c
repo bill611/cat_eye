@@ -53,7 +53,7 @@ static int myctrlControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lPar
  * @returns 
  */
 /* ---------------------------------------------------------------------------*/
-BOOL myStatusRegist (void)
+static BOOL myStatusRegist (void)
 {
     WNDCLASS WndClass;
 
@@ -72,7 +72,7 @@ BOOL myStatusRegist (void)
  * @brief myStatusCleanUp 卸载控件
  */
 /* ---------------------------------------------------------------------------*/
-void myStatusCleanUp (void)
+static void myStatusCleanUp (void)
 {
     UnregisterWindowClass(CTRL_NAME);
 }
@@ -94,13 +94,11 @@ static void paint(HWND hWnd,HDC hdc)
 
 	if (pCtrl->dwAddData2) {
 		MyStatusCtrlInfo* pInfo = (MyStatusCtrlInfo*)(pCtrl->dwAddData2);
-		if (pInfo->images + pInfo->level)
+		BITMAP *bmp = pInfo->images + pInfo->level; 
+		if (bmp)
 			FillBoxWithBitmap(hdc,
-					rcClient.left,
-					rcClient.top,
-					(pInfo->images + pInfo->level)->bmWidth,
-					(pInfo->images + pInfo->level)->bmHeight,
-					pInfo->images + pInfo->level);
+					rcClient.left, rcClient.top,
+					bmp->bmWidth, bmp->bmHeight, bmp);
 	}
 }
 
@@ -152,7 +150,7 @@ static int myctrlControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lPar
         return 0;
 
 
-    case MSG_MYSTATU_SET_LEVEL:
+    case MSG_MYSTATUS_SET_LEVEL:
         pInfo->level = wParam;
         InvalidateRect (hwnd, NULL, FALSE);
         return 0;
@@ -163,16 +161,27 @@ static int myctrlControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lPar
     return DefaultControlProc (hwnd, message, wParam, lParam);
 }
 
-void myStatusBmpsLoad(MyCtrlStatus *ctrls,char *local_path)
+static void myStatusBmpsLoad(struct _MyControls * This)
 {
-    if (ctrls->images)
+	MyCtrlStatus *controls = (MyCtrlStatus *)This->ctrls;
+    if (controls->images)
         return;
     int i;
     char image_path[128] = {0};
-    ctrls->images = (BITMAP *)calloc(ctrls->total_level,sizeof(BITMAP));
-    for (i=0; i<ctrls->total_level; i++) {
-        sprintf(image_path,"%s%s-%d.png",local_path,ctrls->img_name,i);
-        bmpLoad(ctrls->images + i, image_path);
+    controls->images = (BITMAP *)calloc(controls->total_level,sizeof(BITMAP));
+    for (i=0; i<controls->total_level; i++) {
+        sprintf(image_path,"%s%s-%d.png",controls->relative_img_path,controls->img_name,i);
+        bmpLoad(controls->images + i, image_path);
+    }
+}
+static void myStatusBmpsRelease(struct _MyControls *This)
+{
+    int i;
+	MyCtrlStatus *controls = (MyCtrlStatus *)This->ctrls;
+    for (i=0; controls->idc != 0; i++) {
+		bmpRelease(controls->images + i);
+		free(controls->images + i);
+		controls++;
     }
 }
 
@@ -188,5 +197,18 @@ HWND createMyStatus(HWND hWnd,MyCtrlStatus *ctrl)
 			ctrl->idc,ctrl->x,ctrl->y,ctrl->w,ctrl->h, hWnd,(DWORD)&pInfo);
     return hCtrl;
 }
+
+MyControls * initMyStatus(void *controls)
+{
+	MyControls *This = (MyControls *)malloc(sizeof(MyControls));
+	This->ctrls = controls;
+	This->regist = myStatusRegist;
+	This->unregist = myStatusCleanUp;
+	This->bmpsLoad = myStatusBmpsLoad;
+	This->bmpsRelease = myStatusBmpsRelease;
+
+	return This;
+}
+
 
 

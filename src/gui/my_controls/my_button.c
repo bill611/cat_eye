@@ -52,7 +52,7 @@ static int myButtonControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
  * @returns 
  */
 /* ---------------------------------------------------------------------------*/
-BOOL myButtonRegist (void)
+static BOOL myButtonRegist (void)
 {
     WNDCLASS WndClass;
 
@@ -71,7 +71,7 @@ BOOL myButtonRegist (void)
  * @brief myButtonCleanUp 卸载控件
  */
 /* ---------------------------------------------------------------------------*/
-void myButtonCleanUp (void)
+static void myButtonCleanUp (void)
 {
     UnregisterWindowClass(CTRL_NAME);
 }
@@ -302,15 +302,26 @@ static int myButtonControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
   * @param controls
 **/
 /* ---------------------------------------------------------------------------*/
-void myButtonBmpsLoad(MyCtrlButton *controls,char *local_path)
+static void myButtonBmpsLoad(struct _MyControls * This)
 {
     int i;
     char image_path[128] = {0};
+	MyCtrlButton *controls = (MyCtrlButton *)This->ctrls;
     for (i=0; controls->idc != 0; i++) {
-        sprintf(image_path,"%s%s-0.png",local_path,controls->img_name);
+        sprintf(image_path,"%s%s-0.png",controls->relative_img_path,controls->img_name);
         bmpLoad(&controls->image_normal, image_path);
-        sprintf(image_path,"%s%s-1.png",local_path,controls->img_name);
+        sprintf(image_path,"%s%s-1.png",controls->relative_img_path,controls->img_name);
         bmpLoad(&controls->image_press, image_path);
+		controls++;
+    }
+}
+static void myButtonBmpsRelease(struct _MyControls *This)
+{
+    int i;
+	MyCtrlButton *controls = (MyCtrlButton *)This->ctrls;
+    for (i=0; controls->idc != 0; i++) {
+		bmpRelease(&controls->image_normal);
+		bmpRelease(&controls->image_press);
 		controls++;
     }
 }
@@ -348,6 +359,18 @@ HWND createSkinButton(HWND hWnd,MyCtrlButton *ctrl, int display, int mode)
 		SetNotificationCallback (hCtrl, ctrl->notif_proc);
 	}
     return hCtrl;
+}
+
+MyControls * initMyButton(void *controls)
+{
+	MyControls *This = (MyControls *)malloc(sizeof(MyControls));
+	This->ctrls = controls;
+	This->regist = myButtonRegist;
+	This->unregist = myButtonCleanUp;
+	This->bmpsLoad = myButtonBmpsLoad;
+	This->bmpsRelease = myButtonBmpsRelease;
+
+	return This;
 }
 
 
