@@ -41,6 +41,8 @@ extern "C" {
 	};
 
 	typedef struct {
+        const char *text;      // 文字
+        PLOGFONT   font;       // 字体
 		BITMAP *image_normal;	// 正常状态图片
 		BITMAP *image_press;	// 按下状态图片
 		BITMAP *image_select;	// 选中图片
@@ -51,15 +53,16 @@ extern "C" {
 
 	typedef struct _MyCtrlButton{
 		HWND idc;		// 控件ID
-		char *relative_img_path; // 图片相对位置
 		char *img_name; 	// 常态图片名字,不带扩展名,完整路径由循环赋值
-		int16_t x,y,w,h;
+		int16_t x,y;
 		NOTIFPROC notif_proc; 	// 回调函数
+        int text_num;             // 文字
+        PLOGFONT   font;       // 字体
 		BITMAP image_normal;	// 正常状态图片
 		BITMAP image_press;	// 按下状态图片
 	}MyCtrlButton;
 
-	HWND createMyButton(HWND hWnd,MyCtrlButton *button, int display, int mode);
+	HWND createMyButton(HWND hWnd,MyCtrlButton *button,const char *text, int mode);
     MyControls *my_button;
 	void initMyButton(void);
 

@@ -50,7 +50,7 @@ MyControls *my_button;
 /**
  * @brief myButtonRegist 注册控件
  *
- * @returns 
+ * @returns
  */
 /* ---------------------------------------------------------------------------*/
 static BOOL myButtonRegist (void)
@@ -87,46 +87,55 @@ static void myButtonCleanUp (void)
 /* ---------------------------------------------------------------------------*/
 static void paint(HWND hWnd,HDC hdc)
 {
-	RECT rcClient;
+	RECT rc_bmp,rc_text;
     PCONTROL    pCtrl;
     pCtrl = Control (hWnd);
-	GetClientRect (hWnd, &rcClient);
+	GetClientRect (hWnd, &rc_bmp);
+    rc_text = rc_bmp;
 
 	if (pCtrl->dwAddData2) {
 		MyButtonCtrlInfo* pInfo = (MyButtonCtrlInfo*)(pCtrl->dwAddData2);
 
 		if (pInfo->select.mode == 1) {
-			if(pInfo->select.state == BUT_STATE_SELECT) 
+			if(pInfo->select.state == BUT_STATE_SELECT)
                 FillBoxWithBitmap(hdc,
-                        rcClient.left,
-                        rcClient.top,
+                        rc_bmp.left,
+                        rc_bmp.top,
                         pInfo->image_press->bmWidth,
                         pInfo->image_press->bmHeight,
                         pInfo->image_press);
-            else 
+            else
                 FillBoxWithBitmap(hdc,
-                        rcClient.left,
-                        rcClient.top,
+                        rc_bmp.left,
+                        rc_bmp.top,
                         pInfo->image_normal->bmWidth,
                         pInfo->image_normal->bmHeight,
                         pInfo->image_normal);
 		} else {
             if(pInfo->state == BUT_NORMAL)
                 FillBoxWithBitmap(hdc,
-                        rcClient.left,
-                        rcClient.top,
+                        rc_bmp.left,
+                        rc_bmp.top,
                         pInfo->image_normal->bmWidth,
                         pInfo->image_normal->bmHeight,
                         pInfo->image_normal);
-            else 
+            else
                 FillBoxWithBitmap(hdc,
-                        rcClient.left,
-                        rcClient.top,
+                        rc_bmp.left,
+                        rc_bmp.top,
                         pInfo->image_press->bmWidth,
                         pInfo->image_press->bmHeight,
                         pInfo->image_press);
-			
+
 		}
+        rc_text.top = rc_bmp.top + pInfo->image_normal->bmHeight;
+        if (pInfo->text) {
+            SetTextColor(hdc,COLOR_lightwhite);
+            SetBkMode(hdc,BM_TRANSPARENT);
+            SelectFont (hdc, pInfo->font);
+            DrawText (hdc,pInfo->text, -1, &rc_text,
+                    DT_CENTER | DT_BOTTOM| DT_VCENTER | DT_WORDBREAK  | DT_SINGLELINE);
+        }
 	}
 }
 
@@ -139,7 +148,7 @@ static void paint(HWND hWnd,HDC hdc)
  * @param wParam
  * @param lParam
  *
- * @returns 
+ * @returns
  */
 /* ---------------------------------------------------------------------------*/
 static int myButtonControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lParam)
@@ -167,6 +176,8 @@ static int myButtonControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
 		pInfo->state = data->state;
 		pInfo->select.mode = data->select.mode;
 		pInfo->select.state = data->select.state;
+		pInfo->text = data->text;
+		pInfo->font = data->font;
 		pCtrl->dwAddData2 = (DWORD)pInfo;
 		return 0;
 	}
@@ -250,7 +261,7 @@ static int myButtonControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
 			pInfo->state = BUT_NORMAL;
 #ifdef X86
 			if (pInfo->select.mode){
-				if (pInfo->select.state == BUT_STATE_SELECT) 
+				if (pInfo->select.state == BUT_STATE_SELECT)
 					pInfo->select.state = BUT_STATE_UNSELECT;
 				else
 					pInfo->select.state = BUT_STATE_SELECT;
@@ -274,7 +285,7 @@ static int myButtonControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
         {
 			// playButtonSound();
 			if (pInfo->select.mode){
-				if (pInfo->select.state == BUT_STATE_SELECT) 
+				if (pInfo->select.state == BUT_STATE_SELECT)
 					pInfo->select.state = BUT_STATE_UNSELECT;
 				else
 					pInfo->select.state = BUT_STATE_SELECT;
@@ -303,15 +314,15 @@ static int myButtonControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
   * @param controls
 **/
 /* ---------------------------------------------------------------------------*/
-static void myButtonBmpsLoad(void *ctrls)
+static void myButtonBmpsLoad(void *ctrls,char *path)
 {
     int i;
     char image_path[128] = {0};
 	MyCtrlButton *controls = (MyCtrlButton *)ctrls;
     for (i=0; controls->idc != 0; i++) {
-        sprintf(image_path,"%sico_%s_nor.png",controls->relative_img_path,controls->img_name);
+        sprintf(image_path,"%sico_%s_nor.png",path,controls->img_name);
         bmpLoad(&controls->image_normal, image_path);
-        sprintf(image_path,"%sico_%s_pre.png",controls->relative_img_path,controls->img_name);
+        sprintf(image_path,"%sico_%s_pre.png",path,controls->img_name);
         bmpLoad(&controls->image_press, image_path);
 		controls++;
     }
@@ -340,22 +351,26 @@ static void myButtonBmpsRelease(void *ctrls)
  * @param notif_proc   回调函数
  */
 /* ---------------------------------------------------------------------------*/
-HWND createMyButton(HWND hWnd,MyCtrlButton *ctrl, int display, int mode)
+HWND createMyButton(HWND hWnd,MyCtrlButton *ctrl,const char *text, int mode)
 {
 	HWND hCtrl;
+    int ctrl_w,ctrl_h = 0;
 	MyButtonCtrlInfo pInfo;
 	pInfo.image_normal = &ctrl->image_normal;
 	pInfo.image_press = &ctrl->image_press;
 	pInfo.select.mode = mode;
 	pInfo.state = BUT_NORMAL;
-	pInfo.select.state = display;
+	pInfo.select.state = BUT_STATE_SELECT;
+	pInfo.text = text;
+    pInfo.font = ctrl->font;
+    ctrl_w = ctrl->image_normal.bmWidth;
+    ctrl_h = ctrl->image_normal.bmHeight;
+    if (ctrl->font) {
+        ctrl_h += pInfo.font->size + 30;
+    }
 
-	if (pInfo.select.state == BUT_STATE_SELECT)
-		hCtrl = CreateWindowEx(CTRL_NAME,"",WS_VISIBLE|WS_CHILD,WS_EX_TRANSPARENT,
-				ctrl->idc,ctrl->x,ctrl->y,ctrl->w,ctrl->h, hWnd,(DWORD)&pInfo);
-	else
-		hCtrl = CreateWindowEx(CTRL_NAME,"",WS_CHILD,WS_EX_TRANSPARENT,
-				ctrl->idc,ctrl->x,ctrl->y,ctrl->w,ctrl->h, hWnd,(DWORD)&pInfo);
+    hCtrl = CreateWindowEx(CTRL_NAME,"",WS_VISIBLE|WS_CHILD,WS_EX_TRANSPARENT,
+            ctrl->idc,ctrl->x,ctrl->y,ctrl_w,ctrl_h, hWnd,(DWORD)&pInfo);
 	if(ctrl->notif_proc) {
 		SetNotificationCallback (hCtrl, ctrl->notif_proc);
 	}

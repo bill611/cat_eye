@@ -468,3 +468,21 @@ void bmpsRelease(BmpLocation *bmp)
 		bmpRelease(bmp[i].bmp);
 	}
 }
+
+void fontsLoad(FontLocation *font)
+{
+
+    int i;                                      
+    for (i=0; font[i].font != NULL; i++) {                     
+        *font[i].font = CreateLogFont("ttf",
+                "song", "GB2312",      
+                font[i].first_type,             
+                FONT_SLANT_ROMAN,               
+                FONT_OTHER_NIL,                 
+                FONT_OTHER_LCDPORTRAIT,         
+                FONT_UNDERLINE_NONE,            
+                FONT_STRUCKOUT_NONE,            
+                font[i].size, 0);               
+    }                                           
+}
+

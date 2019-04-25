@@ -30,8 +30,8 @@ extern "C" {
 	typedef struct _MyControls {
 		BOOL (*regist)(void);	
 		void (*unregist)(void);	
-		void (*bmpsLoad)(void *);	
-		void (*bmpsRelease)(void *);	
+		void (*bmpsLoad)(void *ctrl,char *path);	
+		void (*bmpsRelease)(void *ctrl);	
 	}MyControls;
 
 #ifdef __cplusplus

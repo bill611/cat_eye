@@ -21,6 +21,7 @@
 #include "screen.h"
 
 #include "my_button.h"
+#include "language.h"
 
 #include "form_base.h"
 
@@ -103,14 +104,14 @@ static FormBasePriv form_base_priv= {
 };
 
 static MyCtrlButton ctrls_button[] = {
-	{IDC_BUTTON_WIFI,	 BMP_LOCAL_PATH,"wifi设置",99,	129,106,106,buttonWifiPress},
-	{IDC_BUTTON_SCREEN,	 BMP_LOCAL_PATH,"屏幕设置",338,	129,106,106,buttonScreenPress},
-	{IDC_BUTTON_DOORBELL,BMP_LOCAL_PATH,"门铃设置",577,	129,106,106,buttonDoorBellPress},
-	{IDC_BUTTON_TIMER,	 BMP_LOCAL_PATH,"时间设置",817,	129,106,106,buttonTimerPress},
-	{IDC_BUTTON_MUTE,	 BMP_LOCAL_PATH,"免扰设置",99,	366,106,106,buttonMutePress},
-	{IDC_BUTTON_ALARM,	 BMP_LOCAL_PATH,"报警设置",338,	366,106,106,buttonAlarmPress},
-	{IDC_BUTTON_FACTORY, BMP_LOCAL_PATH,"恢复出厂",577,	366,106,106,buttonFactoryPress},
-	{IDC_BUTTON_LOCAL,	 BMP_LOCAL_PATH,"本机设置",817,	366,106,106,buttonLocalPress},
+	{IDC_BUTTON_WIFI,	 "wifi设置",99,	129,buttonWifiPress,WORD_WIFI_SET},
+	{IDC_BUTTON_SCREEN,	 "屏幕设置",338,129,buttonScreenPress,WORD_SCREEN_SET},
+	{IDC_BUTTON_DOORBELL,"门铃设置",577,129,buttonDoorBellPress,WORD_DOORBELL_SET},
+	{IDC_BUTTON_TIMER,	 "时间设置",817,129,buttonTimerPress,WORD_TIMER_SET},
+	{IDC_BUTTON_MUTE,	 "免扰设置",99,	366,buttonMutePress,WORD_MUTE_SET},
+	{IDC_BUTTON_ALARM,	 "报警设置",338,366,buttonAlarmPress,WORD_ALARM_SET},
+	{IDC_BUTTON_FACTORY, "恢复出厂",577,366,buttonFactoryPress,WORD_FACTORY},
+	{IDC_BUTTON_LOCAL,	 "本机设置",817,366,buttonLocalPress,WORD_LOCAL_SET},
 	{0},
 };
 
@@ -192,7 +193,7 @@ void formSettingLoadBmp(void)
 
 	printf("[%s]\n", __FUNCTION__);
     bmpsLoad(bmp_load);
-    my_button->bmpsLoad(ctrls_button);	
+    my_button->bmpsLoad(ctrls_button,BMP_LOCAL_PATH);	
     bmp_load_finished = 1;
 }
 
@@ -209,8 +210,10 @@ void formSettingLoadBmp(void)
 static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 {
 	int i;
-	for (i=0; ctrls_button[i].idc != 0; i++)
-        createMyButton(hDlg,&ctrls_button[i], 1, 0);
+    for (i=0; ctrls_button[i].idc != 0; i++) {
+        ctrls_button[i].font = font22;
+        createMyButton(hDlg,&ctrls_button[i], stringGet(ctrls_button[i].text_num), 0);
+    }
 }
 
 /* ----------------------------------------------------------------*/

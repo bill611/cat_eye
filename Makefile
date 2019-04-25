@@ -15,7 +15,7 @@ ifeq ($(PLATFORM), PC)
 	LIB_DIR += /usr/local/lib
 	LIB_DIR += /usr/lib/x86_64-linux-gnu
 	INC_DIR += /usr/local/include
-	EX_LIB += 
+	EX_LIB +=
 endif
 
 # 主程序Makefile
@@ -55,7 +55,7 @@ SRC = \
 
 XLINKER = -Xlinker "-(" -lsqlite3 \
 		  ${EX_LIB}\
-		  -lminigui_ths -lpng12 -lpng -ljpeg \
+		  -lminigui_ths -lpng12 -lpng -ljpeg -lfreetype \
 		  -lz -lm -lpthread -ldl -lrt -Xlinker "-)"
 
 CP_TARGET = $(MAKEROOT)/../nand/v2.0/nand1-2/
@@ -85,7 +85,7 @@ DEPS = $(patsubst %.c, ${OBJ_DIR}/%.d, $(notdir ${SRC}))
 
 
 
-export CC LIB_DIR CFLAGS OBJ_DIR INC_DIR DEPS 
+export CC LIB_DIR CFLAGS OBJ_DIR INC_DIR DEPS
 # $@：表示目标文件，$^：表示所有的依赖文件，$<：表示第一个依赖文件，$?：表示比目标还要新的依赖文件列表
 all: make_C ${BIN_TARGET}
 	@# cp -u ${BIN_TARGET} ${CP_TARGET}

@@ -6,7 +6,7 @@
  *    Description:  公共自定义画图函数
  *
  *        Version:  1.0
- *        Created:  2015-11-11 11:50:08 
+ *        Created:  2015-11-11 11:50:08
  *       Revision:  none
  *
  *         Author:  xubin
@@ -55,6 +55,12 @@ extern "C" {
         char 	*location;
     }BmpLocation;
 
+    typedef struct _FontLocation {
+        PLOGFONT *font;
+        int size;
+        int first_type;
+    }FontLocation;
+
 	void drawBackground(HWND hWnd, HDC hdc, const RECT* pClipRect,BITMAP *Image);
 	void drawWhiteFrame(HWND hWnd, HDC hdc, const RECT* pClipRect,int Left,int Top,int Width,int Height);
 	void wndEraseBackground(HWND hWnd,HDC hdc, const RECT* pClipRect,BITMAP *pImage,int Left,int Top,int Width,int Height);
@@ -67,6 +73,9 @@ extern "C" {
     void bmpsLoad(BmpLocation *bmp);
     void bmpRelease(BITMAP *bmp);
     void bmpsRelease(BmpLocation *bmp);
+    void fontsLoad(FontLocation *font);
+
+    extern PLOGFONT font22;
 #ifdef __cplusplus
 }
 #endif  /* __cplusplus */

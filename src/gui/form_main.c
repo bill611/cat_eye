@@ -27,6 +27,7 @@
 #include "my_button.h"
 #include "my_status.h"
 
+#include "language.h"
 #include "form_main.h"
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
@@ -85,8 +86,14 @@ enum {
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
+PLOGFONT font22;
 static BmpLocation base_bmps[] = {
 	{NULL},
+};
+
+static FontLocation font_load[] = {
+    {&font22,   22,FONT_WEIGHT_DEMIBOLD},
+    {NULL}
 };
 
 
@@ -101,7 +108,7 @@ static MyCtrlButton ctrls_button[] = {
 	// {IDC_BUTTON_CAPTURE,BMP_LOCAL_PATH,"capture",160,400,95,85,buttonCapturePress},
 	// {IDC_BUTTON_CALL,	BMP_LOCAL_PATH,"call",   280,400,95,85,buttonCallPress},
 	// {IDC_BUTTON_VIDEO,	BMP_LOCAL_PATH,"video",  400,400,95,85,buttonVideoPress},
-	{IDC_BUTTON_SETTING,BMP_LOCAL_PATH,"setting",520,400,95,85,buttonSettingPress},
+	{IDC_BUTTON_SETTING,"setting",520,400,buttonSettingPress},
 	{0},
 };
 
@@ -238,7 +245,7 @@ static void formMainCreateControl(HWND hWnd)
 {
 	int i;
 	for (i=0; ctrls_button[i].idc != 0; i++)
-        createMyButton(hWnd,&ctrls_button[i], 1, 0);
+        createMyButton(hWnd,&ctrls_button[i], stringGet(ctrls_button[i].text_num), 0);
 	for (i=0; ctrls_toolbar[i].idc != 0; i++)
         createMyStatus(hWnd,&ctrls_toolbar[i]);
 }
@@ -251,8 +258,8 @@ static void formMainLoadBmp(void)
 {
 	printf("[%s]\n", __FUNCTION__);
     bmpsLoad(base_bmps);
-    my_button->bmpsLoad(ctrls_button);	
-    my_status->bmpsLoad(ctrls_toolbar);	
+    my_button->bmpsLoad(ctrls_button,BMP_LOCAL_PATH);	
+    my_status->bmpsLoad(ctrls_toolbar,BMP_LOCAL_PATH);	
 }
 static void formMainReleaseBmp(void)
 {
@@ -294,6 +301,7 @@ static int formMainProc(HWND hWnd, int message, WPARAM wParam, LPARAM lParam)
 				// 装载所有图片
 				formMainLoadBmp();
 				createThread(loadBmpsThread,"1");
+                fontsLoad(font_load);
 				formMainCreateControl(hWnd);
                 formMainTimerStart(IDC_TIMER_1S);
 				// screensaverStart(LCD_ON);

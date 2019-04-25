@@ -162,7 +162,7 @@ static int myctrlControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lPar
     return DefaultControlProc (hwnd, message, wParam, lParam);
 }
 
-static void myStatusBmpsLoad(void *ctrls)
+static void myStatusBmpsLoad(void *ctrls,char *path)
 {
 	MyCtrlStatus *controls = (MyCtrlStatus *)ctrls;
     if (controls->images)
@@ -171,7 +171,7 @@ static void myStatusBmpsLoad(void *ctrls)
     char image_path[128] = {0};
     controls->images = (BITMAP *)calloc(controls->total_level,sizeof(BITMAP));
     for (i=0; i<controls->total_level; i++) {
-        sprintf(image_path,"%s%s-%d.png",controls->relative_img_path,controls->img_name,i);
+        sprintf(image_path,"%s%s-%d.png",path,controls->img_name,i);
         bmpLoad(controls->images + i, image_path);
     }
 }
