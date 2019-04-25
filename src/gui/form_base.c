@@ -77,11 +77,9 @@ static int formBaseProc(FormBase *this,HWND hDlg, int message, WPARAM wParam, LP
 
 		case MSG_ERASEBKGND:
 			{
-				if (this->priv->bmp_bkg != NULL) {
-					drawBackground(hDlg,
-						   	(HDC)wParam,
-						   	(const RECT*)lParam, this->priv->bmp_bkg);
-				}
+				drawBackground(hDlg,
+						(HDC)wParam,
+						(const RECT*)lParam, this->priv->bmp_bkg);
 			} return FORM_STOP;
 
 		case MSG_CLOSE:

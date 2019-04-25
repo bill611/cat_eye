@@ -91,16 +91,16 @@ static BmpLocation base_bmps[] = {
 
 
 static MyCtrlStatus ctrls_toolbar[] = {
-	{IDC_TOOLBAR_WIFI,	BMP_LOCAL_PATH,"main_wifi",10,50,50,50,4},
-	{IDC_TOOLBAR_SDCARD,BMP_LOCAL_PATH,"main_sdcard",80,50,50,50,2},
+	// {IDC_TOOLBAR_WIFI,	BMP_LOCAL_PATH,"main_wifi",10,50,50,50,4},
+	// {IDC_TOOLBAR_SDCARD,BMP_LOCAL_PATH,"main_sdcard",80,50,50,50,2},
 	{0},
 };
 
 static MyCtrlButton ctrls_button[] = {
-	{IDC_BUTTON_RECORD,	BMP_LOCAL_PATH,"record", 40,400,95,85,buttonRecordPress},
-	{IDC_BUTTON_CAPTURE,BMP_LOCAL_PATH,"capture",160,400,95,85,buttonCapturePress},
-	{IDC_BUTTON_CALL,	BMP_LOCAL_PATH,"call",   280,400,95,85,buttonCallPress},
-	{IDC_BUTTON_VIDEO,	BMP_LOCAL_PATH,"video",  400,400,95,85,buttonVideoPress},
+	// {IDC_BUTTON_RECORD,	BMP_LOCAL_PATH,"record", 40,400,95,85,buttonRecordPress},
+	// {IDC_BUTTON_CAPTURE,BMP_LOCAL_PATH,"capture",160,400,95,85,buttonCapturePress},
+	// {IDC_BUTTON_CALL,	BMP_LOCAL_PATH,"call",   280,400,95,85,buttonCallPress},
+	// {IDC_BUTTON_VIDEO,	BMP_LOCAL_PATH,"video",  400,400,95,85,buttonVideoPress},
 	{IDC_BUTTON_SETTING,BMP_LOCAL_PATH,"setting",520,400,95,85,buttonSettingPress},
 	{0},
 };

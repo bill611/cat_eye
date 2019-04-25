@@ -34,8 +34,15 @@
 static int formSettingProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 
-static void buttonWifiPress(HWND hwnd, int id, int nc, DWORD add_data);
 static void buttonExitPress(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonWifiPress(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonScreenPress(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonDoorBellPress(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonTimerPress(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonMutePress(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonAlarmPress(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonFactoryPress(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonLocalPress(HWND hwnd, int id, int nc, DWORD add_data);
 
 /* ---------------------------------------------------------------------------*
  *                        macro define
@@ -48,8 +55,15 @@ static void buttonExitPress(HWND hwnd, int id, int nc, DWORD add_data);
 
 #define BMP_LOCAL_PATH "setting/"
 enum {
-	IDC_BUTTON_WIFI = IDC_FORM_SETTING_START,
-	IDC_BUTTON_EXIT,
+	IDC_BUTTON_EXIT = IDC_FORM_SETTING_START,
+	IDC_BUTTON_WIFI,
+	IDC_BUTTON_SCREEN,
+	IDC_BUTTON_DOORBELL,
+	IDC_BUTTON_TIMER,
+	IDC_BUTTON_MUTE,
+	IDC_BUTTON_ALARM,
+	IDC_BUTTON_FACTORY,
+	IDC_BUTTON_LOCAL,
 };
 
 
@@ -61,7 +75,6 @@ static BITMAP bmp_bkg_setting; // 背景
 static int bmp_load_finished = 0;
 
 static BmpLocation bmp_load[] = {
-    {&bmp_bkg_setting, BMP_LOCAL_PATH"bkg_setting.png"},
     {NULL},
 };
 
@@ -90,8 +103,14 @@ static FormBasePriv form_base_priv= {
 };
 
 static MyCtrlButton ctrls_button[] = {
-	{IDC_BUTTON_WIFI,	BMP_LOCAL_PATH,"set_wifi",10,10,40,49,buttonWifiPress},
-	{IDC_BUTTON_EXIT,	BMP_LOCAL_PATH,"set_exit",10,100,40,48,buttonExitPress},
+	{IDC_BUTTON_WIFI,	 BMP_LOCAL_PATH,"wifi设置",99,	129,106,106,buttonWifiPress},
+	{IDC_BUTTON_SCREEN,	 BMP_LOCAL_PATH,"屏幕设置",338,	129,106,106,buttonScreenPress},
+	{IDC_BUTTON_DOORBELL,BMP_LOCAL_PATH,"门铃设置",577,	129,106,106,buttonDoorBellPress},
+	{IDC_BUTTON_TIMER,	 BMP_LOCAL_PATH,"时间设置",817,	129,106,106,buttonTimerPress},
+	{IDC_BUTTON_MUTE,	 BMP_LOCAL_PATH,"免扰设置",99,	366,106,106,buttonMutePress},
+	{IDC_BUTTON_ALARM,	 BMP_LOCAL_PATH,"报警设置",338,	366,106,106,buttonAlarmPress},
+	{IDC_BUTTON_FACTORY, BMP_LOCAL_PATH,"恢复出厂",577,	366,106,106,buttonFactoryPress},
+	{IDC_BUTTON_LOCAL,	 BMP_LOCAL_PATH,"本机设置",817,	366,106,106,buttonLocalPress},
 	{0},
 };
 
@@ -111,6 +130,42 @@ static void buttonWifiPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
+}
+static void buttonScreenPress(HWND hwnd, int id, int nc, DWORD add_data)
+{
+	if (nc != BN_CLICKED)
+		return;
+}
+static void buttonDoorBellPress(HWND hwnd, int id, int nc, DWORD add_data)
+{
+	if (nc != BN_CLICKED)
+		return;
+}
+static void buttonTimerPress(HWND hwnd, int id, int nc, DWORD add_data)
+{
+	if (nc != BN_CLICKED)
+		return;
+}
+static void buttonMutePress(HWND hwnd, int id, int nc, DWORD add_data)
+{
+	if (nc != BN_CLICKED)
+		return;
+}
+static void buttonAlarmPress(HWND hwnd, int id, int nc, DWORD add_data)
+{
+	if (nc != BN_CLICKED)
+		return;
+}
+static void buttonFactoryPress(HWND hwnd, int id, int nc, DWORD add_data)
+{
+	if (nc != BN_CLICKED)
+		return;
+}
+static void buttonLocalPress(HWND hwnd, int id, int nc, DWORD add_data)
+{
+	if (nc != BN_CLICKED)
+		return;
+    ShowWindow(GetParent(hwnd),SW_HIDE);
 }
 
 /* ----------------------------------------------------------------*/
@@ -193,7 +248,6 @@ int createFormSetting(HWND hMainWnd)
             return 0;
         }
 		form_base_priv.hwnd = hMainWnd;
-		form_base_priv.bmp_bkg = &bmp_bkg_setting;
 		form_base = formBaseCreate(&form_base_priv);
 		return CreateMyWindowIndirectParam(form_base->priv->dlgInitParam,
 				form_base->priv->hwnd,

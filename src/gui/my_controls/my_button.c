@@ -229,7 +229,7 @@ static int myButtonControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
         SetCapture (hwnd);
 		pInfo->state = BUT_CLICK;
 		NotifyParent (hwnd, pCtrl->id, BN_PUSHED);
-		InvalidateRect (hwnd, NULL, FALSE);
+		InvalidateRect (hwnd, NULL, TRUE);
         break;
 	case MSG_LBUTTONUP:
 	{
@@ -239,7 +239,7 @@ static int myButtonControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
 				if(pInfo->state!=BUT_NORMAL) {
 					pInfo->state = BUT_NORMAL;
                     if (pInfo->select.mode != 3)
-                        InvalidateRect (hwnd, NULL, FALSE);
+                        InvalidateRect (hwnd, NULL, TRUE);
 				}
 			}
             break;
@@ -258,7 +258,7 @@ static int myButtonControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
 			NotifyParent (hwnd, pCtrl->id, BN_CLICKED);
 #endif
         if (pInfo->select.mode != 3)
-			InvalidateRect (hwnd, NULL, FALSE);
+			InvalidateRect (hwnd, NULL, TRUE);
 		}
 		NotifyParent (hwnd, pCtrl->id, BN_UNPUSHED);
 		// InvalidateRect (hwnd, NULL, TRUE);
@@ -281,11 +281,11 @@ static int myButtonControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
 			}
 			NotifyParent (hwnd, pCtrl->id, BN_CLICKED);
             if (pInfo->select.mode != 3)
-                InvalidateRect (hwnd, NULL, FALSE);
+                InvalidateRect (hwnd, NULL, TRUE);
 		} else if(dwStyle & BS_CHECKBOX) {
 			pInfo->state = BUT_NORMAL;
             if (pInfo->select.mode != 3)
-                InvalidateRect (hwnd, NULL, FALSE);
+                InvalidateRect (hwnd, NULL, TRUE);
 		}
 		break;
 	}
@@ -309,9 +309,9 @@ static void myButtonBmpsLoad(void *ctrls)
     char image_path[128] = {0};
 	MyCtrlButton *controls = (MyCtrlButton *)ctrls;
     for (i=0; controls->idc != 0; i++) {
-        sprintf(image_path,"%s%s-0.png",controls->relative_img_path,controls->img_name);
+        sprintf(image_path,"%sico_%s_nor.png",controls->relative_img_path,controls->img_name);
         bmpLoad(&controls->image_normal, image_path);
-        sprintf(image_path,"%s%s-1.png",controls->relative_img_path,controls->img_name);
+        sprintf(image_path,"%sico_%s_pre.png",controls->relative_img_path,controls->img_name);
         bmpLoad(&controls->image_press, image_path);
 		controls++;
     }

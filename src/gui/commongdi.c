@@ -58,7 +58,12 @@ void drawBackground(HWND hWnd, HDC hdc, const RECT* pClipRect,BITMAP *Image)
         ScreenToClient (hWnd, &rcTemp.right, &rcTemp.bottom);
 		IncludeClipRect(hdc,&rcTemp);
     }
-	FillBoxWithBitmap(hdc,rcClient.left,rcClient.top,RECTW(rcClient),RECTH(rcClient),Image);
+	if (Image)
+		FillBoxWithBitmap(hdc,rcClient.left,rcClient.top,RECTW(rcClient),RECTH(rcClient),Image);
+	else {
+		SetBrushColor (hdc,COLOR_black);
+		FillBox (hdc, rcClient.left,rcClient.top,RECTW(rcClient),RECTH(rcClient));
+	}
     if (fGetDC)
         ReleaseSecondaryDC (hWnd,hdc);
 }
