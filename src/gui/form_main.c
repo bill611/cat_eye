@@ -26,6 +26,7 @@
 
 #include "my_button.h"
 #include "my_status.h"
+#include "my_static.h"
 
 #include "language.h"
 #include "form_main.h"
@@ -87,12 +88,14 @@ enum {
  *                      variables define
  *----------------------------------------------------------------------------*/
 PLOGFONT font22;
+PLOGFONT font20;
 static BmpLocation base_bmps[] = {
 	{NULL},
 };
 
 static FontLocation font_load[] = {
     {&font22,   22,FONT_WEIGHT_DEMIBOLD},
+    {&font20,   20,FONT_WEIGHT_DEMIBOLD},
     {NULL}
 };
 
@@ -108,7 +111,7 @@ static MyCtrlButton ctrls_button[] = {
 	// {IDC_BUTTON_CAPTURE,BMP_LOCAL_PATH,"capture",160,400,95,85,buttonCapturePress},
 	// {IDC_BUTTON_CALL,	BMP_LOCAL_PATH,"call",   280,400,95,85,buttonCallPress},
 	// {IDC_BUTTON_VIDEO,	BMP_LOCAL_PATH,"video",  400,400,95,85,buttonVideoPress},
-	{IDC_BUTTON_SETTING,"setting",520,400,buttonSettingPress},
+	{IDC_BUTTON_SETTING,MYBUTTON_TYPE_TWO_STATE,"setting",520,400,buttonSettingPress},
 	{0},
 };
 
@@ -169,6 +172,9 @@ static int formMainTimerGetState(int idc_timer)
 /* ---------------------------------------------------------------------------*/
 static void formMainTimerProc1s(void)
 {
+	static int i = 0;
+	if (++i == 10)
+		createFormSetting(hwnd_main);
 	// static int count = 0;
 	// if (count >= 4)
 		// count = 0;
@@ -245,7 +251,7 @@ static void formMainCreateControl(HWND hWnd)
 {
 	int i;
 	for (i=0; ctrls_button[i].idc != 0; i++)
-        createMyButton(hWnd,&ctrls_button[i], stringGet(ctrls_button[i].text_num), 0);
+        createMyButton(hWnd,&ctrls_button[i]);
 	for (i=0; ctrls_toolbar[i].idc != 0; i++)
         createMyStatus(hWnd,&ctrls_toolbar[i]);
 }
@@ -394,10 +400,11 @@ static int formMainLoop(void)
 		TranslateMessage(&Msg);
 		DispatchMessage(&Msg);
 	}
-    my_button->unregist();
-    my_status->unregist();
     my_button->bmpsRelease(ctrls_button);	
     my_status->bmpsRelease(ctrls_toolbar);	
+    my_button->unregist();
+    my_status->unregist();
+    my_static->unregist();
 
     MainWindowThreadCleanup (hwnd_main);
 	hwnd_main = Screen.hMainWnd = 0;
@@ -419,9 +426,11 @@ FormMain * formMainCreate(void)
     MAINWINCREATE CreateInfo;
 
     initMyButton();
-    my_button->regist();
     initMyStatus();
+    initMyStatic();
+    my_button->regist();
     my_status->regist();
+    my_static->regist();
 
     CreateInfo.dwStyle = WS_NONE;
 	CreateInfo.dwExStyle = WS_EX_AUTOSECONDARYDC;

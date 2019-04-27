@@ -21,6 +21,7 @@
 #include "screen.h"
 
 #include "my_button.h"
+#include "my_static.h"
 #include "language.h"
 
 #include "form_base.h"
@@ -65,6 +66,9 @@ enum {
 	IDC_BUTTON_ALARM,
 	IDC_BUTTON_FACTORY,
 	IDC_BUTTON_LOCAL,
+
+	IDC_STATIC_TITLE,
+	IDC_STATIC_TITLE_BKG,
 };
 
 
@@ -76,6 +80,7 @@ static BITMAP bmp_bkg_setting; // 背景
 static int bmp_load_finished = 0;
 
 static BmpLocation bmp_load[] = {
+    // {&bmp_bkg_setting,BMP_LOCAL_PATH"bkg_setting.png"},
     {NULL},
 };
 
@@ -104,14 +109,19 @@ static FormBasePriv form_base_priv= {
 };
 
 static MyCtrlButton ctrls_button[] = {
-	{IDC_BUTTON_WIFI,	 "wifi设置",99,	129,buttonWifiPress,WORD_WIFI_SET},
-	{IDC_BUTTON_SCREEN,	 "屏幕设置",338,129,buttonScreenPress,WORD_SCREEN_SET},
-	{IDC_BUTTON_DOORBELL,"门铃设置",577,129,buttonDoorBellPress,WORD_DOORBELL_SET},
-	{IDC_BUTTON_TIMER,	 "时间设置",817,129,buttonTimerPress,WORD_TIMER_SET},
-	{IDC_BUTTON_MUTE,	 "免扰设置",99,	366,buttonMutePress,WORD_MUTE_SET},
-	{IDC_BUTTON_ALARM,	 "报警设置",338,366,buttonAlarmPress,WORD_ALARM_SET},
-	{IDC_BUTTON_FACTORY, "恢复出厂",577,366,buttonFactoryPress,WORD_FACTORY},
-	{IDC_BUTTON_LOCAL,	 "本机设置",817,366,buttonLocalPress,WORD_LOCAL_SET},
+	{IDC_BUTTON_WIFI,	 MYBUTTON_TYPE_TWO_STATE,"wifi设置",99,	129,buttonWifiPress,word[WORD_WIFI_SET].string},
+	{IDC_BUTTON_SCREEN,	 MYBUTTON_TYPE_TWO_STATE,"屏幕设置",338,129,buttonScreenPress,word[WORD_SCREEN_SET].string},
+	{IDC_BUTTON_DOORBELL,MYBUTTON_TYPE_TWO_STATE,"门铃设置",577,129,buttonDoorBellPress,word[WORD_DOORBELL_SET].string},
+	{IDC_BUTTON_TIMER,	 MYBUTTON_TYPE_TWO_STATE,"时间设置",817,129,buttonTimerPress,word[WORD_TIMER_SET].string},
+	{IDC_BUTTON_MUTE,	 MYBUTTON_TYPE_TWO_STATE,"免扰设置",99,	366,buttonMutePress,word[WORD_MUTE_SET].string},
+	{IDC_BUTTON_ALARM,	 MYBUTTON_TYPE_TWO_STATE,"报警设置",338,366,buttonAlarmPress,word[WORD_ALARM_SET].string},
+	{IDC_BUTTON_FACTORY, MYBUTTON_TYPE_TWO_STATE,"恢复出厂",577,366,buttonFactoryPress,word[WORD_FACTORY].string},
+	{IDC_BUTTON_LOCAL,	 MYBUTTON_TYPE_TWO_STATE,"本机设置",817,366,buttonLocalPress,word[WORD_LOCAL_SET].string},
+	{IDC_BUTTON_EXIT,	 MYBUTTON_TYPE_ONE_STATE,"arrow-back",16,10,buttonExitPress},
+	{0},
+};
+static MyCtrlStatic ctrls_static[] = {
+	{IDC_BUTTON_EXIT, MYSTATIC_TYPE_TEXT,0,0,1024,40,word[WORD_SETTING].string,0xffffff,0x333333},
 	{0},
 };
 
@@ -166,7 +176,6 @@ static void buttonLocalPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
-    ShowWindow(GetParent(hwnd),SW_HIDE);
 }
 
 /* ----------------------------------------------------------------*/
@@ -210,9 +219,13 @@ void formSettingLoadBmp(void)
 static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 {
 	int i;
+    for (i=0; ctrls_static[i].idc != 0; i++) {
+        ctrls_static[i].font = font22;
+        createMyStatic(hDlg,&ctrls_static[i]);
+    }
     for (i=0; ctrls_button[i].idc != 0; i++) {
         ctrls_button[i].font = font22;
-        createMyButton(hDlg,&ctrls_button[i], stringGet(ctrls_button[i].text_num), 0);
+        createMyButton(hDlg,&ctrls_button[i]);
     }
 }
 

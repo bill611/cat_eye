@@ -36,22 +36,17 @@
  *                      variables define
  *----------------------------------------------------------------------------*/
 
-static const char* strings[] =
+const Language word[] =
 {
-    "",
-    "wifi设置",
-    "屏幕设置",
-    "门铃设置",
-    "时间设置",
-    "免扰设置",
-    "报警设置",
-    "恢复出厂",
-    "本机设置",
+	{},
+	{"wifi设置"},
+	{"屏幕设置"},
+	{"门铃设置"},
+	{"时间设置"},
+	{"免扰设置"},
+	{"报警设置"},
+	{"恢复出厂"},
+	{"本机设置"},
+	{"设置"},
 };
 
-const char* stringGet(int num)
-{
-    if (num == WORD_NULL)
-        return NULL;
-	return strings[num];
-}

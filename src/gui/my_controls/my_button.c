@@ -87,55 +87,38 @@ static void myButtonCleanUp (void)
 /* ---------------------------------------------------------------------------*/
 static void paint(HWND hWnd,HDC hdc)
 {
+#define FILL_BMP_STRUCT(rc,img)  rc.left, rc.top,img->bmWidth,img->bmHeight,img
+
 	RECT rc_bmp,rc_text;
     PCONTROL    pCtrl;
     pCtrl = Control (hWnd);
 	GetClientRect (hWnd, &rc_bmp);
     rc_text = rc_bmp;
 
-	if (pCtrl->dwAddData2) {
-		MyButtonCtrlInfo* pInfo = (MyButtonCtrlInfo*)(pCtrl->dwAddData2);
+	if (!pCtrl->dwAddData2)
+		return;
+	MyButtonCtrlInfo* pInfo = (MyButtonCtrlInfo*)(pCtrl->dwAddData2);
 
-		if (pInfo->select.mode == 1) {
-			if(pInfo->select.state == BUT_STATE_SELECT)
-                FillBoxWithBitmap(hdc,
-                        rc_bmp.left,
-                        rc_bmp.top,
-                        pInfo->image_press->bmWidth,
-                        pInfo->image_press->bmHeight,
-                        pInfo->image_press);
-            else
-                FillBoxWithBitmap(hdc,
-                        rc_bmp.left,
-                        rc_bmp.top,
-                        pInfo->image_normal->bmWidth,
-                        pInfo->image_normal->bmHeight,
-                        pInfo->image_normal);
-		} else {
-            if(pInfo->state == BUT_NORMAL)
-                FillBoxWithBitmap(hdc,
-                        rc_bmp.left,
-                        rc_bmp.top,
-                        pInfo->image_normal->bmWidth,
-                        pInfo->image_normal->bmHeight,
-                        pInfo->image_normal);
-            else
-                FillBoxWithBitmap(hdc,
-                        rc_bmp.left,
-                        rc_bmp.top,
-                        pInfo->image_press->bmWidth,
-                        pInfo->image_press->bmHeight,
-                        pInfo->image_press);
-
-		}
-        rc_text.top = rc_bmp.top + pInfo->image_normal->bmHeight;
-        if (pInfo->text) {
-            SetTextColor(hdc,COLOR_lightwhite);
-            SetBkMode(hdc,BM_TRANSPARENT);
-            SelectFont (hdc, pInfo->font);
-            DrawText (hdc,pInfo->text, -1, &rc_text,
-                    DT_CENTER | DT_BOTTOM| DT_VCENTER | DT_WORDBREAK  | DT_SINGLELINE);
-        }
+	if (pInfo->flag == MYBUTTON_TYPE_ONE_STATE) {
+		FillBoxWithBitmap(hdc,FILL_BMP_STRUCT(rc_bmp,pInfo->image_normal));
+	} else if (pInfo->flag == MYBUTTON_TYPE_TWO_STATE) {
+		if(pInfo->state == BUT_NORMAL)
+			FillBoxWithBitmap(hdc, FILL_BMP_STRUCT(rc_bmp,pInfo->image_normal));
+		else
+			FillBoxWithBitmap(hdc, FILL_BMP_STRUCT(rc_bmp,pInfo->image_press));
+	} else if (pInfo->flag == MYBUTTON_TYPE_CHECKBOX){
+		if(pInfo->check == MYBUTTON_STATE_UNCHECK)
+			FillBoxWithBitmap(hdc, FILL_BMP_STRUCT(rc_bmp,pInfo->image_normal));
+		else
+			FillBoxWithBitmap(hdc, FILL_BMP_STRUCT(rc_bmp,pInfo->image_press));
+	}
+	rc_text.top = rc_bmp.top + pInfo->image_normal->bmHeight;
+	if (pInfo->text) {
+		SetTextColor(hdc,COLOR_lightwhite);
+		SetBkMode(hdc,BM_TRANSPARENT);
+		SelectFont (hdc, pInfo->font);
+		DrawText (hdc,pInfo->text, -1, &rc_text,
+				DT_CENTER | DT_BOTTOM| DT_VCENTER | DT_WORDBREAK  | DT_SINGLELINE);
 	}
 }
 
@@ -174,8 +157,8 @@ static int myButtonControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
 		pInfo->image_press = data->image_press;
 		pInfo->image_normal = data->image_normal;
 		pInfo->state = data->state;
-		pInfo->select.mode = data->select.mode;
-		pInfo->select.state = data->select.state;
+		pInfo->flag = data->flag;
+		pInfo->check = data->check;
 		pInfo->text = data->text;
 		pInfo->font = data->font;
 		pCtrl->dwAddData2 = (DWORD)pInfo;
@@ -191,29 +174,12 @@ static int myButtonControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
         EndPaint (hwnd, hdc);
         return 0;
 
-    case MSG_MYBUTTON_GET_SELECT_STATE:
-		return pInfo->select.state;
-
     case MSG_MYBUTTON_SET_SELECT_STATE:
 		if ((int)wParam)
-			pInfo->select.state = BUT_STATE_SELECT;
+			pInfo->check = MYBUTTON_STATE_CHECK;
 		else
-			pInfo->select.state = BUT_STATE_UNSELECT;
+			pInfo->check = MYBUTTON_STATE_UNCHECK;
 		InvalidateRect (hwnd, NULL, FALSE);
-		return 0;
-
-    case MSG_MYBUTTON_SET_NORMAL_STATE:
-		if ((int)wParam)
-			pInfo->state = BUT_CLICK;
-		else
-			pInfo->state = BUT_NORMAL;
-		InvalidateRect (hwnd, NULL, FALSE);
-		return 0;
-
-    case MSG_MYBUTTON_SET_SELECT_MODE:
-		pInfo->select.mode = (int)wParam;
-        if (pInfo->select.mode != 3)
-            InvalidateRect (hwnd, NULL, FALSE);
 		return 0;
 
 	case MSG_ENABLE:
@@ -246,33 +212,27 @@ static int myButtonControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
 	{
         int x, y;
 		if (GetCapture() != hwnd) {
-			if(!(dwStyle & BS_CHECKBOX)) {
-				if(pInfo->state!=BUT_NORMAL) {
-					pInfo->state = BUT_NORMAL;
-                    if (pInfo->select.mode != 3)
-                        InvalidateRect (hwnd, NULL, TRUE);
-				}
+			if(pInfo->state!=BUT_NORMAL) {
+				pInfo->state = BUT_NORMAL;
+				InvalidateRect (hwnd, NULL, TRUE);
 			}
             break;
 		}
 
-        ReleaseCapture ();
-		if(!(dwStyle & BS_CHECKBOX)) {
-			pInfo->state = BUT_NORMAL;
+		ReleaseCapture ();
+		pInfo->state = BUT_NORMAL;
 #ifdef X86
-			if (pInfo->select.mode){
-				if (pInfo->select.state == BUT_STATE_SELECT)
-					pInfo->select.state = BUT_STATE_UNSELECT;
-				else
-					pInfo->select.state = BUT_STATE_SELECT;
-			}
-			NotifyParent (hwnd, pCtrl->id, BN_CLICKED);
-#endif
-        if (pInfo->select.mode != 3)
-			InvalidateRect (hwnd, NULL, TRUE);
+		if (pInfo->flag == MYBUTTON_TYPE_CHECKBOX){
+			if (pInfo->check == MYBUTTON_STATE_CHECK)
+				pInfo->check = MYBUTTON_STATE_UNCHECK;
+			else
+				pInfo->check = MYBUTTON_STATE_CHECK;
 		}
+		NotifyParent (hwnd, pCtrl->id, BN_CLICKED);
+#endif
+		InvalidateRect (hwnd, NULL, TRUE);
+
 		NotifyParent (hwnd, pCtrl->id, BN_UNPUSHED);
-		// InvalidateRect (hwnd, NULL, TRUE);
 
 		x = LOSWORD(lParam);
         y = HISWORD(lParam);
@@ -283,20 +243,14 @@ static int myButtonControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
 
 		if (PtInRect ((PRECT) &(pCtrl->cl), x, y))
         {
-			// playButtonSound();
-			if (pInfo->select.mode){
-				if (pInfo->select.state == BUT_STATE_SELECT)
-					pInfo->select.state = BUT_STATE_UNSELECT;
+			if (pInfo->flag == MYBUTTON_TYPE_CHECKBOX){
+				if (pInfo->check == MYBUTTON_STATE_CHECK)
+					pInfo->check = MYBUTTON_STATE_UNCHECK;
 				else
-					pInfo->select.state = BUT_STATE_SELECT;
+					pInfo->check = MYBUTTON_STATE_CHECK;
 			}
 			NotifyParent (hwnd, pCtrl->id, BN_CLICKED);
-            if (pInfo->select.mode != 3)
-                InvalidateRect (hwnd, NULL, TRUE);
-		} else if(dwStyle & BS_CHECKBOX) {
-			pInfo->state = BUT_NORMAL;
-            if (pInfo->select.mode != 3)
-                InvalidateRect (hwnd, NULL, TRUE);
+			InvalidateRect (hwnd, NULL, TRUE);
 		}
 		break;
 	}
@@ -320,10 +274,15 @@ static void myButtonBmpsLoad(void *ctrls,char *path)
     char image_path[128] = {0};
 	MyCtrlButton *controls = (MyCtrlButton *)ctrls;
     for (i=0; controls->idc != 0; i++) {
-        sprintf(image_path,"%sico_%s_nor.png",path,controls->img_name);
-        bmpLoad(&controls->image_normal, image_path);
-        sprintf(image_path,"%sico_%s_pre.png",path,controls->img_name);
-        bmpLoad(&controls->image_press, image_path);
+		if (controls->flag == MYBUTTON_TYPE_ONE_STATE) {
+			sprintf(image_path,"%s%s.png",path,controls->img_name);
+			bmpLoad(&controls->image_normal, image_path);
+		} else {
+			sprintf(image_path,"%sico_%s_nor.png",path,controls->img_name);
+			bmpLoad(&controls->image_normal, image_path);
+			sprintf(image_path,"%sico_%s_pre.png",path,controls->img_name);
+			bmpLoad(&controls->image_press, image_path);
+		}
 		controls++;
     }
 }
@@ -351,17 +310,17 @@ static void myButtonBmpsRelease(void *ctrls)
  * @param notif_proc   回调函数
  */
 /* ---------------------------------------------------------------------------*/
-HWND createMyButton(HWND hWnd,MyCtrlButton *ctrl,const char *text, int mode)
+HWND createMyButton(HWND hWnd,MyCtrlButton *ctrl)
 {
 	HWND hCtrl;
     int ctrl_w,ctrl_h = 0;
 	MyButtonCtrlInfo pInfo;
 	pInfo.image_normal = &ctrl->image_normal;
 	pInfo.image_press = &ctrl->image_press;
-	pInfo.select.mode = mode;
 	pInfo.state = BUT_NORMAL;
-	pInfo.select.state = BUT_STATE_SELECT;
-	pInfo.text = text;
+	pInfo.check = MYBUTTON_STATE_UNCHECK;
+	pInfo.flag = ctrl->flag;
+	pInfo.text = ctrl->text;
     pInfo.font = ctrl->font;
     ctrl_w = ctrl->image_normal.bmWidth;
     ctrl_h = ctrl->image_normal.bmHeight;

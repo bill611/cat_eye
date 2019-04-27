@@ -50,6 +50,7 @@ extern "C" {
 		MSG_MAIN_LOAD_BMP,
 		MSG_SOCKETREAD,
 	};
+
     typedef struct _BmpLocation {
         BITMAP 	*bmp;
         char 	*location;
@@ -60,6 +61,12 @@ extern "C" {
         int size;
         int first_type;
     }FontLocation;
+
+#define STATIC_LB(x,y,w,h,id,caption,dwAddData,font)    \
+	{"static",WS_CHILD|WS_VISIBLE|SS_CENTER,x,y,w,h,id,caption,dwAddData,WS_EX_TRANSPARENT,NULL,NULL,font}
+#define STATIC_IMAGE(x,y,w,h,id,dwAddData)  \
+	    {"static",WS_CHILD|WS_VISIBLE|SS_BITMAP|SS_CENTERIMAGE,x,y,w,h,id,"",dwAddData,WS_EX_TRANSPARENT,NULL,NULL,NULL}
+
 
 	void drawBackground(HWND hWnd, HDC hdc, const RECT* pClipRect,BITMAP *Image);
 	void drawWhiteFrame(HWND hWnd, HDC hdc, const RECT* pClipRect,int Left,int Top,int Width,int Height);
@@ -76,6 +83,7 @@ extern "C" {
     void fontsLoad(FontLocation *font);
 
     extern PLOGFONT font22;
+    extern PLOGFONT font20;
 #ifdef __cplusplus
 }
 #endif  /* __cplusplus */

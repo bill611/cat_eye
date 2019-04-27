@@ -31,9 +31,13 @@ extern "C" {
 		WORD_ALARM_SET,//报警设置
 		WORD_FACTORY,//恢复出厂
 		WORD_LOCAL_SET,//本机设置
+		WORD_SETTING,//设置
 	};
+	typedef struct {
+		char string[64];	
+	}Language;
+	extern const Language word[];
 
-	const char* stringGet(int num);
 
 #ifdef __cplusplus
 }

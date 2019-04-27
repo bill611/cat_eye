@@ -75,6 +75,8 @@ HWND GUIAPI CreateMyWindowIndirectParamEx (PMY_DLGTEMPLATE pDlgTemplate,
 			MainWindowThreadCleanup (hMainWin);
 			return HWND_INVALID;
 		}
+		if (pCtrlData->font != NULL)
+	       SetWindowFont(hCtrl,*pCtrlData->font);
 	}
 
 #if 0

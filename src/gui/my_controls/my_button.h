@@ -6,7 +6,7 @@
  *    Description:  自定义皮肤按键
  *
  *        Version:  1.0
- *        Created:  2019-04-23 19:46:14 
+ *        Created:  2019-04-23 19:46:14
  *       Revision:  none
  *
  *         Author:  xubin
@@ -25,19 +25,21 @@ extern "C" {
 #include "commongdi.h"
 #define CTRL_MYBUTTON         ("mybutton")
 
+	enum {  // 按钮类型
+		MYBUTTON_TYPE_ONE_STATE,
+		MYBUTTON_TYPE_TWO_STATE,
+		MYBUTTON_TYPE_CHECKBOX,
+	};
+
 	enum {
 		BUT_NORMAL, // 正常
 		BUT_CLICK,  // 按下
 		BUT_DISABLED, // 不启用
 	};
-	enum {
-		BUT_STATE_UNSELECT, // 非选择状态
-		BUT_STATE_SELECT, // 选择状态
-	};
 
-	struct ButtonSelect {
-		int mode; // 0正常模式 1check模式
-		int state;
+	enum {
+		MYBUTTON_STATE_UNCHECK, // 非选择状态
+		MYBUTTON_STATE_CHECK, // 选择状态
 	};
 
 	typedef struct {
@@ -47,22 +49,24 @@ extern "C" {
 		BITMAP *image_press;	// 按下状态图片
 		BITMAP *image_select;	// 选中图片
 		BITMAP *image_unselect;	// 非选中图片
-		struct ButtonSelect select; //设置模式时是否勾选
-		int state;		//BUTTON状态
+		int flag;  // 按扭类型
+		int state; //BUTTON状态
+		int check; // 选中状态
 	}MyButtonCtrlInfo;
 
 	typedef struct _MyCtrlButton{
 		HWND idc;		// 控件ID
+		int flag;		// 按钮类型
 		char *img_name; 	// 常态图片名字,不带扩展名,完整路径由循环赋值
 		int16_t x,y;
 		NOTIFPROC notif_proc; 	// 回调函数
-        int text_num;             // 文字
+        const char *text;             // 文字
         PLOGFONT   font;       // 字体
 		BITMAP image_normal;	// 正常状态图片
 		BITMAP image_press;	// 按下状态图片
 	}MyCtrlButton;
 
-	HWND createMyButton(HWND hWnd,MyCtrlButton *button,const char *text, int mode);
+	HWND createMyButton(HWND hWnd,MyCtrlButton *button);
     MyControls *my_button;
 	void initMyButton(void);
 
