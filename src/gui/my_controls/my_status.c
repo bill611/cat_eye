@@ -88,6 +88,7 @@ static void myStatusCleanUp (void)
 /* ---------------------------------------------------------------------------*/
 static void paint(HWND hWnd,HDC hdc)
 {
+#define FILL_BMP_STRUCT(rc,img)  rc.left, rc.top,img->bmWidth,img->bmHeight,img
 	RECT rcClient;
 	PCONTROL    pCtrl;
 	pCtrl = Control (hWnd);
@@ -97,9 +98,7 @@ static void paint(HWND hWnd,HDC hdc)
 		MyStatusCtrlInfo* pInfo = (MyStatusCtrlInfo*)(pCtrl->dwAddData2);
 		BITMAP *bmp = pInfo->images + pInfo->level; 
 		if (bmp)
-			FillBoxWithBitmap(hdc,
-					rcClient.left, rcClient.top,
-					bmp->bmWidth, bmp->bmHeight, bmp);
+			FillBoxWithBitmap(hdc, FILL_BMP_STRUCT(rcClient,bmp));
 	}
 }
 
@@ -137,6 +136,7 @@ static int myctrlControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lPar
 		memset(pInfo,0,sizeof(MyStatusCtrlInfo));
 		pInfo->images = data->images;
 		pInfo->level = data->level;
+		pInfo->total_level = data->total_level;
 		pCtrl->dwAddData2 = (DWORD)pInfo;
 		return 0;
 	}
@@ -189,13 +189,16 @@ static void myStatusBmpsRelease(void *ctrls)
 HWND createMyStatus(HWND hWnd,MyCtrlStatus *ctrl)
 {
 	HWND hCtrl;
+    int ctrl_w,ctrl_h = 0;
 	MyStatusCtrlInfo pInfo;
     memset(&pInfo,0,sizeof(MyStatusCtrlInfo));
     pInfo.total_level = ctrl->total_level;
     pInfo.images = ctrl->images;
+    ctrl_w = ctrl->images->bmWidth;
+    ctrl_h = ctrl->images->bmHeight;
 
 	hCtrl = CreateWindowEx(CTRL_NAME,"",WS_VISIBLE|WS_CHILD,WS_EX_TRANSPARENT,
-			ctrl->idc,ctrl->x,ctrl->y,ctrl->w,ctrl->h, hWnd,(DWORD)&pInfo);
+            ctrl->idc,ctrl->x,ctrl->y,ctrl_w,ctrl_h, hWnd,(DWORD)&pInfo);
     return hCtrl;
 }
 
