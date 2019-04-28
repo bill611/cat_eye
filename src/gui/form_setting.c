@@ -220,7 +220,7 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 {
 	int i;
     for (i=0; ctrls_static[i].idc != 0; i++) {
-        ctrls_static[i].font = font22;
+        ctrls_static[i].font = font20;
         createMyStatic(hDlg,&ctrls_static[i]);
     }
     for (i=0; ctrls_button[i].idc != 0; i++) {

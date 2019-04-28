@@ -4,8 +4,8 @@
 mkdir -p update/
 mkdir -p out
 
-# make PLATFORM=PC DBG=1
-# exit
+make PLATFORM=PC DBG=1
+exit
 
 if [ "$#" -eq 1 ]; then
 	make PLATFORM=PC DBG=1

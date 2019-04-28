@@ -172,9 +172,9 @@ static int formMainTimerGetState(int idc_timer)
 /* ---------------------------------------------------------------------------*/
 static void formMainTimerProc1s(void)
 {
-	static int i = 0;
-	if (++i == 10)
-		createFormSetting(hwnd_main);
+	// static int i = 0;
+	// if (++i == 10)
+		// createFormSetting(hwnd_main);
 	// static int count = 0;
 	// if (count >= 4)
 		// count = 0;
