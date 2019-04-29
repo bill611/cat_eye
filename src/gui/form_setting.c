@@ -191,7 +191,8 @@ static void buttonExitPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
-    ShowWindow(GetParent(hwnd),SW_HIDE);
+    // Screen.ReturnMain();
+    SendMessage(GetParent(hwnd), MSG_CLOSE,0,0);
 }
 
 void formSettingLoadBmp(void)

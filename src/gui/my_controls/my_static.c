@@ -104,13 +104,11 @@ static void paint(HWND hWnd,HDC hdc)
 	else
 		myFillBox(hdc,rc_bmp,pInfo->bkg_color);
 
-	if (pInfo->text) {
-		SetTextColor(hdc,pInfo->font_color);
-		SetBkMode(hdc,BM_TRANSPARENT);
-		SelectFont (hdc, pInfo->font);
-		DrawText (hdc,pInfo->text, -1, &rc_text,
-				DT_CENTER | DT_VCENTER | DT_WORDBREAK  | DT_SINGLELINE);
-	}
+    SetTextColor(hdc,pInfo->font_color);
+    SetBkMode(hdc,BM_TRANSPARENT);
+    SelectFont (hdc, pInfo->font);
+    DrawText (hdc,pInfo->text, -1, &rc_text,
+            DT_CENTER | DT_VCENTER | DT_WORDBREAK  | DT_SINGLELINE);
 }
 
 /* ---------------------------------------------------------------------------*/
@@ -147,7 +145,7 @@ static int myStaticControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
 				memset(pInfo,0,sizeof(MyStaticCtrlInfo));
 				pInfo->image= data->image;
 				pInfo->flag = data->flag;
-				pInfo->text = data->text;
+                strcpy(pInfo->text,data->text);
 				pInfo->font = data->font;
 				pInfo->bkg_color= data->bkg_color;
 				pInfo->font_color= data->font_color;
@@ -163,6 +161,12 @@ static int myStaticControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
 			paint(hwnd,hdc);
 			EndPaint (hwnd, hdc);
 			return 0;
+
+		case MSG_MYSTATIC_SET_TITLE:
+            if (wParam)
+                strcpy(pInfo->text,(char*)wParam);
+            InvalidateRect (hwnd, NULL, TRUE);
+			break;
 
 		default:
 			break;
@@ -220,7 +224,8 @@ HWND createMyStatic(HWND hWnd,MyCtrlStatic *ctrl)
 	MyStaticCtrlInfo pInfo;
 	pInfo.image= &ctrl->image;
 	pInfo.flag = ctrl->flag;
-	pInfo.text = ctrl->text;
+    if (ctrl->text)
+        strcpy(pInfo.text,ctrl->text);
 	pInfo.font = ctrl->font;
 	pInfo.bkg_color= ctrl->bkg_color;
 	pInfo.font_color= ctrl->font_color;

@@ -174,25 +174,16 @@ static int myButtonControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
         EndPaint (hwnd, hdc);
         return 0;
 
-    case MSG_MYBUTTON_SET_SELECT_STATE:
-		if ((int)wParam)
-			pInfo->check = MYBUTTON_STATE_CHECK;
-		else
-			pInfo->check = MYBUTTON_STATE_UNCHECK;
-		InvalidateRect (hwnd, NULL, FALSE);
-		return 0;
-
 	case MSG_ENABLE:
 		if (wParam && (dwStyle & WS_DISABLED)) {
 			pCtrl->dwStyle &= ~WS_DISABLED;
 			pInfo->state = BUT_NORMAL;
-		}
-		else if (!wParam && !(dwStyle & WS_DISABLED)) {
+		} else if (!wParam && !(dwStyle & WS_DISABLED)) {
 			pCtrl->dwStyle |= WS_DISABLED;
 			pInfo->state = BUT_DISABLED;
-		}
-		else
+        } else {
 			return 0;
+        }
 		InvalidateRect (hwnd, NULL, FALSE);
 		return 0;
 

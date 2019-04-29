@@ -95,13 +95,13 @@ static void screenReturnMainForm(void)
 	Forms = (HWND *)calloc(sizeof(HWND),Screen.Count);
 	while(form && FormCnt<Screen.Count) {
 		//留下主窗口
-		if(strcmp(form->Class,"TFrmMain"))
+		if(strcmp(form->Class,"TFrmVL"))
 			Forms[FormCnt++] = form->hWnd;
 		form = form->next;
 	}
 	while(FormCnt) {
-        ShowWindow(Forms[FormCnt-1],SW_HIDE);
-		// SendMessage(Forms[FormCnt-1],MSG_CLOSE,0,-1);
+        // ShowWindow(Forms[FormCnt-1],SW_HIDE);
+        SendMessage(Forms[FormCnt-1],MSG_CLOSE,0,-1);
 		FormCnt--;
 	}
 	free(Forms);

@@ -23,24 +23,7 @@ extern "C" {
 
 #include "commongdi.h"
 
-	typedef struct _FormMainTimers {
-		void (*proc)(void);
-		int time;
-	}FormMainTimers;
-	
-	typedef struct _FormMain {
-		int status;
-		FormMainTimers *timer;
-		int (*loop)(void);
-
-		void (*timerStart)(int idc_timer);
-		void (*timerStop)(int idc_timer);
-		int (*timerGetState)(int idc_timer);
-
-	} FormMain;
-
-
-	FormMain * formMainCreate(void);
+	void formVideoLayerCreate(void);
 
 #ifdef __cplusplus
 }

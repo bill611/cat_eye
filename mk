@@ -1,5 +1,4 @@
 #!/bin/bash
-# TOOLS_PATH="/home/xubin/work/tools/platform/anyka/platform/rootfs"
 
 mkdir -p update/
 mkdir -p out

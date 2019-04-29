@@ -25,6 +25,10 @@ extern "C" {
 #include "commongdi.h"
 #define CTRL_MYSTATIC         ("mystatic")
 
+	enum {
+        MSG_MYSTATIC_SET_TITLE = MSG_USER + 1,
+    };
+
 	enum {  // 控件类型
 		MYSTATIC_TYPE_TEXT,
 		MYSTATIC_TYPE_TEXT_AND_IMG,
@@ -32,7 +36,7 @@ extern "C" {
 
 
 	typedef struct {
-        const char *text;      // 文字
+        char text[64];      // 文字
         PLOGFONT   font;       // 字体
 		int font_color;  // 文字颜色
 		int bkg_color;  // 背景颜色

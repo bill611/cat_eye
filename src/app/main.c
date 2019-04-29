@@ -29,7 +29,7 @@
 #include "externfunc.h"
 #include "sql_handle.h"
 #include "config.h"
-#include "form_main.h"
+#include "form_videlayer.h"
 
 
 /* ---------------------------------------------------------------------------*
@@ -51,7 +51,6 @@ typedef struct _GpioInputThread {
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
-FormMain *form_main = NULL;
 static GpioInputThread gpio_input_handle[] =
 {
     {{NULL,ENUM_GPIO_MODE},		gpioRegistThread},
@@ -114,7 +113,6 @@ int MiniGUIMain(int argc, const char* argv[])
 	gpioInit();
 	gpioInputRegist();
 	createThread(timer1sThread,NULL);
-	form_main = formMainCreate();
-	form_main->loop();
+	formVideoLayerCreate();
     return 0;
 }

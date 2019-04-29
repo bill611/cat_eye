@@ -40,7 +40,7 @@ void drawWhiteFrame (HWND hWnd, HDC hdc, const RECT* pClipRect,int Left,int Top,
  * @param Image
  */
 /* ---------------------------------------------------------------------------*/
-void drawBackground(HWND hWnd, HDC hdc, const RECT* pClipRect,BITMAP *Image)
+void drawBackground(HWND hWnd, HDC hdc, const RECT* pClipRect,BITMAP *Image,int color)
 {
     BOOL fGetDC = FALSE;
     RECT rcTemp;
@@ -61,7 +61,7 @@ void drawBackground(HWND hWnd, HDC hdc, const RECT* pClipRect,BITMAP *Image)
 	if (Image)
 		FillBoxWithBitmap(hdc,rcClient.left,rcClient.top,RECTW(rcClient),RECTH(rcClient),Image);
 	else {
-		SetBrushColor (hdc,COLOR_black);
+		SetBrushColor (hdc,color);
 		FillBox (hdc, rcClient.left,rcClient.top,RECTW(rcClient),RECTH(rcClient));
 	}
     if (fGetDC)

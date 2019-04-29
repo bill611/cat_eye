@@ -37,11 +37,7 @@ extern "C" {
 #define SCR_HEIGHT 600          /*LCD Height    */
 
 	enum {
-		MSG_MYBUTTON_GET_SELECT_STATE = MSG_USER+1,
-		MSG_MYBUTTON_SET_SELECT_MODE,
-		MSG_MYBUTTON_SET_SELECT_STATE,
-		MSG_MYBUTTON_SET_NORMAL_STATE,
-		MSG_UPDATEMSG,
+		MSG_UPDATEMSG = MSG_USER+1,
 		MSG_SERIALPORT,
 		MSG_UPDATESTATUS,
 		MSG_SOCKETREAD,
@@ -64,7 +60,7 @@ extern "C" {
 	    {"static",WS_CHILD|WS_VISIBLE|SS_BITMAP|SS_CENTERIMAGE,x,y,w,h,id,"",dwAddData,WS_EX_TRANSPARENT,NULL,NULL,NULL}
 
 
-	void drawBackground(HWND hWnd, HDC hdc, const RECT* pClipRect,BITMAP *Image);
+    void drawBackground(HWND hWnd, HDC hdc, const RECT* pClipRect,BITMAP *Image,int color);
 	void drawWhiteFrame(HWND hWnd, HDC hdc, const RECT* pClipRect,int Left,int Top,int Width,int Height);
 	void wndEraseBackground(HWND hWnd,HDC hdc, const RECT* pClipRect,BITMAP *pImage,int Left,int Top,int Width,int Height);
 	void getPartFromBmp(const BITMAP *bmp,BITMAP *DstBitmap,int Left,int Top,int Width,int Height);

@@ -54,6 +54,8 @@ static int formBaseProc(FormBase *this,HWND hDlg, int message, WPARAM wParam, LP
 				this->auto_close_time = FORM_SETTING_ONTIME;
 				if (this->priv->initPara)
 					this->priv->initPara(hDlg,message,wParam,lParam);
+                SetTimer(hDlg,IDC_FORM_BASE_TIMER,100);
+
 			} return FORM_CONTINUE;
 
 		case MSG_LBUTTONDOWN:
@@ -68,9 +70,10 @@ static int formBaseProc(FormBase *this,HWND hDlg, int message, WPARAM wParam, LP
 					return FORM_CONTINUE;
 				}
 				if (this->auto_close_time > 0) {
-					DBG_P("[%s]time:%d\n", __FILE__,this->auto_close_time);
+					printf("[%s]time:%d\n", __FILE__,this->auto_close_time);
 					if (--this->auto_close_time == 0) {
-                        ShowWindow(hDlg,SW_HIDE);
+                        SendMessage(hDlg, MSG_CLOSE,0,0);
+                        // ShowWindow(hDlg,SW_HIDE);
 					}
 				}
 			} return FORM_CONTINUE;
@@ -79,7 +82,7 @@ static int formBaseProc(FormBase *this,HWND hDlg, int message, WPARAM wParam, LP
 			{
 				drawBackground(hDlg,
 						(HDC)wParam,
-						(const RECT*)lParam, this->priv->bmp_bkg);
+						(const RECT*)lParam, this->priv->bmp_bkg,0);
 			} return FORM_STOP;
 
 		case MSG_CLOSE:

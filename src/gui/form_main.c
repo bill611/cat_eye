@@ -29,7 +29,7 @@
 #include "my_static.h"
 
 #include "language.h"
-#include "form_main.h"
+#include "form_base.h"
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
@@ -38,7 +38,9 @@ extern void formSettingLoadBmp(void);
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
  *----------------------------------------------------------------------------*/
-static void formMainTimerProc1s(void);
+static int formMainProc(HWND hWnd, int message, WPARAM wParam, LPARAM lParam);
+static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
+static void formMainTimerProc1s(HWND hwnd);
 
 static void buttonRecordPress(HWND hwnd, int id, int nc, DWORD add_data);
 static void buttonCapturePress(HWND hwnd, int id, int nc, DWORD add_data);
@@ -89,14 +91,18 @@ enum {
     IDC_STATE_COM,
 
 };
+typedef struct _FormMainTimers {
+    void (*proc)(HWND hWnd);
+    int time;
+}FormMainTimers;
+
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
 PLOGFONT font22;
 PLOGFONT font20;
-static BITMAP 	bkg;
+static int bmp_load_finished = 0;
 static BmpLocation base_bmps[] = {
-	{&bkg,BMP_LOCAL_PATH"bg_1.png"},
 	{NULL},
 };
 
@@ -114,7 +120,7 @@ static MyCtrlStatus ctrls_status[] = {
 	{0},
 };
 static MyCtrlStatic ctrls_static[] = {
-    {IDC_MYSTATIC_DATE,  MYSTATIC_TYPE_TEXT,0,0,1024,40,"",0xffffff,0x33333380},
+    {IDC_MYSTATIC_DATE,  MYSTATIC_TYPE_TEXT,0,0,1024,40,"",0xffffff,0x00000060},
 	{0},
 };
 
@@ -126,16 +132,37 @@ static MyCtrlButton ctrls_button[] = {
 	{0},
 };
 
-static InitBmpFunc load_bmps_func[] = {
-    formSettingLoadBmp,
-	NULL,
-};
 
 static HWND hwnd_main = HWND_INVALID;
 static FormMainTimers timers_tbl[] = {
     {formMainTimerProc1s,               10},
 };
 
+static MY_CTRLDATA ChildCtrls [] = {
+};
+
+
+static MY_DLGTEMPLATE DlgInitParam =
+{
+    WS_NONE,
+    // WS_EX_AUTOSECONDARYDC,
+	WS_EX_NONE,
+    0,0,SCR_WIDTH,SCR_HEIGHT,
+    "",
+    0, 0,       //menu and icon is null
+    sizeof(ChildCtrls)/sizeof(MY_CTRLDATA),
+    ChildCtrls, //pointer to control array
+    0           //additional data,must be zero
+};
+
+static FormBasePriv form_base_priv= {
+	.name = "Fmain",
+	.dlgProc = formMainProc,
+	.dlgInitParam = &DlgInitParam,
+	.initPara =  initPara,
+};
+
+static FormBase* form_base = NULL;
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief formMainTimerStart 开启定时器 单位100ms
@@ -181,16 +208,21 @@ static int formMainTimerGetState(int idc_timer)
  * @returns 1按键超时退出 0未超时退出
  */
 /* ---------------------------------------------------------------------------*/
-static void formMainTimerProc1s(void)
+static void formMainTimerProc1s(HWND hwnd)
 {
+    static int count = 0;
+    char buf[16] = {0};
 	static int level_old = 0;
 	// 更新网络状态-----
 	int level = net_detect();
 	if (level != level_old) {
 		level_old = level;
-		SendMessage(GetDlgItem (hwnd_main, IDC_MYSTATUS_WIFI),
+		SendMessage(GetDlgItem (hwnd, IDC_MYSTATUS_WIFI),
 				MSG_MYSTATUS_SET_LEVEL,level,0);
 	}
+    sprintf(buf,"%d",count++);
+    SendMessage(GetDlgItem (hwnd, IDC_MYSTATIC_DATE),
+            MSG_MYSTATIC_SET_TITLE,(WPARAM)buf,0);
 
 }
 
@@ -216,54 +248,20 @@ static void buttonSettingPress(HWND hwnd, int id, int nc, DWORD add_data)
     createFormSetting(hwnd_main);
 }
 
-static void showNormal(HWND hWnd)
-{
-}
-
-/* ---------------------------------------------------------------------------*/
-/**
- * @brief formMainUpdateMute 更新静音状态
- */
-/* ---------------------------------------------------------------------------*/
-void formMainUpdateMute(HWND hWnd)
-{
-	// 更新静音状态
-}
-
-
-/* ---------------------------------------------------------------------------*/
-/**
- * @brief formMainCreateControl 创建控件
- *
- * @param hWnd
- */
-/* ---------------------------------------------------------------------------*/
-static void formMainCreateControl(HWND hWnd)
-{
-	int i;
-	for (i=0; ctrls_static[i].idc != 0; i++) {
-        ctrls_static[i].font = font20;
-        createMyStatic(hWnd,&ctrls_static[i]);
-	}
-	for (i=0; ctrls_button[i].idc != 0; i++) {
-        ctrls_button[i].font = font22;
-        createMyButton(hWnd,&ctrls_button[i]);
-	}
-	for (i=0; ctrls_status[i].idc != 0; i++) {
-        createMyStatus(hWnd,&ctrls_status[i]);
-	}
-}
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief formMainLoadBmp 加载主界面图片
  */
 /* ---------------------------------------------------------------------------*/
-static void formMainLoadBmp(void)
+void formMainLoadBmp(void)
 {
+    if (bmp_load_finished == 1)
+        return;
 	printf("[%s]\n", __FUNCTION__);
     bmpsLoad(base_bmps);
     my_button->bmpsLoad(ctrls_button,BMP_LOCAL_PATH);
     my_status->bmpsLoad(ctrls_status,BMP_LOCAL_PATH);
+    bmp_load_finished = 1;
 }
 static void formMainReleaseBmp(void)
 {
@@ -271,14 +269,30 @@ static void formMainReleaseBmp(void)
 	bmpsRelease(base_bmps);
 }
 
-static void * loadBmpsThread(void *arg)
+/* ----------------------------------------------------------------*/
+/**
+ * @brief initPara 初始化参数
+ *
+ * @param hDlg
+ * @param message
+ * @param wParam
+ * @param lParam
+ */
+/* ----------------------------------------------------------------*/
+static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 {
-    int i;
-    // char *cmd = arg;
-    for (i=0; load_bmps_func[i] != NULL; i++) {
-        load_bmps_func[i]();
-    }
-    return NULL;
+	int i;
+	for (i=0; ctrls_static[i].idc != 0; i++) {
+        ctrls_static[i].font = font20;
+        createMyStatic(hDlg,&ctrls_static[i]);
+	}
+	for (i=0; ctrls_button[i].idc != 0; i++) {
+        ctrls_button[i].font = font22;
+        createMyButton(hDlg,&ctrls_button[i]);
+	}
+	for (i=0; ctrls_status[i].idc != 0; i++) {
+        createMyStatus(hDlg,&ctrls_status[i]);
+	}
 }
 
 /* ---------------------------------------------------------------------------*/
@@ -293,61 +307,33 @@ static void * loadBmpsThread(void *arg)
  * @return
  */
 /* ---------------------------------------------------------------------------*/
-static int formMainProc(HWND hWnd, int message, WPARAM wParam, LPARAM lParam)
+static int formMainProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
 	{
-		case MSG_CREATE:
+		case MSG_INITDIALOG:
 			{
-				screenInit();
-				Screen.Add(hWnd,"TFrmMain");
-				hwnd_main = Screen.hMainWnd = hWnd;
-				// 装载所有图片
-				formMainLoadBmp();
-				createThread(loadBmpsThread,"1");
-                fontsLoad(font_load);
-				formMainCreateControl(hWnd);
-                formMainTimerStart(IDC_TIMER_1S);
-				// screensaverStart(LCD_ON);
+				hwnd_main = Screen.hMainWnd = hDlg;
+                // HDC hdc = GetClientDC (hDlg);
+                // mlsSetSlaveScreenInfo(hdc,MLS_INFOMASK_ALL,1,0,
+                        // MLS_BLENDMODE_COLORKEY,0x00000100,0x00,3);
+                // mlsEnableSlaveScreen(hdc,1);
 			} break;
 
 		case MSG_ERASEBKGND:
 			{
-				drawBackground(hWnd,
+				drawBackground(hDlg,
 						   (HDC)wParam,
-						   (const RECT*)lParam,&bkg);
+						   (const RECT*)lParam,NULL,0x00000100);
 			} return 0;
 
-		case MSG_MAIN_SHOW_NORMAL:
-			{
-                Screen.ReturnMain();
-                showNormal(hWnd);
-			} return 0;
-
-		case MSG_MAIN_LOAD_BMP:
-			{
-                createThread(loadBmpsThread,NULL);
-			} return 0;
-
-		case MSG_MAIN_TIMER_START:
-			{
-				SetTimer(hWnd, wParam,
-						timers_tbl[wParam].time * TIME_100MS);
-			} return 0;
-
-		case MSG_MAIN_TIMER_STOP:
-			{
-				if (IsTimerInstalled(hWnd,wParam) == TRUE) {
-					KillTimer (hwnd_main,wParam);
-				}
-			} return 0;
 
 		case MSG_TIMER:
 			{
 				if ((wParam >= IDC_TIMER_1S) && (wParam < IDC_TIMER_NUM)) {
-					timers_tbl[wParam].proc();
+					timers_tbl[wParam].proc(hDlg);
 				}
-			} return 0;
+			} break;
 
 		case MSG_LBUTTONDOWN:
 			{
@@ -357,107 +343,33 @@ static int formMainProc(HWND hWnd, int message, WPARAM wParam, LPARAM lParam)
                 // }
 			} break;
 
-		case MSG_UPDATESTATUS:
-			{
-				formMainUpdateMute(hWnd);
-			} break;
-
-		case MSG_DESTROY:
-			{
-				Screen.Del(hWnd);
-				DestroyAllControls (hWnd);
-			} return 0;
-
-		case MSG_CLOSE:
-			{
-				int i;
-				for (i=IDC_TIMER_1S; i<IDC_TIMER_NUM; i++) {
-					formMainTimerStop(i);
-				}
-				DestroyMainWindow (hWnd);
-				PostQuitMessage (hWnd);
-			} return 0;
-
 		default:
 			break;
 	}
-	return DefaultMainWinProc(hWnd, message, wParam, lParam);
+	if (form_base->baseProc(form_base,hDlg, message, wParam, lParam) == FORM_STOP)
+		return 0;
+
+    return DefaultDialogProc(hDlg, message, wParam, lParam);
 }
 
-/* ---------------------------------------------------------------------------*/
-/**
- * @brief formMainLoop 主窗口消息循环
- *
- * @returns
- */
-/* ---------------------------------------------------------------------------*/
-static int formMainLoop(void)
-{
-    MSG Msg;
-	while (GetMessage(&Msg, hwnd_main)) {
-		TranslateMessage(&Msg);
-		DispatchMessage(&Msg);
-	}
-    my_button->bmpsRelease(ctrls_button);
-    my_status->bmpsRelease(ctrls_status);
-    my_button->unregist();
-    my_status->unregist();
-    my_static->unregist();
 
-    MainWindowThreadCleanup (hwnd_main);
-	hwnd_main = Screen.hMainWnd = 0;
-	formMainReleaseBmp();
+
+int createFormMain(HWND hMainWnd)
+{
+	HWND Form = Screen.Find(form_base_priv.name);
+	if(Form) {
+		ShowWindow(Form,SW_SHOWNORMAL);
+	} else {
+        if (bmp_load_finished == 0) {
+            // topMessage(hMainWnd,TOPBOX_ICON_LOADING,NULL );
+            return 0;
+        }
+		form_base_priv.hwnd = hMainWnd;
+		form_base = formBaseCreate(&form_base_priv);
+		return CreateMyWindowIndirectParam(form_base->priv->dlgInitParam,
+				form_base->priv->hwnd,
+				form_base->priv->dlgProc, 0);
+	}
+
 	return 0;
 }
-
-/* ---------------------------------------------------------------------------*/
-/**
- * @brief formMainCreate 创建主窗口
- *
- * @param AppProc
- *
- * @returns
- */
-/* ---------------------------------------------------------------------------*/
-FormMain * formMainCreate(void)
-{
-    MAINWINCREATE CreateInfo;
-
-    initMyButton();
-    initMyStatus();
-    initMyStatic();
-    my_button->regist();
-    my_status->regist();
-    my_static->regist();
-
-    CreateInfo.dwStyle = WS_NONE;
-	CreateInfo.dwExStyle = WS_EX_AUTOSECONDARYDC;
-	// CreateInfo.dwExStyle = WS_EX_NONE;
-    CreateInfo.spCaption = "cateye";
-    CreateInfo.hMenu = 0;
-    CreateInfo.hCursor = GetSystemCursor(IDC_ARROW);
-    CreateInfo.hIcon = 0;
-    CreateInfo.MainWindowProc = formMainProc;
-    CreateInfo.lx = 0;
-    CreateInfo.ty = 0;
-    CreateInfo.rx = SCR_WIDTH;
-    CreateInfo.by = SCR_HEIGHT;
-    CreateInfo.iBkColor = GetWindowElementColor(WE_MAINC_THREED_BODY);
-    CreateInfo.dwAddData = 0;
-    CreateInfo.dwReserved = 0;
-    CreateInfo.hHosting = HWND_DESKTOP;
-
-	CreateMainWindow (&CreateInfo);
-	if (hwnd_main == HWND_INVALID)
-		return NULL;
-	ShowWindow(hwnd_main, SW_SHOWNORMAL);
-
-	FormMain * this = (FormMain *) calloc (1,sizeof(FormMain));
-	this->loop = formMainLoop;
-	this->timerStart = formMainTimerStart;
-	this->timerStop = formMainTimerStop;
-	this->timerGetState = formMainTimerGetState;
-
-	return this;
-}
-
