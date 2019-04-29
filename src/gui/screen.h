@@ -41,6 +41,8 @@ extern "C" {
 		void (*ReturnMain)(void);										//返回主窗口
 		void (*foreachForm)(int iMsg, WPARAM wParam, LPARAM lParam); //遍历所有窗口发送消息
 	} ScreenForm;
+
+	void screenInit(void);
 	extern ScreenForm Screen;
 
 #ifdef __cplusplus

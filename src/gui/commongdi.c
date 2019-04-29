@@ -205,7 +205,7 @@ void drawTriangle (HDC hdc, RECT rc, int color, int type)
 }
 /* ----------------------------------------------------------------*/
 /**
- * @brief myFillBox 填充矩形区域颜色
+ * @brief myFillBox 填充矩形区域颜色,包含透明色
  *
  * @param hdc
  * @param rc 矩形区域
@@ -214,8 +214,17 @@ void drawTriangle (HDC hdc, RECT rc, int color, int type)
 /* ----------------------------------------------------------------*/
 void myFillBox(HDC hdc, RECT rc, int color)
 {
-	SetBrushColor (hdc,color);
-	FillBox (hdc, rc.left, rc.top, RECTW(rc),RECTH(rc));
+	HDC	mem_dc = CreateMemDC (RECTW(rc), RECTH(rc), 32, 
+			MEMDC_FLAG_HWSURFACE | MEMDC_FLAG_SRCALPHA | MEMDC_FLAG_SRCCOLORKEY,
+			0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF);
+	SetBrushColor (mem_dc, RGBA2Pixel (mem_dc,
+				(color & 0xff000000) >> 24,
+				(color & 0x00ff0000) >> 16,
+				(color & 0x0000ff00) >> 8,
+				(color & 0x000000ff)) );
+	FillBox (mem_dc, rc.left, rc.top, RECTW(rc),RECTH(rc));
+	BitBlt (mem_dc, rc.left, rc.top, RECTW(rc), RECTH(rc), hdc, 0, 0,0);
+	DeleteMemDC (mem_dc);
 }
 //----------------------------------------------------------------------------
 //  显示一帧视频,VideoBuf为decode的缓冲区
@@ -472,17 +481,17 @@ void bmpsRelease(BmpLocation *bmp)
 void fontsLoad(FontLocation *font)
 {
 
-    int i;                                      
-    for (i=0; font[i].font != NULL; i++) {                     
+    int i;
+    for (i=0; font[i].font != NULL; i++) {
         *font[i].font = CreateLogFont("ttf",
-                "song", "GB2312",      
-                font[i].first_type,             
-                FONT_SLANT_ROMAN,               
-                FONT_OTHER_NIL,                 
-                FONT_OTHER_LCDPORTRAIT,         
-                FONT_UNDERLINE_NONE,            
-                FONT_STRUCKOUT_NONE,            
-                font[i].size, 0);               
-    }                                           
+                "song", "GB2312",
+                font[i].first_type,
+                FONT_SLANT_ROMAN,
+                FONT_OTHER_NIL,
+                FONT_OTHER_LCDPORTRAIT,
+                FONT_UNDERLINE_NONE,
+                FONT_STRUCKOUT_NONE,
+                font[i].size, 0);
+    }
 }
 

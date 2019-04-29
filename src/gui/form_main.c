@@ -33,8 +33,6 @@
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
-extern int createFormVersion(HWND hMainWnd);
-
 extern void formSettingLoadBmp(void);
 
 /* ---------------------------------------------------------------------------*
@@ -44,7 +42,6 @@ static void formMainTimerProc1s(void);
 
 static void buttonRecordPress(HWND hwnd, int id, int nc, DWORD add_data);
 static void buttonCapturePress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonCallPress(HWND hwnd, int id, int nc, DWORD add_data);
 static void buttonVideoPress(HWND hwnd, int id, int nc, DWORD add_data);
 static void buttonSettingPress(HWND hwnd, int id, int nc, DWORD add_data);
 
@@ -56,6 +53,13 @@ static void buttonSettingPress(HWND hwnd, int id, int nc, DWORD add_data);
 #else
 	#define DBG_P( x... )
 #endif
+
+enum {
+	MSG_MAIN_TIMER_START = MSG_USER + 1,
+	MSG_MAIN_TIMER_STOP,
+	MSG_MAIN_SHOW_NORMAL,
+	MSG_MAIN_LOAD_BMP,
+};
 
 typedef void (*InitBmpFunc)(void) ;
 
@@ -70,10 +74,11 @@ enum {
 };
 
 enum {
-    IDC_TOOLBAR_WIFI = IDC_FORM_MAIN_START,
-    IDC_TOOLBAR_SDCARD,
-    IDC_TOOLBAR_DATE,
-    IDC_TOOLBAR_BATTERY,
+    IDC_MYSTATUS_WIFI = IDC_FORM_MAIN_START,
+    IDC_MYSTATUS_SDCARD,
+    IDC_MYSTATUS_BATTERY,
+
+    IDC_MYSTATIC_DATE,
 
     IDC_BUTTON_RECORD,
     IDC_BUTTON_CAPTURE,
@@ -89,7 +94,9 @@ enum {
  *----------------------------------------------------------------------------*/
 PLOGFONT font22;
 PLOGFONT font20;
+static BITMAP 	bkg;
 static BmpLocation base_bmps[] = {
+	{&bkg,BMP_LOCAL_PATH"bg_1.png"},
 	{NULL},
 };
 
@@ -100,18 +107,22 @@ static FontLocation font_load[] = {
 };
 
 
-static MyCtrlStatus ctrls_toolbar[] = {
-    {IDC_TOOLBAR_WIFI,	BMP_LOCAL_PATH,"wifi",10,50,4},
-    // {IDC_TOOLBAR_SDCARD,BMP_LOCAL_PATH,"main_sdcard",80,50,2},
+static MyCtrlStatus ctrls_status[] = {
+    {IDC_MYSTATUS_WIFI,   "wifi",16,10,5},
+	{IDC_MYSTATUS_SDCARD, "sdcard",54,8,1},
+	{IDC_MYSTATUS_BATTERY,"Battery",963,10,1},
+	{0},
+};
+static MyCtrlStatic ctrls_static[] = {
+    {IDC_MYSTATIC_DATE,  MYSTATIC_TYPE_TEXT,0,0,1024,40,"",0xffffff,0x33333380},
 	{0},
 };
 
 static MyCtrlButton ctrls_button[] = {
-    {IDC_BUTTON_RECORD,	MYBUTTON_TYPE_TWO_STATE,"record", 40,400,buttonRecordPress},
-    {IDC_BUTTON_CAPTURE,MYBUTTON_TYPE_TWO_STATE,"capture",160,400,buttonCapturePress},
-    {IDC_BUTTON_CALL,	MYBUTTON_TYPE_TWO_STATE,"call",   280,400,buttonCallPress},
-    {IDC_BUTTON_VIDEO,	MYBUTTON_TYPE_TWO_STATE,"video",  400,400,buttonVideoPress},
-	{IDC_BUTTON_SETTING,MYBUTTON_TYPE_TWO_STATE,"setting",520,400,buttonSettingPress},
+	{IDC_BUTTON_RECORD,	MYBUTTON_TYPE_TWO_STATE,"记录",80,451,buttonRecordPress,word[WORD_RECORD].string},
+	{IDC_BUTTON_CAPTURE,MYBUTTON_TYPE_TWO_STATE,"抓拍",338,451,buttonCapturePress,word[WORD_CAPTURE].string},
+	{IDC_BUTTON_VIDEO,	MYBUTTON_TYPE_TWO_STATE,"录像",597,451,buttonVideoPress,word[WORD_VIDEO].string},
+	{IDC_BUTTON_SETTING,MYBUTTON_TYPE_TWO_STATE,"设置",855,451,buttonSettingPress,word[WORD_SETTING].string},
 	{0},
 };
 
@@ -172,30 +183,15 @@ static int formMainTimerGetState(int idc_timer)
 /* ---------------------------------------------------------------------------*/
 static void formMainTimerProc1s(void)
 {
-	// static int i = 0;
-	// if (++i == 10)
-		// createFormSetting(hwnd_main);
-	// static int count = 0;
-	// if (count >= 4)
-		// count = 0;
-	// SendMessage(GetDlgItem (hwnd_main, IDC_TOOLBAR_WIFI), MSG_MYSTATUS_SET_LEVEL,count++,0);
-}
-
-/* ---------------------------------------------------------------------------*/
-/**
- * @brief formMainSetNetWorkState 改变网口状态图标
- *
- * @param state 0未连接 1连接
- */
-/* ---------------------------------------------------------------------------*/
-static void formMainSetNetWorkState(int level)
-{
 	static int level_old = 0;
-	if (level_old == level)
-		return;
-	level_old = level;
-    SendMessage(GetDlgItem (hwnd_main, IDC_TOOLBAR_WIFI),
-            MSG_MYSTATUS_SET_LEVEL,level,0);
+	// 更新网络状态-----
+	int level = net_detect();
+	if (level != level_old) {
+		level_old = level;
+		SendMessage(GetDlgItem (hwnd_main, IDC_MYSTATUS_WIFI),
+				MSG_MYSTATUS_SET_LEVEL,level,0);
+	}
+
 }
 
 static void buttonRecordPress(HWND hwnd, int id, int nc, DWORD add_data)
@@ -204,11 +200,6 @@ static void buttonRecordPress(HWND hwnd, int id, int nc, DWORD add_data)
 		return;
 }
 static void buttonCapturePress(HWND hwnd, int id, int nc, DWORD add_data)
-{
-	if (nc != BN_CLICKED)
-		return;
-}
-static void buttonCallPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
@@ -250,10 +241,17 @@ void formMainUpdateMute(HWND hWnd)
 static void formMainCreateControl(HWND hWnd)
 {
 	int i;
-	for (i=0; ctrls_button[i].idc != 0; i++)
+	for (i=0; ctrls_static[i].idc != 0; i++) {
+        ctrls_static[i].font = font20;
+        createMyStatic(hWnd,&ctrls_static[i]);
+	}
+	for (i=0; ctrls_button[i].idc != 0; i++) {
+        ctrls_button[i].font = font22;
         createMyButton(hWnd,&ctrls_button[i]);
-	for (i=0; ctrls_toolbar[i].idc != 0; i++)
-        createMyStatus(hWnd,&ctrls_toolbar[i]);
+	}
+	for (i=0; ctrls_status[i].idc != 0; i++) {
+        createMyStatus(hWnd,&ctrls_status[i]);
+	}
 }
 /* ---------------------------------------------------------------------------*/
 /**
@@ -264,8 +262,8 @@ static void formMainLoadBmp(void)
 {
 	printf("[%s]\n", __FUNCTION__);
     bmpsLoad(base_bmps);
-    my_button->bmpsLoad(ctrls_button,BMP_LOCAL_PATH);	
-    my_status->bmpsLoad(ctrls_toolbar,BMP_LOCAL_PATH);	
+    my_button->bmpsLoad(ctrls_button,BMP_LOCAL_PATH);
+    my_status->bmpsLoad(ctrls_status,BMP_LOCAL_PATH);
 }
 static void formMainReleaseBmp(void)
 {
@@ -317,7 +315,7 @@ static int formMainProc(HWND hWnd, int message, WPARAM wParam, LPARAM lParam)
 			{
 				drawBackground(hWnd,
 						   (HDC)wParam,
-						   (const RECT*)lParam,NULL);
+						   (const RECT*)lParam,&bkg);
 			} return 0;
 
 		case MSG_MAIN_SHOW_NORMAL:
@@ -339,7 +337,7 @@ static int formMainProc(HWND hWnd, int message, WPARAM wParam, LPARAM lParam)
 
 		case MSG_MAIN_TIMER_STOP:
 			{
-				if (IsTimerInstalled(hwnd_main,wParam) == TRUE) {
+				if (IsTimerInstalled(hWnd,wParam) == TRUE) {
 					KillTimer (hwnd_main,wParam);
 				}
 			} return 0;
@@ -400,8 +398,8 @@ static int formMainLoop(void)
 		TranslateMessage(&Msg);
 		DispatchMessage(&Msg);
 	}
-    my_button->bmpsRelease(ctrls_button);	
-    my_status->bmpsRelease(ctrls_toolbar);	
+    my_button->bmpsRelease(ctrls_button);
+    my_status->bmpsRelease(ctrls_status);
     my_button->unregist();
     my_status->unregist();
     my_static->unregist();
@@ -459,7 +457,6 @@ FormMain * formMainCreate(void)
 	this->timerStart = formMainTimerStart;
 	this->timerStop = formMainTimerStop;
 	this->timerGetState = formMainTimerGetState;
-    this->setNetWorkState = formMainSetNetWorkState;
 
 	return this;
 }

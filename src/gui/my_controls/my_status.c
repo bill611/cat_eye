@@ -51,7 +51,7 @@ MyControls * my_status;
 /**
  * @brief myStatusRegist 注册控件
  *
- * @returns 
+ * @returns
  */
 /* ---------------------------------------------------------------------------*/
 static BOOL myStatusRegist (void)
@@ -96,7 +96,7 @@ static void paint(HWND hWnd,HDC hdc)
 
 	if (pCtrl->dwAddData2) {
 		MyStatusCtrlInfo* pInfo = (MyStatusCtrlInfo*)(pCtrl->dwAddData2);
-		BITMAP *bmp = pInfo->images + pInfo->level; 
+		BITMAP *bmp = pInfo->images + pInfo->level;
 		if (bmp)
 			FillBoxWithBitmap(hdc, FILL_BMP_STRUCT(rcClient,bmp));
 	}
@@ -111,7 +111,7 @@ static void paint(HWND hWnd,HDC hdc)
  * @param wParam
  * @param lParam
  *
- * @returns 
+ * @returns
  */
 /* ---------------------------------------------------------------------------*/
 static int myctrlControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lParam)
@@ -153,8 +153,9 @@ static int myctrlControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lPar
 
     case MSG_MYSTATUS_SET_LEVEL:
         pInfo->level = wParam;
-        InvalidateRect (hwnd, NULL, FALSE);
+        InvalidateRect (hwnd, NULL, TRUE);
         return 0;
+
 	default:
 		break;
     }
@@ -164,17 +165,19 @@ static int myctrlControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lPar
 
 static void myStatusBmpsLoad(void *ctrls,char *path)
 {
-	MyCtrlStatus *controls = (MyCtrlStatus *)ctrls;
-    if (controls->images)
-        return;
-    int i;
+	int i,j;
     char image_path[128] = {0};
-    controls->images = (BITMAP *)calloc(controls->total_level,sizeof(BITMAP));
-    for (i=0; i<controls->total_level; i++) {
-        sprintf(image_path,"%s%s-%d.png",path,controls->img_name,i);
-        bmpLoad(controls->images + i, image_path);
+	MyCtrlStatus *controls = (MyCtrlStatus *)ctrls;
+    for (i=0; controls->idc != 0; i++) {
+		controls->images = (BITMAP *)calloc(controls->total_level,sizeof(BITMAP));
+		for (j=0; j<controls->total_level; j++) {
+			sprintf(image_path,"%s%s-%d.png",path,controls->img_name,j);
+			bmpLoad(controls->images + j, image_path);
+		}
+		controls++;
     }
 }
+
 static void myStatusBmpsRelease(void *ctrls)
 {
     int i;
@@ -192,6 +195,7 @@ HWND createMyStatus(HWND hWnd,MyCtrlStatus *ctrl)
     int ctrl_w,ctrl_h = 0;
 	MyStatusCtrlInfo pInfo;
     memset(&pInfo,0,sizeof(MyStatusCtrlInfo));
+    pInfo.level = 0;
     pInfo.total_level = ctrl->total_level;
     pInfo.images = ctrl->images;
     ctrl_w = ctrl->images->bmWidth;

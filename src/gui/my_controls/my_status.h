@@ -34,7 +34,6 @@ extern "C" {
 
 	typedef struct _MyCtrlStatus{
 		HWND idc;		// 控件ID
-		char *relative_img_path; // 图片相对位置
 		char *img_name; 	// 常态图片名字,不带扩展名,完整路径由循环赋值
 		int16_t x,y;
 		int total_level;	// 总共几组状态

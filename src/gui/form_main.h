@@ -33,7 +33,6 @@ extern "C" {
 		FormMainTimers *timer;
 		int (*loop)(void);
 
-        void (*setNetWorkState)(int state);
 		void (*timerStart)(int idc_timer);
 		void (*timerStop)(int idc_timer);
 		int (*timerGetState)(int idc_timer);

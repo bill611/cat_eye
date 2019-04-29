@@ -68,7 +68,6 @@ enum {
 	IDC_BUTTON_LOCAL,
 
 	IDC_STATIC_TITLE,
-	IDC_STATIC_TITLE_BKG,
 };
 
 
@@ -121,7 +120,7 @@ static MyCtrlButton ctrls_button[] = {
 	{0},
 };
 static MyCtrlStatic ctrls_static[] = {
-	{IDC_BUTTON_EXIT, MYSTATIC_TYPE_TEXT,0,0,1024,40,word[WORD_SETTING].string,0xffffff,0x333333},
+	{IDC_STATIC_TITLE, MYSTATIC_TYPE_TEXT,0,0,1024,40,word[WORD_SETTING].string,0xffffff,0x333333FF},
 	{0},
 };
 

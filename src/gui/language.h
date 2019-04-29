@@ -32,6 +32,9 @@ extern "C" {
 		WORD_FACTORY,//恢复出厂
 		WORD_LOCAL_SET,//本机设置
 		WORD_SETTING,//设置
+		WORD_RECORD,//记录
+		WORD_CAPTURE,//抓拍
+		WORD_VIDEO,//录像
 	};
 	typedef struct {
 		char string[64];	
