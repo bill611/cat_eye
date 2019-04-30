@@ -19,6 +19,7 @@
 extern void createFormMain(HWND hMainWnd);
 extern void formMainLoadBmp(void);
 extern void formSettingLoadBmp(void);
+extern void formVideoLoadBmp(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -62,6 +63,7 @@ static FontLocation font_load[] = {
 static InitBmpFunc load_bmps_func[] = {
     formMainLoadBmp,
     formSettingLoadBmp,
+	formVideoLoadBmp,
 	NULL,
 };
 

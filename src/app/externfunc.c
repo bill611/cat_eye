@@ -174,6 +174,12 @@ char * GetDate(char *cBuf,int Size)
 			tm1->tm_sec);
 	return cBuf;
 }
+struct tm * getTime(void)
+{
+	time_t timer;
+	timer = time(&timer);
+	return localtime(&timer);
+}
 
 /* ---------------------------------------------------------------------------*/
 /**
@@ -442,94 +448,6 @@ int jugdeRecIP(const char *pSrcIP,const char *pDestIP,const char *pMask)
 
 	return 1;
 }
-
-
-/* ---------------------------------------------------------------------------*/
-/**
- * @brief SetNetMac 根据系列号设置mac地址
- *
- * @param pImei 生产序列号
- * @param MAC 设置后的mac地址
- */
-/* ---------------------------------------------------------------------------*/
-void SetNetMac(unsigned char *pImei,char *MAC)
-{
-	unsigned char LastMacAddr; // 计算得到的Mac地址最后值
-	unsigned char tmpbuf[3] = {0};
-	char AddressBuf[20];
-
-//	struct timeval tpstart;
-
-	memset(AddressBuf, 0, sizeof(AddressBuf));
-//  	gettimeofday(&tpstart,NULL);
-//    srand(tpstart.tv_usec);
-
-//	LastMacAddr = (1+(int) (255.0*rand()/(RAND_MAX+1.0)));
-//	sprintf(&AddressBuf[0], "%02X:", LastMacAddr);
-
-//	LastMacAddr = (1+(int) (255.0*rand()/(RAND_MAX+1.0)));
-//	sprintf(&AddressBuf[3], "%02X:", LastMacAddr);
-
-//	LastMacAddr = (1+(int) (255.0*rand()/(RAND_MAX+1.0)));
-//	sprintf(&AddressBuf[6], "%02X:", LastMacAddr);
-
-	memcpy(AddressBuf,MAC,sizeof(AddressBuf));
-
-	LastMacAddr = pImei[0]^pImei[3];
-	sprintf(tmpbuf, "%02X", LastMacAddr);
-	AddressBuf[16] = tmpbuf[1];
-	AddressBuf[15] = tmpbuf[0];
-
-	LastMacAddr = pImei[1]^pImei[4];
-	sprintf(tmpbuf, "%02X:", LastMacAddr);
-	AddressBuf[14] = tmpbuf[2];
-	AddressBuf[13] = tmpbuf[1];
-	AddressBuf[12] = tmpbuf[0];
-
-	LastMacAddr = pImei[2]^pImei[5];
-	sprintf(tmpbuf, "%02X:", LastMacAddr);
-	AddressBuf[11] = tmpbuf[2];
-	AddressBuf[10] = tmpbuf[1];
-	AddressBuf[9] = tmpbuf[0];
-
-	memset(MAC,0,sizeof(AddressBuf));
-	memcpy(MAC,AddressBuf,sizeof(AddressBuf));
-}
-//---------------------------------------------------------------------------
-// flag =0 临时使用IP  =1正式使用IP
-void SetNetwork(int flag,const char *cIp,const char *cMask,const char *cGateWay,const char *cMac)
-{
-	FILE *fp;
-	char shfile[16];
-
-	memset(shfile, 0, sizeof(shfile));
-	if(flag == 1) // 正式文件
-		strcpy(shfile,"./route.sh");
-	else
-		strcpy(shfile,"./route_temp.sh");
-	fp = fopen(shfile,"wb");
-	if(fp)
-	{
-		fprintf(fp,"#!/bin/sh\n");
-		fprintf(fp,"/sbin/ifconfig eth0 down\n");
-		if(cIp && cMask)
-			fprintf(fp,"/sbin/ifconfig eth0 %s netmask %s\n",cIp,cMask);
-		if(cMac)
-			fprintf(fp,"/sbin/ifconfig eth0 hw ether %s\n",cMac);
-		if(cGateWay)
-			fprintf(fp,"/sbin/route add default gw %s dev eth0\n",cGateWay);
-		fprintf(fp,"/sbin/ifconfig eth0 up\n");
-		fclose(fp);
-		fp = NULL;
-		excuteCmd(shfile,NULL);
-		sync();
-	}
-	else
-		DPRINT("Can't open %s\n", shfile);
-	if(fp)
-		fclose(fp);
-}
-
 /* ----------------------------------------------------------------*/
 /**
  * @brief GetFileSize 获得文件大小

@@ -57,7 +57,8 @@ static void buttonLocalPress(HWND hwnd, int id, int nc, DWORD add_data);
 
 #define BMP_LOCAL_PATH "setting/"
 enum {
-	IDC_BUTTON_EXIT = IDC_FORM_SETTING_START,
+	IDC_TIMER_1S = IDC_FORM_SETTING_START,
+	IDC_BUTTON_EXIT,
 	IDC_BUTTON_WIFI,
 	IDC_BUTTON_SCREEN,
 	IDC_BUTTON_DOORBELL,
@@ -75,6 +76,7 @@ enum {
  *                      variables define
  *----------------------------------------------------------------------------*/
 static BITMAP bmp_bkg_setting; // 背景
+static HWND return_hwnd; // 背景
 
 static int bmp_load_finished = 0;
 
@@ -102,6 +104,7 @@ static MY_DLGTEMPLATE DlgInitParam =
 
 static FormBasePriv form_base_priv= {
 	.name = "Fset",
+	.idc_timer = IDC_TIMER_1S,
 	.dlgProc = formSettingProc,
 	.dlgInitParam = &DlgInitParam,
 	.initPara =  initPara,
@@ -191,8 +194,7 @@ static void buttonExitPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
-    // Screen.ReturnMain();
-    SendMessage(GetParent(hwnd), MSG_CLOSE,0,0);
+	ShowWindow(GetParent(hwnd),SW_HIDE);
 }
 
 void formSettingLoadBmp(void)
@@ -253,8 +255,9 @@ static int formSettingProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
     return DefaultDialogProc(hDlg, message, wParam, lParam);
 }
 
-int createFormSetting(HWND hMainWnd)
+int createFormSetting(HWND hMainWnd,void (*callback)(void))
 {
+	return_hwnd = hMainWnd;
 	HWND Form = Screen.Find(form_base_priv.name);
 	if(Form) {
 		ShowWindow(Form,SW_SHOWNORMAL);
@@ -264,6 +267,7 @@ int createFormSetting(HWND hMainWnd)
             return 0;
         }
 		form_base_priv.hwnd = hMainWnd;
+		form_base_priv.callBack = callback;
 		form_base = formBaseCreate(&form_base_priv);
 		return CreateMyWindowIndirectParam(form_base->priv->dlgInitParam,
 				form_base->priv->hwnd,

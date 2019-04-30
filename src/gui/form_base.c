@@ -38,8 +38,6 @@
 	#define DBG_P( x... )
 #endif
 
-#define IDC_FORM_BASE_TIMER 		200
-
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
@@ -54,7 +52,7 @@ static int formBaseProc(FormBase *this,HWND hDlg, int message, WPARAM wParam, LP
 				this->auto_close_time = FORM_SETTING_ONTIME;
 				if (this->priv->initPara)
 					this->priv->initPara(hDlg,message,wParam,lParam);
-                SetTimer(hDlg,IDC_FORM_BASE_TIMER,100);
+                SetTimer(hDlg,this->priv->idc_timer,100);
 
 			} return FORM_CONTINUE;
 
@@ -66,18 +64,28 @@ static int formBaseProc(FormBase *this,HWND hDlg, int message, WPARAM wParam, LP
 
 		case MSG_TIMER:
 			{
-				if (wParam != IDC_FORM_BASE_TIMER){
+				if (wParam != this->priv->idc_timer){
 					return FORM_CONTINUE;
 				}
 				if (this->auto_close_time > 0) {
-					printf("[%s]time:%d\n", __FILE__,this->auto_close_time);
+					printf("[%s]auto close:%d\n", this->priv->name,this->auto_close_time);
 					if (--this->auto_close_time == 0) {
-                        SendMessage(hDlg, MSG_CLOSE,0,0);
-                        // ShowWindow(hDlg,SW_HIDE);
+                        // SendMessage(hDlg, MSG_CLOSE,0,0);
+						ShowWindow(hDlg,SW_HIDE);
 					}
 				}
 			} return FORM_CONTINUE;
 
+		case MSG_SHOWWINDOW:
+			{
+				if (wParam == SW_HIDE) {
+					this->auto_close_time = 0;
+					if(this->priv->callBack)
+						this->priv->callBack();
+				} else if (wParam == SW_SHOWNORMAL) {
+					this->auto_close_time = FORM_SETTING_ONTIME;
+				}
+			}return FORM_CONTINUE;
 		case MSG_ERASEBKGND:
 			{
 				drawBackground(hDlg,
@@ -87,8 +95,8 @@ static int formBaseProc(FormBase *this,HWND hDlg, int message, WPARAM wParam, LP
 
 		case MSG_CLOSE:
 			{
-				if (IsTimerInstalled(hDlg,IDC_FORM_BASE_TIMER) == TRUE)
-                    KillTimer (hDlg,IDC_FORM_BASE_TIMER);
+				if (IsTimerInstalled(hDlg,this->priv->idc_timer) == TRUE)
+                    KillTimer (hDlg,this->priv->idc_timer);
 				DestroyMainWindow (hDlg);
 				MainWindowThreadCleanup (hDlg);
 			} return FORM_STOP;

@@ -36,9 +36,11 @@ extern "C" {
 		char *name;
 		BITMAP *bmp_bkg;
 		MY_DLGTEMPLATE *dlgInitParam;
+		int idc_timer;
 		int (*dlgProc)(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 
 		void (*initPara)(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
+		void (*callBack)(void);
 	}FormBasePriv;
 
 	typedef struct _FormBase {

@@ -1,12 +1,12 @@
 /*
  * =============================================================================
  *
- *       Filename:  form_idcs.h
+ *       Filename:  hal_battery.h
  *
- *    Description:  各个窗口IDC汇总
+ *    Description:  硬件层 看门狗接口
  *
- *        Version:  1.0
- *        Created:  2019-04-24 22:45:03 
+ *        Version:  virsion
+ *        Created:  2018-12-12 15:52:30 
  *       Revision:  none
  *
  *         Author:  xubin
@@ -14,16 +14,14 @@
  *
  * =============================================================================
  */
-#ifndef _FORM_IDCS_H
-#define _FORM_IDCS_H
+#ifndef _HAL_BATTERY_H
+#define _HAL_BATTERY_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif  /* __cplusplus */
 
-#define IDC_FORM_MAIN_START 100
-#define IDC_FORM_SETTING_START 150
-#define IDC_FORM_VIDEO_START 200
+	int halBatteryGetEle(void);
 
 #ifdef __cplusplus
 }

@@ -35,6 +35,8 @@ extern "C" {
 		WORD_RECORD,//记录
 		WORD_CAPTURE,//抓拍
 		WORD_VIDEO,//录像
+		WORD_UNLOCK,//开门
+		WORD_HANGUP,//挂断
 	};
 	typedef struct {
 		char string[64];	

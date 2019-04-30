@@ -42,5 +42,6 @@ void print_data(char *data,int len);
 int GetFilesNum(char *pPathDir,void (*func)(void *));
 
 int recoverData(const char *file);
+struct tm * getTime(void);
 #endif
 
