@@ -1,9 +1,9 @@
 /*
  * =============================================================================
  *
- *       Filename:  form_setting.c
+ *       Filename:  form_setting_wifi.c
  *
- *    Description:  设置界面
+ *    Description:  wifi设置界面
  *
  *        Version:  1.0
  *        Created:  2018-03-01 23:32:41
@@ -29,7 +29,6 @@
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
-extern int createFormSettingWifi(HWND hMainWnd,void (*callback)(void));
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -58,7 +57,7 @@ static void buttonLocalPress(HWND hwnd, int id, int nc, DWORD add_data);
 
 #define BMP_LOCAL_PATH "setting/"
 enum {
-	IDC_TIMER_1S = IDC_FORM_SETTING_START,
+	IDC_TIMER_1S = IDC_FORM_SETTING_WIFI_STATR,
 	IDC_BUTTON_EXIT,
 	IDC_BUTTON_WIFI,
 	IDC_BUTTON_SCREEN,
@@ -78,8 +77,6 @@ enum {
  *----------------------------------------------------------------------------*/
 static BITMAP bmp_bkg_setting; // 背景
 
-static int bmp_load_finished = 0;
-static int flag_timer_stop = 0;
 
 static BmpLocation bmp_load[] = {
     // {&bmp_bkg_setting,BMP_LOCAL_PATH"bkg_setting.png"},
@@ -104,7 +101,7 @@ static MY_DLGTEMPLATE DlgInitParam =
 };
 
 static FormBasePriv form_base_priv= {
-	.name = "Fset",
+	.name = "Fsetwifi",
 	.idc_timer = IDC_TIMER_1S,
 	.dlgProc = formSettingProc,
 	.dlgInitParam = &DlgInitParam,
@@ -130,10 +127,6 @@ static MyCtrlStatic ctrls_static[] = {
 
 static FormBase* form_base = NULL;
 
-static void enableAutoClose(void)
-{
-	flag_timer_stop = 0;	
-}
 /* ----------------------------------------------------------------*/
 /**
  * @brief buttonWifiPress wifi设置
@@ -148,8 +141,6 @@ static void buttonWifiPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
-	flag_timer_stop = 1;
-    createFormSettingWifi(GetParent(hwnd),enableAutoClose);
 }
 static void buttonScreenPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
@@ -204,15 +195,9 @@ static void buttonExitPress(HWND hwnd, int id, int nc, DWORD add_data)
 	ShowWindow(GetParent(hwnd),SW_HIDE);
 }
 
-void formSettingLoadBmp(void)
+void formSettingWifiLoadBmp(void)
 {
-    if (bmp_load_finished == 1)
-        return;
 
-	printf("[%s]\n", __FUNCTION__);
-    bmpsLoad(bmp_load);
-    my_button->bmpsLoad(ctrls_button,BMP_LOCAL_PATH);	
-    bmp_load_finished = 1;
 }
 
 /* ----------------------------------------------------------------*/
@@ -254,12 +239,6 @@ static int formSettingProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 {
     switch(message) // 自定义消息
     {
-		case MSG_TIMER:
-			{
-				if (flag_timer_stop)
-					return 0;
-			} break;
-
         default:
             break;
     }
@@ -268,16 +247,12 @@ static int formSettingProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
     return DefaultDialogProc(hDlg, message, wParam, lParam);
 }
 
-int createFormSetting(HWND hMainWnd,void (*callback)(void))
+int createFormSettingWifi(HWND hMainWnd,void (*callback)(void))
 {
 	HWND Form = Screen.Find(form_base_priv.name);
 	if(Form) {
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
-        if (bmp_load_finished == 0) {
-            // topMessage(hMainWnd,TOPBOX_ICON_LOADING,NULL );
-            return 0;
-        }
 		form_base_priv.hwnd = hMainWnd;
 		form_base_priv.callBack = callback;
 		form_base = formBaseCreate(&form_base_priv);

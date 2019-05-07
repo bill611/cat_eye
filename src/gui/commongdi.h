@@ -73,6 +73,7 @@ extern "C" {
     void bmpRelease(BITMAP *bmp);
     void bmpsRelease(BmpLocation *bmp);
     void fontsLoad(FontLocation *font);
+    int myMoveWindow(HWND ctrl, int x,int y);
 
     extern PLOGFONT font22;
     extern PLOGFONT font20;

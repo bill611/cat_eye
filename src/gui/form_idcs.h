@@ -24,6 +24,7 @@ extern "C" {
 #define IDC_FORM_MAIN_START 100
 #define IDC_FORM_SETTING_START 150
 #define IDC_FORM_VIDEO_START 200
+#define IDC_FORM_SETTING_WIFI_STATR 250
 
 #ifdef __cplusplus
 }

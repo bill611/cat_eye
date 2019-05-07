@@ -11,6 +11,7 @@
 #include "my_button.h"
 #include "my_status.h"
 #include "my_static.h"
+#include "my_title.h"
 
 #include "language.h"
 /* ---------------------------------------------------------------------------*
@@ -39,6 +40,10 @@ enum {
 };
 
 typedef void (*InitBmpFunc)(void) ;
+typedef struct {
+   void (*init)(void); 
+   MyControls ** controls;
+}MyCtrls;
 
 #define TIME_1S (10 * 5)
 
@@ -53,6 +58,13 @@ enum {
 PLOGFONT font22;
 PLOGFONT font20;
 
+static MyCtrls ctrls[] = {
+    {initMyButton,&my_button},
+    {initMyStatus,&my_status},
+    {initMyStatic,&my_static},
+    {initMyTitle,&my_title},
+    {NULL},
+};
 static FontLocation font_load[] = {
     {&font22,   22,FONT_WEIGHT_DEMIBOLD},
     {&font20,   20,FONT_WEIGHT_DEMIBOLD},
@@ -183,12 +195,11 @@ void formVideoLayerCreate(void)
 {
     MAINWINCREATE CreateInfo;
 
-    initMyButton();
-    initMyStatus();
-    initMyStatic();
-    my_button->regist();
-    my_status->regist();
-    my_static->regist();
+    int i;
+    for (i=0; ctrls[i].init != NULL; i++) {
+        ctrls[i].init();
+        (*ctrls[i].controls)->regist();
+    }
 
     CreateInfo.dwStyle = WS_NONE;
 	CreateInfo.dwExStyle = WS_EX_AUTOSECONDARYDC;
@@ -217,9 +228,9 @@ void formVideoLayerCreate(void)
 		DispatchMessage(&Msg);
 	}
 
-    my_button->unregist();
-    my_status->unregist();
-    my_static->unregist();
+    for (i=0; ctrls[i].init != NULL; i++) {
+        (*ctrls[i].controls)->unregist();
+    }
 
     MainWindowThreadCleanup (hwnd_videolayer);
 	hwnd_videolayer = 0;

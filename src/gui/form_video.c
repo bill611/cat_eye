@@ -186,7 +186,7 @@ static void updateDisplay(HWND hDlg)
 	} else if (form_type == FORM_VIDEO_TYPE_RECORD) {
 		ShowWindow(GetDlgItem(hDlg,IDC_BUTTON_UNLOCK),SW_HIDE);
 		ShowWindow(GetDlgItem(hDlg,IDC_BUTTON_HANGUP),SW_SHOWNORMAL);
-		MoveWindow(GetDlgItem(hDlg,IDC_BUTTON_HANGUP), 467,451,88,88,TRUE);
+		myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_HANGUP), 467,451);
 	}
 }
 
