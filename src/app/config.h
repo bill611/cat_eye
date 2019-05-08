@@ -55,13 +55,7 @@ extern "C" {
 	};
 	typedef struct {
         // ethernet
-		char dhcp[3];
-		char ipaddr[16];
-		char netmask[16];
-		char gateway[16];
-		char macaddr[20];
-		char firstdns[16];
-		char backdns[16];
+		int enable;
 
 		// station 
 		char ssid[64];
@@ -70,9 +64,6 @@ extern "C" {
 		char password[64];
 		char running[64];
 
-		// ap
-		char s_ssid[64];
-		char s_password[64];
 	}TcWifiConfig;
 
 	extern TcWifiConfig tc_wifi_config;
@@ -82,7 +73,6 @@ extern "C" {
 	typedef struct _Config {
         char imei[64];      // 太川设备机身码
         char version[16];      // 太川软件版本
-		struct DevConfig gate_way;	//网关阿里相关参数
         TcWifiConfig net_config;  // 网络设置
 	} Config;
 

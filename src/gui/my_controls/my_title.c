@@ -45,14 +45,14 @@ static int myTitleControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lPa
  *                      variables define
  *-----------------------------------------------------------------*/
 MyControls *my_title;
-static BITMAP image_swich_close;// 关闭状态图片
-static BITMAP image_swich_open;	// 打开状态图片
+static BITMAP image_swich_off;// 关闭状态图片
+static BITMAP image_swich_on;	// 打开状态图片
 static BITMAP image_add;	    // 添加按钮图片
 static BITMAP image_exit;	    // 退出按钮图片
 
 static BmpLocation base_bmps[] = {
-	{&image_swich_close,"setting/Switch Off_小.png"},
-	{&image_swich_open, "setting/Switch On_小.png"},
+	{&image_swich_off,"setting/Switch Off_小.png"},
+	{&image_swich_on, "setting/Switch On_小.png"},
 	{&image_add,        "setting/ico_添加.png"},
 	{&image_exit,       "setting/arrow-back.png"},
 	{NULL},
@@ -88,6 +88,31 @@ static void myTitleCleanUp (void)
     UnregisterWindowClass(CTRL_NAME);
 }
 
+static int clickInButton(MyTitleCtrlInfo* pInfo,int x,int y)
+{
+    RECT *rc = NULL;
+    int ret = MYTITLE_BUTTON_NULL;
+    if (pInfo->flag_left == MYTITLE_LEFT_EXIT) {
+        rc = &pInfo->bt_exit.rc;
+        if (PtInRect (rc, x, y) && PtInRect (rc, pInfo->click_x, pInfo->click_y))
+            return MYTITLE_BUTTON_EXIT;
+    }
+    if (pInfo->flag_right == MYTITLE_RIGHT_ADD) {
+        rc = &pInfo->bt_add.rc;
+        if (PtInRect (rc, x, y) && PtInRect (rc, pInfo->click_x, pInfo->click_y))
+            ret = MYTITLE_BUTTON_ADD;
+    } else if (pInfo->flag_right == MYTITLE_RIGHT_SWICH) {
+        rc = &pInfo->bt_swich.rc;
+        if (PtInRect (rc, x, y) && PtInRect (rc, pInfo->click_x, pInfo->click_y)) {
+            ret = MYTITLE_BUTTON_SWICH;
+            if (pInfo->bt_swich.state == MYTITLE_SWICH_ON)
+                pInfo->bt_swich.state = MYTITLE_SWICH_OFF;
+            else
+                pInfo->bt_swich.state = MYTITLE_SWICH_ON;
+        }
+    }
+    return ret;
+}
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief paint 主要绘图函数
@@ -98,7 +123,7 @@ static void myTitleCleanUp (void)
 /* ---------------------------------------------------------------------------*/
 static void paint(HWND hWnd,HDC hdc)
 {
-#define FILL_BMP_STRUCT(rc,img)  rc.left, rc.top,img.bmWidth,img.bmHeight,&img
+#define FILL_BMP_STRUCT(rc,img)  rc.left, rc.top,img->bmWidth,img->bmHeight,img
 
 	RECT rc_bmp,rc_text;
     PCONTROL    pCtrl;
@@ -118,16 +143,21 @@ static void paint(HWND hWnd,HDC hdc)
     SelectFont (hdc, pInfo->font);
     DrawText (hdc,pInfo->text, -1, &rc_text,
             DT_CENTER | DT_VCENTER | DT_WORDBREAK  | DT_SINGLELINE);
-    if (pInfo->flag_right == MYTITLE_LEFT_EXIT) {
-		FillBoxWithBitmap(hdc,FILL_BMP_STRUCT(rc_bmp,image_exit));
+    if (pInfo->flag_left == MYTITLE_LEFT_EXIT) {
+		FillBoxWithBitmap(hdc,FILL_BMP_STRUCT(pInfo->bt_exit.rc,pInfo->bt_exit.image_nor));
     }
     if (pInfo->flag_right == MYTITLE_RIGHT_TEXT) {
-        rc_text.left = 930; 
+        rc_text.left = 930;
         DrawText (hdc,pInfo->text_right, -1, &rc_text,
                 DT_CENTER | DT_VCENTER | DT_WORDBREAK  | DT_SINGLELINE);
     } else if (pInfo->flag_right == MYTITLE_RIGHT_ADD) {
-        rc_bmp.left = 987;
-		FillBoxWithBitmap(hdc,FILL_BMP_STRUCT(rc_bmp,image_add));
+		FillBoxWithBitmap(hdc,FILL_BMP_STRUCT(pInfo->bt_add.rc,pInfo->bt_add.image_nor));
+    } else if (pInfo->flag_right == MYTITLE_RIGHT_SWICH) {
+        if (pInfo->bt_swich.state == MYTITLE_SWICH_ON) {
+            FillBoxWithBitmap(hdc,FILL_BMP_STRUCT(pInfo->bt_swich.rc,pInfo->bt_swich.image_pre));
+        } else {
+            FillBoxWithBitmap(hdc,FILL_BMP_STRUCT(pInfo->bt_swich.rc,pInfo->bt_swich.image_nor));
+        }
     }
 }
 
@@ -169,6 +199,25 @@ static int myTitleControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lPa
 				pInfo->font = data->font;
 				pInfo->bkg_color= data->bkg_color;
 				pInfo->font_color= data->font_color;
+
+                // 退出按键设置
+                pInfo->bt_exit.image_nor = &image_exit;
+                SetRect(&pInfo->bt_exit.rc,16,10,
+                        16 + pInfo->bt_exit.image_nor->bmWidth,
+                        10 + pInfo->bt_exit.image_nor->bmHeight);
+                // 添加按键设置
+                pInfo->bt_add.image_nor = &image_add;
+                SetRect(&pInfo->bt_add.rc,987,10,
+                        987 + pInfo->bt_add.image_nor->bmWidth,
+                        10 + pInfo->bt_add.image_nor->bmHeight);
+                // 开关按键设置
+                pInfo->bt_swich.image_nor = &image_swich_off;
+                pInfo->bt_swich.image_pre = &image_swich_on;
+                SetRect(&pInfo->bt_swich.rc,974,10,
+                        974 + pInfo->bt_swich.image_nor->bmWidth,
+                        10 + pInfo->bt_swich.image_nor->bmHeight);
+                pInfo->bt_swich.state = MYTITLE_SWICH_OFF;
+
 				pCtrl->dwAddData2 = (DWORD)pInfo;
 				return 0;
 			}
@@ -187,6 +236,46 @@ static int myTitleControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lPa
                 strcpy(pInfo->text,(char*)wParam);
             InvalidateRect (hwnd, NULL, TRUE);
 			break;
+
+		case MSG_MYTITLE_SET_SWICH:
+            pInfo->bt_swich.state = wParam; 
+            InvalidateRect (hwnd, NULL, TRUE);
+			break;
+
+        case MSG_LBUTTONDOWN:
+            {
+                int x, y;
+                x = LOSWORD(lParam);
+                y = HISWORD(lParam);
+                if (GetCapture () == hwnd)
+                    break;
+
+                SetCapture (hwnd);
+                pInfo->click_x = x;
+                pInfo->click_y = y;
+            }
+            break;
+        case MSG_LBUTTONUP:
+            {
+                int x, y;
+                if (GetCapture() != hwnd) {
+                    // if(pInfo->state!=BUT_NORMAL) {
+                        // pInfo->state = BUT_NORMAL;
+                        // InvalidateRect (hwnd, NULL, TRUE);
+                    // }
+                    break;
+                }
+                ReleaseCapture ();
+                x = LOSWORD(lParam);
+                y = HISWORD(lParam);
+                int click_type = clickInButton(pInfo,x,y);
+                if (click_type) {
+                    NotifyParentEx (hwnd, pCtrl->id, click_type,pInfo->bt_swich.state);
+                    InvalidateRect (hwnd, NULL, TRUE);
+                }
+
+                // printf("up,x:%d,y:%d\n",x,y );
+            } break;
 
 		default:
 			break;

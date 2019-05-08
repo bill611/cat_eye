@@ -77,6 +77,7 @@ HWND GUIAPI CreateMyWindowIndirectParamEx (PMY_DLGTEMPLATE pDlgTemplate,
 		}
 		if (pCtrlData->font != NULL)
 	       SetWindowFont(hCtrl,*pCtrlData->font);
+        SetWindowElementAttr(hCtrl, WE_FGC_WINDOW, pCtrlData->font_color);
 	}
 
 #if 0

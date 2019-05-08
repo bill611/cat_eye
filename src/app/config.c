@@ -34,19 +34,12 @@ static EtcValueChar etc_public_char[]={
 };
 
 static EtcValueInt etc_private_int[]={
+{"wireless",	"enable",	&g_config.net_config.enable,		1},
 };
 
 static EtcValueChar etc_private_char[]={
-{"taichuan",	"imei",	            SIZE_CONFIG(g_config.imei),		"0"},
-{"taichuan",	"version",	        SIZE_CONFIG(g_config.version),		CATEYE_VERSION},
-
-{"ethernet",	"dhcp",	    SIZE_CONFIG(g_config.net_config.dhcp),		"1"},
-{"ethernet",	"ipaddr",	SIZE_CONFIG(g_config.net_config.ipaddr),	"172.16.10.10"},
-{"ethernet",	"netmask",	SIZE_CONFIG(g_config.net_config.netmask),	"255.255.0.0"},
-{"ethernet",	"gateway",	SIZE_CONFIG(g_config.net_config.gateway),	"172.16.1.1"},
-{"ethernet",	"macaddr",	SIZE_CONFIG(g_config.net_config.macaddr),	"00:01:02:03:04:05"},
-{"ethernet",	"firstdns",	SIZE_CONFIG(g_config.net_config.firstdns),	"114.114.114.114"},
-{"ethernet",	"backdns",	SIZE_CONFIG(g_config.net_config.backdns),	"8.8.8.8"},
+{"taichuan",	"imei",	    SIZE_CONFIG(g_config.imei),		"0"},
+{"taichuan",	"version",	SIZE_CONFIG(g_config.version),		CATEYE_VERSION},
 
 {"wireless",	"ssid",	    SIZE_CONFIG(g_config.net_config.ssid),		"MINI"},
 {"wireless",	"mode",	    SIZE_CONFIG(g_config.net_config.mode),		"Infra"},
@@ -54,20 +47,17 @@ static EtcValueChar etc_private_char[]={
 {"wireless",	"password",	SIZE_CONFIG(g_config.net_config.password),	"12345678"},
 {"wireless",	"running",	SIZE_CONFIG(g_config.net_config.running),	"station"},
 
-{"softap",	    "s_ssid",	 SIZE_CONFIG(g_config.net_config.s_ssid),	  "alitest"},
-{"softap",	    "s_password",SIZE_CONFIG(g_config.net_config.s_password),"12345678"},
 };
 
 
 void configSync(void)
 {
-#if defined(CFG_NOR_ENABLE) && CFG_NOR_CACHE_SIZE > 0
-    ioctl(ITP_DEVICE_NOR, ITP_IOCTL_FLUSH, NULL);
-#endif
+    sync();
 }
+
 static int etcFileCheck(void)
 {
-	const char * buf = iniparser_getstring(cfg_private_ini, "gateway:product_key", "0");
+	const char * buf = iniparser_getstring(cfg_private_ini, "taichuan:imei", "0");
 	if (strcmp(buf,"0") == 0) {
 		recoverData(CFG_PRIVATE_DRIVE  INI_PRIVATE_FILENAME);
 		return 0;
@@ -248,7 +238,7 @@ static int loadIniFile(dictionary **d,char *file_path,char *sec[])
 
 void configLoad(void)
 {
-	char *sec_private[] = {"gateway","taichuan","ethernet","wireless","softap",NULL};
+	char *sec_private[] = {"gateway","taichuan","wireless",NULL};
 
 	int ret = loadIniFile(&cfg_private_ini,CFG_PRIVATE_DRIVE  INI_PRIVATE_FILENAME,sec_private);
 	configLoadEtcInt(cfg_private_ini,etc_private_int,NELEMENTS(etc_private_int));

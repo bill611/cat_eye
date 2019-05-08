@@ -21,7 +21,7 @@
 #include "screen.h"
 
 #include "my_button.h"
-#include "my_static.h"
+#include "my_title.h"
 #include "language.h"
 
 #include "form_base.h"
@@ -69,7 +69,7 @@ enum {
 	IDC_BUTTON_FACTORY,
 	IDC_BUTTON_LOCAL,
 
-	IDC_STATIC_TITLE,
+	IDC_TITLE,
 };
 
 
@@ -120,11 +120,19 @@ static MyCtrlButton ctrls_button[] = {
 	{IDC_BUTTON_ALARM,	 MYBUTTON_TYPE_TWO_STATE,"报警设置",338,366,buttonAlarmPress,word[WORD_ALARM_SET].string},
 	{IDC_BUTTON_FACTORY, MYBUTTON_TYPE_TWO_STATE,"恢复出厂",577,366,buttonFactoryPress,word[WORD_FACTORY].string},
 	{IDC_BUTTON_LOCAL,	 MYBUTTON_TYPE_TWO_STATE,"本机设置",817,366,buttonLocalPress,word[WORD_LOCAL_SET].string},
-	{IDC_BUTTON_EXIT,	 MYBUTTON_TYPE_ONE_STATE,"arrow-back",16,10,buttonExitPress},
 	{0},
 };
-static MyCtrlStatic ctrls_static[] = {
-	{IDC_STATIC_TITLE, MYSTATIC_TYPE_TEXT,0,0,1024,40,word[WORD_SETTING].string,0xffffff,0x333333FF},
+static MyCtrlTitle ctrls_title[] = {
+	{
+        IDC_TITLE, 
+        MYTITLE_LEFT_EXIT,
+        MYTITLE_RIGHT_NULL,
+        0,0,1024,40,
+        word[WORD_SETTING].string,
+        "",
+        0xffffff, 0x333333FF,
+        buttonExitPress,
+    },
 	{0},
 };
 
@@ -199,8 +207,6 @@ static void buttonLocalPress(HWND hwnd, int id, int nc, DWORD add_data)
 /* ----------------------------------------------------------------*/
 static void buttonExitPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
-	if (nc != BN_CLICKED)
-		return;
 	ShowWindow(GetParent(hwnd),SW_HIDE);
 }
 
@@ -228,9 +234,9 @@ void formSettingLoadBmp(void)
 static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 {
 	int i;
-    for (i=0; ctrls_static[i].idc != 0; i++) {
-        ctrls_static[i].font = font20;
-        createMyStatic(hDlg,&ctrls_static[i]);
+    for (i=0; ctrls_title[i].idc != 0; i++) {
+        ctrls_title[i].font = font20;
+        createMyTitle(hDlg,&ctrls_title[i]);
     }
     for (i=0; ctrls_button[i].idc != 0; i++) {
         ctrls_button[i].font = font22;

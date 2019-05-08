@@ -37,6 +37,7 @@ extern "C" {
 		WORD_VIDEO,//录像
 		WORD_UNLOCK,//开门
 		WORD_HANGUP,//挂断
+		WORD_WIFI_CLOSED,//WIFI已关闭，请点击开始
 	};
 	typedef struct {
 		char string[64];	
