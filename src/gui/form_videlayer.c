@@ -21,6 +21,7 @@ extern void createFormMain(HWND hMainWnd);
 extern void formMainLoadBmp(void);
 extern void formSettingLoadBmp(void);
 extern void formVideoLoadBmp(void);
+extern void formSettingWifiLoadBmp(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -76,6 +77,7 @@ static InitBmpFunc load_bmps_func[] = {
     formMainLoadBmp,
     formSettingLoadBmp,
 	formVideoLoadBmp,
+    formSettingWifiLoadBmp,
 	NULL,
 };
 

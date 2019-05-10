@@ -54,10 +54,10 @@ extern "C" {
         int first_type;
     }FontLocation;
 
-#define STATIC_LB(x,y,w,h,id,caption,dwAddData,font)    \
-	{"static",WS_CHILD|WS_VISIBLE|SS_CENTER,x,y,w,h,id,caption,dwAddData,WS_EX_TRANSPARENT,NULL,NULL,font}
+#define STATIC_LB(x,y,w,h,id,caption,font,color)    \
+	{"static",WS_CHILD|WS_VISIBLE|SS_CENTER,x,y,w,h,id,caption,0,WS_EX_TRANSPARENT,NULL,NULL,font,color}
 #define STATIC_IMAGE(x,y,w,h,id,dwAddData)  \
-	    {"static",WS_CHILD|WS_VISIBLE|SS_BITMAP|SS_CENTERIMAGE,x,y,w,h,id,"",dwAddData,WS_EX_TRANSPARENT,NULL,NULL,NULL}
+	    {"static",WS_CHILD|WS_VISIBLE|SS_BITMAP|SS_CENTERIMAGE,x,y,w,h,id,"",dwAddData,WS_EX_TRANSPARENT,NULL,NULL,NULL,0}
 
 
     void drawBackground(HWND hWnd, HDC hdc, const RECT* pClipRect,BITMAP *Image,int color);
