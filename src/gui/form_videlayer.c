@@ -12,7 +12,6 @@
 #include "my_status.h"
 #include "my_static.h"
 #include "my_title.h"
-#include "my_scrollview.h"
 
 #include "language.h"
 /* ---------------------------------------------------------------------------*
@@ -24,8 +23,6 @@ extern void formSettingLoadBmp(void);
 extern void formVideoLoadBmp(void);
 extern void formSettingWifiLoadBmp(void);
 
-MyControls *my_scrollview;
-void initMyScrollview(void);
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
  *----------------------------------------------------------------------------*/
@@ -67,8 +64,6 @@ static MyCtrls ctrls[] = {
     {initMyStatus,&my_status},
     {initMyStatic,&my_static},
     {initMyTitle,&my_title},
-    {initMyScrollview,&my_scrollview},
-
     {NULL},
 };
 static FontLocation font_load[] = {

@@ -37,21 +37,21 @@ INC_DIR += \
 		  $(MAKEROOT)/src/app\
 		  $(MAKEROOT)/src/gui\
 		  $(MAKEROOT)/src/gui/my_controls\
-		  $(MAKEROOT)/src/gui/my_controls/my_scrollview\
 		  $(MAKEROOT)/src/drivers\
 		  $(MAKEROOT)/src/hal\
 		  $(MAKEROOT)/src/wireless\
+		  # $(MAKEROOT)/src/gui/my_controls/my_scrollview\
 
 
 SRC = \
 		$(wildcard ${SRC_DIR}/app/*.c) \
 		$(wildcard ${SRC_DIR}/gui/*.c) \
 		$(wildcard ${SRC_DIR}/gui/my_controls/*.c) \
-		$(wildcard ${SRC_DIR}/gui/my_controls/my_scrollview/*.c) \
 		$(wildcard ${SRC_DIR}/drivers/*.c) \
 		$(wildcard ${SRC_DIR}/drivers/iniparser/*.c) \
 		$(wildcard ${SRC_DIR}/hal/*.c) \
 		$(wildcard ${SRC_DIR}/wireless/*.c) \
+		# $(wildcard ${SRC_DIR}/gui/my_controls/my_scrollview/*.c) \
 
 
 

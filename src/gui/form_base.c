@@ -68,7 +68,7 @@ static int formBaseProc(FormBase *this,HWND hDlg, int message, WPARAM wParam, LP
 					return FORM_CONTINUE;
 				}
 				if (this->auto_close_time > 0) {
-					printf("[%s]auto close:%d\n", this->priv->name,this->auto_close_time);
+					// printf("[%s]auto close:%d\n", this->priv->name,this->auto_close_time);
 					if (--this->auto_close_time == 0) {
                         // SendMessage(hDlg, MSG_CLOSE,0,0);
 						ShowWindow(hDlg,SW_HIDE);

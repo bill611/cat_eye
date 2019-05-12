@@ -3,10 +3,10 @@ ${OBJ_DIR}/%.o:%.c
 
 CURRENT_SRC=$(wildcard *.c)
 SRC=$(patsubst %.c,${OBJ_DIR}/%.o,$(notdir ${CURRENT_SRC}))
-all: make_C $(SRC)
+all: $(SRC)
 
-make_C:
-	    @make -C my_scrollview
+# make_C:
+		# @make -C my_scrollview
 
 -include $(DEPS)
 

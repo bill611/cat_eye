@@ -58,10 +58,13 @@ extern "C" {
 	{"static",WS_CHILD|WS_VISIBLE|SS_CENTER,x,y,w,h,id,caption,0,WS_EX_TRANSPARENT,NULL,NULL,font,color}
 #define STATIC_IMAGE(x,y,w,h,id,dwAddData)  \
 	    {"static",WS_CHILD|WS_VISIBLE|SS_BITMAP|SS_CENTERIMAGE,x,y,w,h,id,"",dwAddData,WS_EX_TRANSPARENT,NULL,NULL,NULL,0}
+#define SCROLLVIEW(x,y,w,h,id)  \
+	    {"scrollview",WS_CHILD|WS_VISIBLE,x,y,w,h,id,"",0,WS_EX_TRANSPARENT,NULL,NULL,NULL,0}
 
 
     void drawBackground(HWND hWnd, HDC hdc, const RECT* pClipRect,BITMAP *Image,int color);
 	void drawWhiteFrame(HWND hWnd, HDC hdc, const RECT* pClipRect,int Left,int Top,int Width,int Height);
+	void drawRectangle (HDC hdc,  int x0, int y0, int x1, int y1, int color);
 	void wndEraseBackground(HWND hWnd,HDC hdc, const RECT* pClipRect,BITMAP *pImage,int Left,int Top,int Width,int Height);
 	void getPartFromBmp(const BITMAP *bmp,BITMAP *DstBitmap,int Left,int Top,int Width,int Height);
 	void myFillBox(HDC hdc, RECT rc, int color);

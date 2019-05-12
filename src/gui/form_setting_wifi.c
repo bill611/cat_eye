@@ -51,27 +51,82 @@ static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data);
 #define BMP_LOCAL_PATH "setting/"
 enum {
 	IDC_TIMER_1S = IDC_FORM_SETTING_WIFI_STATR,
-	IDC_STATIC_IMG__WARNING,
+	IDC_STATIC_IMG_WARNING,
 	IDC_STATIC_TEXT_WARNING,
+
+	IDC_SCROLLVIEW,
+	IDC_BUTTON_NETX,
+	IDC_BUTTON_PREV,
 
 	IDC_TITLE,
 };
 
+enum {
+	SCROLLVIEW_ITEM_TYPE_TITLE,
+	SCROLLVIEW_ITEM_TYPE_LIST,
+};
+struct ScrollviewItem {
+	int type; // 选项类型
+	int enable; // 是否选中
+	int security; // 加密 0,1
+	int strength; // 信号强度
+	char text[32]; // 文字
+};
 
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
+static HWND hScrollView;
+// static struct ScrollviewItem *wifi_list;
+// TEST
+static struct ScrollviewItem wifi_list[] = {
+	{
+		.type = SCROLLVIEW_ITEM_TYPE_LIST,
+		.enable = 1,
+		.security = 1,
+		.strength = 1,
+	},
+	{
+		.type = SCROLLVIEW_ITEM_TYPE_TITLE,
+	},
+	{
+		.type = SCROLLVIEW_ITEM_TYPE_LIST,
+		.security = 1,
+		.strength = 0,
+	},
+	{
+		.type = SCROLLVIEW_ITEM_TYPE_LIST,
+		.security = 1,
+		.strength = 1,
+	},
+	{
+		.type = SCROLLVIEW_ITEM_TYPE_LIST,
+		.security = 0,
+		.strength = 2,
+	},
+};
 static BITMAP bmp_warning; // 警告
+static BITMAP bmp_security; // 加密
+static BITMAP bmp_select; // 选中
+static BITMAP bmp_enter; // 进入
+static BITMAP bmp_wifi[3]; // wifi强度
 
 
 static BmpLocation bmp_load[] = {
-    {&bmp_warning,BMP_LOCAL_PATH"ico_警告.png"},
+    {&bmp_warning,	BMP_LOCAL_PATH"ico_警告.png"},
+    {&bmp_security,	BMP_LOCAL_PATH"ico_lock.png"},
+    {&bmp_select,	BMP_LOCAL_PATH"ico_对.png"},
+    {&bmp_enter,	BMP_LOCAL_PATH"ico_返回_1.png"},
+    {&bmp_wifi[0],	BMP_LOCAL_PATH"ico_wifi_2.png"},
+    {&bmp_wifi[1],	BMP_LOCAL_PATH"ico_wifi_1.png"},
+    {&bmp_wifi[2],	BMP_LOCAL_PATH"ico_wifi.png"},
     {NULL},
 };
 
 static MY_CTRLDATA ChildCtrls [] = {
-    STATIC_IMAGE(452,216,120,120,IDC_STATIC_IMG__WARNING,(DWORD)&bmp_warning),
+    STATIC_IMAGE(452,216,120,120,IDC_STATIC_IMG_WARNING,(DWORD)&bmp_warning),
     STATIC_LB(0,358,1024,25,IDC_STATIC_TEXT_WARNING,word[WORD_WIFI_CLOSED].string,&font20,0xffffff),
+    SCROLLVIEW(0,40,1024,580,IDC_SCROLLVIEW),
 };
 
 static MY_DLGTEMPLATE DlgInitParam =
@@ -118,11 +173,13 @@ static FormBase* form_base = NULL;
 static void showWarning(HWND hwnd,int on_off)
 {
     if (on_off) {
-        ShowWindow(GetDlgItem(hwnd,IDC_STATIC_IMG__WARNING),SW_HIDE);
+        ShowWindow(GetDlgItem(hwnd,IDC_STATIC_IMG_WARNING),SW_HIDE);
         ShowWindow(GetDlgItem(hwnd,IDC_STATIC_TEXT_WARNING),SW_HIDE);
+        ShowWindow(GetDlgItem(hwnd,IDC_SCROLLVIEW),SW_SHOWNORMAL);
     } else {
-        ShowWindow(GetDlgItem(hwnd,IDC_STATIC_IMG__WARNING),SW_SHOWNORMAL);
+        ShowWindow(GetDlgItem(hwnd,IDC_STATIC_IMG_WARNING),SW_SHOWNORMAL);
         ShowWindow(GetDlgItem(hwnd,IDC_STATIC_TEXT_WARNING),SW_SHOWNORMAL);
+        ShowWindow(GetDlgItem(hwnd,IDC_SCROLLVIEW),SW_HIDE);
     }
 }
 /* ----------------------------------------------------------------*/
@@ -144,12 +201,87 @@ static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data)
         showWarning(GetParent(hwnd),add_data);
     }
 }
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief scrollviewNotify 
+ *
+ * @param hwnd
+ * @param id
+ * @param nc
+ * @param add_data
+ */
+/* ---------------------------------------------------------------------------*/
+static void scrollviewNotify(HWND hwnd, int id, int nc, DWORD add_data)
+{
+	if (nc == SVN_CLICKED) {
+		int idx = SendMessage (hScrollView, SVM_GETCURSEL, 0, 0);
+		struct ScrollviewItem *plist;
+		plist = (struct ScrollviewItem *)SendMessage (hScrollView, SVM_GETITEMADDDATA, idx, 0);
+		printf("idx:%d,name:%s\n", idx,plist->text);
+	}
+}
 
 void formSettingWifiLoadBmp(void)
 {
     bmpsLoad(bmp_load);
 }
+static void myDrawItem (HWND hWnd, HSVITEM hsvi, HDC hdc, RECT *rcDraw)
+{
+#define FILL_BMP_STRUCT(left,top,img)  \
+	FillBoxWithBitmap(hdc,left, top,img.bmWidth,img.bmHeight,&img)
 
+#define DRAW_TABLE(rc,offset,color)  \
+	do { \
+		SetPenColor (hdc, color); \
+		MoveTo (hdc, rc->left + offset, rc->top); \
+		LineTo (hdc, rc->right,rc->top); \
+		MoveTo (hdc, rc->left + offset, rc->bottom); \
+		LineTo (hdc, rc->right,rc->bottom); \
+	} while (0)
+
+	struct ScrollviewItem *p_item = (struct ScrollviewItem *)scrollview_get_item_adddata (hsvi);
+	SetBkMode (hdc, BM_TRANSPARENT);
+	SetTextColor (hdc, PIXEL_lightwhite);
+	SelectFont (hdc, font20);
+	if(p_item->type == SCROLLVIEW_ITEM_TYPE_TITLE) {
+		// 绘制表格
+		DRAW_TABLE(rcDraw,0,0x12345678);
+		TextOut (hdc, rcDraw->left + 30, rcDraw->top + 16, p_item->text);
+	} else {
+		if (p_item->enable) {
+			FILL_BMP_STRUCT(rcDraw->left + 33,rcDraw->top + 18,bmp_select);
+		}
+		if (p_item->security) {
+			FILL_BMP_STRUCT(rcDraw->left + 881,rcDraw->top + 15,bmp_security);
+		}
+		if (p_item->strength < 3)
+			FILL_BMP_STRUCT(rcDraw->left + 919,rcDraw->top + 15,bmp_wifi[p_item->strength]);
+		FILL_BMP_STRUCT(rcDraw->left + 968,rcDraw->top + 15,bmp_enter);
+		// 绘制表格
+		DRAW_TABLE(rcDraw,82,0x12345678);
+		// 输出文字
+		TextOut (hdc, rcDraw->left + 83, rcDraw->top + 15, p_item->text);
+	}
+}
+
+static void loadWifiData(void)
+{
+	int i;
+	SVITEMINFO svii;
+	sprintf(wifi_list[0].text,"%s","123");
+	sprintf(wifi_list[1].text,"%s",word[WORD_NET_NEARBY].string);
+	sprintf(wifi_list[2].text,"%s","456");
+	sprintf(wifi_list[3].text,"%s","789");
+	struct ScrollviewItem *plist = wifi_list;
+	for (i=0; i < 4; i++) {
+		svii.nItemHeight = 60;
+		svii.addData = (DWORD)plist;
+		svii.nItem = i;
+		SendMessage (hScrollView, SVM_ADDITEM, 0, (LPARAM)&svii);
+		SendMessage (hScrollView, SVM_SETITEMADDDATA, i, (DWORD)plist);
+		plist++;
+	}
+}
 /* ----------------------------------------------------------------*/
 /**
  * @brief initPara 初始化参数
@@ -171,6 +303,11 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
         ctrls_button[i].font = font22;
         createMyButton(hDlg,&ctrls_button[i]);
     }
+	hScrollView = GetDlgItem (hDlg, IDC_SCROLLVIEW);
+	SendMessage (hScrollView, SVM_SETITEMDRAW, 0, (LPARAM)myDrawItem);
+	//* 此处不能设置为回调函数，否则第一次返回为-1，minigui bug
+	// SetNotificationCallback(hScrollView,scrollviewNotify);
+	loadWifiData();
 	SendMessage(GetDlgItem(hDlg,IDC_TITLE),
             MSG_MYTITLE_SET_SWICH, (WPARAM)g_config.net_config.enable, 0);
     showWarning(hDlg,g_config.net_config.enable);
@@ -192,7 +329,14 @@ static int formSettingWifiProc(HWND hDlg, int message, WPARAM wParam, LPARAM lPa
 {
     switch(message) // 自定义消息
     {
-        default:
+		case MSG_COMMAND:
+			{
+				int id = LOWORD (wParam);
+				int code = HIWORD (wParam);
+				scrollviewNotify(hDlg,id,code,0);
+				break;
+			}
+		default:
             break;
     }
 	if (form_base->baseProc(form_base,hDlg, message, wParam, lParam) == FORM_STOP)
