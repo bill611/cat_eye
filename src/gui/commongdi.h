@@ -60,6 +60,9 @@ extern "C" {
 	    {"static",WS_CHILD|WS_VISIBLE|SS_BITMAP|SS_CENTERIMAGE,x,y,w,h,id,"",dwAddData,WS_EX_TRANSPARENT,NULL,NULL,NULL,0}
 #define SCROLLVIEW(x,y,w,h,id)  \
 	    {"scrollview",WS_CHILD|WS_VISIBLE,x,y,w,h,id,"",0,WS_EX_TRANSPARENT,NULL,NULL,NULL,0}
+#define EDIT(x,y,w,h,id,caption,font,color)  \
+	{CTRL_SLEDIT,WS_CHILD|WS_VISIBLE|ES_CENTER,\
+	    x,y,w,h,id,caption,0,WS_EX_TRANSPARENT,NULL,NULL,font,color}
 
 
     void drawBackground(HWND hWnd, HDC hdc, const RECT* pClipRect,BITMAP *Image,int color);

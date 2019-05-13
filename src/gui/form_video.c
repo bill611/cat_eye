@@ -29,7 +29,6 @@
 #include "my_status.h"
 #include "my_static.h"
 
-#include "language.h"
 #include "form_video.h"
 #include "form_base.h"
 /* ---------------------------------------------------------------------------*
@@ -92,8 +91,8 @@ static MyCtrlStatic ctrls_static[] = {
 };
 
 static MyCtrlButton ctrls_button[] = {
-	{IDC_BUTTON_HANGUP,MYBUTTON_TYPE_TWO_STATE,"挂断",80,451,buttonHangupPress,word[WORD_HANGUP].string},
-	{IDC_BUTTON_UNLOCK,MYBUTTON_TYPE_TWO_STATE,"开门",338,451,buttonUnlockPress,word[WORD_UNLOCK].string},
+	{IDC_BUTTON_HANGUP,MYBUTTON_TYPE_TWO_STATE,"挂断",80,451,buttonHangupPress},
+	{IDC_BUTTON_UNLOCK,MYBUTTON_TYPE_TWO_STATE,"开门",338,451,buttonUnlockPress},
 	{0},
 };
 

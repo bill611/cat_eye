@@ -13,7 +13,6 @@
 #include "my_static.h"
 #include "my_title.h"
 
-#include "language.h"
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
@@ -22,6 +21,7 @@ extern void formMainLoadBmp(void);
 extern void formSettingLoadBmp(void);
 extern void formVideoLoadBmp(void);
 extern void formSettingWifiLoadBmp(void);
+extern void formPasswordLoadBmp(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -78,6 +78,7 @@ static InitBmpFunc load_bmps_func[] = {
     formSettingLoadBmp,
 	formVideoLoadBmp,
     formSettingWifiLoadBmp,
+	formPasswordLoadBmp,
 	NULL,
 };
 

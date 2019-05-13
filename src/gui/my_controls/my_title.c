@@ -88,28 +88,56 @@ static void myTitleCleanUp (void)
     UnregisterWindowClass(CTRL_NAME);
 }
 
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief clickInButton 判断触摸坐标是否在按钮内
+ *
+ * @param pInfo
+ * @param x
+ * @param y
+ *
+ * @returns
+ */
+/* ---------------------------------------------------------------------------*/
 static int clickInButton(MyTitleCtrlInfo* pInfo,int x,int y)
 {
-    RECT *rc = NULL;
+	// 在原有图标返回上扩大触摸范围，提高手感
+#define EXTEND_RC(hrc,offset) \
+	do { \
+		hrc.left -= offset;  \
+		hrc.right += offset; \
+		hrc.top -= offset; \
+		hrc.bottom += offset; \
+	} while (0)
+
+    RECT rc ;
     int ret = MYTITLE_BUTTON_NULL;
     if (pInfo->flag_left == MYTITLE_LEFT_EXIT) {
-        rc = &pInfo->bt_exit.rc;
-        if (PtInRect (rc, x, y) && PtInRect (rc, pInfo->click_x, pInfo->click_y))
+		memcpy(&rc,&pInfo->bt_exit.rc,sizeof(RECT));
+		EXTEND_RC(rc,10);
+        if (PtInRect (&rc, x, y) && PtInRect (&rc, pInfo->click_x, pInfo->click_y))
             return MYTITLE_BUTTON_EXIT;
     }
     if (pInfo->flag_right == MYTITLE_RIGHT_ADD) {
-        rc = &pInfo->bt_add.rc;
-        if (PtInRect (rc, x, y) && PtInRect (rc, pInfo->click_x, pInfo->click_y))
+		memcpy(&rc,&pInfo->bt_add.rc,sizeof(RECT));
+		EXTEND_RC(rc,10);
+        if (PtInRect (&rc, x, y) && PtInRect (&rc, pInfo->click_x, pInfo->click_y))
             ret = MYTITLE_BUTTON_ADD;
     } else if (pInfo->flag_right == MYTITLE_RIGHT_SWICH) {
-        rc = &pInfo->bt_swich.rc;
-        if (PtInRect (rc, x, y) && PtInRect (rc, pInfo->click_x, pInfo->click_y)) {
+		memcpy(&rc,&pInfo->bt_swich.rc,sizeof(RECT));
+		EXTEND_RC(rc,10);
+        if (PtInRect (&rc, x, y) && PtInRect (&rc, pInfo->click_x, pInfo->click_y)) {
             ret = MYTITLE_BUTTON_SWICH;
             if (pInfo->bt_swich.state == MYTITLE_SWICH_ON)
                 pInfo->bt_swich.state = MYTITLE_SWICH_OFF;
             else
                 pInfo->bt_swich.state = MYTITLE_SWICH_ON;
         }
+	} else if (pInfo->flag_right == MYTITLE_RIGHT_TEXT) {
+		memcpy(&rc,&pInfo->bt_add.rc,sizeof(RECT));
+		EXTEND_RC(rc,10);
+        if (PtInRect (&rc, x, y) && PtInRect (&rc, pInfo->click_x, pInfo->click_y))
+            ret = MYTITLE_BUTTON_TEXT;
     }
     return ret;
 }
@@ -196,6 +224,7 @@ static int myTitleControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lPa
 				pInfo->flag_left = data->flag_left;
 				pInfo->flag_right = data->flag_right;
                 strcpy(pInfo->text,data->text);
+                strcpy(pInfo->text_right,data->text_right);
 				pInfo->font = data->font;
 				pInfo->bkg_color= data->bkg_color;
 				pInfo->font_color= data->font_color;
@@ -238,7 +267,7 @@ static int myTitleControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lPa
 			break;
 
 		case MSG_MYTITLE_SET_SWICH:
-            pInfo->bt_swich.state = wParam; 
+            pInfo->bt_swich.state = wParam;
             InvalidateRect (hwnd, NULL, TRUE);
 			break;
 
@@ -274,7 +303,6 @@ static int myTitleControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lPa
                     InvalidateRect (hwnd, NULL, TRUE);
                 }
 
-                // printf("up,x:%d,y:%d\n",x,y );
             } break;
 
 		default:
@@ -320,6 +348,8 @@ HWND createMyTitle(HWND hWnd,MyCtrlTitle *ctrl)
     pInfo.flag_right = ctrl->flag_right;
     if (ctrl->text)
         strcpy(pInfo.text,ctrl->text);
+    if (ctrl->text_right)
+        strcpy(pInfo.text_right,ctrl->text_right);
 	pInfo.font = ctrl->font;
 	pInfo.bkg_color= ctrl->bkg_color;
 	pInfo.font_color= ctrl->font_color;

@@ -24,7 +24,7 @@
 extern "C" {
 #endif  /* __cplusplus */
 
-#define FORM_SETTING_ONTIME      5 // 设置界面60秒无操作，则关闭窗口
+#define FORM_SETTING_ONTIME      10 // 设置界面60秒无操作，则关闭窗口
 
 	enum {
 		FORM_STOP = 0,

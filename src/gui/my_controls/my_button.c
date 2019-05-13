@@ -311,7 +311,7 @@ HWND createMyButton(HWND hWnd,MyCtrlButton *ctrl)
 	pInfo.state = BUT_NORMAL;
 	pInfo.check = MYBUTTON_STATE_UNCHECK;
 	pInfo.flag = ctrl->flag;
-	pInfo.text = ctrl->text;
+	pInfo.text = ctrl->img_name;
     pInfo.font = ctrl->font;
     ctrl_w = ctrl->image_normal.bmWidth;
     ctrl_h = ctrl->image_normal.bmHeight;

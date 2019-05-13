@@ -22,7 +22,6 @@
 
 #include "my_button.h"
 #include "my_title.h"
-#include "language.h"
 #include "config.h"
 
 #include "form_base.h"
@@ -30,6 +29,7 @@
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
+int createFormPassword(HWND hMainWnd,void (*callback)(void));
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -77,6 +77,7 @@ struct ScrollviewItem {
  *                      variables define
  *----------------------------------------------------------------------------*/
 static HWND hScrollView;
+static int flag_timer_stop = 0;
 // static struct ScrollviewItem *wifi_list;
 // TEST
 static struct ScrollviewItem wifi_list[] = {
@@ -125,7 +126,7 @@ static BmpLocation bmp_load[] = {
 
 static MY_CTRLDATA ChildCtrls [] = {
     STATIC_IMAGE(452,216,120,120,IDC_STATIC_IMG_WARNING,(DWORD)&bmp_warning),
-    STATIC_LB(0,358,1024,25,IDC_STATIC_TEXT_WARNING,word[WORD_WIFI_CLOSED].string,&font20,0xffffff),
+    STATIC_LB(0,358,1024,25,IDC_STATIC_TEXT_WARNING,"WIFI已关闭",&font20,0xffffff),
     SCROLLVIEW(0,40,1024,580,IDC_SCROLLVIEW),
 };
 
@@ -160,7 +161,7 @@ static MyCtrlTitle ctrls_title[] = {
         MYTITLE_LEFT_EXIT,
         MYTITLE_RIGHT_SWICH,
         0,0,1024,40,
-        word[WORD_WIFI_SET].string,
+        "WIFI设置",
         "",
         0xffffff, 0x333333FF,
         buttonNotify,
@@ -169,6 +170,11 @@ static MyCtrlTitle ctrls_title[] = {
 };
 
 static FormBase* form_base = NULL;
+
+static void enableAutoClose(void)
+{
+	flag_timer_stop = 0;	
+}
 
 static void showWarning(HWND hwnd,int on_off)
 {
@@ -217,6 +223,9 @@ static void scrollviewNotify(HWND hwnd, int id, int nc, DWORD add_data)
 		int idx = SendMessage (hScrollView, SVM_GETCURSEL, 0, 0);
 		struct ScrollviewItem *plist;
 		plist = (struct ScrollviewItem *)SendMessage (hScrollView, SVM_GETITEMADDDATA, idx, 0);
+
+		flag_timer_stop = 1;
+		createFormPassword(hwnd,enableAutoClose);
 		printf("idx:%d,name:%s\n", idx,plist->text);
 	}
 }
@@ -269,7 +278,7 @@ static void loadWifiData(void)
 	int i;
 	SVITEMINFO svii;
 	sprintf(wifi_list[0].text,"%s","123");
-	sprintf(wifi_list[1].text,"%s",word[WORD_NET_NEARBY].string);
+	sprintf(wifi_list[1].text,"%s","附近网络");
 	sprintf(wifi_list[2].text,"%s","456");
 	sprintf(wifi_list[3].text,"%s","789");
 	struct ScrollviewItem *plist = wifi_list;
@@ -329,6 +338,12 @@ static int formSettingWifiProc(HWND hDlg, int message, WPARAM wParam, LPARAM lPa
 {
     switch(message) // 自定义消息
     {
+		case MSG_TIMER:
+			{
+				if (flag_timer_stop)
+					return 0;
+			} break;
+
 		case MSG_COMMAND:
 			{
 				int id = LOWORD (wParam);

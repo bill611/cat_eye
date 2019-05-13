@@ -510,7 +510,7 @@ void fontsLoad(FontLocation *font)
     int i;
     for (i=0; font[i].font != NULL; i++) {
         *font[i].font = CreateLogFont("ttf",
-                "song", "GB2312",
+                "song", "UTF-8",
                 font[i].first_type,
                 FONT_SLANT_ROMAN,
                 FONT_OTHER_NIL,
