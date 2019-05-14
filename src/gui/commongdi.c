@@ -471,7 +471,7 @@ void bmpLoad(BITMAP *bmp,char *path)
         // if (LoadBitmap (HDC_SCREEN,bmp, path_src))
             // printf ("LoadBitmaps(%s)fail-again!!.\n",path);
 	} else {
-        printf ("LoadBitmap(%s)ok.\n",path_src);
+        // printf ("LoadBitmap(%s)ok.\n",path_src);
 	}
 }
 void bmpsLoad(BmpLocation *bmp)

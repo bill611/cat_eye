@@ -134,7 +134,8 @@ static int clickInButton(MyTitleCtrlInfo* pInfo,int x,int y)
                 pInfo->bt_swich.state = MYTITLE_SWICH_ON;
         }
 	} else if (pInfo->flag_right == MYTITLE_RIGHT_TEXT) {
-		memcpy(&rc,&pInfo->bt_add.rc,sizeof(RECT));
+		// 右边文字使用SWICH_BUTTON位置
+		memcpy(&rc,&pInfo->bt_swich.rc,sizeof(RECT));
 		EXTEND_RC(rc,10);
         if (PtInRect (&rc, x, y) && PtInRect (&rc, pInfo->click_x, pInfo->click_y))
             ret = MYTITLE_BUTTON_TEXT;

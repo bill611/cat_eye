@@ -17,6 +17,7 @@
 /* ---------------------------------------------------------------------------*
  *                      include head files
  *----------------------------------------------------------------------------*/
+#include <string.h>
 #include "externfunc.h"
 #include "screen.h"
 
@@ -29,7 +30,7 @@
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
-int createFormPassword(HWND hMainWnd,void (*callback)(void));
+int createFormPassword(HWND hMainWnd,void (*callback)(void),void (*getPassword)(char *));
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -171,6 +172,11 @@ static MyCtrlTitle ctrls_title[] = {
 
 static FormBase* form_base = NULL;
 
+static void getPassword(char *password)
+{
+	printf("password:%s\n", password);
+}
+
 static void enableAutoClose(void)
 {
 	flag_timer_stop = 0;	
@@ -224,9 +230,13 @@ static void scrollviewNotify(HWND hwnd, int id, int nc, DWORD add_data)
 		struct ScrollviewItem *plist;
 		plist = (struct ScrollviewItem *)SendMessage (hScrollView, SVM_GETITEMADDDATA, idx, 0);
 
-		flag_timer_stop = 1;
-		createFormPassword(hwnd,enableAutoClose);
-		printf("idx:%d,name:%s\n", idx,plist->text);
+		if (plist) {
+			if (strcmp(plist->text,"附近网络")) {
+				flag_timer_stop = 1;
+				createFormPassword(hwnd,enableAutoClose,getPassword);
+				printf("idx:%d,name:%s\n", idx,plist->text);
+			}
+		}
 	}
 }
 

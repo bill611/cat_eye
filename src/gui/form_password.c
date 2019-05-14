@@ -80,14 +80,16 @@ static BITMAP bmp_key_abc_pre;
 static int bmp_load_finished = 0;
 static int flag_timer_stop = 0;
 struct KeyboardsData kb_data;
+static int re_paint_abc = 0;
+static void (*getPasswordProc)(char *);
 
 static BmpLocation bmp_load[] = {
 	{&bmp_key_nor,BMP_LOCAL_PATH"Key 1.png"},
 	{&bmp_key_pre,BMP_LOCAL_PATH"Key 6_pre.png"},
 	{&bmp_key_delete_nor,BMP_LOCAL_PATH"Key 删除.png"},
 	{&bmp_key_delete_pre,BMP_LOCAL_PATH"Key 删除_pre.png"},
-	{&bmp_key_abc_nor,BMP_LOCAL_PATH"Key 删除.png"},
-	{&bmp_key_abc_pre,BMP_LOCAL_PATH"Key 删除_pre.png"},
+	{&bmp_key_abc_nor,BMP_LOCAL_PATH"Key abc_1.png"},
+	{&bmp_key_abc_pre,BMP_LOCAL_PATH"Key abc_1_pre.png"},
     {NULL},
 };
 
@@ -137,8 +139,8 @@ static struct Keyboards keys[] = {
 	{"y","Y",">"},
 	{"u","U","U"},
 	{"i","I","I"},
-	{"o","O",""},
-	{"p","P",""},
+	{"o","O","¥"},
+	{"p","P","·"},
 
 	{"ABC","abc","-"},
 	{"a","A","/"},
@@ -168,7 +170,7 @@ static MyCtrlButton ctrls_button[] = {
 };
 static MyCtrlTitle ctrls_title[] = {
 	{
-        IDC_TITLE, 
+        IDC_TITLE,
         MYTITLE_LEFT_EXIT,
         MYTITLE_RIGHT_TEXT,
         0,0,1024,40,
@@ -184,7 +186,7 @@ static FormBase* form_base = NULL;
 
 static void enableAutoClose(void)
 {
-	flag_timer_stop = 0;	
+	flag_timer_stop = 0;
 }
 
 /* ----------------------------------------------------------------*/
@@ -202,22 +204,28 @@ static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data)
     if (nc == MYTITLE_BUTTON_EXIT)
         ShowWindow(GetParent(hwnd),SW_HIDE);
     else if (nc == MYTITLE_BUTTON_TEXT) {
-		printf("[%s]\n",__func__);
-        // showWarning(GetParent(hwnd),add_data);
+		char text[64];
+		int ret = SendMessage(GetDlgItem(GetParent(hwnd),IDC_EDIT_PASSWORD),MSG_GETTEXT,64,(LPARAM)text);
+		if (getPasswordProc)
+			getPasswordProc(text);
     }
+
+	SendMessage(GetDlgItem(GetParent(hwnd),IDC_EDIT_PASSWORD),MSG_SETTEXT,0,(LPARAM)"");
+	ShowWindow(GetParent(hwnd),SW_HIDE);
 }
 static void keboardNotify(HWND hwnd, int click_type,int index)
 {
+	static int largeabc_index = 0; // 记录下需要改变的图标下标
 	if (index < 0) {
 		if (keys[kb_data.index].state == BN_PUSHED
 				&& click_type == BN_UNPUSHED ) {
 			keys[kb_data.index].state = BN_UNPUSHED;
 			InvalidateRect (hwnd, &keys[kb_data.index].rc, FALSE);
 		}
-		return;	
+		return;
 	}
 	if (click_type == BN_PUSHED) {
-		keys[index].state = BN_PUSHED; 
+		keys[index].state = BN_PUSHED;
 		InvalidateRect (hwnd, &keys[index].rc, FALSE);
 		return;
 	}
@@ -231,10 +239,33 @@ static void keboardNotify(HWND hwnd, int click_type,int index)
 		kb_data.key_type = 1;
 		InvalidateRect (hwnd, &rc, FALSE);
 	} else if (strcmp(keys[index].func[kb_data.key_type],"abc") == 0) {
+		if (kb_data.key_type == 2)
+			re_paint_abc = 1;
+
 		kb_data.key_type = 0;
+		if (largeabc_index != 0) {
+			keys[largeabc_index].bmp_nor = &bmp_key_nor;
+			keys[largeabc_index].bmp_pre = &bmp_key_pre;
+			keys[largeabc_index].rc.right = keys[largeabc_index].rc.left + keys[largeabc_index].bmp_nor->bmWidth;
+			keys[largeabc_index].rc.bottom = keys[largeabc_index].rc.top + keys[largeabc_index].bmp_pre->bmHeight;
+			keys[largeabc_index+1].bmp_nor = &bmp_key_nor;
+			keys[largeabc_index+1].bmp_pre = &bmp_key_pre;
+			keys[largeabc_index+1].rc.right = keys[largeabc_index+1].rc.left + keys[largeabc_index+1].bmp_nor->bmWidth;
+			keys[largeabc_index+1].rc.bottom = keys[largeabc_index+1].rc.top + keys[largeabc_index+1].bmp_pre->bmHeight;
+		}
 		InvalidateRect (hwnd, &rc, FALSE);
 	} else if (strcmp(keys[index].func[kb_data.key_type],"#+=") == 0) {
+		largeabc_index = index;
 		kb_data.key_type = 2;
+		// 针对acb图标变化的情况，修改图片与刷新范围
+		keys[largeabc_index].bmp_nor = &bmp_key_abc_nor;
+		keys[largeabc_index].bmp_pre = &bmp_key_abc_pre;
+		keys[largeabc_index].rc.right = keys[largeabc_index].rc.left + keys[largeabc_index].bmp_nor->bmWidth;
+		keys[largeabc_index].rc.bottom = keys[largeabc_index].rc.top + keys[largeabc_index].bmp_pre->bmHeight;
+		keys[largeabc_index+1].bmp_nor = NULL;
+		keys[largeabc_index+1].bmp_pre = NULL;
+		keys[largeabc_index+1].rc.right = keys[largeabc_index+1].rc.left;
+		keys[largeabc_index+1].rc.bottom = keys[largeabc_index+1].rc.top;
 		InvalidateRect (hwnd, &rc, FALSE);
 	} else {
 		SendMessage(GetDlgItem(hwnd,IDC_EDIT_PASSWORD),MSG_CHAR,keys[index].func[kb_data.key_type][0],0);
@@ -249,7 +280,7 @@ void formPasswordLoadBmp(void)
 
 	printf("[%s]\n", __FUNCTION__);
     bmpsLoad(bmp_load);
-    my_button->bmpsLoad(ctrls_button,BMP_LOCAL_PATH);	
+    my_button->bmpsLoad(ctrls_button,BMP_LOCAL_PATH);
     bmp_load_finished = 1;
 }
 
@@ -307,14 +338,27 @@ static void paint(HWND hWnd,HDC hdc)
 #define FILL_BMP_STRUCT(rc,img)  rc.left, rc.top,img->bmWidth,img->bmHeight,img
 
 	int i;
+	SetPenColor (hdc, 0x12345678);
+	MoveTo (hdc, 0, 90);
+	LineTo (hdc, 1024,90);
+	MoveTo (hdc, 0, 151);
+	LineTo (hdc, 1024,151);
 	SetTextColor(hdc,COLOR_lightwhite);
 	SetBkMode(hdc,BM_TRANSPARENT);
 	SelectFont (hdc, font20);
+	if (re_paint_abc) {
+		re_paint_abc = 0;
+		SetBrushColor (hdc,0);
+		FillBox (hdc, 16,502,180,80);
+	}
 	for (i=0; keys[i].func[0] != NULL; i++) {
-		if (keys[i].state == BN_UNPUSHED)
-			FillBoxWithBitmap(hdc,FILL_BMP_STRUCT(keys[i].rc,keys[i].bmp_nor));
-		else if (keys[i].state == BN_PUSHED)
-			FillBoxWithBitmap(hdc,FILL_BMP_STRUCT(keys[i].rc,keys[i].bmp_pre));
+		if (keys[i].state == BN_UNPUSHED) {
+			if (keys[i].bmp_nor)
+				FillBoxWithBitmap(hdc,FILL_BMP_STRUCT(keys[i].rc,keys[i].bmp_nor));
+		} else if (keys[i].state == BN_PUSHED) {
+			if (keys[i].bmp_pre)
+				FillBoxWithBitmap(hdc,FILL_BMP_STRUCT(keys[i].rc,keys[i].bmp_pre));
+		}
 		if (keys[i].func[kb_data.key_type])
 			DrawText (hdc,keys[i].func[kb_data.key_type], -1, &keys[i].rc,
 					DT_CENTER | DT_VCENTER | DT_WORDBREAK  | DT_SINGLELINE);
@@ -409,9 +453,10 @@ static int formPasswordProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam
     return DefaultDialogProc(hDlg, message, wParam, lParam);
 }
 
-int createFormPassword(HWND hMainWnd,void (*callback)(void))
+int createFormPassword(HWND hMainWnd,void (*callback)(void),void (*getPassword)(char *))
 {
 	HWND Form = Screen.Find(form_base_priv.name);
+	getPasswordProc = getPassword;
 	if(Form) {
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
