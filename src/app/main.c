@@ -109,7 +109,7 @@ static void * timer1sThread(void *arg)
 /* ---------------------------------------------------------------------------*/
 int MiniGUIMain(int argc, const char* argv[])
 {
-	printf("stat--->%s\n",CATEYE_VERSION);
+	printf("stat--->%s,:%s\n",DEVICE_SVERSION,DEVICE_KVERSION);
 	configLoad();
 	gpioInit();
 	gpioInputRegist();

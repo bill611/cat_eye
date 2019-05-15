@@ -1,9 +1,9 @@
 /*
  * =============================================================================
  *
- *       Filename:  form_setting_wifi.c
+ *       Filename:  form_setting_Locoal.c
  *
- *    Description:  wifi设置界面
+ *    Description:  Locoal设置界面
  *
  *        Version:  1.0
  *        Created:  2018-03-01 23:32:41
@@ -21,6 +21,7 @@
 #include "externfunc.h"
 #include "screen.h"
 
+#include "my_button.h"
 #include "my_title.h"
 #include "config.h"
 
@@ -29,12 +30,12 @@
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
-int createFormPassword(HWND hMainWnd,void (*callback)(void),void (*getPassword)(char *));
-
+int createFormSettingStore(HWND hMainWnd,void (*callback)(void));
+int createFormSettingQrcode(HWND hMainWnd,void (*callback)(void));
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
  *----------------------------------------------------------------------------*/
-static int formSettingWifiProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
+static int formSettingLocoalProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 
 static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data);
@@ -50,7 +51,7 @@ static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data);
 
 #define BMP_LOCAL_PATH "setting/"
 enum {
-	IDC_TIMER_1S = IDC_FORM_SETTING_WIFI_STATR,
+	IDC_TIMER_1S = IDC_FORM_LOCAL_STATR,
 	IDC_STATIC_IMG_WARNING,
 	IDC_STATIC_TEXT_WARNING,
 
@@ -66,12 +67,10 @@ enum {
 	SCROLLVIEW_ITEM_TYPE_LIST,
 };
 struct ScrollviewItem {
-	int type; // 选项类型
-	int enable; // 是否选中
-	int security; // 加密 0,1
-	int strength; // 信号强度
-	char text[32]; // 文字
-	int index;	// 元素位置
+	char title[32]; // 左边标题
+	char text[32];  // 右边文字
+	int (*callback)(HWND,void (*callback)(void)); // 点击回调函数
+	int index;  // 元素位置
 };
 
 /* ---------------------------------------------------------------------------*
@@ -79,55 +78,28 @@ struct ScrollviewItem {
  *----------------------------------------------------------------------------*/
 static HWND hScrollView;
 static int flag_timer_stop = 0;
-// static struct ScrollviewItem *wifi_list;
+// static struct ScrollviewItem *locoal_list;
 // TEST
-static struct ScrollviewItem wifi_list[] = {
-	{
-		.type = SCROLLVIEW_ITEM_TYPE_LIST,
-		.enable = 1,
-		.security = 1,
-		.strength = 1,
-	},
-	{
-		.type = SCROLLVIEW_ITEM_TYPE_TITLE,
-	},
-	{
-		.type = SCROLLVIEW_ITEM_TYPE_LIST,
-		.security = 1,
-		.strength = 0,
-	},
-	{
-		.type = SCROLLVIEW_ITEM_TYPE_LIST,
-		.security = 1,
-		.strength = 1,
-	},
-	{
-		.type = SCROLLVIEW_ITEM_TYPE_LIST,
-		.security = 0,
-		.strength = 2,
-	},
+static struct ScrollviewItem locoal_list[] = {
+	{"设备型号",DEVICE_TYPE,NULL},
+	{"软件版本",DEVICE_SVERSION,NULL},
+	{"固件版本",DEVICE_KVERSION,NULL},
+	{"二维码",  "扫描添加设备",createFormSettingQrcode},
+	{"本地存储","剩余1024MB",createFormSettingStore},
+	{0},
 };
 static BITMAP bmp_warning; // 警告
 static BITMAP bmp_security; // 加密
 static BITMAP bmp_select; // 选中
 static BITMAP bmp_enter; // 进入
-static BITMAP bmp_wifi[3]; // wifi强度
 
 
 static BmpLocation bmp_load[] = {
-    {&bmp_warning,	BMP_LOCAL_PATH"ico_警告.png"},
-    {&bmp_security,	BMP_LOCAL_PATH"ico_lock.png"},
-    {&bmp_select,	BMP_LOCAL_PATH"ico_对.png"},
     {&bmp_enter,	BMP_LOCAL_PATH"ico_返回_1.png"},
-    {&bmp_wifi[0],	BMP_LOCAL_PATH"ico_wifi_2.png"},
-    {&bmp_wifi[1],	BMP_LOCAL_PATH"ico_wifi_1.png"},
-    {&bmp_wifi[2],	BMP_LOCAL_PATH"ico_wifi.png"},
     {NULL},
 };
 
 static MY_CTRLDATA ChildCtrls [] = {
-    STATIC_IMAGE(452,216,120,120,IDC_STATIC_IMG_WARNING,(DWORD)&bmp_warning),
-    STATIC_LB(0,358,1024,25,IDC_STATIC_TEXT_WARNING,"WIFI已关闭",&font20,0xffffff),
     SCROLLVIEW(0,40,1024,580,IDC_SCROLLVIEW),
 };
 
@@ -145,20 +117,24 @@ static MY_DLGTEMPLATE DlgInitParam =
 };
 
 static FormBasePriv form_base_priv= {
-	.name = "Fsetwifi",
+	.name = "FsetLocoal",
 	.idc_timer = IDC_TIMER_1S,
-	.dlgProc = formSettingWifiProc,
+	.dlgProc = formSettingLocoalProc,
 	.dlgInitParam = &DlgInitParam,
 	.initPara =  initPara,
+};
+
+static MyCtrlButton ctrls_button[] = {
+	{0},
 };
 
 static MyCtrlTitle ctrls_title[] = {
 	{
         IDC_TITLE,
         MYTITLE_LEFT_EXIT,
-        MYTITLE_RIGHT_SWICH,
+        MYTITLE_RIGHT_NULL,
         0,0,1024,40,
-        "WIFI设置",
+        "本机设置",
         "",
         0xffffff, 0x333333FF,
         buttonNotify,
@@ -168,28 +144,11 @@ static MyCtrlTitle ctrls_title[] = {
 
 static FormBase* form_base = NULL;
 
-static void getPassword(char *password)
-{
-	printf("password:%s\n", password);
-}
-
 static void enableAutoClose(void)
 {
 	flag_timer_stop = 0;	
 }
 
-static void showWarning(HWND hwnd,int on_off)
-{
-    if (on_off) {
-        ShowWindow(GetDlgItem(hwnd,IDC_STATIC_IMG_WARNING),SW_HIDE);
-        ShowWindow(GetDlgItem(hwnd,IDC_STATIC_TEXT_WARNING),SW_HIDE);
-        ShowWindow(GetDlgItem(hwnd,IDC_SCROLLVIEW),SW_SHOWNORMAL);
-    } else {
-        ShowWindow(GetDlgItem(hwnd,IDC_STATIC_IMG_WARNING),SW_SHOWNORMAL);
-        ShowWindow(GetDlgItem(hwnd,IDC_STATIC_TEXT_WARNING),SW_SHOWNORMAL);
-        ShowWindow(GetDlgItem(hwnd,IDC_SCROLLVIEW),SW_HIDE);
-    }
-}
 /* ----------------------------------------------------------------*/
 /**
  * @brief buttonNotify 退出按钮
@@ -202,12 +161,8 @@ static void showWarning(HWND hwnd,int on_off)
 /* ----------------------------------------------------------------*/
 static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data)
 {
-    if (nc == MYTITLE_BUTTON_EXIT)
+	if (nc == MYTITLE_BUTTON_EXIT)
         ShowWindow(GetParent(hwnd),SW_HIDE);
-    else if (nc == MYTITLE_BUTTON_SWICH) {
-        g_config.net_config.enable = add_data;
-        showWarning(GetParent(hwnd),add_data);
-    }
 }
 /* ---------------------------------------------------------------------------*/
 /**
@@ -227,16 +182,15 @@ static void scrollviewNotify(HWND hwnd, int id, int nc, DWORD add_data)
 		plist = (struct ScrollviewItem *)SendMessage (hScrollView, SVM_GETITEMADDDATA, idx, 0);
 
 		if (plist) {
-			if (strcmp(plist->text,"附近网络")) {
+			if (plist->callback) {
 				flag_timer_stop = 1;
-				createFormPassword(hwnd,enableAutoClose,getPassword);
-				printf("idx:%d,name:%s\n", idx,plist->text);
+				plist->callback(hwnd,enableAutoClose);
 			}
 		}
 	}
 }
 
-void formSettingWifiLoadBmp(void)
+void formSettingLocoalLoadBmp(void)
 {
     bmpsLoad(bmp_load);
 }
@@ -260,37 +214,26 @@ static void myDrawItem (HWND hWnd, HSVITEM hsvi, HDC hdc, RECT *rcDraw)
 	SetBkMode (hdc, BM_TRANSPARENT);
 	SetTextColor (hdc, PIXEL_lightwhite);
 	SelectFont (hdc, font20);
-	if(p_item->type == SCROLLVIEW_ITEM_TYPE_TITLE) {
-		// 绘制表格
-		DRAW_TABLE(rcDraw,0,0xCCCCCC);
-		TextOut (hdc, rcDraw->left + 30, rcDraw->top + 16, p_item->text);
-	} else {
-		if (p_item->enable) {
-			FILL_BMP_STRUCT(rcDraw->left + 33,rcDraw->top + 18,bmp_select);
-		}
-		if (p_item->security) {
-			FILL_BMP_STRUCT(rcDraw->left + 881,rcDraw->top + 15,bmp_security);
-		}
-		if (p_item->strength < 3)
-			FILL_BMP_STRUCT(rcDraw->left + 919,rcDraw->top + 15,bmp_wifi[p_item->strength]);
-		FILL_BMP_STRUCT(rcDraw->left + 968,rcDraw->top + 15,bmp_enter);
-		// 绘制表格
-		DRAW_TABLE(rcDraw,82,0xCCCCCC);
-		// 输出文字
-		TextOut (hdc, rcDraw->left + 83, rcDraw->top + 15, p_item->text);
-	}
+	FILL_BMP_STRUCT(rcDraw->left + 968,rcDraw->top + 15,bmp_enter);
+	// 绘制表格
+	DRAW_TABLE(rcDraw,0,0xCCCCCC);
+	// 输出文字
+	TextOut (hdc, rcDraw->left + 30, rcDraw->top + 15, p_item->title);
+	RECT rc;
+	memcpy(&rc,rcDraw,sizeof(RECT));
+	rc.left += 512;
+	rc.right -= 70;
+	SetTextColor (hdc, 0xCCCCCC);
+	DrawText (hdc,p_item->text, -1, &rc,
+			DT_VCENTER | DT_RIGHT | DT_WORDBREAK  | DT_SINGLELINE);
 }
 
-static void loadWifiData(void)
+static void loadLocoalData(void)
 {
 	int i;
 	SVITEMINFO svii;
-	sprintf(wifi_list[0].text,"%s","123");
-	sprintf(wifi_list[1].text,"%s","附近网络");
-	sprintf(wifi_list[2].text,"%s","456");
-	sprintf(wifi_list[3].text,"%s","789");
-	struct ScrollviewItem *plist = wifi_list;
-	for (i=0; i < 4; i++) {
+	struct ScrollviewItem *plist = locoal_list;
+	for (i=0; plist->text[0] != 0; i++) {
 		plist->index = i;
 		svii.nItemHeight = 60;
 		svii.addData = (DWORD)plist;
@@ -317,19 +260,18 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
         ctrls_title[i].font = font20;
         createMyTitle(hDlg,&ctrls_title[i]);
     }
+    for (i=0; ctrls_button[i].idc != 0; i++) {
+        ctrls_button[i].font = font22;
+        createMyButton(hDlg,&ctrls_button[i]);
+    }
 	hScrollView = GetDlgItem (hDlg, IDC_SCROLLVIEW);
 	SendMessage (hScrollView, SVM_SETITEMDRAW, 0, (LPARAM)myDrawItem);
-	//* 此处不能设置为回调函数，否则第一次返回为-1，minigui bug
-	// SetNotificationCallback(hScrollView,scrollviewNotify);
-	loadWifiData();
-	SendMessage(GetDlgItem(hDlg,IDC_TITLE),
-            MSG_MYTITLE_SET_SWICH, (WPARAM)g_config.net_config.enable, 0);
-    showWarning(hDlg,g_config.net_config.enable);
+	loadLocoalData();
 }
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief formSettingWifiProc 窗口回调函数
+ * @brief formSettingLocoalProc 窗口回调函数
  *
  * @param hDlg
  * @param message
@@ -339,7 +281,7 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
  * @return
  */
 /* ----------------------------------------------------------------*/
-static int formSettingWifiProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
+static int formSettingLocoalProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 {
     switch(message) // 自定义消息
     {
@@ -364,7 +306,7 @@ static int formSettingWifiProc(HWND hDlg, int message, WPARAM wParam, LPARAM lPa
     return DefaultDialogProc(hDlg, message, wParam, lParam);
 }
 
-int createFormSettingWifi(HWND hMainWnd,void (*callback)(void))
+int createFormSettingLocoal(HWND hMainWnd,void (*callback)(void))
 {
 	HWND Form = Screen.Find(form_base_priv.name);
 	if(Form) {

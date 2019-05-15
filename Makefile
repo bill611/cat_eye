@@ -3,6 +3,7 @@ MAKEROOT = $(shell pwd)
 ifeq ($(PLATFORM), RV1108)
 	PREFIX =$(RV1108_CROOS_PATH)/bin/arm-buildroot-linux-gnueabihf-
 	CFLAGS += -DRV1108
+	LIB_DIR += $(MAKEROOT)/lib/arm
 	LIB_DIR += ${RV1108_SDK_PATH}/out/system/lib
 	INC_DIR += ${RV1108_SDK_PATH}/out/system/include
 	EX_LIB += -lion -lrkfb -lrkrga -lts
@@ -58,6 +59,7 @@ SRC = \
 XLINKER = -Xlinker "-(" -lsqlite3 \
 		  ${EX_LIB}\
 		  -lminigui_ths -lpng12 -lpng -ljpeg -lfreetype \
+		  -lqrencode \
 		  -lz -lm -lpthread -ldl -lrt -Xlinker "-)"
 
 CP_TARGET = $(MAKEROOT)/../nand/v2.0/nand1-2/

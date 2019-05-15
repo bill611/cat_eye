@@ -22,6 +22,9 @@ extern void formSettingLoadBmp(void);
 extern void formVideoLoadBmp(void);
 extern void formSettingWifiLoadBmp(void);
 extern void formPasswordLoadBmp(void);
+extern void formSettingLocoalLoadBmp(void);
+extern void formSettingStoreLoadBmp(void);
+extern void formSettingQrcodeLoadBmp(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -79,6 +82,9 @@ static InitBmpFunc load_bmps_func[] = {
 	formVideoLoadBmp,
     formSettingWifiLoadBmp,
 	formPasswordLoadBmp,
+	formSettingLocoalLoadBmp,
+	formSettingStoreLoadBmp,
+	formSettingQrcodeLoadBmp,
 	NULL,
 };
 

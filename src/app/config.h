@@ -10,15 +10,10 @@
 extern "C" {
 #endif
 
-#define IFNAME                      "wlan0"
 
-/* awss used this interface to sniffer 80211 package */
-#define WLAN_IFNAME                 "wlan0"
-#define AP_IFNAME                 	"wlan1"
-#define WPA_PATH                 	"/tmp/wpa_supplicant/"
-
-
-#define CATEYE_VERSION	"v1.0.0"
+#define DEVICE_TYPE	"TC-U9MY-A"
+#define DEVICE_SVERSION	"V1.0.0"
+#define DEVICE_KVERSION	"V1.0.0"
 
 #if (defined X86)
 #define UPDATE_FILE	"/tmp/Update.cab"

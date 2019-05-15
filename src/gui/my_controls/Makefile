@@ -5,9 +5,6 @@ CURRENT_SRC=$(wildcard *.c)
 SRC=$(patsubst %.c,${OBJ_DIR}/%.o,$(notdir ${CURRENT_SRC}))
 all: $(SRC)
 
-# make_C:
-		# @make -C my_scrollview
-
 -include $(DEPS)
 
 debug:

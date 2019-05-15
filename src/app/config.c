@@ -34,12 +34,12 @@ static EtcValueChar etc_public_char[]={
 };
 
 static EtcValueInt etc_private_int[]={
-{"wireless",	"enable",	&g_config.net_config.enable,		1},
+{"wireless",	"enable",	&g_config.net_config.enable,		0},
 };
 
 static EtcValueChar etc_private_char[]={
 {"taichuan",	"imei",	    SIZE_CONFIG(g_config.imei),		"0"},
-{"taichuan",	"version",	SIZE_CONFIG(g_config.version),		CATEYE_VERSION},
+{"taichuan",	"version",	SIZE_CONFIG(g_config.version),		DEVICE_SVERSION},
 
 {"wireless",	"ssid",	    SIZE_CONFIG(g_config.net_config.ssid),		"MINI"},
 {"wireless",	"mode",	    SIZE_CONFIG(g_config.net_config.mode),		"Infra"},
@@ -82,7 +82,7 @@ static void configLoadEtcInt(dictionary *cfg_ini, EtcValueInt *etc_file,
 	for (i=0; i<length; i++) {
 		sprintf(buf,"%s:%s",etc_file->section,etc_file->key);
 		*etc_file->value = iniparser_getint(cfg_ini, buf, etc_file->default_int);
-        // DPRINT("[%s]%s,%d\n", __FUNCTION__,buf,*etc_file->value);
+		printf("[%s]%s,%d\n", __FUNCTION__,buf,*etc_file->value);
 		etc_file++;
 	}
 }
@@ -244,8 +244,8 @@ void configLoad(void)
 	configLoadEtcInt(cfg_private_ini,etc_private_int,NELEMENTS(etc_private_int));
 	configLoadEtcChar(cfg_private_ini,etc_private_char,NELEMENTS(etc_private_char));
 	etcFileCheck();
-	if (ret || strcmp(g_config.version,CATEYE_VERSION) != 0)
-		strcpy(g_config.version,CATEYE_VERSION);
+	if (ret || strcmp(g_config.version,DEVICE_SVERSION) != 0)
+		strcpy(g_config.version,DEVICE_SVERSION);
 		SavePrivate();
 }
 

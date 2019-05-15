@@ -698,7 +698,7 @@ static void cmdClear(SocketHandle *ABinding,SocketPacket *AData)
 static void cmdVersion(SocketHandle *ABinding,SocketPacket *AData)
 {
 	char send_data[2048] = {0};
-	sprintf(send_data,"Version :%s\n",CATEYE_VERSION);
+	sprintf(send_data,"Version :%s,%s\n",DEVICE_SVERSION,DEVICE_KVERSION);
 	UDP_PRINT(send_data);
 }
 static void cmdReboot(SocketHandle *ABinding,SocketPacket *AData)
