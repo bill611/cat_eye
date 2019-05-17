@@ -32,6 +32,8 @@
  *----------------------------------------------------------------------------*/
 int createFormSettingStore(HWND hMainWnd,void (*callback)(void));
 int createFormSettingQrcode(HWND hMainWnd,void (*callback)(void));
+int createFormSettingUpdateSoft(HWND hMainWnd,void (*callback)(void));
+int createFormSettingUpdateKernel(HWND hMainWnd,void (*callback)(void));
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
  *----------------------------------------------------------------------------*/
@@ -82,8 +84,8 @@ static int flag_timer_stop = 0;
 // TEST
 static struct ScrollviewItem locoal_list[] = {
 	{"设备型号",DEVICE_TYPE,NULL},
-	{"软件版本",DEVICE_SVERSION,NULL},
-	{"固件版本",DEVICE_KVERSION,NULL},
+	{"软件版本",DEVICE_SVERSION,createFormSettingUpdateSoft},
+	{"固件版本",DEVICE_KVERSION,createFormSettingUpdateKernel},
 	{"二维码",  "扫描添加设备",createFormSettingQrcode},
 	{"本地存储","剩余1024MB",createFormSettingStore},
 	{0},

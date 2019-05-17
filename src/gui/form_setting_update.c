@@ -1,9 +1,9 @@
 /*
  * =============================================================================
  *
- *       Filename:  form_setting_Store.c
+ *       Filename:  form_setting_Update.c
  *
- *    Description:  Store设置界面
+ *    Description:  Update设置界面
  *
  *        Version:  1.0
  *        Created:  2018-03-01 23:32:41
@@ -33,7 +33,7 @@
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
  *----------------------------------------------------------------------------*/
-static int formSettingStoreProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
+static int formSettingUpdateProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 
 static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data);
@@ -49,46 +49,30 @@ static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data);
 
 #define BMP_LOCAL_PATH "setting/"
 enum {
-	IDC_TIMER_1S = IDC_FORM_STORE_STATR,
-
-	IDC_SCROLLVIEW,
+	IDC_TIMER_1S = IDC_FORM_UPDATE_STATR,
 
 	IDC_TITLE,
 };
 
-struct ScrollviewItem {
-	char title[32]; // 左边标题
-	char text[32];  // 右边文字
-	void (*callback)(void); // 点击回调函数
-	int index;  // 元素位置
+enum {
+	UPDATE_FOR_SOFT,
+	UPDATE_FOR_KERNEL,
 };
-
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
-static HWND hScrollView;
-static int flag_timer_stop = 0;
-// static struct ScrollviewItem *locoal_list;
-// TEST
-static struct ScrollviewItem locoal_list[] = {
-	{"总空间",  DEVICE_TYPE,NULL},
-	{"剩余空间",DEVICE_SVERSION,NULL},
-	{"已用比例",DEVICE_KVERSION,NULL},
-	{0},
-};
 static BITMAP bmp_warning; // 警告
-static BITMAP bmp_security; // 加密
-static BITMAP bmp_select; // 选中
-static BITMAP bmp_enter; // 进入
-
+static BITMAP bmp_update; // 升级
+static int flag_timer_stop = 0;
+static int update_type = UPDATE_FOR_SOFT; 
 
 static BmpLocation bmp_load[] = {
-    {&bmp_enter,	BMP_LOCAL_PATH"ico_返回_1.png"},
+    {&bmp_warning,	BMP_LOCAL_PATH"ico_警告.png"},
+    {&bmp_update,	BMP_LOCAL_PATH"image.png"},
     {NULL},
 };
 
 static MY_CTRLDATA ChildCtrls [] = {
-    SCROLLVIEW(0,40,1024,580,IDC_SCROLLVIEW),
 };
 
 static MY_DLGTEMPLATE DlgInitParam =
@@ -105,9 +89,9 @@ static MY_DLGTEMPLATE DlgInitParam =
 };
 
 static FormBasePriv form_base_priv= {
-	.name = "FsetStore",
+	.name = "FsetUpdate",
 	.idc_timer = IDC_TIMER_1S,
-	.dlgProc = formSettingStoreProc,
+	.dlgProc = formSettingUpdateProc,
 	.dlgInitParam = &DlgInitParam,
 	.initPara =  initPara,
 };
@@ -116,10 +100,10 @@ static MyCtrlTitle ctrls_title[] = {
 	{
         IDC_TITLE,
         MYTITLE_LEFT_EXIT,
-        MYTITLE_RIGHT_TEXT,
+        MYTITLE_RIGHT_NULL,
         0,0,1024,40,
-        "本地存储",
-        "格式化",
+        "软件版本",
+        "",
         0xffffff, 0x333333FF,
         buttonNotify,
     },
@@ -148,59 +132,11 @@ static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data)
 	if (nc == MYTITLE_BUTTON_EXIT)
         ShowWindow(GetParent(hwnd),SW_HIDE);
 }
-void formSettingStoreLoadBmp(void)
+void formSettingUpdateLoadBmp(void)
 {
     bmpsLoad(bmp_load);
 }
-static void myDrawItem (HWND hWnd, HSVITEM hsvi, HDC hdc, RECT *rcDraw)
-{
-#define FILL_BMP_STRUCT(left,top,img)  \
-	FillBoxWithBitmap(hdc,left, top,img.bmWidth,img.bmHeight,&img)
 
-#define DRAW_TABLE(rc,offset,color)  \
-	do { \
-		SetPenColor (hdc, color); \
-		if (p_item->index) { \
-			MoveTo (hdc, rc->left + offset, rc->top); \
-			LineTo (hdc, rc->right,rc->top); \
-		} \
-		MoveTo (hdc, rc->left + offset, rc->bottom); \
-		LineTo (hdc, rc->right,rc->bottom); \
-	} while (0)
-
-	struct ScrollviewItem *p_item = (struct ScrollviewItem *)scrollview_get_item_adddata (hsvi);
-	SetBkMode (hdc, BM_TRANSPARENT);
-	SetTextColor (hdc, PIXEL_lightwhite);
-	SelectFont (hdc, font20);
-	FILL_BMP_STRUCT(rcDraw->left + 968,rcDraw->top + 15,bmp_enter);
-	// 绘制表格
-	DRAW_TABLE(rcDraw,0,0xCCCCCC);
-	// 输出文字
-	TextOut (hdc, rcDraw->left + 30, rcDraw->top + 15, p_item->title);
-	RECT rc;
-	memcpy(&rc,rcDraw,sizeof(RECT));
-	rc.left += 512;
-	rc.right -= 70;
-	SetTextColor (hdc, 0xCCCCCC);
-	DrawText (hdc,p_item->text, -1, &rc,
-			DT_VCENTER | DT_RIGHT | DT_WORDBREAK  | DT_SINGLELINE);
-}
-
-static void loadStoreData(void)
-{
-	int i;
-	SVITEMINFO svii;
-	struct ScrollviewItem *plist = locoal_list;
-	for (i=0; plist->text[0] != 0; i++) {
-		plist->index = i;
-		svii.nItemHeight = 60;
-		svii.addData = (DWORD)plist;
-		svii.nItem = i;
-		SendMessage (hScrollView, SVM_ADDITEM, 0, (LPARAM)&svii);
-		SendMessage (hScrollView, SVM_SETITEMADDDATA, i, (DWORD)plist);
-		plist++;
-	}
-}
 /* ----------------------------------------------------------------*/
 /**
  * @brief initPara 初始化参数
@@ -218,14 +154,11 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
         ctrls_title[i].font = font20;
         createMyTitle(hDlg,&ctrls_title[i]);
     }
-	hScrollView = GetDlgItem (hDlg, IDC_SCROLLVIEW);
-	SendMessage (hScrollView, SVM_SETITEMDRAW, 0, (LPARAM)myDrawItem);
-	loadStoreData();
 }
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief formSettingStoreProc 窗口回调函数
+ * @brief formSettingUpdateProc 窗口回调函数
  *
  * @param hDlg
  * @param message
@@ -235,7 +168,7 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
  * @return
  */
 /* ----------------------------------------------------------------*/
-static int formSettingStoreProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
+static int formSettingUpdateProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 {
     switch(message) // 自定义消息
     {
@@ -254,8 +187,9 @@ static int formSettingStoreProc(HWND hDlg, int message, WPARAM wParam, LPARAM lP
 }
 
 
-int createFormSettingStore(HWND hMainWnd,void (*callback)(void))
+static int createFormSettingUpdate(HWND hMainWnd,void (*callback)(void))
 {
+	update_type = UPDATE_FOR_SOFT;
 	HWND Form = Screen.Find(form_base_priv.name);
 	if(Form) {
 		ShowWindow(Form,SW_SHOWNORMAL);
@@ -269,5 +203,17 @@ int createFormSettingStore(HWND hMainWnd,void (*callback)(void))
 	}
 
 	return 0;
+}
+
+int createFormSettingUpdateSoft(HWND hMainWnd,void (*callback)(void))
+{
+	update_type = UPDATE_FOR_SOFT;
+	return createFormSettingUpdate(hMainWnd,callback);
+}
+
+int createFormSettingUpdateKernel(HWND hMainWnd,void (*callback)(void))
+{
+	update_type = UPDATE_FOR_SOFT;
+	return createFormSettingUpdate(hMainWnd,callback);
 }
 

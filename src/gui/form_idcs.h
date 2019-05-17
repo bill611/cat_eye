@@ -29,6 +29,7 @@ extern "C" {
 #define IDC_FORM_LOCAL_STATR 350
 #define IDC_FORM_STORE_STATR 360
 #define IDC_FORM_QRCODE_STATR 370
+#define IDC_FORM_UPDATE_STATR 380
 
 #ifdef __cplusplus
 }
