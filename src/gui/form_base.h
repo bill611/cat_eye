@@ -45,7 +45,8 @@ extern "C" {
 
 	typedef struct _FormBase {
 		FormBasePriv *priv;
-		int auto_close_time;
+		int hDlg; // 当前对话框的句柄
+		int auto_close_time;  // 对话框自动关闭时间
 
 		int (*baseProc)(struct _FormBase *this,HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 	}FormBase;

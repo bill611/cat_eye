@@ -49,6 +49,7 @@ static int formBaseProc(FormBase *this,HWND hDlg, int message, WPARAM wParam, LP
 		case MSG_INITDIALOG:
 			{
 				Screen.Add(hDlg,this->priv->name);
+				this->hDlg = hDlg;
 				this->auto_close_time = FORM_SETTING_ONTIME;
 				if (this->priv->initPara)
 					this->priv->initPara(hDlg,message,wParam,lParam);

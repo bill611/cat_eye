@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "thread_helper.h"
 
-void createThread(void *(*start_routine)(void *), void *arg)
+int createThread(void *(*start_routine)(void *), void *arg)
 {
 	int result;
     pthread_t      task;
@@ -13,5 +13,6 @@ void createThread(void *(*start_routine)(void *), void *arg)
 	if(result)
 		printf("create thread failt,Error code:%d\n",result);
 	pthread_attr_destroy(&attr);
+	return task;
 }
 

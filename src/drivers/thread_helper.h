@@ -3,6 +3,6 @@
 
 #include <pthread.h>
 
-void createThread(void *(*start_routine)(void *), void *arg);
+int createThread(void *(*start_routine)(void *), void *arg);
 
 #endif  /* THREAD_HELPER_H */

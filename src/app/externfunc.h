@@ -1,6 +1,7 @@
 #ifndef EXTERNFUNC_H
 #define EXTERNFUNC_H
 
+#include <stdint.h>
 typedef struct _st_dir {
 	char 	path[128];		// 文件名称 包括路径
 	void *	data;			// 文件
@@ -32,7 +33,7 @@ unsigned int my_inet_addr(const char *IP);
 
 void SetNetwork(int flag,const char *cIp,const char *cMask,const char *cGateWay,const char *cMac);
 void SetNetMac(unsigned char *pImei,char *MAC);
-// unsigned long GetMs(void);
+uint64_t GetMs(void);
 unsigned long long GetFlashFreeSpace(void);
 unsigned long long GetFlashFreeSpaceKB(void);
 unsigned long long GetFlashFreeSpaceMB(void);

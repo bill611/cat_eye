@@ -28,6 +28,7 @@
 #include "thread_helper.h"
 #include "my_gpio.h"
 #include "externfunc.h"
+#include "protocol.h"
 #include "sql_handle.h"
 #include "config.h"
 #include "form_videlayer.h"
@@ -114,6 +115,7 @@ int MiniGUIMain(int argc, const char* argv[])
 	gpioInit();
 	gpioInputRegist();
 	createThread(timer1sThread,NULL);
+	protocolInit();
 	formVideoLayerCreate();
     return 0;
 }

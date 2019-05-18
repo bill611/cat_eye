@@ -47,6 +47,7 @@ typedef struct _TimerPriv {
 	unsigned int speed;
 	unsigned int count;
 	unsigned int count_old;
+	int thread_end;
 
 	void (*func)(void *);
 	void * arg;
@@ -73,10 +74,18 @@ static void timerStop(Timer *This)
 	}
 	This->priv->enable = 0;
 }
+static int timerIsStop(Timer *This)
+{
+	return This->priv->enable == 0 ?1:0;	
+}
 
 static void timerDestroy(Timer *This)
 {
+	This->stop(This);
 	This->realTimerDelete(This);
+	while (This->priv->thread_end == 0) {
+		usleep(10000);
+	}
 	if (This->priv)
 		free(This->priv);
 	if (This)
@@ -86,6 +95,7 @@ static void timerDestroy(Timer *This)
 static void* timerThread(void *arg)
 {
 	Timer *This = (Timer *)arg;
+	This->priv->thread_end = 0;
 	while(This->priv->real_id) {
 		if (This->priv->enable == 0) {
 			usleep(10000);
@@ -105,6 +115,7 @@ static void* timerThread(void *arg)
 		}
 		usleep(10000);
 	}
+	This->priv->thread_end = 1;
 	return NULL;
 }
 
@@ -146,7 +157,6 @@ static void timerResetTick(Timer *This)
 
 static void realTimerCreateDefault(Timer *This,double value,void (*function)(int timerid,int arg))
 {
-	printf("[%s]\n", __FUNCTION__);
 	int result;
 	pthread_mutexattr_t mutexattr;
 
@@ -193,6 +203,7 @@ Timer * timerCreate(int speed,void (*function)(void *),void *arg)
 	This->handle = timerHandle;
 	This->getSystemTick = getSystemTickDefault;
 	This->resetTick = timerResetTick;
+	This->isStop = timerIsStop;
 	realTimerCreateDefault(This,0,NULL);
 	// This->realTimerCreate = realTimerCreateDefault;
 	This->realTimerDelete = realTimerDeleteDefault;

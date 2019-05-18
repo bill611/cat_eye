@@ -99,24 +99,30 @@ static void paint(HWND hWnd,HDC hdc)
 		return;
 	MyButtonCtrlInfo* pInfo = (MyButtonCtrlInfo*)(pCtrl->dwAddData2);
 
-	if (pInfo->flag == MYBUTTON_TYPE_ONE_STATE) {
+	if (pInfo->flag & MYBUTTON_TYPE_ONE_STATE) {
 		FillBoxWithBitmap(hdc,FILL_BMP_STRUCT(rc_bmp,pInfo->image_normal));
-	} else if (pInfo->flag == MYBUTTON_TYPE_TWO_STATE) {
+	} else if (pInfo->flag & MYBUTTON_TYPE_TWO_STATE) {
 		if(pInfo->state == BUT_NORMAL)
 			FillBoxWithBitmap(hdc, FILL_BMP_STRUCT(rc_bmp,pInfo->image_normal));
 		else
 			FillBoxWithBitmap(hdc, FILL_BMP_STRUCT(rc_bmp,pInfo->image_press));
-	} else if (pInfo->flag == MYBUTTON_TYPE_CHECKBOX){
+	} else if (pInfo->flag & MYBUTTON_TYPE_CHECKBOX){
 		if(pInfo->check == MYBUTTON_STATE_UNCHECK)
 			FillBoxWithBitmap(hdc, FILL_BMP_STRUCT(rc_bmp,pInfo->image_normal));
 		else
 			FillBoxWithBitmap(hdc, FILL_BMP_STRUCT(rc_bmp,pInfo->image_press));
 	}
-	rc_text.top = rc_bmp.top + pInfo->image_normal->bmHeight;
-	if (pInfo->text) {
-		SetTextColor(hdc,COLOR_lightwhite);
-		SetBkMode(hdc,BM_TRANSPARENT);
-		SelectFont (hdc, pInfo->font);
+	if (!pInfo->text)
+		return;
+	SetTextColor(hdc,COLOR_lightwhite);
+	SetBkMode(hdc,BM_TRANSPARENT);
+	SelectFont (hdc, pInfo->font);
+	if ((pInfo->flag & MYBUTTON_TYPE_TEXT_CENTER)) {
+		rc_text.bottom = rc_bmp.top + pInfo->image_normal->bmHeight;
+		DrawText (hdc,pInfo->text, -1, &rc_text,
+				DT_CENTER | DT_VCENTER | DT_WORDBREAK  | DT_SINGLELINE);
+	} else {
+		rc_text.top = rc_bmp.top + pInfo->image_normal->bmHeight;
 		DrawText (hdc,pInfo->text, -1, &rc_text,
 				DT_CENTER | DT_BOTTOM| DT_VCENTER | DT_WORDBREAK  | DT_SINGLELINE);
 	}

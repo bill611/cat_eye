@@ -20,11 +20,15 @@ extern "C" {
 #define CFG_PUBLIC_DRIVE "./"
 #define CFG_PRIVATE_DRIVE "./"
 #define DATABSE_PATH "./"
+#define QRCODE_IMIE CFG_PRIVATE_DRIVE"imei.png"
+#define QRCODE_APP CFG_PRIVATE_DRIVE"app_url.png"
 #else
 #define UPDATE_FILE	"/tmp/Update.cab"
 #define CFG_PUBLIC_DRIVE "./"
 #define CFG_PRIVATE_DRIVE "./"
 #define DATABSE_PATH "./"
+#define QRCODE_IMIE CFG_PRIVATE_DRIVE"imei.png"
+#define QRCODE_APP CFG_PRIVATE_DRIVE"app_url.png"
 #endif
 
 
@@ -66,8 +70,10 @@ extern "C" {
 	 * Configuration definition.
 	 */
 	typedef struct _Config {
-        char imei[64];      // 太川设备机身码
+        char imei[64];      	// 太川设备机身码
+        char hardcode[64];      // 太川设备硬件码
         char version[16];      // 太川软件版本
+        char app_url[128];      // appd地址 
         TcWifiConfig net_config;  // 网络设置
 	} Config;
 

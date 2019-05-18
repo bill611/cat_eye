@@ -39,7 +39,9 @@ static EtcValueInt etc_private_int[]={
 
 static EtcValueChar etc_private_char[]={
 {"taichuan",	"imei",	    SIZE_CONFIG(g_config.imei),		"0"},
-{"taichuan",	"version",	SIZE_CONFIG(g_config.version),		DEVICE_SVERSION},
+{"taichuan",	"hardcode",	SIZE_CONFIG(g_config.hardcode),	"0"},
+{"taichuan",	"version",	SIZE_CONFIG(g_config.version),	DEVICE_SVERSION},
+{"taichuan",	"app_url",	SIZE_CONFIG(g_config.app_url),	"123"},
 
 {"wireless",	"ssid",	    SIZE_CONFIG(g_config.net_config.ssid),		"MINI"},
 {"wireless",	"mode",	    SIZE_CONFIG(g_config.net_config.mode),		"Infra"},
@@ -244,9 +246,14 @@ void configLoad(void)
 	configLoadEtcInt(cfg_private_ini,etc_private_int,NELEMENTS(etc_private_int));
 	configLoadEtcChar(cfg_private_ini,etc_private_char,NELEMENTS(etc_private_char));
 	etcFileCheck();
-	if (ret || strcmp(g_config.version,DEVICE_SVERSION) != 0)
+	if (ret || strcmp(g_config.version,DEVICE_SVERSION) != 0) {
 		strcpy(g_config.version,DEVICE_SVERSION);
 		SavePrivate();
+	}
+	// 判断是否APP地址图片
+	if (fileexists(QRCODE_APP) == 0) {
+		
+	}
 }
 
 

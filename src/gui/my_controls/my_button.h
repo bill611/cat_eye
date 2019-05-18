@@ -26,9 +26,11 @@ extern "C" {
 #define CTRL_MYBUTTON         ("mybutton")
 
 	enum {  // 按钮类型
-		MYBUTTON_TYPE_ONE_STATE,
-		MYBUTTON_TYPE_TWO_STATE,
-		MYBUTTON_TYPE_CHECKBOX,
+		MYBUTTON_TYPE_ONE_STATE = (1 << 0),
+		MYBUTTON_TYPE_TWO_STATE = (1 << 1),
+		MYBUTTON_TYPE_CHECKBOX  = (1 << 2),
+		
+		MYBUTTON_TYPE_TEXT_CENTER  = (1 << 10),
 	};
 
 	enum {

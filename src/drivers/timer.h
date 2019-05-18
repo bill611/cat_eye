@@ -35,6 +35,7 @@ extern "C" {
 		int (*handle)(struct _Timer *);
 		void (*resetTick)(struct _Timer *);
 		unsigned int (*getSystemTick)(void);
+		int (*isStop)(struct _Timer *);
 
 		// real timer 系统定时器,根据不同系统进行定制
 
