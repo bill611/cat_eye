@@ -69,8 +69,8 @@ enum {
  *                      variables define
  *----------------------------------------------------------------------------*/
 static int flag_timer_stop = 0;
-static BITMAP *bmp_imei;
-static BITMAP *bmp_app_url;
+static BITMAP bmp_imei;
+static BITMAP bmp_app_url;
 
 static BmpLocation bmp_load[] = {
     {NULL},
@@ -127,9 +127,42 @@ static MyCtrlButton ctrls_button[] = {
 };
 static FormBase* form_base = NULL;
 
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief updateImeiImage 更新二维码图片
+ *
+ * @param reload 1重新加载图片 0不重新加载
+ */
+/* ---------------------------------------------------------------------------*/
+static void updateImeiImage(int reload)
+{
+	if (reload) {
+		UnloadBitmap(&bmp_imei);
+		if (LoadBitmap (HDC_SCREEN,&bmp_imei, QRCODE_IMIE)) {
+			printf ("LoadBitmap(%s)fail.\n",QRCODE_IMIE);
+		}
+	}
+	ShowWindow(GetDlgItem(form_base->hDlg,IDC_STATIC_IMAGE_IMEI),SW_SHOWNORMAL);
+	if (fileexists(QRCODE_IMIE)) {
+		ShowWindow(GetDlgItem(form_base->hDlg,IDC_BUTTON_GETIMEI),SW_HIDE);
+	}
+	SendMessage(GetDlgItem(form_base->hDlg,IDC_STATIC_IMAGE_IMEI),STM_SETIMAGE,(WPARAM)&bmp_imei,0);
+	
+}
+static void updateAppImage(int reload)
+{
+	if (reload) {
+		UnloadBitmap(&bmp_app_url);
+		if (LoadBitmap (HDC_SCREEN,&bmp_app_url, QRCODE_IMIE)) {
+			printf ("LoadBitmap(%s)fail.\n",QRCODE_IMIE);
+		}
+	}
+	SendMessage(GetDlgItem(form_base->hDlg,IDC_STATIC_IMAGE_APP_URL),STM_SETIMAGE,(WPARAM)&bmp_app_url,0);
+}
 static void getImeiCallback(int result)
 {
 	if (result) {
+		updateImeiImage(1);
 		SendMessage(GetDlgItem(form_base->hDlg,IDC_STATIC_TEXT_GETIMEI),
 				MSG_SETTEXT,0,(LPARAM)"机身码获取成功!");
 	} else {
@@ -194,6 +227,8 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
         ctrls_button[i].font = font22;
         createMyButton(hDlg,&ctrls_button[i]);
 	}
+	updateImeiImage(0);
+	updateAppImage(0);
 }
 
 /* ----------------------------------------------------------------*/
@@ -221,14 +256,8 @@ static int formSettingQrcodeProc(HWND hDlg, int message, WPARAM wParam, LPARAM l
 		case MSG_SHOWWINDOW:
 			{
 				if (wParam == SW_HIDE) {
-					if (bmp_app_url) {
-						UnloadBitmap(bmp_app_url);
-						bmp_app_url = NULL;
-					}
-					if (bmp_imei) {
-						UnloadBitmap(bmp_imei);
-						bmp_imei = NULL;
-					}
+					UnloadBitmap(&bmp_app_url);
+					UnloadBitmap(&bmp_imei);
 				}
 			} break;
 
@@ -245,12 +274,14 @@ int createFormSettingQrcode(HWND hMainWnd,void (*callback)(void))
 {
 	HWND Form = Screen.Find(form_base_priv.name);
 	if (fileexists(QRCODE_APP)) {
-		bmp_app_url = (BITMAP *) calloc(1,sizeof(BITMAP));
-		bmpLoad(bmp_app_url,QRCODE_APP);
+		if (LoadBitmap (HDC_SCREEN,&bmp_app_url, QRCODE_APP)) {
+			printf ("LoadBitmap(%s)fail.\n",QRCODE_APP);
+		}
 	}
 	if (fileexists(QRCODE_IMIE)) {
-		bmp_imei = (BITMAP *) calloc(1,sizeof(BITMAP));
-		bmpLoad(bmp_imei,QRCODE_IMIE);
+		if (LoadBitmap (HDC_SCREEN,&bmp_imei, QRCODE_IMIE)) {
+			printf ("LoadBitmap(%s)fail.\n",QRCODE_IMIE);
+		}
 	}
 
 	if(Form) {

@@ -167,36 +167,34 @@ static Timer *timer_protocol_1s = NULL; // 协议1s定时器
 static Timer *timer_getimei_5s = NULL; // 获取机身码5s定时器
 static void (*getImeiCallback)(int result); // 机身码获取回调函数
 
-static void udpLocalDevIDProc(SocketHandle *ABinding,SocketPacket *AData)
+static void udpLocalGetIMEI(SocketHandle *ABinding,SocketPacket *AData)
 {
-	printf("TP_LOCALDEVID:LocalDevIDProc()\n");
 	if(AData->Size != sizeof(TResDeviceInf)) {
 		return;
 	}
 	TResDeviceInf *GetPacket = (TResDeviceInf*)AData->Data;
 	if(GetPacket->Cmd == RESPONSESERVERINF && GetPacket->ReqType==TYPE_DEVID_SRV) {
 		get_imie_end = 1;
-		printf("udpLocalDevIDProc GetPacket DevID:%llx\n",GetPacket->DevID);
+		printf("udpLocalGetIMEI GetPacket DevID:%llx\n",GetPacket->DevID);
 		sprintf(g_config.imei,"%llx",GetPacket->DevID);
 
 	}
 }
 
-static void udpLocalHardCodeProc(SocketHandle *ABinding,SocketPacket *AData)
+static void udpLocalGetHardCode(SocketHandle *ABinding,SocketPacket *AData)
 {
-	printf("TP_LOCALHARDCODE:udpLocalHardCodeProc()\n");
 	if(AData->Size != sizeof(TResDeviceInf)) {
 		return;
 	}
 	TResDeviceInf *GetPacket = (TResDeviceInf*)AData->Data;
 	if(GetPacket->Cmd == RESPONSESERVERINF && GetPacket->ReqType==TYPE_DEVHARDCODE_SRV) {
 		get_imie_end = 1;
-		printf("udpLocalHardCodeProc GetPacket DevID:%llx\n",GetPacket->DevID);
+		printf("udpLocalGetHardCode GetPacket DevID:%llx\n",GetPacket->DevID);
 		sprintf(g_config.hardcode,"%llx",GetPacket->DevID);
 	}
 }
 
-static void udpLocalMsgGetProc(SocketHandle *ABinding,SocketPacket *AData)
+static void udpLocalGetMsg(SocketHandle *ABinding,SocketPacket *AData)
 {
 	printf("TP_DEVCHECK:LocalMsgGetProc()\n");
 	if(AData->Size==sizeof(TGetDeviceInfo)) {
@@ -281,7 +279,6 @@ unsigned long long htonll(unsigned long long val)
 }
 static void getIMEI(void)
 {
-	printf("%s(),hardcode:%s\n",__func__,g_config.hardcode);
 	if (strlen(g_config.hardcode) < 2)
 		return;
 	TGetDeviceBodyCode Packet;
@@ -291,6 +288,7 @@ static void getIMEI(void)
 	Packet.Type = TP_LOCALDEVID;
 	Packet.Cmd = CMD_GETSTATUS;
 	Packet.HardCode = htonll((unsigned long long)strtoull(g_config.hardcode, NULL, 16));
+	printf("%s(),hardcode:%s\n",__func__,g_config.hardcode);
 	if(udp_server)
 		udp_server->AddTask(udp_server,
 				"255.255.255.255",
@@ -298,7 +296,6 @@ static void getIMEI(void)
 }
 static void getHardCode(void)
 {
-	printf("%s()\n",__func__);
 	TGetDeviceBodyCode Packet;
 	memset(&Packet,0,sizeof(TGetDeviceBodyCode));
 	Packet.ID = packet_id++;
@@ -322,14 +319,12 @@ static void timerImei5sThread(void *arg)
 	get_imie_end = 0;
 	if (*get_type == 0) {
 		*get_type = 1;
-
-		qrcode(QRCODE_IMIE);
-		getImeiCallback(1);
-		// getIMEI();
-		// timer_getimei_5s->start(timer_getimei_5s);
+		getIMEI();
+		timer_getimei_5s->start(timer_getimei_5s);
 	} else {
+		qrcodeString(g_config.imei,QRCODE_IMIE);
 		getImeiCallback(1);
-		ConfigSave(NULL);
+		ConfigSavePrivate();
 	}
 }
 
@@ -427,9 +422,9 @@ static int udpUdpProtocolFilter(SocketHandle *ABinding,SocketPacket *AData)
 }
 
 static UdpCmdRead udp_cmd_handle[] = {
-	// {TP_DEVCHECK,		udpLocalMsgGetProc},
-	{TP_LOCALDEVID,     udpLocalDevIDProc},
-	{TP_LOCALHARDCODE,  udpLocalHardCodeProc},
+	{TP_DEVCHECK,		udpLocalGetMsg},
+	{TP_LOCALDEVID,     udpLocalGetIMEI},
+	{TP_LOCALHARDCODE,  udpLocalGetHardCode},
 	{0,NULL},
 };
 
@@ -452,6 +447,7 @@ static void udpSocketRead(SocketHandle *ABinding,SocketPacket *AData)
 
 void protocolInit(void)
 {
+	packet_id = (unsigned)time(NULL);
 	udpServerInit(udpSocketRead,7800);
 	pro_hardcloud = (ProtocolHardCloud *) calloc(1,sizeof(ProtocolHardCloud));
 	pro_hardcloud->getImei = getImei;
