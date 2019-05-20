@@ -30,7 +30,8 @@ extern "C" {
 		MYBUTTON_TYPE_TWO_STATE = (1 << 1),
 		MYBUTTON_TYPE_CHECKBOX  = (1 << 2),
 		
-		MYBUTTON_TYPE_TEXT_CENTER  = (1 << 10),
+		MYBUTTON_TYPE_TEXT_CENTER  = (1 << 10),  // 文字居中，否则在最底部
+		MYBUTTON_TYPE_PRESS_COLOR  = (1 << 11),  // 背景是否为纯色，否则为图片
 	};
 
 	enum {
@@ -65,6 +66,7 @@ extern "C" {
         PLOGFONT   font;       // 字体
 		BITMAP image_normal;	// 正常状态图片
 		BITMAP image_press;	// 按下状态图片
+		int16_t w,h;
 	}MyCtrlButton;
 
 	HWND createMyButton(HWND hWnd,MyCtrlButton *button);

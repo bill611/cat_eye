@@ -60,6 +60,7 @@ enum {
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
+PLOGFONT font36;
 PLOGFONT font22;
 PLOGFONT font20;
 
@@ -71,6 +72,7 @@ static MyCtrls ctrls[] = {
     {NULL},
 };
 static FontLocation font_load[] = {
+    {&font36,   36,FONT_WEIGHT_DEMIBOLD},
     {&font22,   22,FONT_WEIGHT_DEMIBOLD},
     {&font20,   20,FONT_WEIGHT_DEMIBOLD},
     {NULL}

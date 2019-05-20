@@ -24,6 +24,7 @@ extern "C" {
 	// 硬件云协议
 	typedef struct _ProtocolHardCloud {
 		void (*getImei)(void (*callBack)(int result));
+		int (*isNeedToUpdate)(char *version,char *content);
 	}ProtocolHardCloud;
 	extern ProtocolHardCloud *pro_hardcloud;
 	void protocolInit(void);

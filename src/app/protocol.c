@@ -37,26 +37,26 @@
  *                        macro define
  *----------------------------------------------------------------------------*/
 enum {
-	TP_TESTROUTE=0x200, //路由环回测试命令，类似于PING命令的作用                
-	TP_NATBURROW,       //NAT路由器穿透命令                                     
-	TP_RTPBURROW,       //RTP音视频穿透命令                                     
-	TP_DEVCHECK,        //设备测试                                              
-	TP_UPDATEPROC,      //程序更新通知                                          
-	TP_UPDATEEND,       //返回数据服务中心更新完成的消息                        
-	TP_GETAPPVERSION,   //取程序版本号                                          
-	TP_ELEVATOR,        //电梯联动                                              
-	TP_UPDATEMSG,       //服务器IP更新信息,房号配置表更换信息                   
-	TP_GETREMOTEPWD,    //获取设置服务器远程密码                                
-	TP_SETREMOTEPWD,    //获取设置服务器远程密码                                
-	TP_SENDMACTOSRV,    //发送MAC地址，IP地址及房号信息到服务器                 
-	TP_CHANGEROOMID,    //更改房号                                              
-	TP_TRANCMDBYSRV,    //通过服务器转发包                                      
-	TP_TRANSRTP,        //发送RTP包                                             
-	TP_TRANSELECTRIC,   //转发送电器控制包                                      
-	TP_SENDSOFTVER,                 //发送本设备版本信息                        
-	TP_RETUPDATEMSG,                //返回升级信息  0x211                       
-	TP_BUTTONALARM,     //紧急按钮报警                                          
-	TP_LOCALDEVID,      //获取本机唯一编号                                      
+	TP_TESTROUTE=0x200, //路由环回测试命令，类似于PING命令的作用
+	TP_NATBURROW,       //NAT路由器穿透命令
+	TP_RTPBURROW,       //RTP音视频穿透命令
+	TP_DEVCHECK,        //设备测试
+	TP_UPDATEPROC,      //程序更新通知
+	TP_UPDATEEND,       //返回数据服务中心更新完成的消息
+	TP_GETAPPVERSION,   //取程序版本号
+	TP_ELEVATOR,        //电梯联动
+	TP_UPDATEMSG,       //服务器IP更新信息,房号配置表更换信息
+	TP_GETREMOTEPWD,    //获取设置服务器远程密码
+	TP_SETREMOTEPWD,    //获取设置服务器远程密码
+	TP_SENDMACTOSRV,    //发送MAC地址，IP地址及房号信息到服务器
+	TP_CHANGEROOMID,    //更改房号
+	TP_TRANCMDBYSRV,    //通过服务器转发包
+	TP_TRANSRTP,        //发送RTP包
+	TP_TRANSELECTRIC,   //转发送电器控制包
+	TP_SENDSOFTVER,                 //发送本设备版本信息
+	TP_RETUPDATEMSG,                //返回升级信息  0x211
+	TP_BUTTONALARM,     //紧急按钮报警
+	TP_LOCALDEVID,      //获取本机唯一编号
 	TP_ADVERTISEMENT,    //中控机接收远程广告发布， 为了向U9中控机兼容，才更改值
 	TP_LOCALHARDCODE = 0x520,   //获取本机硬件码
 };
@@ -322,7 +322,9 @@ static void timerImei5sThread(void *arg)
 		getIMEI();
 		timer_getimei_5s->start(timer_getimei_5s);
 	} else {
-		qrcodeString(g_config.imei,QRCODE_IMIE);
+		char buf[128] = {0};
+		sprintf(buf,"%s/%s",g_config.imei,g_config.hardcode);
+		qrcodeString(buf,QRCODE_IMIE);
 		getImeiCallback(1);
 		ConfigSavePrivate();
 	}
@@ -351,6 +353,14 @@ static void getImei(void (*callBack)(int result))
 	get_imie_end = 0;
 }
 
+static int isNeedToUpdate(char *version,char *content)
+{
+	strcpy(version,"V8.8.8");
+	strcpy(content,"更新内容：\n\
+			1.修复了XX问题 \n\
+			2.增加XX功能");
+	return 0;
+}
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief udpKillTaskCondition 根据条件删除任务
@@ -451,6 +461,7 @@ void protocolInit(void)
 	udpServerInit(udpSocketRead,7800);
 	pro_hardcloud = (ProtocolHardCloud *) calloc(1,sizeof(ProtocolHardCloud));
 	pro_hardcloud->getImei = getImei;
+	pro_hardcloud->isNeedToUpdate = isNeedToUpdate;
 	// timer_protocol_1s = timerCreate(LAYER_TIME_1S,timer1sThread,NULL);
 	// timer_protocol_1s->start(timer_protocol_1s);
 }

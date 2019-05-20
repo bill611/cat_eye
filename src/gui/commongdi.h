@@ -56,10 +56,12 @@ extern "C" {
 
 #define STATIC_LB(x,y,w,h,id,caption,font,color)    \
 	{"static",WS_CHILD|WS_VISIBLE|SS_CENTER,x,y,w,h,id,caption,0,WS_EX_TRANSPARENT,NULL,NULL,font,color}
+#define STATIC_LB_LEFT(x,y,w,h,id,caption,font,color)    \
+	{"static",WS_CHILD|WS_VISIBLE|SS_LEFT,x,y,w,h,id,caption,0,WS_EX_TRANSPARENT,NULL,NULL,font,color}
 #define STATIC_IMAGE(x,y,w,h,id,dwAddData)  \
-	    {"static",WS_CHILD|WS_VISIBLE|SS_BITMAP|SS_CENTERIMAGE|SS_REALSIZEIMAGE,x,y,w,h,id,"",dwAddData,WS_EX_TRANSPARENT,NULL,NULL,NULL,0}
+	{"static",WS_CHILD|WS_VISIBLE|SS_BITMAP|SS_CENTERIMAGE|SS_REALSIZEIMAGE,x,y,w,h,id,"",dwAddData,WS_EX_TRANSPARENT,NULL,NULL,NULL,0}
 #define SCROLLVIEW(x,y,w,h,id)  \
-	    {"scrollview",WS_CHILD|WS_VISIBLE,x,y,w,h,id,"",0,WS_EX_TRANSPARENT,NULL,NULL,NULL,0}
+	{"scrollview",WS_CHILD|WS_VISIBLE,x,y,w,h,id,"",0,WS_EX_TRANSPARENT,NULL,NULL,NULL,0}
 #define EDIT(x,y,w,h,id,caption,font,color)  \
 	{CTRL_SLEDIT,WS_CHILD|WS_VISIBLE|ES_CENTER,\
 	    x,y,w,h,id,caption,0,WS_EX_TRANSPARENT,NULL,NULL,font,color}
@@ -81,6 +83,7 @@ extern "C" {
     void fontsLoad(FontLocation *font);
     int myMoveWindow(HWND ctrl, int x,int y);
 
+    extern PLOGFONT font36;
     extern PLOGFONT font22;
     extern PLOGFONT font20;
 #ifdef __cplusplus
