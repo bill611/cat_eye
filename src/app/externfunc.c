@@ -69,83 +69,6 @@
 
 /* ---------------------------------------------------------------------------*/
 /**
- * @brief WatchDogOpen 打开并初始化看门狗
- */
-/* ---------------------------------------------------------------------------*/
-static int watchdog_fd = 0;
-void WatchDogOpen(void)
-{
-#ifndef WATCHDOG_DEBUG
-	if(watchdog_fd > 0) {
-		return;
-	}
-
-	watchdog_fd = open("/dev/watchdog", O_WRONLY);
-	if (watchdog_fd == -1) {
-		perror("watchdog");
-	} else {
-		DPRINT("Init WatchDog!!!!!!!!!!!!!!!!!!\n");
-	}
-#endif
-}
-
-/* ---------------------------------------------------------------------------*/
-/**
- * @brief WatchDogFeed 喂狗函数
- */
-/* ---------------------------------------------------------------------------*/
-void WatchDogFeed(void)
-{
-#ifndef WATCHDOG_DEBUG
-	if(watchdog_fd <= 0) {
-		return;
-	}
-	ioctl(watchdog_fd, WDIOC_KEEPALIVE);
-#endif
-}
-
-/* ---------------------------------------------------------------------------*/
-/**
- * @brief WatchDogClose 关闭看门狗
- */
-/* ---------------------------------------------------------------------------*/
-void WatchDogClose(void)
-{
-#ifndef WATCHDOG_DEBUG
-	if(watchdog_fd <= 0) {
-		return;
-	}
-	char * closestr="V";
-	write(watchdog_fd,closestr,strlen(closestr));
-	close(watchdog_fd);
-	watchdog_fd = -2;
-#endif
-}
-
-/* ---------------------------------------------------------------------------*/
-/**
- * @brief ErrorLog 记录错误日志
- *
- * @param ecode
- * @param fmt
- * @param ...
- */
-/* ---------------------------------------------------------------------------*/
-void ErrorLog(int ecode,const char *fmt,...)
-{
-	va_list fmtargs;
-	va_start(fmtargs,fmt);
-	vfprintf(stderr,fmt,fmtargs);
-	va_end(fmtargs);
-
-	fprintf(stderr,"\n");
-	if(ecode) {
-		fprintf(stderr,"*** Error cause: %s\n",strerror(ecode));
-	}
-}
-//---------------------------------------------------------------------------
-/* ---------------------------------------------------------------------------*/
-/**
  * @brief GetDate 取当前日期时间格式
  *
  * @param cBuf
@@ -183,12 +106,12 @@ struct tm * getTime(void)
 
 /* ---------------------------------------------------------------------------*/
 /**
- * @brief GetMs 获得当前系统毫秒数
+ * @brief getMs 获得当前系统毫秒数
  *
  * @returns
  */
 /* ---------------------------------------------------------------------------*/
-uint64_t GetMs(void)
+uint64_t getMs(void)
 {
 	struct  timeval    tv;
     gettimeofday(&tv,NULL);
@@ -247,8 +170,8 @@ void DelayMs(int ms)
 {
 #if 0
 	unsigned long long start_time;
-	start_time = GetMs();
-	while (!(GetMs() - start_time >= ms)) ;
+	start_time = getMs();
+	while (!(getMs() - start_time >= ms)) ;
 #else
 	usleep(ms*1000);
 #endif

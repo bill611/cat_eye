@@ -112,6 +112,7 @@ int MiniGUIMain(int argc, const char* argv[])
 {
 	printf("stat--->%s,:%s\n",DEVICE_SVERSION,DEVICE_KVERSION);
 	configLoad();
+    sqlInit();
 	gpioInit();
 	gpioInputRegist();
 	createThread(timer1sThread,NULL);

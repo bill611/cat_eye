@@ -204,7 +204,7 @@ static void udpLocalGetHardCode(SocketHandle *ABinding,SocketPacket *AData)
 	}
 }
 
-static void udpLocalGetMsg(SocketHandle *ABinding,SocketPacket *AData)
+static void udpLocalgetMsg(SocketHandle *ABinding,SocketPacket *AData)
 {
 	printf("TP_DEVCHECK:LocalMsgGetProc()\n");
 	if(AData->Size==sizeof(TGetDeviceInfo)) {
@@ -417,7 +417,7 @@ static int udpUdpProtocolFilter(SocketHandle *ABinding,SocketPacket *AData)
     udp_server->SendBuffer(udp_server,ABinding->IP,ABinding->Port,
             AData->Data,4);
 
-	dwTick = GetMs();
+	dwTick = getMs();
     // 过滤相同IP发送的多次重复命令
 	for (i=0; i<10; i++) {
         if (strcmp(ABinding->IP,packets_id[i].IP) == 0
@@ -433,7 +433,7 @@ static int udpUdpProtocolFilter(SocketHandle *ABinding,SocketPacket *AData)
 }
 
 static UdpCmdRead udp_cmd_handle[] = {
-	{TP_DEVCHECK,		udpLocalGetMsg},
+	{TP_DEVCHECK,		udpLocalgetMsg},
 	{TP_LOCALDEVID,     udpLocalGetIMEI},
 	{TP_LOCALHARDCODE,  udpLocalGetHardCode},
 	{0,NULL},

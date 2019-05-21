@@ -21,6 +21,7 @@
 #include "externfunc.h"
 #include "screen.h"
 
+#include "my_button.h"
 #include "my_title.h"
 #include "config.h"
 
@@ -38,6 +39,8 @@ static int formSettingWifiProc(HWND hDlg, int message, WPARAM wParam, LPARAM lPa
 static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 
 static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonPrev(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonNext(HWND hwnd, int id, int nc, DWORD add_data);
 
 /* ---------------------------------------------------------------------------*
  *                        macro define
@@ -55,8 +58,8 @@ enum {
 	IDC_STATIC_TEXT_WARNING,
 
 	IDC_SCROLLVIEW,
-	IDC_BUTTON_NETX,
 	IDC_BUTTON_PREV,
+	IDC_BUTTON_NETX,
 
 	IDC_TITLE,
 };
@@ -128,7 +131,7 @@ static BmpLocation bmp_load[] = {
 static MY_CTRLDATA ChildCtrls [] = {
     STATIC_IMAGE(452,216,120,120,IDC_STATIC_IMG_WARNING,(DWORD)&bmp_warning),
     STATIC_LB(0,358,1024,25,IDC_STATIC_TEXT_WARNING,"WIFI已关闭",&font20,0xffffff),
-    SCROLLVIEW(0,40,1024,580,IDC_SCROLLVIEW),
+    SCROLLVIEW(0,40,1024,467,IDC_SCROLLVIEW),
 };
 
 static MY_DLGTEMPLATE DlgInitParam =
@@ -166,6 +169,21 @@ static MyCtrlTitle ctrls_title[] = {
 	{0},
 };
 
+static MyCtrlButton ctrls_button[] = {
+	{
+		.idc = IDC_BUTTON_PREV,	
+		.flag = MYBUTTON_TYPE_TWO_STATE|MYBUTTON_TYPE_PRESS_COLOR|MYBUTTON_TYPE_TEXT_CENTER,
+		.img_name = "上一页",
+		.x = 0, .y = 540, .w = 511, .h = 60,
+		.notif_proc = buttonPrev},
+	{	
+		.idc = IDC_BUTTON_NETX, 
+		.flag = MYBUTTON_TYPE_TWO_STATE|MYBUTTON_TYPE_PRESS_COLOR|MYBUTTON_TYPE_TEXT_CENTER,
+		.img_name ="下一页",
+		.x = 512,.y = 540,.w = 512, .h = 60,
+		.notif_proc = buttonNext},
+	{0},
+};
 static FormBase* form_base = NULL;
 
 static void getPassword(char *password)
@@ -208,6 +226,18 @@ static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data)
         g_config.net_config.enable = add_data;
         showWarning(GetParent(hwnd),add_data);
     }
+}
+static void buttonPrev(HWND hwnd, int id, int nc, DWORD add_data)
+{
+	if (nc != BN_CLICKED)
+		return;
+	// flag_timer_stop = 1;
+}
+static void buttonNext(HWND hwnd, int id, int nc, DWORD add_data)
+{
+	if (nc != BN_CLICKED)
+		return;
+	// flag_timer_stop = 1;
 }
 /* ---------------------------------------------------------------------------*/
 /**
@@ -316,6 +346,10 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
     for (i=0; ctrls_title[i].idc != 0; i++) {
         ctrls_title[i].font = font20;
         createMyTitle(hDlg,&ctrls_title[i]);
+    }
+    for (i=0; ctrls_button[i].idc != 0; i++) {
+        ctrls_button[i].font = font22;
+        createMyButton(hDlg,&ctrls_button[i]);
     }
 	hScrollView = GetDlgItem (hDlg, IDC_SCROLLVIEW);
 	SendMessage (hScrollView, SVM_SETITEMDRAW, 0, (LPARAM)myDrawItem);

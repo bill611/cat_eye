@@ -23,17 +23,17 @@ extern "C" {
 
 #include <stdint.h>
 	extern int sqlGetDeviceCnt(void);
-	void sqlGetDevice(char *id,
+	extern void sqlGetDevice(char *id,
 			int *dev_type,
 			uint16_t *addr,
 			uint16_t *channel,
 			char *product_key,int index);
 	extern void sqlGetDeviceEnd(void);
-	extern void sqlInsertDevice(char *id,
-			int dev_type,
-			uint16_t addr,
-			uint16_t channel,
-			char *product_key);
+	extern void sqlInsertWifi(
+		char *name,
+		char *password,
+		uint32_t enable,
+		uint32_t security);
 	extern void sqlDeleteDevice(char *id);
 	extern int sqlGetDeviceId(uint16_t addr,char *id);
 	extern void sqlInit(void);

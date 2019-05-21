@@ -181,7 +181,7 @@ static char * getLocalIP(void)
 /* ---------------------------------------------------------------------------*/
 static uint64_t udpServerGetTickCount(void)
 {
-	return GetMs();  // 用此函数不能返回精准毫秒数
+	return getMs();  // 用此函数不能返回精准毫秒数
 	// return SDL_GetTicks();
 }
 
