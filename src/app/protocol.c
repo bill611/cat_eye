@@ -20,7 +20,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include "my_http.h"
+#include "my_mqtt.h"
+#include "json_dec.h"
 #include "udp_server.h"
+#include "thread_helper.h"
 #include "protocol.h"
 #include "config.h"
 #include "timer.h"
@@ -28,6 +33,7 @@
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
+void registHardCloud(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -157,10 +163,14 @@ typedef struct _UdpCmdRead {
 	void (*udpCmdProc)( struct _SocketHandle *ABinding,
 			struct _SocketPacket *AData);   //协议处理
 }UdpCmdRead;
+
+typedef struct _ProtocolPriv {
+
+}ProtocolPriv;
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
-ProtocolHardCloud *pro_hardcloud;
+Protocol *protocol;
 static unsigned int packet_id;
 static int get_imie_end = 1;
 static Timer *timer_protocol_1s = NULL; // 协议1s定时器
@@ -175,7 +185,7 @@ static void udpLocalGetIMEI(SocketHandle *ABinding,SocketPacket *AData)
 	TResDeviceInf *GetPacket = (TResDeviceInf*)AData->Data;
 	if(GetPacket->Cmd == RESPONSESERVERINF && GetPacket->ReqType==TYPE_DEVID_SRV) {
 		get_imie_end = 1;
-		printf("udpLocalGetIMEI GetPacket DevID:%llx\n",GetPacket->DevID);
+		printf("[%s]imei:%llx\n",__func__,GetPacket->DevID);
 		sprintf(g_config.imei,"%llx",GetPacket->DevID);
 
 	}
@@ -189,7 +199,7 @@ static void udpLocalGetHardCode(SocketHandle *ABinding,SocketPacket *AData)
 	TResDeviceInf *GetPacket = (TResDeviceInf*)AData->Data;
 	if(GetPacket->Cmd == RESPONSESERVERINF && GetPacket->ReqType==TYPE_DEVHARDCODE_SRV) {
 		get_imie_end = 1;
-		printf("udpLocalGetHardCode GetPacket DevID:%llx\n",GetPacket->DevID);
+		printf("[%s]hardcode:%llx\n",__func__,GetPacket->DevID);
 		sprintf(g_config.hardcode,"%llx",GetPacket->DevID);
 	}
 }
@@ -221,20 +231,11 @@ static void udpLocalGetMsg(SocketHandle *ABinding,SocketPacket *AData)
 			sprintf(RetDevMsg.IMEI,"%s",g_config.imei);		//设备唯一编号
 			sprintf(RetDevMsg.Addition,"%s-%s",DEVICE_SVERSION,DEVICE_KVERSION);
 
-			// if(Public.broadcastFilter(Public.cLocalIP,ABinding->IP)) {
-				// udp_server->SendBuffer(udp_server,ABinding->IP,ABinding->Port, 		//返回信息
-						// (char *)&RetDevMsg,sizeof(TRetDeviceInfo));
-			// } else {
-				udp_server->SendBuffer(udp_server,"255.255.255.255",ABinding->Port, 		//返回信息
-						(char *)&RetDevMsg,sizeof(TRetDeviceInfo));
-					printf("broadcastFilter DDDDDDDDDDDDDDDDDD\n");
-			// }
+			udp_server->SendBuffer(udp_server,"255.255.255.255",ABinding->Port, 		//返回信息
+					(char *)&RetDevMsg,sizeof(TRetDeviceInfo));
 		}
-	}
-	else if(AData->Size==sizeof(TRetDeviceInfo))
-	{
+	} else if(AData->Size==sizeof(TRetDeviceInfo)) {
 		TRetDeviceInfo *pDevMsg = (TRetDeviceInfo*)AData->Data;
-		printf("TRetDeviceInfo DevType:%d\n", pDevMsg->DevType);
 		if(pDevMsg->Cmd != CMD_RETSTATUS) {
 			return;
 		}
@@ -452,16 +453,20 @@ static void udpSocketRead(SocketHandle *ABinding,SocketPacket *AData)
 	          return;
 	       }
 	}
-	printf("[%s]:IP:%s,Cmd=0x%04x\n",__FUNCTION__,ABinding->IP,head->Type);
+	// printf("[%s]:IP:%s,Cmd=0x%04x\n",__FUNCTION__,ABinding->IP,head->Type);
 }
+
 
 void protocolInit(void)
 {
 	packet_id = (unsigned)time(NULL);
 	udpServerInit(udpSocketRead,7800);
-	pro_hardcloud = (ProtocolHardCloud *) calloc(1,sizeof(ProtocolHardCloud));
-	pro_hardcloud->getImei = getImei;
-	pro_hardcloud->isNeedToUpdate = isNeedToUpdate;
+
+	protocol = (Protocol *) calloc(1,sizeof(Protocol));
+	protocol->priv = (ProtocolPriv *) calloc(1,sizeof(ProtocolPriv));
+	protocol->getImei = getImei;
+	protocol->isNeedToUpdate = isNeedToUpdate;
+	registHardCloud();
 	// timer_protocol_1s = timerCreate(LAYER_TIME_1S,timer1sThread,NULL);
 	// timer_protocol_1s->start(timer_protocol_1s);
 }

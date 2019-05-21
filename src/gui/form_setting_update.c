@@ -203,7 +203,7 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
         createMyButton(hDlg,&ctrls_button[i]);
     }
 	char version[16] = {0},content[128] = {0};
-	if (pro_hardcloud->isNeedToUpdate(version,content)) {
+	if (protocol->isNeedToUpdate(version,content)) {
 		ShowWindow(GetDlgItem(hDlg,IDC_STATIC_IMAGE_WARNING),SW_HIDE);
 		ShowWindow(GetDlgItem(hDlg,IDC_STATIC_TEXT_NOTFIND),SW_HIDE);
 		ShowWindow(GetDlgItem(hDlg,IDC_STATIC_IMAGE_UPDATE),SW_SHOWNORMAL);

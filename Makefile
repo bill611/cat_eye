@@ -60,6 +60,7 @@ XLINKER = -Xlinker "-(" -lsqlite3 \
 		  ${EX_LIB}\
 		  -lminigui_ths -lpng12 -lpng -ljpeg -lfreetype \
 		  -lqrencode \
+		  -lpaho-mqtt3a -lpaho-mqtt3c -lcurl -lcjson\
 		  -lz -lm -lpthread -ldl -lrt -Xlinker "-)"
 
 CP_TARGET = $(MAKEROOT)/../nand/v2.0/nand1-2/

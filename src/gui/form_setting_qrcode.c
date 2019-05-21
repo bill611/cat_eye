@@ -175,7 +175,7 @@ static void buttonGetImei(HWND hwnd, int id, int nc, DWORD add_data)
 	if (nc != BN_CLICKED)
 		return;
 	flag_timer_stop = 1;
-	pro_hardcloud->getImei(getImeiCallback);
+	protocol->getImei(getImeiCallback);
 	SendMessage(GetDlgItem(GetParent(hwnd),IDC_STATIC_TEXT_GETIMEI),
 			MSG_SETTEXT,0,(LPARAM)"正在获取机身码，请稍后...");
 }
