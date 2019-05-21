@@ -21,7 +21,7 @@
 extern "C" {
 #endif  /* __cplusplus */
 
-#define LAYER_TIME_1S 1000
+#define TIMER_1S 1000
 
 	struct _TimerPriv;
 	typedef struct _Timer {

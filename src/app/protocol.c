@@ -334,7 +334,7 @@ static void getImei(void (*callBack)(int result))
 {
 	static int get_type = 0; //获取机身码或者硬件码
 	if (timer_getimei_5s == NULL)
-		timer_getimei_5s = timerCreate(LAYER_TIME_1S * 5,timerImei5sThread,&get_type);
+		timer_getimei_5s = timerCreate(TIMER_1S * 5,timerImei5sThread,&get_type);
 	if (timer_getimei_5s->isStop(timer_getimei_5s) == 0) {
 		printf("wait for getting end\n");
 		return;
@@ -359,7 +359,7 @@ static int isNeedToUpdate(char *version,char *content)
 	strcpy(content,"更新内容：\n\
 			1.修复了XX问题 \n\
 			2.增加XX功能");
-	return 0;
+	return 1;
 }
 /* ---------------------------------------------------------------------------*/
 /**
