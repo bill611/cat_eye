@@ -13,6 +13,8 @@
 
 #include "iwlib.h"		/* Header */
 #include <sys/time.h>
+#include <string.h>
+#include "config.h"
 
 /****************************** TYPES ******************************/
 
@@ -163,6 +165,8 @@ static const char *	iw_ie_key_mgmt_name[] = {
 
 #endif	/* WE_ESSENTIAL */
 
+static TcWifiScan *g_ap_info; 
+static int *g_ap_cnt = NULL;
 /************************* WPA SUBROUTINES *************************/
 
 #ifndef WE_ESSENTIAL
@@ -204,10 +208,12 @@ iw_print_value_name(unsigned int		value,
 		    const char *		names[],
 		    const unsigned int		num_names)
 {
+#ifdef TC_DEBUG
   if(value >= num_names)
     printf(" unknown (%d)", value);
   else
     printf(" %s", names[value]);
+#endif
 }
 
 /*------------------------------------------------------------------*/
@@ -225,10 +231,12 @@ iw_print_ie_unknown(unsigned char *	iebuf,
   if(ielen > buflen)
     ielen = buflen;
 
+#ifdef DEBUG
   printf("Unknown: ");
   for(i = 0; i < ielen; i++)
     printf("%02X", iebuf[i]);
   printf("\n");
+#endif
 }
 
 /*------------------------------------------------------------------*/
@@ -298,10 +306,18 @@ iw_print_ie_wpa(unsigned char *	iebuf,
   ver = iebuf[offset] | (iebuf[offset + 1] << 8);
   offset += 2;
 
-  if(iebuf[0] == 0xdd)
-    printf("WPA Version %d\n", ver);
-  if(iebuf[0] == 0x30)
-    printf("IEEE 802.11i/WPA2 Version %d\n", ver);
+	if(iebuf[0] == 0xdd) {
+        (g_ap_info + (*g_ap_cnt) - 1)->auth |= TC_AUTH_TYPE_WPAPSK;
+#ifdef TC_DEBUG
+        printf("WPA Version %d\n", ver);
+#endif
+	}
+	if(iebuf[0] == 0x30) {
+        (g_ap_info + (*g_ap_cnt) - 1)->auth |= TC_AUTH_TYPE_WPA2PSK;
+#ifdef TC_DEBUG
+		printf("IEEE 802.11i/WPA2 Version %d\n", ver);
+#endif
+	}
 
   /* From here, everything is technically optional. */
 
@@ -309,23 +325,31 @@ iw_print_ie_wpa(unsigned char *	iebuf,
   if(ielen < (offset + 4))
     {
       /* We have a short IE.  So we should assume TKIP/TKIP. */
-      printf("                        Group Cipher : TKIP\n");
-      printf("                        Pairwise Cipher : TKIP\n");
-      return;
+        (g_ap_info + (*g_ap_cnt) - 1)->encry |= AWSS_ENC_TYPE_TKIP;
+#ifdef TC_DEBUG
+		printf("                        Group Cipher : TKIP\n");
+		printf("                        Pairwise Cipher : TKIP\n");
+#endif
+		return;
     }
  
   /* Next we have our group cipher. */
   if(memcmp(&iebuf[offset], wpa_oui, 3) != 0)
-    {
-      printf("                        Group Cipher : Proprietary\n");
-    }
+	{
+#ifdef TC_DEBUG
+		printf("                        Group Cipher : Proprietary\n");
+#endif
+	}
   else
-    {
-      printf("                        Group Cipher :");
-      iw_print_value_name(iebuf[offset+3],
-			  iw_ie_cypher_name, IW_IE_CYPHER_NUM);
-      printf("\n");
-    }
+	{
+		(g_ap_info + (*g_ap_cnt) - 1)->encry = AWSS_ENC_TYPE_AES;
+#ifdef TC_DEBUG
+		printf("                        Group Cipher :");
+		iw_print_value_name(iebuf[offset+3],
+				iw_ie_cypher_name, IW_IE_CYPHER_NUM);
+		printf("\n");
+#endif
+	}
   offset += 4;
 
   /* Check if we are done */
@@ -339,7 +363,9 @@ iw_print_ie_wpa(unsigned char *	iebuf,
   /* Otherwise, we have some number of pairwise ciphers. */
   cnt = iebuf[offset] | (iebuf[offset + 1] << 8);
   offset += 2;
-  printf("                        Pairwise Ciphers (%d) :", cnt);
+#ifdef TC_DEBUG
+	printf("                        Pairwise Ciphers (%d) :", cnt);
+#endif
 
   if(ielen < (offset + 4*cnt))
     return;
@@ -347,8 +373,10 @@ iw_print_ie_wpa(unsigned char *	iebuf,
   for(i = 0; i < cnt; i++)
     {
       if(memcmp(&iebuf[offset], wpa_oui, 3) != 0)
- 	{
- 	  printf(" Proprietary");
+		{
+#ifdef TC_DEBUG
+			printf(" Proprietary");
+#endif
  	}
       else
 	{
@@ -356,8 +384,10 @@ iw_print_ie_wpa(unsigned char *	iebuf,
 			      iw_ie_cypher_name, IW_IE_CYPHER_NUM);
  	}
       offset+=4;
-    }
-  printf("\n");
+	}
+#ifdef TC_DEBUG
+	printf("\n");
+#endif
  
   /* Check if we are done */
   if(ielen < (offset + 2))
@@ -365,8 +395,10 @@ iw_print_ie_wpa(unsigned char *	iebuf,
 
   /* Now, we have authentication suites. */
   cnt = iebuf[offset] | (iebuf[offset + 1] << 8);
-  offset += 2;
-  printf("                        Authentication Suites (%d) :", cnt);
+	offset += 2;
+#ifdef TC_DEBUG
+	printf("                        Authentication Suites (%d) :", cnt);
+#endif
 
   if(ielen < (offset + 4*cnt))
     return;
@@ -384,7 +416,9 @@ iw_print_ie_wpa(unsigned char *	iebuf,
  	}
        offset+=4;
      }
-  printf("\n");
+#ifdef TC_DEBUG
+	printf("\n");
+#endif
  
   /* Check if we are done */
   if(ielen < (offset + 1))
@@ -415,7 +449,9 @@ iw_print_gen_ie(unsigned char *	buffer,
   /* Loop on each IE, each IE is minimum 2 bytes */
   while(offset <= (buflen - 2))
     {
-      printf("                    IE: ");
+#ifdef TC_DEBUG
+		printf("                    IE: ");
+#endif
 
       /* Check IE type */
       switch(buffer[offset])
@@ -460,16 +496,34 @@ print_scanning_token(struct stream_descr *	stream,	/* Stream of events */
   /* Now, let's decode the event */
   switch(event->cmd)
     {
-    case SIOCGIWAP:
-      printf("          Cell %02d - Address: %s\n", state->ap_num,
-	     iw_saether_ntop(&event->u.ap_addr, buffer));
-      state->ap_num++;
-      break;
-    case SIOCGIWNWID:
+		case SIOCGIWAP: 
+			{
+                const struct sockaddr *sap;
+                const struct ether_addr *	eth;
+                sap = &event->u.ap_addr;
+                eth = (const struct ether_addr *) sap->sa_data;
+#ifdef DEBUG
+				printf("          Cell %02d - Address: %s\n", state->ap_num,
+						iw_saether_ntop(&event->u.ap_addr, buffer));
+#endif
+				(g_ap_info + (*g_ap_cnt) - 1)->bssid[0] |= eth->ether_addr_octet[0];
+				(g_ap_info + (*g_ap_cnt) - 1)->bssid[1] |= eth->ether_addr_octet[1];
+				(g_ap_info + (*g_ap_cnt) - 1)->bssid[2] |= eth->ether_addr_octet[2];
+				(g_ap_info + (*g_ap_cnt) - 1)->bssid[3] |= eth->ether_addr_octet[3];
+				(g_ap_info + (*g_ap_cnt) - 1)->bssid[4] |= eth->ether_addr_octet[4];
+				(g_ap_info + (*g_ap_cnt) - 1)->bssid[5] |= eth->ether_addr_octet[5];
+				if (*g_ap_cnt < 99)
+					(*g_ap_cnt)++;
+				state->ap_num++;
+			}
+			break;
+		case SIOCGIWNWID:
+#ifdef TC_DEBUG
       if(event->u.nwid.disabled)
 	printf("                    NWID:off/any\n");
       else
 	printf("                    NWID:%X\n", event->u.nwid.value);
+#endif
       break;
     case SIOCGIWFREQ:
       {
@@ -478,43 +532,56 @@ print_scanning_token(struct stream_descr *	stream,	/* Stream of events */
 	freq = iw_freq2float(&(event->u.freq));
 	/* Convert to channel if possible */
 	if(has_range)
-	  channel = iw_freq_to_channel(freq, iw_range);
-	iw_print_freq(buffer, sizeof(buffer),
-		      freq, channel, event->u.freq.flags);
-	printf("                    %s\n", buffer);
-      }
+					channel = iw_freq_to_channel(freq, iw_range);
+#ifdef TC_DEBUG
+                iw_print_freq(buffer, sizeof(buffer),
+                        freq, channel, event->u.freq.flags);
+                printf("                    %s\n", buffer);
+#endif
+				(g_ap_info + (*g_ap_cnt) - 1)->channel = channel;
+			}
       break;
     case SIOCGIWMODE:
-      /* Note : event->u.mode is unsigned, no need to check <= 0 */
-      if(event->u.mode >= IW_NUM_OPER_MODE)
-	event->u.mode = IW_NUM_OPER_MODE;
-      printf("                    Mode:%s\n",
-	     iw_operation_mode[event->u.mode]);
-      break;
-    case SIOCGIWNAME:
-      printf("                    Protocol:%-1.16s\n", event->u.name);
+			/* Note : event->u.mode is unsigned, no need to check <= 0 */
+#ifdef TC_DEBUG
+			if(event->u.mode >= IW_NUM_OPER_MODE)
+				event->u.mode = IW_NUM_OPER_MODE;
+			printf("                    Mode:%s\n",
+					iw_operation_mode[event->u.mode]);
+#endif
+			break;
+		case SIOCGIWNAME:
+#ifdef TC_DEBUG
+			printf("                    Protocol:%-1.16s\n", event->u.name);
+#endif
       break;
     case SIOCGIWESSID:
-      {
-	char essid[IW_ESSID_MAX_SIZE+1];
-	memset(essid, '\0', sizeof(essid));
-	if((event->u.essid.pointer) && (event->u.essid.length))
-	  memcpy(essid, event->u.essid.pointer, event->u.essid.length);
-	if(event->u.essid.flags)
-	  {
-	    /* Does it have an ESSID index ? */
-	    if((event->u.essid.flags & IW_ENCODE_INDEX) > 1)
-	      printf("                    ESSID:\"%s\" [%d]\n", essid,
-		     (event->u.essid.flags & IW_ENCODE_INDEX));
-	    else
-	      printf("                    ESSID:\"%s\"\n", essid);
-	  }
-	else
-	  printf("                    ESSID:off/any/hidden\n");
+			{
+                memset((g_ap_info + (*g_ap_cnt) - 1)->ssid, '\0', sizeof((g_ap_info + (*g_ap_cnt) - 1)->ssid));
+                if((event->u.essid.pointer) && (event->u.essid.length))
+                    memcpy((g_ap_info + (*g_ap_cnt) - 1)->ssid, event->u.essid.pointer, event->u.essid.length);
+
+#ifdef TC_DEBUG
+                char essid[IW_ESSID_MAX_SIZE+1] = {0};
+				if((event->u.essid.pointer) && (event->u.essid.length))
+					memcpy(essid, event->u.essid.pointer, event->u.essid.length);
+                if(event->u.essid.flags)
+                {
+					// [> Does it have an ESSID index ? <]
+                    if((event->u.essid.flags & IW_ENCODE_INDEX) > 1)
+                        printf("                    ESSID:\"%s\" [%d]\n", essid,
+                                (event->u.essid.flags & IW_ENCODE_INDEX));
+                    else
+                        printf("                    ESSID:\"%s\"\n", essid);
+                }
+                else
+                    printf("                    ESSID:off/any/hidden\n");
+#endif
       }
       break;
     case SIOCGIWENCODE:
       {
+#ifdef TC_DEBUG
 	unsigned char	key[IW_ENCODING_TOKEN_MAX];
 	if(event->u.data.pointer)
 	  memcpy(key, event->u.data.pointer, event->u.data.length);
@@ -539,9 +606,11 @@ print_scanning_token(struct stream_descr *	stream,	/* Stream of events */
 	      printf("   Security mode:open");
 	    printf("\n");
 	  }
+#endif
       }
       break;
     case SIOCGIWRATE:
+#ifdef TC_DEBUG
       if(state->val_index == 0)
 	printf("                    Bit Rates:");
       else
@@ -551,17 +620,21 @@ print_scanning_token(struct stream_descr *	stream,	/* Stream of events */
 	  printf("; ");
       iw_print_bitrate(buffer, sizeof(buffer), event->u.bitrate.value);
       printf("%s", buffer);
+#endif
       /* Check for termination */
       if(stream->value == NULL)
-	{
-	  printf("\n");
-	  state->val_index = 0;
+			{
+#ifdef TC_DEBUG
+				printf("\n");
+#endif
+				state->val_index = 0;
 	}
       else
 	state->val_index++;
       break;
     case SIOCGIWMODUL:
       {
+#ifdef TC_DEBUG
 	unsigned int	modul = event->u.param.value;
 	int		i;
 	int		n = 0;
@@ -578,12 +651,34 @@ print_scanning_token(struct stream_descr *	stream,	/* Stream of events */
 	      }
 	  }
 	printf("\n");
+#endif
       }
       break;
     case IWEVQUAL:
-      iw_print_stats(buffer, sizeof(buffer),
+            {
+                iwqual *	qual = &event->u.qual;
+                iwrange *	range = iw_range;
+                if(has_range && ((qual->level != 0)
+                            || (qual->updated & (IW_QUAL_DBM | IW_QUAL_RCPI))))
+                {
+                    if(!(qual->updated & IW_QUAL_QUAL_INVALID)) {
+                        (g_ap_info + (*g_ap_cnt) - 1)->rssi = qual->qual - range->max_qual.qual;
+                    }
+                }
+                if (((g_ap_info + (*g_ap_cnt) - 1)->auth & TC_AUTH_TYPE_WPA2PSK )
+                        && ((g_ap_info + (*g_ap_cnt) - 1)->auth & TC_AUTH_TYPE_WPAPSK) ) {
+                    (g_ap_info + (*g_ap_cnt) - 1)->auth = AWSS_AUTH_TYPE_WPAPSKWPA2PSK;
+                } else if ((g_ap_info + (*g_ap_cnt) - 1)->auth & TC_AUTH_TYPE_WPA2PSK) {
+                    (g_ap_info + (*g_ap_cnt) - 1)->auth = AWSS_AUTH_TYPE_WPA2PSK;
+                } else if ((g_ap_info + (*g_ap_cnt) - 1)->auth & TC_AUTH_TYPE_WPAPSK) {
+                    (g_ap_info + (*g_ap_cnt) - 1)->auth = AWSS_AUTH_TYPE_WPAPSK;
+                }
+#ifdef TC_DEBUG
+				iw_print_stats(buffer, sizeof(buffer),
 		     &event->u.qual, iw_range, has_range);
-      printf("                    %s\n", buffer);
+				printf("                    %s\n", buffer);
+#endif
+            }
       break;
 #ifndef WE_ESSENTIAL
     case IWEVGENIE:
@@ -592,12 +687,14 @@ print_scanning_token(struct stream_descr *	stream,	/* Stream of events */
       break;
 #endif	/* WE_ESSENTIAL */
     case IWEVCUSTOM:
-      {
-	char custom[IW_CUSTOM_MAX+1];
-	if((event->u.data.pointer) && (event->u.data.length))
-	  memcpy(custom, event->u.data.pointer, event->u.data.length);
-	custom[event->u.data.length] = '\0';
-	printf("                    Extra:%s\n", custom);
+			{
+#ifdef TC_DEBUG
+				char custom[IW_CUSTOM_MAX+1];
+				if((event->u.data.pointer) && (event->u.data.length))
+					memcpy(custom, event->u.data.pointer, event->u.data.length);
+				custom[event->u.data.length] = '\0';
+				printf("                    Extra:%s\n", custom);
+#endif
       }
       break;
     default:
@@ -857,20 +954,22 @@ print_scanning_info(int		skfd,
       int	i;
       printf("Scan result %d [%02X", wrq.u.data.length, buffer[0]);
       for(i = 1; i < wrq.u.data.length; i++)
-	printf(":%02X", buffer[i]);
-      printf("]\n");
+			printf(":%02X", buffer[i]);
+		printf("]\n");
+
+		printf("%-8.16s  Scan completed :\n", ifname);
 #endif
-      printf("%-8.16s  Scan completed :\n", ifname);
-      iw_init_event_stream(&stream, (char *) buffer, wrq.u.data.length);
+		iw_init_event_stream(&stream, (char *) buffer, wrq.u.data.length);
       do
 	{
 	  /* Extract an event and print it */
 	  ret = iw_extract_event_stream(&stream, &iwe,
 					range.we_version_compiled);
-	  if(ret > 0)
-	    print_scanning_token(&stream, &iwe, &state,
-				 &range, has_range);
-	}
+			if(ret > 0) {
+				print_scanning_token(&stream, &iwe, &state,
+						&range, has_range);
+			}
+		}
       while(ret > 0);
       printf("\n");
     }
@@ -2151,7 +2250,7 @@ static void iw_usage(int status)
  */
 int
 iwlist(int	argc,
-     char **	argv)
+     char **	argv,void *ap_info,int *ap_cnt)
 {
   int skfd;			/* generic raw socket desc.	*/
   char *dev;			/* device name			*/
@@ -2203,7 +2302,8 @@ iwlist(int	argc,
       perror("socket");
       return -1;
     }
-
+  g_ap_info = (TcWifiScan *)ap_info ;
+  g_ap_cnt = ap_cnt;
   /* do the actual work */
   if (dev)
     (*iwcmd->fn)(skfd, dev, args, count);

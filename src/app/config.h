@@ -233,6 +233,47 @@ extern "C" {
 	int isConfigMaster(void);
 
 	void tcSetNetwork(int type);
+	/* encry type */
+	enum AWSS_ENC_TYPE {
+		AWSS_ENC_TYPE_NONE,
+		AWSS_ENC_TYPE_WEP,
+		AWSS_ENC_TYPE_TKIP,
+		AWSS_ENC_TYPE_AES,
+		AWSS_ENC_TYPE_TKIPAES,
+		AWSS_ENC_TYPE_MAX = AWSS_ENC_TYPE_TKIPAES,
+		AWSS_ENC_TYPE_INVALID = 0xff,
+	};
+	/* auth type */
+	enum AWSS_AUTH_TYPE {
+		AWSS_AUTH_TYPE_OPEN,
+		AWSS_AUTH_TYPE_SHARED,
+		AWSS_AUTH_TYPE_WPAPSK,
+		AWSS_AUTH_TYPE_WPA8021X,
+		AWSS_AUTH_TYPE_WPA2PSK,
+		AWSS_AUTH_TYPE_WPA28021X,
+		AWSS_AUTH_TYPE_WPAPSKWPA2PSK,
+		AWSS_AUTH_TYPE_MAX = AWSS_AUTH_TYPE_WPAPSKWPA2PSK,
+		AWSS_AUTH_TYPE_INVALID = 0xff,
+	};
+	enum TC_AUTH_TYPE {
+		TC_AUTH_TYPE_OPEN = 0,
+		TC_AUTH_TYPE_SHARED = (1 << 0),
+		TC_AUTH_TYPE_WPAPSK = (1 << 1),
+		TC_AUTH_TYPE_WPA8021X = (1 << 2),
+		TC_AUTH_TYPE_WPA2PSK = (1 << 3),
+		TC_AUTH_TYPE_WPA28021X = (1 << 4),
+		TC_AUTH_TYPE_WPAPSKWPA2PSK = (1 << 5),
+		TC_AUTH_TYPE_MAX = TC_AUTH_TYPE_WPAPSKWPA2PSK,
+		TC_AUTH_TYPE_INVALID = 0xff,
+	};
+	typedef struct _TcWifiScan{
+		char ssid[64];     // 账号
+		uint8_t bssid[16]; // mac地址
+		enum AWSS_AUTH_TYPE auth;
+		enum AWSS_ENC_TYPE encry;
+		uint8_t channel;
+		signed  char rssi;
+	}TcWifiScan;
 	extern char *auth_mode[];
 	extern char *encrypt_type[];
 #ifdef __cplusplus

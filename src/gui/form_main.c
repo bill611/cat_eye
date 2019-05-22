@@ -205,7 +205,7 @@ static void formMainTimerProc1s(HWND hwnd)
 {
 	// 更新网络状态
 	static int net_level_old = 0;
-	int net_level = net_detect();
+	int net_level = netDetect();
 	if (net_level != net_level_old) {
 		net_level_old = net_level;
 		SendMessage(GetDlgItem (hwnd, IDC_MYSTATUS_WIFI),

@@ -45,6 +45,8 @@
     #define DBG_P( ...   )
 #endif
 
+#define TRUE 1
+#define FALSE 0
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
@@ -78,7 +80,7 @@ static int messageArrived(void* context, char* topicName, int topicLen, MQTTAsyn
 
 	MQTTAsync_freeMessage(&message);
 	MQTTAsync_free(topicName);
-	return 0;
+	return TRUE;
 }
 
 static void onConnectFailure(void* context, MQTTAsync_failureData* response)
@@ -112,9 +114,9 @@ static void onSubscribeFailure(void* context, MQTTAsync_failureData* response)
 static int send(char *pub_topic,int len,void *payload)
 {
 	if (MQTTAsync_send(client, pub_topic, len, payload, 2, 0, NULL) == MQTTASYNC_SUCCESS) 
-		return 0;
+		return TRUE;
 	else
-		return -1;
+		return FALSE;
 }
 static int subcribe(char* topic,
 		void (*onSuccess)(void * context),
@@ -130,9 +132,9 @@ static int subcribe(char* topic,
 	ropts.context = client;
 	if ((rc = MQTTAsync_subscribe(client, topic, 2, &ropts)) != MQTTASYNC_SUCCESS) {
 		DBG_P("Failed to start subscribe:%s, return code %d\n", topic, rc);
-		return -1;
+		return FALSE;
 	}
-	return 0;
+	return TRUE;
 }
 
 static int connect(char *url,char *client_id, int keepalive_interval,char *username,char *password,
@@ -143,7 +145,7 @@ static int connect(char *url,char *client_id, int keepalive_interval,char *usern
 	int rc = MQTTAsync_create(&client, url, client_id, MQTTCLIENT_PERSISTENCE_NONE, NULL);
 	if (rc != MQTTASYNC_SUCCESS) {
 		MQTTAsync_destroy(&client);
-		return -1;
+		return FALSE;
 	}
 	mqttConnectCallBack = callBack;
 	mqttConnectSuccess = onSuccess;
@@ -159,9 +161,9 @@ static int connect(char *url,char *client_id, int keepalive_interval,char *usern
 	conn_opts.automaticReconnect = 1;
 	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS) {
 		DBG_P("myconnect Failed to start connect, return code %d\n", rc);
-		return -1;
+		return FALSE;
 	}
-	return 0;
+	return TRUE;
 }
 
 MyMqtt * myMqttCreate(void)

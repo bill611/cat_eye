@@ -106,14 +106,16 @@ static void paint(HWND hWnd,HDC hdc)
 			if (pInfo->flag & MYBUTTON_TYPE_PRESS_COLOR) {
 				SetBrushColor (hdc,0x333333);
 				FillBox (hdc, rc_bmp.left,rc_bmp.top,RECTW(rc_bmp),RECTH(rc_bmp));
-			} else {
+			} else if (pInfo->flag & MYBUTTON_TYPE_PRESS_COLOR) {
+			} else{
 				FillBoxWithBitmap(hdc, FILL_BMP_STRUCT(rc_bmp,pInfo->image_normal));
 			}
 		} else {
 			if (pInfo->flag & MYBUTTON_TYPE_PRESS_COLOR) {
 				SetBrushColor (hdc,0x10B7F5);
 				FillBox (hdc, rc_bmp.left,rc_bmp.top,RECTW(rc_bmp),RECTH(rc_bmp));
-			} else {
+			} else if (pInfo->flag & MYBUTTON_TYPE_PRESS_COLOR) {
+			} else{
 				FillBoxWithBitmap(hdc, FILL_BMP_STRUCT(rc_bmp,pInfo->image_press));
 			}
 		}
@@ -332,7 +334,8 @@ HWND createMyButton(HWND hWnd,MyCtrlButton *ctrl)
 	pInfo.flag = ctrl->flag;
 	pInfo.text = ctrl->img_name;
     pInfo.font = ctrl->font;
-	if (pInfo.flag & MYBUTTON_TYPE_PRESS_COLOR) {
+	if ((pInfo.flag & MYBUTTON_TYPE_PRESS_COLOR)
+			|| (pInfo.flag & MYBUTTON_TYPE_PRESS_TRANSLATE)) {
 		ctrl_w = ctrl->w;
 		ctrl_h = ctrl->h;
 	} else {

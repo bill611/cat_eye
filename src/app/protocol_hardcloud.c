@@ -72,8 +72,8 @@ struct OPTS {
  *                      variables define
  *----------------------------------------------------------------------------*/
 Protocol*pro_hardcloud;
-static MyHttp *http;
-static MyMqtt *mqtt;
+static MyHttp *http = NULL;
+static MyMqtt *mqtt = NULL;
 
 // 正式地址
 // static char *hard_could_api = "https://iot.taichuan.net/v1/Mqtt/GetSevice?num=";
@@ -180,6 +180,7 @@ static int mqttConnectCallBack(void* context, char* topicName, int topicLen, voi
        printf("dealWithSubscription cjsonDecCreate fail!\n");
 	   return -1;
 	}
+	dec->print(dec);
 	char send_buff[128] = {0};
 	int id = dec->getValueInt(dec, "id");
 	int mode = dec->getValueInt(dec, "mode");
@@ -220,7 +221,8 @@ static int mqttConnectCallBack(void* context, char* topicName, int topicLen, voi
 	if(1 == mode) {  //服务端需要回复
 		sprintf(send_buff, "{\"api\": 4,\"time\": %ld,\"mode\": 4,  \"id\": %d,  \"body\": true}",
 				 getTimestamp(), id);
-		if (mqtt->send(opts.pubTopic,strlen(send_buff),send_buff) < 0) {
+		printf("send_buff:%s\n", send_buff);
+		if (mqtt->send(opts.pubTopic,strlen(send_buff),send_buff) == 0) {
 			goto connect_end ;
 		}
 	}

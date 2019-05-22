@@ -45,7 +45,9 @@
 #include <sys/mman.h>
 
 #include "debug.h"
+#include "thread_helper.h"
 #include "externfunc.h"
+#include "config.h"
 
 /* ----------------------------------------------------------------*
  *                  extern variables declare
@@ -65,6 +67,9 @@
 /* ----------------------------------------------------------------*
  *                      variables define
  *-----------------------------------------------------------------*/
+static void (*wifiloadCallback)(void *ap_info,int ap_cnt);
+static int wifi_scan_end = 1;
+
 
 
 /* ---------------------------------------------------------------------------*/
@@ -394,14 +399,14 @@ time_t MyGetTickCount(void)
 
 /* ---------------------------------------------------------------------------*/
 /**
- * @brief net_detect 检测网线连接状态
+ * @brief netDetect 检测网线连接状态
  *
  * @param net_name 网卡名称
  *
  * @returns 0正常 -1不正常
  */
 /* ---------------------------------------------------------------------------*/
-int net_detect(void)
+int netDetect(void)
 {
 	int ret = access("ip_ok",0);
 	if (ret == 0)
@@ -603,4 +608,25 @@ uint32_t getDiffSysTick(uint64_t new,uint64_t old)
     else
         diff = 0XFFFFFFFF - old + new;
     return diff;
+}
+
+static void* getWifiListThread(void *arg)
+{
+	TcWifiScan *plist = (TcWifiScan *)arg;
+	char *cmd[] = { "cat_eye", "wlan0", "scan"  };
+	int cnt = 0;
+	// 移植iwlist,传入需要的值
+	iwlist(3,cmd,plist,&cnt);
+	if (wifiloadCallback)
+		wifiloadCallback(plist,cnt);
+	wifi_scan_end = 1;
+	return NULL;
+}
+int getWifiList(void *ap_info,void (*callback)(void *ap_info,int ap_cnt))
+{
+	if (wifi_scan_end == 0)
+		return 0;
+	wifi_scan_end = 0;
+	wifiloadCallback = callback;
+	return createThread(getWifiListThread,ap_info);
 }

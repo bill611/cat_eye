@@ -59,7 +59,7 @@ ID INTEGER PRIMARY KEY,\
 name char(32),\
 password char(64),\
 enable INTEGER,\
-security INTEGER,\
+timestamp INTEGER,\
 	   	)";
     if (sql == NULL)
         goto sqlCheck_fail;

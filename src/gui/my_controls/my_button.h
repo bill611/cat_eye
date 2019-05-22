@@ -32,6 +32,7 @@ extern "C" {
 		
 		MYBUTTON_TYPE_TEXT_CENTER  = (1 << 10),  // 文字居中，否则在最底部
 		MYBUTTON_TYPE_PRESS_COLOR  = (1 << 11),  // 背景是否为纯色，否则为图片
+		MYBUTTON_TYPE_PRESS_TRANSLATE  = (1 << 12),  // 无背景色
 	};
 
 	enum {

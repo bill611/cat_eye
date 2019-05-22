@@ -250,6 +250,7 @@ void configLoad(void)
 		strcpy(g_config.version,DEVICE_SVERSION);
 		SavePrivate();
 	}
+	printf("imei:%s,hard:%s\n", g_config.imei,g_config.hardcode);
 	// 判断是否APP地址图片
 	if (fileexists(QRCODE_APP) == 0) {
 		

@@ -893,7 +893,7 @@ struct	iw_statistics
 
 /* ------------------------ IOCTL REQUEST ------------------------ */
 /*
- * This structure defines the payload of an ioctl, and is used 
+ * This structure defines the payload of an ioctl, and is used
  * below.
  *
  * Note that this structure should fit on the memory footprint
@@ -940,7 +940,7 @@ union	iwreq_data
  * convenience...
  * Do I need to remind you about structure size (32 octets) ?
  */
-struct	iwreq 
+struct	iwreq
 {
 	union
 	{
@@ -1073,7 +1073,7 @@ struct	iw_range
 /*
  * Private ioctl interface information
  */
- 
+
 struct	iw_priv_args
 {
 	__u32		cmd;		/* Number of the ioctl to issue */
@@ -1116,5 +1116,5 @@ struct iw_event
 			  (char *) NULL)
 #define IW_EV_POINT_LEN	(IW_EV_LCP_LEN + sizeof(struct iw_point) - \
 			 IW_EV_POINT_OFF)
-
+int iwlist(int	argc, char **argv,void *ap_info,int *ap_cnt);
 #endif	/* _LINUX_WIRELESS_H */
