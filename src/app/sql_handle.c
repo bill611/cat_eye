@@ -59,7 +59,7 @@ ID INTEGER PRIMARY KEY,\
 name char(32),\
 password char(64),\
 enable INTEGER,\
-timestamp INTEGER,\
+timestamp INTEGER\
 	   	)";
     if (sql == NULL)
         goto sqlCheck_fail;
@@ -74,13 +74,13 @@ timestamp INTEGER,\
 sqlCheck_fail:
     saveLog("sql locoal err\n");
 	if (recoverData(dbase.file_name) == 0) {
-		saveLog("creat new db\n");
+		saveLog("creat new db:%s\n",string);
 		LocalQueryExec(dbase.sql,string);
 	} else {
 		dbase.sql->Destroy(dbase.sql);
 		dbase.sql = CreateLocalQuery(dbase.sql->file_name);
-        sync();
 	}
+    sync();
 	return FALSE;
 }
 
@@ -125,7 +125,7 @@ void sqlInsertWifi(
 {
 	char buf[128];
 	pthread_mutex_lock(&mutex);
-	sprintf(buf, "INSERT INTO WifiList(name,password,enable,security) VALUES('%s','%s','%d','%d')",
+	sprintf(buf, "INSERT INTO WifiList(name,password,enable,timestamp) VALUES('%s','%s','%d','%d')",
 			name, password,enable,security);
 	saveLog("%s\n",buf);
 	LocalQueryExec(dbase.sql,buf);

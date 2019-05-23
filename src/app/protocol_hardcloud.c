@@ -128,8 +128,6 @@ static CjsonDec * judgeHead(char *data, char *state, int type)
 		if (NULL == buff) {
 			printf("judgeHead getValueChar null!!\n");
 			return NULL;
-		} else {
-			printf("judgeHead getValueChar:%s\n",buff);
 		}
 	}
 	return dec;

@@ -84,20 +84,28 @@ static int download(char *url, char *para, char *file_path)
 	if (para)
 		curl_easy_setopt(easy_handle, CURLOPT_POSTFIELDS, para);
 
-	 FILE *outfile;
-	 outfile = fopen(file_path, "wb");
+	 FILE *fd = NULL;
+	 fd = fopen(file_path, "wb");
+     if (fd == NULL)
+		goto EXIT;
 	 curl_easy_setopt(easy_handle, CURLOPT_WRITEDATA, file_path);
 	 curl_easy_setopt(easy_handle, CURLOPT_WRITEFUNCTION, &downloadCallBackData);
 	 curl_easy_setopt(easy_handle, CURLOPT_SSL_VERIFYHOST, 0L);
 	 r = curl_easy_setopt(easy_handle, CURLOPT_SSL_VERIFYPEER, 0L);
 
-	if (r == CURLE_OK) {
-		printf("CURLOPT_SSL_VERIFYPEER  sucess!!!\n");
-	} else {
-		printf("CURLOPT_SSL_VERIFYPEER  failed!!!\n");
-		fprintf(stderr, "%s\n", curl_easy_strerror(r));
+	if (r != CURLE_OK) {
+		printf("curl download CURLOPT_SSL_VERIFYPEER failed :%s\n",curl_easy_strerror(r));
 		goto EXIT;
 	}
+	r = curl_easy_perform(easy_handle);
+
+	if (r != CURLE_OK) {
+		printf("curl download failed :%s\n",curl_easy_strerror(r));
+		goto EXIT;
+	}
+    fflush(fd);
+    fclose(fd);
+    sync();
 
 EXIT:
 	curl_easy_cleanup(easy_handle);
@@ -128,15 +136,13 @@ static int post(char *url, char *para, char *out_data)
 	curl_easy_setopt(easy_handle, CURLOPT_SSL_VERIFYHOST, 0L);
 	r = curl_easy_setopt(easy_handle, CURLOPT_SSL_VERIFYPEER, 0L);
 	if (r != CURLE_OK) {
-		printf("CURLOPT_SSL_VERIFYPEER  failed!!!\n");
-		fprintf(stderr, "%s\n", curl_easy_strerror(r));
+		printf("curl post CURLOPT_SSL_VERIFYPEER failed :%s\n",curl_easy_strerror(r));
 		goto EXIT;
 	}
 	r = curl_easy_perform(easy_handle);
 
 	if (r != CURLE_OK) {
-		printf("libCurlGetHttp curl_easy_perform failed!!!\n");
-		fprintf(stderr, "%s\n", curl_easy_strerror(r));
+		printf("curl post failed :%s\n",curl_easy_strerror(r));
 		goto EXIT;
 	}
 	// printf("post:%s\n",chunk.memory);

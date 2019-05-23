@@ -292,8 +292,7 @@ CjsonDec *cjsonDecCreate(char *data)
 {
 	CjsonDec *This = (CjsonDec *) malloc(sizeof(CjsonDec));
 	This->root = cJSON_Parse(data);
-	if(NULL == This->root)
-	{
+	if(NULL == This->root) {
 		printf("cJSON_Parse failed\n");
 		return NULL;
 	}
