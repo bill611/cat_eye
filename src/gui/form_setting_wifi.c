@@ -243,6 +243,16 @@ static void buttonConnect(HWND hwnd, int id, int nc, DWORD add_data)
 	// flag_timer_stop = 1;
 }
 
+static void scrollviewTimerStart(void)
+{
+    SetTimer(form_base->hDlg,IDC_TIMER_100MS,2);
+}
+static void scrollviewTimerStop(void)
+{
+	
+	if (IsTimerInstalled(form_base->hDlg,IDC_TIMER_100MS) == TRUE)
+		KillTimer (form_base->hDlg,IDC_TIMER_100MS);
+}
 static void scrollviewInit(void)
 {
     scro_opt.cur_pos = 0;
@@ -416,8 +426,7 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 	SendMessage(GetDlgItem(hDlg,IDC_TITLE),
             MSG_MYTITLE_SET_SWICH, (WPARAM)g_config.net_config.enable, 0);
     showWarning(hDlg,g_config.net_config.enable);
-
-    SetTimer(hDlg,IDC_TIMER_100MS,1);
+	scrollviewTimerStart();
 }
 
 /* ----------------------------------------------------------------*/
@@ -435,7 +444,6 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 static int formSettingWifiProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 {
     HDC         hdc;
-    static int ss = 0;
     switch(message) // 自定义消息
     {
 		case MSG_TIMER:
@@ -458,10 +466,8 @@ static int formSettingWifiProc(HWND hDlg, int message, WPARAM wParam, LPARAM lPa
 
 		case MSG_SHOWWINDOW:
 			{
-				if (wParam == SW_HIDE) {
-                    if (IsTimerInstalled(hDlg,IDC_TIMER_100MS) == TRUE)
-                        KillTimer (hDlg,IDC_TIMER_100MS);
-				}
+				if (wParam == SW_HIDE)
+					scrollviewTimerStop();
 			}return FORM_CONTINUE;
 		case MSG_COMMAND:
 			{
@@ -537,7 +543,7 @@ int createFormSettingWifi(HWND hMainWnd,void (*callback)(void))
 {
 	HWND Form = Screen.Find(form_base_priv.name);
 	if(Form) {
-        SetTimer(Form,IDC_TIMER_100MS,1);
+		scrollviewTimerStart();
 		ShowWindow(Form,SW_SHOWNORMAL);
 		scrollviewInit();
 	} else {
