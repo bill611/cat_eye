@@ -539,6 +539,7 @@ int createFormSettingWifi(HWND hMainWnd,void (*callback)(void))
 	if(Form) {
         SetTimer(Form,IDC_TIMER_100MS,1);
 		ShowWindow(Form,SW_SHOWNORMAL);
+		scrollviewInit();
 	} else {
 		form_base_priv.hwnd = hMainWnd;
 		form_base_priv.callBack = callback;

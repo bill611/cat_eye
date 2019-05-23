@@ -71,8 +71,10 @@ enum {
 static int flag_timer_stop = 0;
 static BITMAP bmp_imei;
 static BITMAP bmp_app_url;
+static BITMAP bmp_null;
 
 static BmpLocation bmp_load[] = {
+	{&bmp_null,BMP_LOCAL_PATH"qrcode_null.png"},
     {NULL},
 };
 
@@ -122,7 +124,7 @@ static MyCtrlTitle ctrls_title[] = {
 };
 
 static MyCtrlButton ctrls_button[] = {
-	{IDC_BUTTON_GETIMEI,MYBUTTON_TYPE_TWO_STATE | MYBUTTON_TYPE_TEXT_CENTER,"abc",170,138,buttonGetImei},
+	{IDC_BUTTON_GETIMEI,MYBUTTON_TYPE_TWO_STATE | MYBUTTON_TYPE_TEXT_NULL,"点击获取二维码",200,384,buttonGetImei},
 	{0},
 };
 static FormBase* form_base = NULL;
@@ -142,11 +144,15 @@ static void updateImeiImage(int reload)
 			printf ("LoadBitmap(%s)fail.\n",QRCODE_IMIE);
 		}
 	}
-	ShowWindow(GetDlgItem(form_base->hDlg,IDC_STATIC_IMAGE_IMEI),SW_SHOWNORMAL);
 	if (fileexists(QRCODE_IMIE)) {
 		ShowWindow(GetDlgItem(form_base->hDlg,IDC_BUTTON_GETIMEI),SW_HIDE);
+		SendMessage(GetDlgItem(form_base->hDlg,IDC_STATIC_IMAGE_IMEI),STM_SETIMAGE,(WPARAM)&bmp_imei,0);
+		ShowWindow(GetDlgItem(form_base->hDlg,IDC_STATIC_TEXT_IMEI),SW_SHOWNORMAL);
+	} else {
+		ShowWindow(GetDlgItem(form_base->hDlg,IDC_BUTTON_GETIMEI),SW_SHOWNORMAL);
+		ShowWindow(GetDlgItem(form_base->hDlg,IDC_STATIC_TEXT_IMEI),SW_HIDE);
+		SendMessage(GetDlgItem(form_base->hDlg,IDC_STATIC_IMAGE_IMEI),STM_SETIMAGE,(WPARAM)&bmp_null,0);
 	}
-	SendMessage(GetDlgItem(form_base->hDlg,IDC_STATIC_IMAGE_IMEI),STM_SETIMAGE,(WPARAM)&bmp_imei,0);
 	
 }
 static void updateAppImage(int reload)
@@ -157,7 +163,11 @@ static void updateAppImage(int reload)
 			printf ("LoadBitmap(%s)fail.\n",QRCODE_IMIE);
 		}
 	}
-	SendMessage(GetDlgItem(form_base->hDlg,IDC_STATIC_IMAGE_APP_URL),STM_SETIMAGE,(WPARAM)&bmp_app_url,0);
+	if (fileexists(QRCODE_APP)) {
+		SendMessage(GetDlgItem(form_base->hDlg,IDC_STATIC_IMAGE_APP_URL),STM_SETIMAGE,(WPARAM)&bmp_app_url,0);
+	} else {
+		SendMessage(GetDlgItem(form_base->hDlg,IDC_STATIC_IMAGE_APP_URL),STM_SETIMAGE,(WPARAM)&bmp_null,0);
+	}
 }
 static void getImeiCallback(int result)
 {

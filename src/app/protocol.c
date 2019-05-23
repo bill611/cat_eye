@@ -206,7 +206,7 @@ static void udpLocalGetHardCode(SocketHandle *ABinding,SocketPacket *AData)
 
 static void udpLocalgetMsg(SocketHandle *ABinding,SocketPacket *AData)
 {
-	printf("TP_DEVCHECK:LocalMsgGetProc()\n");
+	printf("TP_DEVCHECK:LocalMsgGetProc():%s\n",ABinding->IP);
 	if(AData->Size==sizeof(TGetDeviceInfo)) {
 		printf("MsgGetProc():TGetDeviceInfo\n");
 		//返回本机设备信息
@@ -264,6 +264,7 @@ static void timer1sThread(void *arg)
 {
 
 }
+
 unsigned long long htonll(unsigned long long val)
 {
 #if 1

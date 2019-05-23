@@ -125,7 +125,7 @@ static void paint(HWND hWnd,HDC hdc)
 		else
 			FillBoxWithBitmap(hdc, FILL_BMP_STRUCT(rc_bmp,pInfo->image_press));
 	}
-	if (!pInfo->text)
+	if (!pInfo->text || (pInfo->flag & MYBUTTON_TYPE_TEXT_NULL))
 		return;
 	SetTextColor(hdc,COLOR_lightwhite);
 	SetBkMode(hdc,BM_TRANSPARENT);

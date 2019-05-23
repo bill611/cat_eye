@@ -57,6 +57,7 @@ static int formBaseProc(FormBase *this,HWND hDlg, int message, WPARAM wParam, LP
 
 			} return FORM_CONTINUE;
 
+		case MSG_MOUSEMOVE:
 		case MSG_LBUTTONDOWN:
 			{
 				this->auto_close_time = FORM_SETTING_ONTIME;
