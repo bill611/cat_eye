@@ -2,12 +2,22 @@ MAKEROOT = $(shell pwd)
 
 ifeq ($(PLATFORM), RV1108)
 	PREFIX =$(RV1108_CROOS_PATH)/bin/arm-buildroot-linux-gnueabihf-
-	CFLAGS += -DRV1108
+	CFLAGS += -DRV1108 -DLINUX -DSUPPORT_ION -DENABLE_ASSERT
 	LIB_DIR += $(MAKEROOT)/lib/arm
 	LIB_DIR += ${RV1108_SDK_PATH}/out/system/lib
 	LIB_DIR += ${RV1108_SDK_PATH}/out/sec_rootfs/lib
 	INC_DIR += ${RV1108_SDK_PATH}/out/system/include
-	EX_LIB += -lion -lrkfb -lrkrga -lts
+	EX_LIB += -lion -lrkfb -lrkrga -lts -ladk -lcam_ia -lcam_engine_cifisp
+
+SRC_CPP = \
+		  $(wildcard ${SRC_DIR}/hal/hal_video/*.cpp) \
+		  $(wildcard ${SRC_DIR}/hal/hal_video/buffer/*.cpp) \
+		  $(wildcard ${SRC_DIR}/hal/hal_video/camera/*.cpp) \
+		  $(wildcard ${SRC_DIR}/hal/hal_video/process/*.cpp) \
+		  $(wildcard ${SRC_DIR}/hal/hal_video/lcd/*.cpp) \
+
+OBJ_CPP = $(patsubst %.cpp,${OBJ_DIR}/%.o,$(notdir ${SRC_CPP}))
+DEPS_CPP = $(patsubst %.cpp, ${OBJ_DIR}/%.d, $(notdir ${SRC_CPP}))
 endif
 
 ifeq ($(PLATFORM), PC)
@@ -31,6 +41,7 @@ OBJ_DIR = $(MAKEROOT)/obj
 BIN_DIR = $(MAKEROOT)/out
 
 CC =$(PREFIX)gcc
+CXX =$(PREFIX)g++
 
 # INC_DIR 目录下为相应库的头文件
 INC_DIR += \
@@ -41,6 +52,11 @@ INC_DIR += \
 		  $(MAKEROOT)/src/gui/my_controls\
 		  $(MAKEROOT)/src/drivers\
 		  $(MAKEROOT)/src/hal\
+		  $(MAKEROOT)/src/hal/hal_video \
+		  $(MAKEROOT)/src/hal/hal_video/buffer \
+		  $(MAKEROOT)/src/hal/hal_video/camera \
+		  $(MAKEROOT)/src/hal/hal_video/process \
+		  $(MAKEROOT)/src/hal/hal_video/lcd \
 		  $(MAKEROOT)/src/wireless\
 		  # $(MAKEROOT)/src/gui/my_controls/my_scrollview\
 
@@ -53,7 +69,7 @@ SRC = \
 		$(wildcard ${SRC_DIR}/drivers/iniparser/*.c) \
 		$(wildcard ${SRC_DIR}/hal/*.c) \
 		$(wildcard ${SRC_DIR}/wireless/*.c) \
-		# $(wildcard ${SRC_DIR}/gui/my_controls/my_scrollview/*.c) \
+
 
 
 
@@ -91,7 +107,7 @@ DEPS = $(patsubst %.c, ${OBJ_DIR}/%.d, $(notdir ${SRC}))
 
 
 
-export CC LIB_DIR CFLAGS OBJ_DIR INC_DIR DEPS
+export CC CXX LIB_DIR CFLAGS CPPFLAGS OBJ_DIR INC_DIR DEPS DEPS_CPP
 # $@：表示目标文件，$^：表示所有的依赖文件，$<：表示第一个依赖文件，$?：表示比目标还要新的依赖文件列表
 all: make_C ${BIN_TARGET}
 	@# cp -u ${BIN_TARGET} ${CP_TARGET}
@@ -101,8 +117,8 @@ make_C:
 	@make -C src
 
 # 在指定目录下，将所有的.c文件编译为相应的同名.o文件
-${BIN_TARGET}:${OBJ}
-	@$(CC) $(LINKFLAGS) -o $@ $(OBJ) ${addprefix -L,${LIB_DIR}} ${XLINKER}
+${BIN_TARGET}:${OBJ} ${OBJ_CPP}
+	@$(CXX) $(LINKFLAGS) -o $@ $(OBJ) $(OBJ_CPP) ${addprefix -L,${LIB_DIR}} ${XLINKER}
 	@${STRIP}
 
 debug:

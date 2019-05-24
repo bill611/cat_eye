@@ -4,6 +4,7 @@ mkdir -p out
 
 make PLATFORM=RV1108 DBG=0
 if [ "$?" == 0 ]; then
+	cp out/cateye ~/arm_share/cat_eye/v
 	echo "Release build finished!"
 else
 	echo "make error!"

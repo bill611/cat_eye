@@ -3,7 +3,19 @@ ${OBJ_DIR}/%.o:%.c
 
 CURRENT_SRC=$(wildcard *.c)
 SRC=$(patsubst %.c,${OBJ_DIR}/%.o,$(notdir ${CURRENT_SRC}))
+
+ifeq ($(PLATFORM), RV1108)
+all: make_C $(SRC)
+
+make_C:                 
+	    @make -C hal_video
+endif
+
+ifeq ($(PLATFORM), PC)
+
 all: $(SRC)
+
+endif
 
 -include $(DEPS)
 

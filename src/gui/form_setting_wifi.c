@@ -194,15 +194,15 @@ static void showWarning(HWND hwnd,int on_off)
         ShowWindow(GetDlgItem(hwnd,IDC_SCROLLVIEW),SW_SHOWNORMAL);
         ShowWindow(GetDlgItem(hwnd,IDC_BUTTON_TITLE),SW_SHOWNORMAL);
 		strcpy(wifi_list_title.text,g_config.net_config.ssid);
-		// getWifiList(ap_info,wifiLoadData);
+		getWifiList(ap_info,wifiLoadData);
         // test
-#define TEST_ITEM_NUM 50
-        int i;
-        for (i=0; i<TEST_ITEM_NUM; i++) {
-           ap_info[i].rssi = i*(100/TEST_ITEM_NUM);
-           sprintf(ap_info[i].ssid,"test%d",i);
-        }
-        wifiLoadData(ap_info,TEST_ITEM_NUM);
+// #define TEST_ITEM_NUM 50
+        // int i;
+        // for (i=0; i<TEST_ITEM_NUM; i++) {
+           // ap_info[i].rssi = i*(100/TEST_ITEM_NUM);
+           // sprintf(ap_info[i].ssid,"test%d",i);
+        // }
+        // wifiLoadData(ap_info,TEST_ITEM_NUM);
     } else {
         ShowWindow(GetDlgItem(hwnd,IDC_STATIC_IMG_WARNING),SW_SHOWNORMAL);
         ShowWindow(GetDlgItem(hwnd,IDC_STATIC_TEXT_WARNING),SW_SHOWNORMAL);
@@ -243,15 +243,10 @@ static void buttonConnect(HWND hwnd, int id, int nc, DWORD add_data)
 	// flag_timer_stop = 1;
 }
 
-static void scrollviewTimerStart(void)
+static void scrollviewRefresh(void)
 {
+    showWarning(form_base->hDlg,g_config.net_config.enable);
     SetTimer(form_base->hDlg,IDC_TIMER_100MS,2);
-}
-static void scrollviewTimerStop(void)
-{
-	
-	if (IsTimerInstalled(form_base->hDlg,IDC_TIMER_100MS) == TRUE)
-		KillTimer (form_base->hDlg,IDC_TIMER_100MS);
 }
 static void scrollviewInit(void)
 {
@@ -382,11 +377,12 @@ static void wifiLoadData(void *aps,int ap_cnt)
 		strcpy(wifi_list[i].text,ap_data[i].ssid);
 		wifi_list[i].index = i;
 		wifi_list[i].security = (ap_data[i].encry == AWSS_ENC_TYPE_NONE) ? 0 : 1;
-        if (ap_data[i].rssi < 30)
+		printf("%d,ssi:%s,rssi:%d,security:%d,\n",i,ap_data[i].ssid,ap_data[i].rssi,ap_data[i].encry );
+        if (ap_data[i].rssi < 2)
             wifi_list[i].strength = 0;
-        else if (ap_data[i].rssi < 60)
+        else if (ap_data[i].rssi < 4)
             wifi_list[i].strength = 1;
-        else if (ap_data[i].rssi < 100)
+        else if (ap_data[i].rssi < 6)
             wifi_list[i].strength = 2;
 
 		svii.nItemHeight = 60;
@@ -425,8 +421,7 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
     scrollviewInit();
 	SendMessage(GetDlgItem(hDlg,IDC_TITLE),
             MSG_MYTITLE_SET_SWICH, (WPARAM)g_config.net_config.enable, 0);
-    showWarning(hDlg,g_config.net_config.enable);
-	scrollviewTimerStart();
+	scrollviewRefresh();
 }
 
 /* ----------------------------------------------------------------*/
@@ -466,8 +461,10 @@ static int formSettingWifiProc(HWND hDlg, int message, WPARAM wParam, LPARAM lPa
 
 		case MSG_SHOWWINDOW:
 			{
-				if (wParam == SW_HIDE)
-					scrollviewTimerStop();
+				if (wParam == SW_HIDE) {
+					if (IsTimerInstalled(hDlg,IDC_TIMER_100MS) == TRUE)
+						KillTimer (hDlg,IDC_TIMER_100MS);
+				}
 			}return FORM_CONTINUE;
 		case MSG_COMMAND:
 			{
@@ -543,7 +540,7 @@ int createFormSettingWifi(HWND hMainWnd,void (*callback)(void))
 {
 	HWND Form = Screen.Find(form_base_priv.name);
 	if(Form) {
-		scrollviewTimerStart();
+		scrollviewRefresh();
 		ShowWindow(Form,SW_SHOWNORMAL);
 		scrollviewInit();
 	} else {

@@ -27,6 +27,7 @@ extern void formSettingStoreLoadBmp(void);
 extern void formSettingQrcodeLoadBmp(void);
 extern void formSettingUpdateLoadBmp(void);
 
+int rkVideo(void);
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
  *----------------------------------------------------------------------------*/
@@ -46,7 +47,7 @@ enum {
 
 typedef void (*InitBmpFunc)(void) ;
 typedef struct {
-   void (*init)(void); 
+   void (*init)(void);
    MyControls ** controls;
 }MyCtrls;
 
@@ -55,6 +56,10 @@ typedef struct {
 enum {
     IDC_TIMER_1S ,	// 1s定时器
     IDC_TIMER_NUM,
+};
+enum {
+    UI_FORMAT_BGRA_8888 = 0x1000,
+    UI_FORMAT_RGB_565,
 };
 
 /* ---------------------------------------------------------------------------*
@@ -95,7 +100,7 @@ static InitBmpFunc load_bmps_func[] = {
 static HWND hwnd_videolayer = HWND_INVALID;
 static BITMAP bkg;
 static BmpLocation base_bmps[] = {
-	{&bkg,"main/bg_1.png"},
+	// {&bkg,"main/bg_1.png"},
 	{NULL},
 };
 
@@ -145,13 +150,14 @@ static int formVideoLayerProc(HWND hWnd, int message, WPARAM wParam, LPARAM lPar
 				createThread(loadBmpsThread,"1");
                 fontsLoad(font_load);
 				SetTimer(hWnd, IDC_TIMER_1S, TIME_1S);
+				video_init();
 				// screensaverStart(LCD_ON);
 			} break;
 
 		case MSG_ERASEBKGND:
 				drawBackground(hWnd,
 						   (HDC)wParam,
-						   (const RECT*)lParam,&bkg,0);
+						   (const RECT*)lParam,NULL,0);
 			 return 0;
 
 		case MSG_MAIN_LOAD_BMP:
@@ -235,7 +241,7 @@ void formVideoLayerCreate(void)
 		return ;
 	ShowWindow(hwnd_videolayer, SW_SHOWNORMAL);
 
-    MSG Msg;
+	MSG Msg;
 	while (GetMessage(&Msg, hwnd_videolayer)) {
 		TranslateMessage(&Msg);
 		DispatchMessage(&Msg);

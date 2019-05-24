@@ -26,6 +26,9 @@ extern "C" {
 #include <minigui/gdi.h>
 #include <minigui/window.h>
 #include <minigui/control.h>
+#ifndef X86
+#include <minigui/rkfb.h>
+#endif
 
 #include <stdint.h>
 

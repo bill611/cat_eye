@@ -657,12 +657,11 @@ print_scanning_token(struct stream_descr *	stream,	/* Stream of events */
     case IWEVQUAL:
             {
                 iwqual *	qual = &event->u.qual;
-                iwrange *	range = iw_range;
                 if(has_range && ((qual->level != 0)
                             || (qual->updated & (IW_QUAL_DBM | IW_QUAL_RCPI))))
                 {
                     if(!(qual->updated & IW_QUAL_QUAL_INVALID)) {
-                        (g_ap_info + (*g_ap_cnt) - 1)->rssi = qual->qual - range->max_qual.qual;
+                        (g_ap_info + (*g_ap_cnt) - 1)->rssi = qual->qual;
                     }
                 }
                 if (((g_ap_info + (*g_ap_cnt) - 1)->auth & TC_AUTH_TYPE_WPA2PSK )
