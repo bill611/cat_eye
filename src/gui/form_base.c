@@ -50,29 +50,29 @@ static int formBaseProc(FormBase *this,HWND hDlg, int message, WPARAM wParam, LP
 			{
 				Screen.Add(hDlg,this->priv->name);
 				this->hDlg = hDlg;
-				this->auto_close_time = FORM_SETTING_ONTIME;
+				this->priv->auto_close_time = this->priv->auto_close_time_set;
 				if (this->priv->initPara)
 					this->priv->initPara(hDlg,message,wParam,lParam);
-                SetTimer(hDlg,this->priv->idc_timer,100);
+                SetTimer(hDlg,this->priv->idc_timer,FORM_TIMER_1S);
 
 			} return FORM_CONTINUE;
 
 		case MSG_MOUSEMOVE:
 		case MSG_LBUTTONDOWN:
 			{
-				this->auto_close_time = FORM_SETTING_ONTIME;
+				this->priv->auto_close_time = this->priv->auto_close_time_set;
 				// screensaverStart(LCD_ON);
 			} return FORM_CONTINUE;
 
 		case MSG_TIMER:
 			{
-				if (wParam != this->priv->idc_timer){
+				if (wParam != (WPARAM)this->priv->idc_timer){
 					return FORM_CONTINUE;
 				}
-				if (this->auto_close_time > 0) {
-					// printf("[%s]auto close:%d\n", this->priv->name,this->auto_close_time);
-					if (--this->auto_close_time == 0) {
-                        // SendMessage(hDlg, MSG_CLOSE,0,0);
+				if (this->priv->auto_close_time > 0) {
+					// printf("[%s]auto close:%d\n", this->priv->name,this->priv->auto_close_time);
+					if (--this->priv->auto_close_time == 0) {
+						// SendMessage(hDlg, MSG_CLOSE,0,0);
 						ShowWindow(hDlg,SW_HIDE);
 					}
 				}
@@ -81,18 +81,18 @@ static int formBaseProc(FormBase *this,HWND hDlg, int message, WPARAM wParam, LP
 		case MSG_SHOWWINDOW:
 			{
 				if (wParam == SW_HIDE) {
-					this->auto_close_time = 0;
+					this->priv->auto_close_time = 0;
 					if(this->priv->callBack)
 						this->priv->callBack();
 				} else if (wParam == SW_SHOWNORMAL) {
-					this->auto_close_time = FORM_SETTING_ONTIME;
+					this->priv->auto_close_time = this->priv->auto_close_time_set;
 				}
 			}return FORM_CONTINUE;
 		case MSG_ERASEBKGND:
 			{
 				drawBackground(hDlg,
 						(HDC)wParam,
-						(const RECT*)lParam, this->priv->bmp_bkg,0);
+						(const RECT*)lParam, this->priv->bmp_bkg,0x0);
 			} return FORM_STOP;
 
 		case MSG_CLOSE:
@@ -121,6 +121,8 @@ FormBase * formBaseCreate(FormBasePriv *priv)
 
 	this->priv = priv;
 	this->baseProc = formBaseProc;
+	if (priv->auto_close_time_set == 0)
+		this->priv->auto_close_time_set = FORM_SETTING_ONTIME;
 	return this;
 }
 

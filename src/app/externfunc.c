@@ -397,24 +397,6 @@ time_t MyGetTickCount(void)
 	return time(NULL)*1000;
 }
 
-/* ---------------------------------------------------------------------------*/
-/**
- * @brief netDetect 检测网线连接状态
- *
- * @param net_name 网卡名称
- *
- * @returns 0正常 -1不正常
- */
-/* ---------------------------------------------------------------------------*/
-int netDetect(void)
-{
-	int ret = access("ip_ok",0);
-	if (ret == 0)
-		return 0;
-	else
-		return 1;
-}
-
 /* ----------------------------------------------------------------*/
 /**
  * @brief print_data 格式化打印数据
@@ -629,4 +611,18 @@ int getWifiList(void *ap_info,void (*callback)(void *ap_info,int ap_cnt))
 	wifi_scan_end = 0;
 	wifiloadCallback = callback;
 	return createThread(getWifiListThread,ap_info);
+}
+int getWifiConfig(int *qual)
+{
+#ifdef X86
+	*qual = 2;
+	return 0;
+#else
+	char *cmd[] = { "cat_eye", "wlan0" };
+	return iwconfig(2,cmd,qual);
+#endif
+}
+void wifiConnect(void)
+{
+	excuteCmd("./check_ip.sh",NULL);
 }

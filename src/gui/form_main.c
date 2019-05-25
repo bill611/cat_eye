@@ -35,6 +35,8 @@
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
 extern void formSettingLoadBmp(void);
+int createFormSetting(HWND hMainWnd,void (*callback)(void));
+int createFormVideo(HWND hVideoWnd,int type,void (*callback)(void));
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -130,8 +132,7 @@ static MY_CTRLDATA ChildCtrls [] = {
 static MY_DLGTEMPLATE DlgInitParam =
 {
     WS_NONE,
-    // WS_EX_AUTOSECONDARYDC,
-	WS_EX_NONE,
+	WS_EX_NONE ,//| WS_EX_AUTOSECONDARYDC,
     0,0,SCR_WIDTH,SCR_HEIGHT,
     "",
     0, 0,       //menu and icon is null
@@ -151,7 +152,6 @@ static FormBasePriv form_base_priv= {
 static int bmp_load_finished = 0;
 static int flag_timer_stop = 0;
 static FormBase* form_base = NULL;
-static HWND hwnd_main = HWND_INVALID;
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief formMainTimerStart 开启定时器 单位100ms
@@ -161,7 +161,7 @@ static HWND hwnd_main = HWND_INVALID;
 /* ---------------------------------------------------------------------------*/
 static void formMainTimerStart(int idc_timer)
 {
-	SendMessage(hwnd_main, MSG_MAIN_TIMER_START, (WPARAM)idc_timer, 0);
+	SendMessage(form_base->hDlg, MSG_MAIN_TIMER_START, (WPARAM)idc_timer, 0);
 }
 
 /* ---------------------------------------------------------------------------*/
@@ -173,7 +173,7 @@ static void formMainTimerStart(int idc_timer)
 /* ---------------------------------------------------------------------------*/
 static void formMainTimerStop(int idc_timer)
 {
-	SendMessage(hwnd_main, MSG_MAIN_TIMER_STOP, (WPARAM)idc_timer, 0);
+	SendMessage(form_base->hDlg, MSG_MAIN_TIMER_STOP, (WPARAM)idc_timer, 0);
 }
 
 /* ---------------------------------------------------------------------------*/
@@ -187,12 +187,15 @@ static void formMainTimerStop(int idc_timer)
 /* ---------------------------------------------------------------------------*/
 static int formMainTimerGetState(int idc_timer)
 {
-	return	IsTimerInstalled(hwnd_main,idc_timer);
+	return	IsTimerInstalled(form_base->hDlg,idc_timer);
 }
 
 static void enableAutoClose(void)
 {
 	flag_timer_stop = 0;	
+#ifndef X86
+	video_init();
+#endif
 }
 /* ---------------------------------------------------------------------------*/
 /**
@@ -205,7 +208,11 @@ static void formMainTimerProc1s(HWND hwnd)
 {
 	// 更新网络状态
 	static int net_level_old = 0;
-	int net_level = netDetect();
+	int net_level = 0;
+	if (getWifiConfig(&net_level) != 0)
+		net_level = 0;
+	if (net_level > 4)
+		net_level = 4;
 	if (net_level != net_level_old) {
 		net_level_old = net_level;
 		SendMessage(GetDlgItem (hwnd, IDC_MYSTATUS_WIFI),
@@ -247,6 +254,9 @@ static void buttonRecordPress(HWND hwnd, int id, int nc, DWORD add_data)
 	if (nc != BN_CLICKED)
 		return;
 	flag_timer_stop = 1;
+#ifndef X86
+	video_uninit();
+#endif
 }
 static void buttonCapturePress(HWND hwnd, int id, int nc, DWORD add_data)
 {
@@ -268,6 +278,9 @@ static void buttonSettingPress(HWND hwnd, int id, int nc, DWORD add_data)
 		return;
 	flag_timer_stop = 1;
     createFormSetting(GetParent(hwnd),enableAutoClose);
+#ifndef X86
+	video_uninit();
+#endif
 }
 
 /* ---------------------------------------------------------------------------*/
@@ -335,20 +348,8 @@ static int formMainProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 	{
 		case MSG_INITDIALOG:
 			{
-				hwnd_main = Screen.hMainWnd = hDlg;
-				// HDC hdc = GetClientDC (hDlg);
-				// mlsSetSlaveScreenInfo(hdc,MLS_INFOMASK_ALL,1,0,
-						// MLS_BLENDMODE_COLORKEY,0x00000100,0x00,3);
-				// mlsEnableSlaveScreen(hdc,1);
+				Screen.hMainWnd = hDlg;
 			} break;
-
-		case MSG_ERASEBKGND:
-			{
-				drawBackground(hDlg,
-						   (HDC)wParam,
-						   (const RECT*)lParam,NULL,0x00000100);
-			} return 0;
-
 
 		case MSG_TIMER:
 			{
@@ -357,14 +358,6 @@ static int formMainProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 				if (wParam == IDC_TIMER_1S) {
 					formMainTimerProc1s(hDlg);
 				}
-			} break;
-
-		case MSG_LBUTTONDOWN:
-			{
-                // if (Public.LCDLight == 0) {
-                    // screensaverStart(LCD_ON);
-                    // return;
-                // }
 			} break;
 
 		default:
@@ -388,11 +381,9 @@ int createFormMain(HWND hMainWnd)
             // topMessage(hMainWnd,TOPBOX_ICON_LOADING,NULL );
             return 0;
         }
-		form_base_priv.hwnd = hMainWnd;
 		form_base = formBaseCreate(&form_base_priv);
 		return CreateMyWindowIndirectParam(form_base->priv->dlgInitParam,
-				form_base->priv->hwnd,
-				form_base->priv->dlgProc, 0);
+				hMainWnd, form_base->priv->dlgProc, 0);
 	}
 
 	return 0;

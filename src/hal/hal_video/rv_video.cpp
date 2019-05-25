@@ -1,5 +1,6 @@
 #include "video.h"
 #include "lcd.h"
+#include "thread_helper.h"
 
 RKVideo::RKVideo()
 {
@@ -132,13 +133,27 @@ void RKVideo::disconnect(std::shared_ptr<StreamPUBase> pre,
 
 
 
+static RKVideo* rkvideo = new RKVideo();
+
+static void* videoStartThead(void *)
+{
+	// display_init();
+	if (rkvideo == NULL)
+		rkvideo = new RKVideo();
+
+	rkvideo->start();
+	return NULL;
+}
+
 extern "C" 
 int video_init(void)
 {
+	createThread(videoStartThead,NULL);
 	// display_init();
-	RKVideo* rkvideo = new RKVideo();
+	// if (rkvideo == NULL)
+		// rkvideo = new RKVideo();
 
-	rkvideo->start();
+	// rkvideo->start();
 
 	// while(1)
 	// {
@@ -152,3 +167,8 @@ int video_init(void)
 	return 0;
 }
 
+extern "C" 
+int video_uninit(void)
+{
+	rkvideo->stop();
+}

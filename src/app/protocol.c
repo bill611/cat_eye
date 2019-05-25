@@ -27,6 +27,7 @@
 #include "udp_server.h"
 #include "thread_helper.h"
 #include "protocol.h"
+#include "qrenc.h"
 #include "config.h"
 #include "timer.h"
 

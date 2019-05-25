@@ -2089,16 +2089,19 @@ iw_sawap_ntop(const struct sockaddr *	sap,
   const struct ether_addr ether_hack = {{ 0x44, 0x44, 0x44, 0x44, 0x44, 0x44 }};
   const struct ether_addr * ether_wap = (const struct ether_addr *) sap->sa_data;
 
-  if(!iw_ether_cmp(ether_wap, &ether_zero))
+  if(!iw_ether_cmp(ether_wap, &ether_zero)) {
     sprintf(buf, "Not-Associated");
-  else
-    if(!iw_ether_cmp(ether_wap, &ether_bcast))
-      sprintf(buf, "Invalid");
-    else
-      if(!iw_ether_cmp(ether_wap, &ether_hack))
+	return NULL;
+  }
+  if(!iw_ether_cmp(ether_wap, &ether_bcast)) {
+	  sprintf(buf, "Invalid");
+	  return NULL;
+  } 
+  if(!iw_ether_cmp(ether_wap, &ether_hack)) {
 	sprintf(buf, "None");
-      else
-	iw_ether_ntop(ether_wap, buf);
+	return NULL;
+  } 
+  iw_ether_ntop(ether_wap, buf);
   return(buf);
 }
 
