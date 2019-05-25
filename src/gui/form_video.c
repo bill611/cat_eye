@@ -241,12 +241,12 @@ static int formVideoProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
                 // mlsEnableSlaveScreen(hdc,1);
 			} break;
 
-		case MSG_ERASEBKGND:
-			{
-				drawBackground(hDlg,
-						   (HDC)wParam,
-						   (const RECT*)lParam,NULL,0x00000100);
-			} return 0;
+		// case MSG_ERASEBKGND:
+			// {
+				// drawBackground(hDlg,
+						   // (HDC)wParam,
+						   // (const RECT*)lParam,NULL,0);
+			// } return 0;
 
 
 		case MSG_TIMER:
@@ -282,10 +282,9 @@ static int formVideoProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 
 
 
-int createFormVideo(HWND hVideoWnd,int type,void (*callback)(void))
+int createFormVideo(HWND hMainWnd,int type,void (*callback)(void))
 {
 	HWND Form = Screen.Find(form_base_priv.name);
-	printf("[%s]\n", __FUNCTION__);
 	form_type = type;
 	if(Form) {
 		ShowWindow(Form,SW_SHOWNORMAL);
@@ -294,12 +293,10 @@ int createFormVideo(HWND hVideoWnd,int type,void (*callback)(void))
             // topMessage(hVideoWnd,TOPBOX_ICON_LOADING,NULL );
             return 0;
         }
-		form_base_priv.hwnd = hVideoWnd;
 		form_base_priv.callBack = callback;
 		form_base = formBaseCreate(&form_base_priv);
 		return CreateMyWindowIndirectParam(form_base->priv->dlgInitParam,
-				form_base->priv->hwnd,
-				form_base->priv->dlgProc, 0);
+				hMainWnd, form_base->priv->dlgProc, 0);
 	}
 
 	return 0;

@@ -100,7 +100,7 @@ static InitBmpFunc load_bmps_func[] = {
 static HWND hwnd_videolayer = HWND_INVALID;
 static BITMAP bkg;
 static BmpLocation base_bmps[] = {
-	// {&bkg,"main/bg_1.png"},
+	{&bkg,"main/bg_1.png"},
 	{NULL},
 };
 
@@ -159,7 +159,7 @@ static int formVideoLayerProc(HWND hWnd, int message, WPARAM wParam, LPARAM lPar
 		case MSG_ERASEBKGND:
 				drawBackground(hWnd,
 						   (HDC)wParam,
-						   (const RECT*)lParam,NULL,0);
+						   0,NULL,0);
 			 return 0;
 
 		case MSG_MAIN_LOAD_BMP:
@@ -223,7 +223,7 @@ void formVideoLayerCreate(void)
     }
 
     CreateInfo.dwStyle = WS_NONE;
-	CreateInfo.dwExStyle = WS_EX_AUTOSECONDARYDC;
+	CreateInfo.dwExStyle = WS_EX_NONE;//WS_EX_AUTOSECONDARYDC;
     CreateInfo.spCaption = "cateye";
     CreateInfo.hMenu = 0;
     CreateInfo.hCursor = GetSystemCursor(IDC_ARROW);

@@ -24,7 +24,9 @@
 extern "C" {
 #endif  /* __cplusplus */
 
-#define FORM_SETTING_ONTIME      10 // 设置界面60秒无操作，则关闭窗口
+#define FORM_TIMER_1S 100  // 定时器1秒
+
+#define FORM_SETTING_ONTIME      5 // 设置界面10秒无操作，则关闭窗口
 
 	enum {
 		FORM_STOP = 0,
@@ -32,11 +34,12 @@ extern "C" {
 	};
 
 	typedef struct _FormBasePriv {
-		HWND hwnd;
 		char *name;
 		BITMAP *bmp_bkg;
 		MY_DLGTEMPLATE *dlgInitParam;
 		int idc_timer;
+		int auto_close_time;  // 对话框自动关闭时间
+		int auto_close_time_set;  // 对话框自动关闭时间设置，默认为FORM_SETTING_ONTIME
 		int (*dlgProc)(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 
 		void (*initPara)(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
@@ -46,7 +49,7 @@ extern "C" {
 	typedef struct _FormBase {
 		FormBasePriv *priv;
 		int hDlg; // 当前对话框的句柄
-		int auto_close_time;  // 对话框自动关闭时间
+		int auto_close_time_set;  // 对话框自动关闭时间设置，默认为FORM_SETTING_ONTIME
 
 		int (*baseProc)(struct _FormBase *this,HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 	}FormBase;

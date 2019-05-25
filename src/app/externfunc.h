@@ -38,13 +38,14 @@ unsigned long long GetFlashFreeSpace(void);
 unsigned long long GetFlashFreeSpaceKB(void);
 unsigned long long GetFlashFreeSpaceMB(void);
 
-int netDetect(void);
 void print_data(char *data,int len);
 int GetFilesNum(char *pPathDir,void (*func)(void *));
 
 int recoverData(const char *file);
 struct tm * getTime(void);
 int getWifiList(void *ap_info,void (*callback)(void *ap_info,int ap_cnt));
+int getWifiConfig(int *qual);
+void wifiConnect(void);
 
 #endif
 

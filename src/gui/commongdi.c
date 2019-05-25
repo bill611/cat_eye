@@ -111,12 +111,12 @@ void drawBackground(HWND hWnd, HDC hdc, const RECT* pClipRect,BITMAP *Image,int 
         hdc = GetSecondaryClientDC (hWnd);
         fGetDC = TRUE;
     }
-    if (pClipRect) {
-        rcTemp = *pClipRect;
-        ScreenToClient (hWnd, &rcTemp.left, &rcTemp.top);
-        ScreenToClient (hWnd, &rcTemp.right, &rcTemp.bottom);
-		IncludeClipRect(hdc,&rcTemp);
-    }
+    // if (pClipRect) {
+        // rcTemp = *pClipRect;
+        // ScreenToClient (hWnd, &rcTemp.left, &rcTemp.top);
+        // ScreenToClient (hWnd, &rcTemp.right, &rcTemp.bottom);
+		// IncludeClipRect(hdc,&rcTemp);
+    // }
 	if (Image)
 		FillBoxWithBitmap(hdc,rcClient.left,rcClient.top,RECTW(rcClient),RECTH(rcClient),Image);
 	else {

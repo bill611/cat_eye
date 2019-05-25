@@ -286,12 +286,10 @@ int createFormSetting(HWND hMainWnd,void (*callback)(void))
             // topMessage(hMainWnd,TOPBOX_ICON_LOADING,NULL );
             return 0;
         }
-		form_base_priv.hwnd = hMainWnd;
 		form_base_priv.callBack = callback;
 		form_base = formBaseCreate(&form_base_priv);
 		return CreateMyWindowIndirectParam(form_base->priv->dlgInitParam,
-				form_base->priv->hwnd,
-				form_base->priv->dlgProc, 0);
+				hMainWnd, form_base->priv->dlgProc, 0);
 	}
 
 	return 0;

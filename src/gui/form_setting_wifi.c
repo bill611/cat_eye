@@ -101,6 +101,7 @@ struct ScrollviewOperation{
 static HWND hScrollView;
 static struct ScrollviewOperation scro_opt;
 static int flag_timer_stop = 0;
+static int connect_wifi_interval = 0; // 链接wifi间隔时间
 
 static BITMAP bmp_warning; // 警告
 static BITMAP bmp_security; // 加密
@@ -132,8 +133,7 @@ static MY_CTRLDATA ChildCtrls [] = {
 static MY_DLGTEMPLATE DlgInitParam =
 {
     WS_NONE,
-    // WS_EX_AUTOSECONDARYDC,
-    WS_EX_NONE,
+	WS_EX_NONE ,//| WS_EX_AUTOSECONDARYDC,
     0,0,SCR_WIDTH,SCR_HEIGHT,
     "",
     0, 0,       //menu and icon is null
@@ -148,6 +148,7 @@ static FormBasePriv form_base_priv= {
 	.dlgProc = formSettingWifiProc,
 	.dlgInitParam = &DlgInitParam,
 	.initPara =  initPara,
+	.auto_close_time_set = 10,
 };
 
 static MyCtrlTitle ctrls_title[] = {
@@ -186,6 +187,16 @@ static void enableAutoClose(void)
 	flag_timer_stop = 0;
 }
 
+static void updateConnectWifi(void)
+{
+	RECT rc;
+	rc.left = 0;
+	rc.top = 40;
+	rc.right = 1024;
+	rc.bottom = 200;
+	InvalidateRect (form_base->hDlg, &rc, FALSE);
+
+}
 static void showWarning(HWND hwnd,int on_off)
 {
     if (on_off) {
@@ -195,20 +206,18 @@ static void showWarning(HWND hwnd,int on_off)
         ShowWindow(GetDlgItem(hwnd,IDC_BUTTON_TITLE),SW_SHOWNORMAL);
 		strcpy(wifi_list_title.text,g_config.net_config.ssid);
 		getWifiList(ap_info,wifiLoadData);
-        // test
-// #define TEST_ITEM_NUM 50
-        // int i;
-        // for (i=0; i<TEST_ITEM_NUM; i++) {
-           // ap_info[i].rssi = i*(100/TEST_ITEM_NUM);
-           // sprintf(ap_info[i].ssid,"test%d",i);
-        // }
-        // wifiLoadData(ap_info,TEST_ITEM_NUM);
     } else {
         ShowWindow(GetDlgItem(hwnd,IDC_STATIC_IMG_WARNING),SW_SHOWNORMAL);
         ShowWindow(GetDlgItem(hwnd,IDC_STATIC_TEXT_WARNING),SW_SHOWNORMAL);
         ShowWindow(GetDlgItem(hwnd,IDC_SCROLLVIEW),SW_HIDE);
         ShowWindow(GetDlgItem(hwnd,IDC_BUTTON_TITLE),SW_HIDE);
     }
+}
+
+static void saveConfigCallback(void)
+{
+	showWarning(form_base->hDlg,g_config.net_config.enable);
+	updateConnectWifi();
 }
 /* ----------------------------------------------------------------*/
 /**
@@ -222,25 +231,25 @@ static void showWarning(HWND hwnd,int on_off)
 /* ----------------------------------------------------------------*/
 static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data)
 {
-    if (nc == MYTITLE_BUTTON_EXIT)
-        ShowWindow(GetParent(hwnd),SW_HIDE);
+	if (nc == MYTITLE_BUTTON_EXIT) {
+		ShowWindow(GetParent(hwnd),SW_HIDE);
+		// SendMessage(GetParent(hwnd), MSG_CLOSE,0,0);
+	}
     else if (nc == MYTITLE_BUTTON_SWICH) {
         g_config.net_config.enable = add_data;
-        showWarning(GetParent(hwnd),add_data);
-		// 更新title
-		RECT rc;
-		rc.left = 0;
-		rc.top = 40;
-		rc.right = 1024;
-		rc.bottom = 200;
-		InvalidateRect (GetParent(hwnd), &rc, FALSE);
+		ConfigSavePrivateCallback(saveConfigCallback);
     }
 }
 static void buttonConnect(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
-	// flag_timer_stop = 1;
+	if (wifi_list_title.enable)
+		return;
+	if (connect_wifi_interval == 0) {
+		connect_wifi_interval = 15;  // 连接失败时，每15秒可以重连一次
+		wifiConnect();
+	}
 }
 
 static void scrollviewRefresh(void)
@@ -280,6 +289,23 @@ static void scrollviewNotify(HWND hwnd, int id, int nc, DWORD add_data)
     }
 }
 
+static void formSettingWifiTimerProc1s(HWND hwnd)
+{
+	// 更新网络状态
+	static int net_level_old = 0;
+	int net_level = 0;
+	if (getWifiConfig(&net_level) != 0)
+		net_level = 0;
+	wifi_list_title.enable = net_level; 
+	if (net_level != net_level_old) {
+		net_level_old = net_level;
+		if (net_level)
+		updateConnectWifi();
+	}
+	if (connect_wifi_interval)
+		connect_wifi_interval--;
+
+}
 void formSettingWifiLoadBmp(void)
 {
     bmpsLoad(bmp_load);
@@ -443,6 +469,8 @@ static int formSettingWifiProc(HWND hDlg, int message, WPARAM wParam, LPARAM lPa
     {
 		case MSG_TIMER:
 			{
+				if (flag_timer_stop)
+					return 0;
                 if (wParam == IDC_TIMER_100MS) {
                     int div_pos = scro_opt.timer_cur_pos - scro_opt.timer_old_pos;
                     if (div_pos > 0)
@@ -454,9 +482,9 @@ static int formSettingWifiProc(HWND hDlg, int message, WPARAM wParam, LPARAM lPa
 
                     scro_opt.timer_old_pos = scro_opt.timer_cur_pos;
                     return 0;
-                }
-				if (flag_timer_stop)
-					return 0;
+                } 
+				if (wParam == IDC_TIMER_1S)
+					formSettingWifiTimerProc1s(hDlg);
 			} break;
 
 		case MSG_SHOWWINDOW:
@@ -465,7 +493,8 @@ static int formSettingWifiProc(HWND hDlg, int message, WPARAM wParam, LPARAM lPa
 					if (IsTimerInstalled(hDlg,IDC_TIMER_100MS) == TRUE)
 						KillTimer (hDlg,IDC_TIMER_100MS);
 				}
-			}return FORM_CONTINUE;
+			}break;
+
 		case MSG_COMMAND:
 			{
 				scro_opt.notified = 1;
@@ -544,12 +573,10 @@ int createFormSettingWifi(HWND hMainWnd,void (*callback)(void))
 		ShowWindow(Form,SW_SHOWNORMAL);
 		scrollviewInit();
 	} else {
-		form_base_priv.hwnd = hMainWnd;
 		form_base_priv.callBack = callback;
 		form_base = formBaseCreate(&form_base_priv);
 		return CreateMyWindowIndirectParam(form_base->priv->dlgInitParam,
-				form_base->priv->hwnd,
-				form_base->priv->dlgProc, 0);
+				hMainWnd, form_base->priv->dlgProc, 0);
 	}
 
 	return 0;

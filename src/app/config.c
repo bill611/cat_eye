@@ -189,6 +189,7 @@ static void SavePublic(void)
 
 static void SavePrivate(void)
 {
+	configSaveEtcInt(cfg_private_ini,etc_private_int,NELEMENTS(etc_private_int));
 	configSaveEtcChar(cfg_private_ini,etc_private_char,NELEMENTS(etc_private_char));
 	dumpIniFile(cfg_private_ini,CFG_PRIVATE_DRIVE  INI_PRIVATE_FILENAME);
 	if (etcFileCheck() == 1) {
@@ -240,7 +241,7 @@ static int loadIniFile(dictionary **d,char *file_path,char *sec[])
 
 void configLoad(void)
 {
-	char *sec_private[] = {"gateway","taichuan","wireless",NULL};
+	char *sec_private[] = {"taichuan","wireless",NULL};
 
 	int ret = loadIniFile(&cfg_private_ini,CFG_PRIVATE_DRIVE  INI_PRIVATE_FILENAME,sec_private);
 	configLoadEtcInt(cfg_private_ini,etc_private_int,NELEMENTS(etc_private_int));
@@ -280,7 +281,10 @@ static void* ConfigSaveTask(void* arg)
         UpgradeSetFileCrc(filepath);
 #endif
 	configSync();
-    // sendCmdConfigSave(func);
+	if(func) {
+		configCallback p = (configCallback)func;
+		p();
+	}
 
     pthread_mutex_unlock(&cfg_mutex);
 
@@ -302,7 +306,7 @@ void ConfigUpdateCrc(char* filepath)
 #endif // CFG_CHECK_FILES_CRC_ON_BOOTING
 }
 
-void ConfigSave(void (*func)(void))
+void ConfigSave(configCallback func)
 {
     static int args[3];
 
@@ -323,7 +327,7 @@ void ConfigSavePrivate(void)
     createThread(ConfigSaveTask, args);
 }
 
-void ConfigSavePrivateCallback(void (*func)(void))
+void ConfigSavePrivateCallback(configCallback func)
 {
     static int args[3];
 
