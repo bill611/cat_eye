@@ -103,8 +103,10 @@ static int listAppend(List * This,void *pos)
 	memcpy(data,pos,This->priv->nodesize);
 	newpt = newChainNode(data);
 
-	if( !newpt )
+    if( !newpt ) {
+        free(data);
 		return LISTLINK_FAIL;
+    }
 
 	if (!This->priv->head) {
 		This->priv->head = newpt;

@@ -150,7 +150,9 @@ static int formVideoLayerProc(HWND hWnd, int message, WPARAM wParam, LPARAM lPar
 				createThread(loadBmpsThread,"1");
                 fontsLoad(font_load);
 				SetTimer(hWnd, IDC_TIMER_1S, TIME_1S);
+#ifndef X86
 				video_init();
+#endif
 				// screensaverStart(LCD_ON);
 			} break;
 
