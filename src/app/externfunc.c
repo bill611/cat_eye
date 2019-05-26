@@ -624,5 +624,7 @@ int getWifiConfig(int *qual)
 }
 void wifiConnect(void)
 {
+#ifndef X86
 	excuteCmd("./check_ip.sh",NULL);
+#endif
 }

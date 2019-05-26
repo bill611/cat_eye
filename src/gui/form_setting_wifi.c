@@ -31,7 +31,9 @@
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
-int createFormPassword(HWND hMainWnd,void (*callback)(void),void (*getPassword)(char *));
+extern int createFormPassword(HWND hMainWnd,char *account,
+        void (*callback)(void),
+        void (*getPassword)(char *account,char *password));
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -40,8 +42,10 @@ static int formSettingWifiProc(HWND hDlg, int message, WPARAM wParam, LPARAM lPa
 static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 static void wifiLoadData(void *ap_info,int ap_cnt);
 
-static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonTitleNotify(HWND hwnd, int id, int nc, DWORD add_data);
 static void buttonConnect(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonRefresh(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonAdd(HWND hwnd, int id, int nc, DWORD add_data);
 
 /* ---------------------------------------------------------------------------*
  *                        macro define
@@ -61,6 +65,8 @@ enum {
 
 	IDC_SCROLLVIEW,
 	IDC_BUTTON_TITLE,
+	IDC_BUTTON_ADD,
+	IDC_BUTTON_REFRESH,
 
 	IDC_TITLE,
 };
@@ -102,6 +108,7 @@ static HWND hScrollView;
 static struct ScrollviewOperation scro_opt;
 static int flag_timer_stop = 0;
 static int connect_wifi_interval = 0; // 链接wifi间隔时间
+static int refresh_wifi_interval = 0; // 刷新列表wifi间隔时间
 
 static BITMAP bmp_warning; // 警告
 static BITMAP bmp_security; // 加密
@@ -112,6 +119,7 @@ static BITMAP bmp_wifi[3]; // wifi强度
 static struct ScrollviewItem wifi_list_title;
 static struct ScrollviewItem wifi_list[100];
 static TcWifiScan ap_info[100];
+static TcWifiScan select_ap;
 
 static BmpLocation bmp_load[] = {
     {&bmp_warning,	BMP_LOCAL_PATH"ico_警告.png"},
@@ -127,7 +135,7 @@ static BmpLocation bmp_load[] = {
 static MY_CTRLDATA ChildCtrls [] = {
     STATIC_IMAGE(452,216,120,120,IDC_STATIC_IMG_WARNING,(DWORD)&bmp_warning),
     STATIC_LB(0,358,1024,25,IDC_STATIC_TEXT_WARNING,"WIFI已关闭",&font20,0xffffff),
-    SCROLLVIEW(0,150,1024,449,IDC_SCROLLVIEW),
+    SCROLLVIEW(0,150,1024,390,IDC_SCROLLVIEW),
 };
 
 static MY_DLGTEMPLATE DlgInitParam =
@@ -160,7 +168,7 @@ static MyCtrlTitle ctrls_title[] = {
         "WIFI设置",
         "",
         0xffffff, 0x333333FF,
-        buttonNotify,
+        buttonTitleNotify,
     },
 	{0},
 };
@@ -173,20 +181,34 @@ static MyCtrlButton ctrls_button[] = {
 		.x = 0,.y = 40,.w = 1024, .h = 60,
 		.notif_proc = buttonConnect
 	},
+	{
+		.idc = IDC_BUTTON_ADD,
+		.flag = MYBUTTON_TYPE_TWO_STATE|MYBUTTON_TYPE_PRESS_COLOR|MYBUTTON_TYPE_TEXT_CENTER,
+		.img_name = "刷新",
+		.x = 0, .y = 540, .w = 511, .h = 60,
+		.notif_proc = buttonRefresh
+	},
+	{
+		.idc = IDC_BUTTON_REFRESH,
+		.flag = MYBUTTON_TYPE_TWO_STATE|MYBUTTON_TYPE_PRESS_COLOR|MYBUTTON_TYPE_TEXT_CENTER,
+		.img_name = "添加",
+		.x = 512,.y = 540,.w = 512, .h = 60,
+		.notif_proc = buttonAdd
+	},
 	{0},
 };
 static FormBase* form_base = NULL;
-
-static void getPassword(char *password)
-{
-	printf("password:%s\n", password);
-}
 
 static void enableAutoClose(void)
 {
 	flag_timer_stop = 0;
 }
 
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief updateConnectWifi 更新当前连接wifi状态
+ */
+/* ---------------------------------------------------------------------------*/
 static void updateConnectWifi(void)
 {
 	RECT rc;
@@ -194,10 +216,49 @@ static void updateConnectWifi(void)
 	rc.top = 40;
 	rc.right = 1024;
 	rc.bottom = 200;
-	InvalidateRect (form_base->hDlg, &rc, FALSE);
+	InvalidateRect (form_base->hDlg, &rc, TRUE);
 
 }
-static void showWarning(HWND hwnd,int on_off)
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief saveConfigConnectCallback 设置完密码，返回后连接wifi
+ */
+/* ---------------------------------------------------------------------------*/
+static void saveConfigConnectCallback(void)
+{
+    strcpy(wifi_list_title.text,g_config.net_config.ssid);
+    updateConnectWifi();
+    wifiConnect();
+}
+
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief getPassword 密码设置确定后回调函数
+ *
+ * @param account 账号
+ * @param password 设置的密码
+ */
+/* ---------------------------------------------------------------------------*/
+static void getPassword(char *account,char *password)
+{
+    if (account) {
+        strcpy(g_config.net_config.ssid,account);
+    } else {
+        strcpy(g_config.net_config.ssid,select_ap.ssid);
+    }
+    strcpy(g_config.net_config.password,password);
+    ConfigSavePrivateCallback(saveConfigConnectCallback);
+}
+
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief showSwichOnOff 切换是否连接wifi
+ *
+ * @param hwnd
+ * @param on_off
+ */
+/* ---------------------------------------------------------------------------*/
+static void showSwichOnOff(HWND hwnd,int on_off)
 {
     if (on_off) {
         ShowWindow(GetDlgItem(hwnd,IDC_STATIC_IMG_WARNING),SW_HIDE);
@@ -205,7 +266,15 @@ static void showWarning(HWND hwnd,int on_off)
         ShowWindow(GetDlgItem(hwnd,IDC_SCROLLVIEW),SW_SHOWNORMAL);
         ShowWindow(GetDlgItem(hwnd,IDC_BUTTON_TITLE),SW_SHOWNORMAL);
 		strcpy(wifi_list_title.text,g_config.net_config.ssid);
-		getWifiList(ap_info,wifiLoadData);
+#ifndef X86
+        getWifiList(ap_info,wifiLoadData);
+#else
+        int i;
+        for (i=0; i<10; i++) {
+            sprintf(ap_info[i].ssid,"TEST-->%d",i);
+        }
+        wifiLoadData(ap_info,10);
+#endif
     } else {
         ShowWindow(GetDlgItem(hwnd,IDC_STATIC_IMG_WARNING),SW_SHOWNORMAL);
         ShowWindow(GetDlgItem(hwnd,IDC_STATIC_TEXT_WARNING),SW_SHOWNORMAL);
@@ -214,22 +283,28 @@ static void showWarning(HWND hwnd,int on_off)
     }
 }
 
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief saveConfigCallback 切换wifi开关，保存配置后回调函数
+ */
+/* ---------------------------------------------------------------------------*/
 static void saveConfigCallback(void)
 {
-	showWarning(form_base->hDlg,g_config.net_config.enable);
+	showSwichOnOff(form_base->hDlg,g_config.net_config.enable);
 	updateConnectWifi();
 }
-/* ----------------------------------------------------------------*/
+
+/* ---------------------------------------------------------------------------*/
 /**
- * @brief buttonNotify 退出按钮
+ * @brief buttonTitleNotify 标题按钮
  *
  * @param hwnd
  * @param id
  * @param nc
  * @param add_data
  */
-/* ----------------------------------------------------------------*/
-static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data)
+/* ---------------------------------------------------------------------------*/
+static void buttonTitleNotify(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc == MYTITLE_BUTTON_EXIT) {
 		ShowWindow(GetParent(hwnd),SW_HIDE);
@@ -240,6 +315,16 @@ static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data)
 		ConfigSavePrivateCallback(saveConfigCallback);
     }
 }
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief buttonConnect 当wifi连接失败，点击重新连接wifi
+ *
+ * @param hwnd
+ * @param id
+ * @param nc
+ * @param add_data
+ */
+/* ---------------------------------------------------------------------------*/
 static void buttonConnect(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
@@ -252,11 +337,32 @@ static void buttonConnect(HWND hwnd, int id, int nc, DWORD add_data)
 	}
 }
 
-static void scrollviewRefresh(void)
+static void buttonRefresh(HWND hwnd, int id, int nc, DWORD add_data)
 {
-    showWarning(form_base->hDlg,g_config.net_config.enable);
-    SetTimer(form_base->hDlg,IDC_TIMER_100MS,2);
+	if (nc != BN_CLICKED)
+		return;
+	if (refresh_wifi_interval == 0) {
+		refresh_wifi_interval = 10;  // 连接失败时，每10秒可以重连一次
+        showSwichOnOff(form_base->hDlg,g_config.net_config.enable);
+	}
 }
+
+static void buttonAdd(HWND hwnd, int id, int nc, DWORD add_data)
+{
+	if (nc != BN_CLICKED)
+		return;
+	if (refresh_wifi_interval == 0) {
+		refresh_wifi_interval = 10;  // 连接失败时，每10秒可以重连一次
+        showSwichOnOff(form_base->hDlg,g_config.net_config.enable);
+	}
+    flag_timer_stop = 1;
+    createFormPassword(form_base->hDlg,NULL,enableAutoClose,getPassword);
+}
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief scrollviewInit 重新刷新wifi列表
+ */
+/* ---------------------------------------------------------------------------*/
 static void scrollviewInit(void)
 {
     scro_opt.cur_pos = 0;
@@ -284,11 +390,20 @@ static void scrollviewNotify(HWND hwnd, int id, int nc, DWORD add_data)
 
     if (plist) {
         flag_timer_stop = 1;
-        createFormPassword(hwnd,enableAutoClose,getPassword);
-        printf("idx:%d,name:%s\n", idx,plist->text);
+        select_ap.encry =  ap_info[idx].encry;
+        strcpy(select_ap.ssid,ap_info[idx].ssid);
+        createFormPassword(hwnd,select_ap.ssid,enableAutoClose,getPassword);
+        // printf("idx:%d,name:%s\n", idx,plist->text);
     }
 }
 
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief formSettingWifiTimerProc1s 1秒定时器，更新wifi连接桩体与强度
+ *
+ * @param hwnd
+ */
+/* ---------------------------------------------------------------------------*/
 static void formSettingWifiTimerProc1s(HWND hwnd)
 {
 	// 更新网络状态
@@ -300,10 +415,12 @@ static void formSettingWifiTimerProc1s(HWND hwnd)
 	if (net_level != net_level_old) {
 		net_level_old = net_level;
 		if (net_level)
-		updateConnectWifi();
+            updateConnectWifi();
 	}
 	if (connect_wifi_interval)
 		connect_wifi_interval--;
+    if (refresh_wifi_interval)
+        refresh_wifi_interval--;
 
 }
 void formSettingWifiLoadBmp(void)
@@ -392,12 +509,21 @@ static void myDrawItem (HWND hWnd, HSVITEM hsvi, HDC hdc, RECT *rcDraw)
 	TextOut (hdc, rcDraw->left + 83, rcDraw->top + 15, p_item->text);
 }
 
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief wifiLoadData 重新加载wifi列表
+ *
+ * @param aps
+ * @param ap_cnt
+ */
+/* ---------------------------------------------------------------------------*/
 static void wifiLoadData(void *aps,int ap_cnt)
 {
 	TcWifiScan *ap_data = (TcWifiScan *)aps;
 	int i;
 	SVITEMINFO svii;
 	memset(wifi_list,0,sizeof(wifi_list));
+    SendMessage (hScrollView, SVM_RESETCONTENT, 0, 0);
     scro_opt.total_item = ap_cnt;
 	for (i=0; i < ap_cnt; i++) {
 		strcpy(wifi_list[i].text,ap_data[i].ssid);
@@ -447,7 +573,8 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
     scrollviewInit();
 	SendMessage(GetDlgItem(hDlg,IDC_TITLE),
             MSG_MYTITLE_SET_SWICH, (WPARAM)g_config.net_config.enable, 0);
-	scrollviewRefresh();
+    showSwichOnOff(form_base->hDlg,g_config.net_config.enable);
+    SetTimer(form_base->hDlg,IDC_TIMER_100MS,2);
 }
 
 /* ----------------------------------------------------------------*/
@@ -544,8 +671,8 @@ static int formSettingWifiProc(HWND hDlg, int message, WPARAM wParam, LPARAM lPa
                     if (scro_opt.cur_pos < 0)
                         scro_opt.cur_pos = 0;
                     // 最大位置为总条目数*条目高度-首页控件高度
-                    if (scro_opt.cur_pos >  60 * scro_opt.total_item - 449)
-                        scro_opt.cur_pos =  60 * scro_opt.total_item - 449;
+                    if (scro_opt.cur_pos >  60 * scro_opt.total_item - 390)
+                        scro_opt.cur_pos =  60 * scro_opt.total_item - 390;
                     SendMessage(hScrollView,MSG_VSCROLL,SB_THUMBTRACK,scro_opt.cur_pos);
                 }
                 scro_opt.old_pos = scro_opt.timer_cur_pos;
@@ -569,7 +696,8 @@ int createFormSettingWifi(HWND hMainWnd,void (*callback)(void))
 {
 	HWND Form = Screen.Find(form_base_priv.name);
 	if(Form) {
-		scrollviewRefresh();
+        showSwichOnOff(form_base->hDlg,g_config.net_config.enable);
+        SetTimer(form_base->hDlg,IDC_TIMER_100MS,2);
 		ShowWindow(Form,SW_SHOWNORMAL);
 		scrollviewInit();
 	} else {

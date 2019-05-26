@@ -17,6 +17,8 @@
 /* ---------------------------------------------------------------------------*
  *                      include head files
  *----------------------------------------------------------------------------*/
+#include <stdio.h>
+#include <string.h>
 #include "externfunc.h"
 #include "screen.h"
 
@@ -47,6 +49,10 @@ static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data);
 #endif
 
 #define BMP_LOCAL_PATH "setting/"
+enum {
+    FOMR_TYPE_PASSWORD,
+    FOMR_TYPE_ACCOUNT,
+};
 enum {
 	IDC_TIMER_1S = IDC_FORM_PASSWORD_STATR,
 	IDC_BUTTON_WIFI,
@@ -81,7 +87,9 @@ static int bmp_load_finished = 0;
 static int flag_timer_stop = 0;
 struct KeyboardsData kb_data;
 static int re_paint_abc = 0;
-static void (*getPasswordProc)(char *);
+static int form_password_type = FOMR_TYPE_PASSWORD;
+static char g_account[64] = {0};
+static void (*getPasswordProc)(char *account,char *password);
 
 static BmpLocation bmp_load[] = {
 	{&bmp_key_nor,BMP_LOCAL_PATH"Key 1.png"},
@@ -189,6 +197,17 @@ static void enableAutoClose(void)
 	flag_timer_stop = 0;
 }
 
+static void updateTitle(void)
+{
+    if (form_password_type == FOMR_TYPE_PASSWORD) {
+        SendMessage(GetDlgItem(form_base->hDlg,IDC_TITLE),
+                MSG_MYTITLE_SET_TITLE,(WPARAM)"输入密码",0);
+    } else if (form_password_type == FOMR_TYPE_ACCOUNT) {
+        SendMessage(GetDlgItem(form_base->hDlg,IDC_TITLE),
+                MSG_MYTITLE_SET_TITLE,(WPARAM)"输入账号",0);
+    }
+}
+
 /* ----------------------------------------------------------------*/
 /**
  * @brief buttonNotify 退出按钮
@@ -205,13 +224,19 @@ static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data)
         ShowWindow(GetParent(hwnd),SW_HIDE);
     else if (nc == MYTITLE_BUTTON_TEXT) {
 		char text[64];
-		int ret = SendMessage(GetDlgItem(GetParent(hwnd),IDC_EDIT_PASSWORD),MSG_GETTEXT,64,(LPARAM)text);
-		if (getPasswordProc)
-			getPasswordProc(text);
+		int ret = SendMessage(GetDlgItem(GetParent(hwnd),IDC_EDIT_PASSWORD),
+                MSG_GETTEXT,64,(LPARAM)text);
+        if (form_password_type == FOMR_TYPE_ACCOUNT) {
+            form_password_type = FOMR_TYPE_PASSWORD;
+            strcpy(g_account,text);
+            updateTitle();
+        } else {
+            if (getPasswordProc)
+                getPasswordProc(g_account,text);
+            ShowWindow(GetParent(hwnd),SW_HIDE);
+        }
     }
-
 	SendMessage(GetDlgItem(GetParent(hwnd),IDC_EDIT_PASSWORD),MSG_SETTEXT,0,(LPARAM)"");
-	ShowWindow(GetParent(hwnd),SW_HIDE);
 }
 static void keboardNotify(HWND hwnd, int click_type,int index)
 {
@@ -331,6 +356,7 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
         createMyButton(hDlg,&ctrls_button[i]);
     }
 	initKeyboard();
+    updateTitle();
 }
 
 static void paint(HWND hWnd,HDC hdc)
@@ -453,11 +479,20 @@ static int formPasswordProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam
     return DefaultDialogProc(hDlg, message, wParam, lParam);
 }
 
-int createFormPassword(HWND hMainWnd,void (*callback)(void),void (*getPassword)(char *))
+int createFormPassword(HWND hMainWnd,char *account,
+        void (*callback)(void),
+        void (*getPassword)(char *account,char *password))
 {
 	HWND Form = Screen.Find(form_base_priv.name);
 	getPasswordProc = getPassword;
+    memset(g_account,0,sizeof(g_account));
+    if (account) {
+        strcpy(g_account,account);
+        form_password_type = FOMR_TYPE_PASSWORD;
+    } else
+        form_password_type = FOMR_TYPE_ACCOUNT;
 	if(Form) {
+        updateTitle();
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
         if (bmp_load_finished == 0) {
