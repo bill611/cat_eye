@@ -45,7 +45,9 @@ int recoverData(const char *file);
 struct tm * getTime(void);
 int getWifiList(void *ap_info,void (*callback)(void *ap_info,int ap_cnt));
 int getWifiConfig(int *qual);
+void wifiConnectStart(void);
 void wifiConnect(void);
+void wifiDisConnect(void);
 
 #endif
 

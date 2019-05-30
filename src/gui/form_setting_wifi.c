@@ -211,6 +211,7 @@ static void enableAutoClose(void)
 /* ---------------------------------------------------------------------------*/
 static void updateConnectWifi(void)
 {
+    strcpy(wifi_list_title.text,g_config.net_config.ssid);
 	RECT rc;
 	rc.left = 0;
 	rc.top = 40;
@@ -226,7 +227,6 @@ static void updateConnectWifi(void)
 /* ---------------------------------------------------------------------------*/
 static void saveConfigConnectCallback(void)
 {
-    strcpy(wifi_list_title.text,g_config.net_config.ssid);
     updateConnectWifi();
     wifiConnect();
 }
@@ -247,6 +247,7 @@ static void getPassword(char *account,char *password)
         strcpy(g_config.net_config.ssid,select_ap.ssid);
     }
     strcpy(g_config.net_config.password,password);
+	strcpy(g_config.net_config.security,"WPA/WPA2 PSK");
     ConfigSavePrivateCallback(saveConfigConnectCallback);
 }
 
@@ -266,6 +267,7 @@ static void showSwichOnOff(HWND hwnd,int on_off)
         ShowWindow(GetDlgItem(hwnd,IDC_SCROLLVIEW),SW_SHOWNORMAL);
         ShowWindow(GetDlgItem(hwnd,IDC_BUTTON_TITLE),SW_SHOWNORMAL);
 		strcpy(wifi_list_title.text,g_config.net_config.ssid);
+		wifiConnectStart();
 #ifndef X86
         getWifiList(ap_info,wifiLoadData);
 #else
@@ -280,6 +282,7 @@ static void showSwichOnOff(HWND hwnd,int on_off)
         ShowWindow(GetDlgItem(hwnd,IDC_STATIC_TEXT_WARNING),SW_SHOWNORMAL);
         ShowWindow(GetDlgItem(hwnd,IDC_SCROLLVIEW),SW_HIDE);
         ShowWindow(GetDlgItem(hwnd,IDC_BUTTON_TITLE),SW_HIDE);
+		wifiDisConnect();
     }
 }
 
@@ -392,7 +395,15 @@ static void scrollviewNotify(HWND hwnd, int id, int nc, DWORD add_data)
         flag_timer_stop = 1;
         select_ap.encry =  ap_info[idx].encry;
         strcpy(select_ap.ssid,ap_info[idx].ssid);
-        createFormPassword(hwnd,select_ap.ssid,enableAutoClose,getPassword);
+		if (select_ap.encry)
+			createFormPassword(hwnd,select_ap.ssid,enableAutoClose,getPassword);
+		else {
+			strcpy(select_ap.ssid,ap_info[idx].ssid);
+			strcpy(g_config.net_config.ssid,ap_info[idx].ssid);
+			strcpy(g_config.net_config.security,"NONE");
+            updateConnectWifi();
+			ConfigSavePrivateCallback(saveConfigConnectCallback);
+		}
         // printf("idx:%d,name:%s\n", idx,plist->text);
     }
 }
@@ -409,7 +420,10 @@ static void formSettingWifiTimerProc1s(HWND hwnd)
 	// 更新网络状态
 	static int net_level_old = 0;
 	int net_level = 0;
-	if (getWifiConfig(&net_level) != 0)
+	if (g_config.net_config.enable) {
+		if (getWifiConfig(&net_level) != 0)
+			net_level = 0;
+	} else
 		net_level = 0;
 	wifi_list_title.enable = net_level; 
 	if (net_level != net_level_old) {
@@ -575,6 +589,7 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
             MSG_MYTITLE_SET_SWICH, (WPARAM)g_config.net_config.enable, 0);
     showSwichOnOff(form_base->hDlg,g_config.net_config.enable);
     SetTimer(form_base->hDlg,IDC_TIMER_100MS,2);
+	SetTimer(form_base->hDlg,IDC_TIMER_1S,FORM_TIMER_1S);
 }
 
 /* ----------------------------------------------------------------*/
@@ -619,6 +634,8 @@ static int formSettingWifiProc(HWND hDlg, int message, WPARAM wParam, LPARAM lPa
 				if (wParam == SW_HIDE) {
 					if (IsTimerInstalled(hDlg,IDC_TIMER_100MS) == TRUE)
 						KillTimer (hDlg,IDC_TIMER_100MS);
+					if (IsTimerInstalled(hDlg,IDC_TIMER_1S) == TRUE)
+						KillTimer (hDlg,IDC_TIMER_1S);
 				}
 			}break;
 
@@ -698,6 +715,7 @@ int createFormSettingWifi(HWND hMainWnd,void (*callback)(void))
 	if(Form) {
         showSwichOnOff(form_base->hDlg,g_config.net_config.enable);
         SetTimer(form_base->hDlg,IDC_TIMER_100MS,2);
+        SetTimer(form_base->hDlg,IDC_TIMER_1S,FORM_TIMER_1S);
 		ShowWindow(Form,SW_SHOWNORMAL);
 		scrollviewInit();
 	} else {

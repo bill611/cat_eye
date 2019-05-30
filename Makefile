@@ -6,7 +6,7 @@ ifeq ($(PLATFORM), RV1108)
 	LIB_DIR += $(MAKEROOT)/lib/arm
 	LIB_DIR += ${RV1108_SDK_PATH}/out/system/lib
 	LIB_DIR += ${RV1108_SDK_PATH}/out/sec_rootfs/lib
-	INC_DIR += ${RV1108_SDK_PATH}/out/system/include
+	INC_DIR += $(MAKEROOT)/include/sdk_include
 	EX_LIB += -lion -lrkfb -lrkrga -lts -ladk -lcam_ia -lcam_engine_cifisp
 
 SRC_CPP = \
@@ -47,6 +47,7 @@ CXX =$(PREFIX)g++
 INC_DIR += \
 		  $(MAKEROOT)/src\
 		  $(MAKEROOT)/include\
+		  $(MAKEROOT)/include/mqtt\
 		  $(MAKEROOT)/src/app\
 		  $(MAKEROOT)/src/gui\
 		  $(MAKEROOT)/src/gui/my_controls\

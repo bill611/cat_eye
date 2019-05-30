@@ -209,7 +209,10 @@ static void formMainTimerProc1s(HWND hwnd)
 	// 更新网络状态
 	static int net_level_old = 0;
 	int net_level = 0;
-	if (getWifiConfig(&net_level) != 0)
+	if (g_config.net_config.enable) {
+		if (getWifiConfig(&net_level) != 0)
+			net_level = 0;
+	} else 
 		net_level = 0;
 	if (net_level > 4)
 		net_level = 4;

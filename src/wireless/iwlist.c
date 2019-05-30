@@ -2238,7 +2238,7 @@ static void iw_usage(int status)
 	      iwlist_cmds[i].argsname ? iwlist_cmds[i].argsname : "");
     }
 
-  exit(status);
+  return ;
 }
 
 /******************************* MAIN ********************************/

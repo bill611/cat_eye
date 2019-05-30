@@ -86,11 +86,11 @@ static int writePNG(const QRcode *qrcode, const char *outfile, enum imageType ty
 		row = (unsigned char *)malloc(realwidth * 4);
 	} else {
 		fprintf(stderr, "Internal error.\n");
-		exit(EXIT_FAILURE);
+		return -1;
 	}
 	if(row == NULL) {
 		fprintf(stderr, "Failed to allocate memory.\n");
-		exit(EXIT_FAILURE);
+		return -1;
 	}
 
 	if(outfile[0] == '-' && outfile[1] == '\0') {
@@ -100,33 +100,33 @@ static int writePNG(const QRcode *qrcode, const char *outfile, enum imageType ty
 		if(fp == NULL) {
 			fprintf(stderr, "Failed to create file: %s\n", outfile);
 			perror(NULL);
-			exit(EXIT_FAILURE);
+			return -1;
 		}
 	}
 
 	png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 	if(png_ptr == NULL) {
 		fprintf(stderr, "Failed to initialize PNG writer.\n");
-		exit(EXIT_FAILURE);
+		return -1;
 	}
 
 	info_ptr = png_create_info_struct(png_ptr);
 	if(info_ptr == NULL) {
 		fprintf(stderr, "Failed to initialize PNG write.\n");
-		exit(EXIT_FAILURE);
+		return -1;
 	}
 
 	if(setjmp(png_jmpbuf(png_ptr))) {
 		png_destroy_write_struct(&png_ptr, &info_ptr);
 		fprintf(stderr, "Failed to write PNG image.\n");
-		exit(EXIT_FAILURE);
+		return -1;
 	}
 
 	if(type == PNG_TYPE) {
 		palette = (png_colorp) malloc(sizeof(png_color) * 2);
 		if(palette == NULL) {
 			fprintf(stderr, "Failed to allocate memory.\n");
-			exit(EXIT_FAILURE);
+			return -1;
 		}
 		palette[0].red   = fg_color[0];
 		palette[0].green = fg_color[1];
@@ -259,7 +259,7 @@ static void qrencode(const unsigned char *intext, int length, const char *outfil
 		} else {
 			perror("Failed to encode the input data");
 		}
-		exit(EXIT_FAILURE);
+		return ;
 	}
 
 	writePNG(qrcode, outfile, image_type);

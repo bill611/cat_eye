@@ -622,9 +622,21 @@ int getWifiConfig(int *qual)
 	return iwconfig(2,cmd,qual);
 #endif
 }
+void wifiConnectStart(void)
+{
+#ifndef X86
+	excuteCmd("ifconfig","wlan0","up",NULL);
+#endif
+}
 void wifiConnect(void)
 {
 #ifndef X86
-	excuteCmd("./check_ip.sh",NULL);
+	excuteCmd("./wifi/wifi_start.sh","&",NULL);
+#endif
+}
+void wifiDisConnect(void)
+{
+#ifndef X86
+	excuteCmd("wifi/wifi_station.sh","stop",NULL);
 #endif
 }
