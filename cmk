@@ -1,0 +1,12 @@
+#!/bin/bash
+
+mkdir -p build
+mkdir -p out
+cd build
+cmake ..
+make
+if [ $? == 0 ]; then
+	cd ..
+	cp out/cat_eye ~/arm_share/cat_eye/v
+fi
+

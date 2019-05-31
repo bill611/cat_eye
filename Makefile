@@ -63,6 +63,7 @@ INC_DIR += \
 
 
 SRC = \
+		$(wildcard ${SRC_DIR}/*.c) \
 		$(wildcard ${SRC_DIR}/app/*.c) \
 		$(wildcard ${SRC_DIR}/gui/*.c) \
 		$(wildcard ${SRC_DIR}/gui/my_controls/*.c) \
