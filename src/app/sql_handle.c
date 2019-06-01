@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <pthread.h>
+#include <unistd.h>
 #include "externfunc.h"
 #include "sqlite3.h"
 #include "sqlite.h"
@@ -67,14 +68,14 @@ timestamp INTEGER\
     ret = LocalQueryOpen(sql,"select ID from WifiList limit 1");
     sql->Close(sql);
 	if (ret == 1) {
-		backData(sql->file_name);
+		backData((char *)sql->file_name);
 		return TRUE;
 	}
 
 sqlCheck_fail:
-    saveLog("sql locoal err\n");
+    DPRINT("sql locoal err\n");
 	if (recoverData(dbase.file_name) == 0) {
-		saveLog("creat new db:%s\n",string);
+		DPRINT("creat new db:%s\n",string);
 		LocalQueryExec(dbase.sql,string);
 	} else {
 		dbase.sql->Destroy(dbase.sql);
@@ -127,7 +128,6 @@ void sqlInsertWifi(
 	pthread_mutex_lock(&mutex);
 	sprintf(buf, "INSERT INTO WifiList(name,password,enable,timestamp) VALUES('%s','%s','%d','%d')",
 			name, password,enable,security);
-	saveLog("%s\n",buf);
 	LocalQueryExec(dbase.sql,buf);
 	dbase.checkFunc(dbase.sql);
 	pthread_mutex_unlock(&mutex);
@@ -139,7 +139,6 @@ void sqlDeleteDevice(char *id)
 	pthread_mutex_lock(&mutex);
 	sprintf(buf, "Delete From WifiList Where ID=\"%s\"", id);
 	DPRINT("%s\n",buf);
-	saveLog("%s\n",buf);
 	LocalQueryExec(dbase.sql,buf);
 	dbase.checkFunc(dbase.sql);
 	pthread_mutex_unlock(&mutex);
@@ -151,7 +150,6 @@ void sqlClearDevice(void)
 	pthread_mutex_lock(&mutex);
 	sprintf(buf, "Delete From WifiList");
 	DPRINT("%s\n",buf);
-	saveLog("%s\n",buf);
 	LocalQueryExec(dbase.sql,buf);
 	dbase.checkFunc(dbase.sql);
 	pthread_mutex_unlock(&mutex);
@@ -235,6 +233,5 @@ void sqlInit(void)
 	dbase.checkFunc(dbase.sql);
 	if (!dbase.sql) {
 		DPRINT("sql err\n");
-		saveLog("sql err\n");
 	}
 }

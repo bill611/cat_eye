@@ -299,7 +299,7 @@ CjsonDec *cjsonDecCreate(char *data)
 	This->current = This->root;
 	This->front = This->root;
     if (!This->root) {
-		saveLog("Error before: [%s]\n",cJSON_GetErrorPtr());
+		printf("Error before: [%s]\n",cJSON_GetErrorPtr());
 		free(This);
 		return NULL;
 	}

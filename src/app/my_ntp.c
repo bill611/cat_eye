@@ -32,6 +32,7 @@
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/time.h>
 #include "my_ntp.h"
 #include "thread_helper.h"
 

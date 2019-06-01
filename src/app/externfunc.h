@@ -33,7 +33,8 @@ unsigned int my_inet_addr(const char *IP);
 
 void SetNetwork(int flag,const char *cIp,const char *cMask,const char *cGateWay,const char *cMac);
 void SetNetMac(unsigned char *pImei,char *MAC);
-uint64_t GetMs(void);
+uint64_t getMs(void);
+void backData(char *file);
 unsigned long long GetFlashFreeSpace(void);
 unsigned long long GetFlashFreeSpaceKB(void);
 unsigned long long GetFlashFreeSpaceMB(void);

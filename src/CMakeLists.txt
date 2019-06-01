@@ -5,10 +5,10 @@ aux_source_directory(. EXE_SRCS)
 # 增加子目录,增加此目录
 set(SUB_DIRS 
 	app 
-	drivers
+	wireless
 	gui
 	hal
-	wireless
+	drivers
 	)
 
 foreach(sub ${SUB_DIRS})

@@ -25,6 +25,7 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#include <unistd.h>
 #include <stdarg.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -32,6 +33,7 @@
 #include "config.h"
 #include "thread_helper.h"
 #include "debug.h"
+#include "externfunc.h"
 #include "queue.h"
 
 /* ---------------------------------------------------------------------------*

@@ -24,6 +24,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <time.h>
+#include <sys/time.h>
 
 #include "timer.h"
 #include "thread_helper.h"

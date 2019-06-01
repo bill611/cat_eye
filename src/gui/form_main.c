@@ -37,6 +37,8 @@
 extern void formSettingLoadBmp(void);
 int createFormSetting(HWND hMainWnd,void (*callback)(void));
 int createFormVideo(HWND hVideoWnd,int type,void (*callback)(void));
+int video_init(void);
+int video_uninit(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare

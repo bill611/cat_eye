@@ -25,6 +25,8 @@
 
 #include <strings.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <sys/ioctl.h>
 #include <netinet/ip.h>
 #include <net/if.h>
@@ -44,6 +46,7 @@
 #include <sys/statfs.h>
 #include <sys/mman.h>
 
+
 #include "debug.h"
 #include "thread_helper.h"
 #include "externfunc.h"
@@ -52,6 +55,11 @@
 /* ----------------------------------------------------------------*
  *                  extern variables declare
  *-----------------------------------------------------------------*/
+extern int iwlist(int	argc,
+     char **	argv,void *ap_info,int *ap_cnt);
+extern int
+iwconfig(int	argc,
+     char **	argv,int *qual);
 
 /* ----------------------------------------------------------------*
  *                  internal functions declare

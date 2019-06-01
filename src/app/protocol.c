@@ -21,11 +21,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <arpa/inet.h>
 #include "my_http.h"
 #include "my_mqtt.h"
 #include "json_dec.h"
 #include "udp_server.h"
 #include "thread_helper.h"
+#include "externfunc.h"
 #include "protocol.h"
 #include "qrenc.h"
 #include "config.h"

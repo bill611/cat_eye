@@ -7,6 +7,7 @@ cmake ..
 make
 if [ $? == 0 ]; then
 	cd ..
+	$RV1108_CROOS_PATH/bin/arm-linux-strip out/cat_eye
 	cp out/cat_eye ~/arm_share/cat_eye/v
 fi
 

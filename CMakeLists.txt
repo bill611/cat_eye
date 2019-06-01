@@ -48,7 +48,6 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/out)
 #功能函数获取当前目录及子目录(递归获取),添加到头文件搜索路径
 function(func_include_sub_directories_recursively root_dir)
     if (IS_DIRECTORY ${root_dir})               # 当前路径如果是一个目录,则加入到包含目录
-        #message("include dir: " ${root_dir})
         include_directories(${root_dir})
     endif()
 
@@ -70,14 +69,14 @@ func_include_sub_directories_recursively(${PROJECT_SOURCE_DIR}/src)
 include_directories(
 	${PROJECT_SOURCE_DIR}/include
 	${PROJECT_SOURCE_DIR}/include/mqtt
-	$ENV{RV1108_SDK_PATH}/out/system/include
+	${PROJECT_SOURCE_DIR}/include/sdk_include
 	)
 
 # 添加库文件搜索路径
 link_directories(
 	${PROJECT_SOURCE_DIR}/lib/arm
-	$ENV{RV1108_SDK_PATH}/out/system/lib
-	$ENV{RV1108_SDK_PATH}/out/sec_rootfs/lib
+	${PROJECT_SOURCE_DIR}/lib/arm/sdk_system_lib
+	${PROJECT_SOURCE_DIR}/lib/arm/sdk_rootfs_lib
 	)
 
 # 添加库文件名称
