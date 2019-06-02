@@ -1,0 +1,33 @@
+config RV_TARGET_FACE_SERVICE
+	bool "face_service"
+	default y
+    select RV_TARGET_LIBCAMERAHAL
+    select RV_TARGET_DATABASE
+    select RV_TARGET_SQLITE
+    select RV_TARGET_MESSENGER
+
+menu "face_service setting options"
+
+	config RV_TARGET_MAIN_APP_PRE_FACE_ROTATE
+        int "Image rotation angle before face algorithm"
+        default 0
+
+    config RV_TARGET_FACE_CAPTURE
+        bool "Enable Face Capture"
+        default n
+        select RV_TARGET_RKMEDIA
+        select RV_TARGET_RKMEDIA_MPP
+
+    config RV_TARGET_ENCODE_H264
+        bool "Enable h264 encoder"
+        default n
+        select RV_TARGET_RKMEDIA
+        select RV_TARGET_RKMEDIA_MPP
+
+    config RV_TARGET_FACE_USE_UVC
+        bool "use UVC"
+        default n
+        select RV_TARGET_MPP
+        select RV_TARGET_LIBRKUVC
+
+endmenu
