@@ -12,15 +12,19 @@ configure_file (
     "${PROJECT_SOURCE_DIR}/include/cmake_config.h"
     )
 
+# 设置默认编译平台
+option(PLATFORM_RV1108 "This is a option for rv1108" ON)
 
 # 添加编译过程变量
 #set(CMAKE_VERBOSE_MAKEFILE ON)
 
 # 设置交叉编译环境 ------------
 set(CMAKE_SYSTEM_NAME Linux)
-# to modify
-set(TOOLCHAIN_DIR $ENV{RV1108_CROOS_PATH})
-set(TOOLCHAIN  ${TOOLCHAIN_DIR}/bin/arm-linux-)
+
+if (PLATFORM_RV1108)
+	set(TOOLCHAIN_DIR $ENV{RV1108_CROOS_PATH})
+	set(TOOLCHAIN  ${TOOLCHAIN_DIR}/bin/arm-linux-)
+endif()
 
 set(CMAKE_C_COMPILER   	${TOOLCHAIN}gcc)
 set(CMAKE_CXX_COMPILER 	${TOOLCHAIN}g++)
@@ -31,16 +35,22 @@ set(CMAKE_OBJDUMP   	${TOOLCHAIN}objdump)
 set(CMAKE_RANLIB   		${TOOLCHAIN}ranlib)
 set(CMAKE_STRIP   		${TOOLCHAIN}strip)
 
-# to modify
-set(CMAKE_C_FLAGS "-D_PLATFORM_IS_LINUX_ -D_GNU_SOURCE -DRV1108 -DLINUX -DSUPPORT_ION -DENABLE_ASSERT ${CMAKE_C_FLAGS} -O2")
-set(CMAKE_CXX_FLAGS "-D_PLATFORM_IS_LINUX_ -D_GNU_SOURCE -DRV1108 -DLINUX -DSUPPORT_ION -DENABLE_ASSERT ${CMAKE_CXX_FLAGS} -O2")
+if (PLATFORM_RV1108)
+	set(CMAKE_C_FLAGS "-DRV1108 ${CMAKE_C_FLAGS}")
+	set(CMAKE_CXX_FLAGS "-DRV1108 ${CMAKE_CXX_FLAGS}")
+else()
+	set(CMAKE_C_FLAGS "-DX86 ${CMAKE_C_FLAGS}")
+	set(CMAKE_CXX_FLAGS "-DX86 ${CMAKE_CXX_FLAGS}")
+endif()
 
-set(CMAKE_C_FLAGS_DEBUG "$ENV{CFLAGS} -DWATCHDOG_DEBUG -O0")
-set(CMAKE_C_FLAGS_RELEASE "")
+# 设置debug编译和release编译配置
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DWATCHDOG_DEBUG")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DWATCHDOG_DEBUG")
+
 # 设置交叉编译环境 ------------
 
 #设置执行文件存放路径
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/out)
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
 
 #设置库文件存放路径
 #set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/libs)
@@ -69,15 +79,29 @@ func_include_sub_directories_recursively(${PROJECT_SOURCE_DIR}/src)
 include_directories(
 	${PROJECT_SOURCE_DIR}/include
 	${PROJECT_SOURCE_DIR}/include/mqtt
-	${PROJECT_SOURCE_DIR}/include/sdk_include
 	)
+if (PLATFORM_RV1108)
+	include_directories(
+		${PROJECT_SOURCE_DIR}/include/sdk_include
+		)
+endif()
 
 # 添加库文件搜索路径
-link_directories(
-	${PROJECT_SOURCE_DIR}/lib/arm
-	${PROJECT_SOURCE_DIR}/lib/arm/sdk_system_lib
-	${PROJECT_SOURCE_DIR}/lib/arm/sdk_rootfs_lib
-	)
+if (PLATFORM_RV1108)
+	link_directories(
+		${PROJECT_SOURCE_DIR}/lib/arm
+		${PROJECT_SOURCE_DIR}/lib/arm/sdk_system_lib
+		${PROJECT_SOURCE_DIR}/lib/arm/sdk_rootfs_lib
+		)
+else()
+	link_directories(
+		${PROJECT_SOURCE_DIR}/lib/x86
+		/usr/local/lib
+		/usr/lib/x86_64-linux-gnu
+		/usr/local/include
+		)
+
+endif()
 
 # 添加库文件名称
 link_libraries (
@@ -85,9 +109,10 @@ link_libraries (
 	minigui_ths png12 png jpeg freetype
 	z m pthread dl rt
 	)
-link_libraries (
-	ts
-	)
+
+if (PLATFORM_RV1108)
+	link_libraries (ts)
+endif()
 
 # 添加宏定义
 # include(define.cmake)

@@ -1,13 +1,20 @@
 #!/bin/bash
 
-mkdir -p build
-mkdir -p out
-cd build
-cmake ..
+if [ $# == 1 ]; then
+	mkdir -p debug
+	cd debug
+	cmake -DPLATFORM_RV1108=OFF -DCMAKE_BUILD_TYPE=Debug ..
+else
+	mkdir -p release
+	cd release
+	cmake -DCMAKE_BUILD_TYPE=Release ..
+fi
 make
 if [ $? == 0 ]; then
 	cd ..
-	$RV1108_CROOS_PATH/bin/arm-linux-strip out/cat_eye
-	cp out/cat_eye ~/arm_share/cat_eye/v
+	if [ $# == 0 ]; then
+		$RV1108_CROOS_PATH/bin/arm-linux-strip release/cat_eye
+		cp release/cat_eye ~/arm_share/cat_eye/v
+	fi
 fi
 

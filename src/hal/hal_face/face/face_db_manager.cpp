@@ -71,7 +71,7 @@ const char *FaceDbManager::GetCurTableName()
 void FaceDbManager::DbInit()
 {
     if (mDBC == NULL) {
-        mDBC = new DBCtrl("/temp/face.db");
+        mDBC = new DBCtrl("/data/face.db");
     }
     mDBC->createTable(kDbTable, gBaseTable, sizeof(gBaseTable) / sizeof(gBaseTable[0]));
     mDBC->setColumnType(gDBType, 0);

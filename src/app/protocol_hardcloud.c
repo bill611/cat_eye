@@ -83,6 +83,7 @@ static char *hard_could_api = "http://84.internal.taichuan.net:8080/v1/Mqtt/GetS
 
 struct OPTS opts;
 static char subTopic[TOPIC_NUM][100] = {{0,0}};
+static int g_id = 0;
 
 /* ---------------------------------------------------------------------------*/
 /**
@@ -232,6 +233,19 @@ connect_end:
 
 /* ---------------------------------------------------------------------------*/
 /**
+ * @brief getIntercoms 获取所有对讲账号
+ */
+/* ---------------------------------------------------------------------------*/
+static void getIntercoms(void)
+{
+	char send_buff[128] = {0};
+	sprintf(send_buff, "{\"api\": %d,\"time\": %ld,\"mode\": 1,  \"id\": %d,  \"body\": {}}",
+			CE_GetIntercoms,getTimestamp(), ++g_id);
+	printf("send_buff[%s]:%s\n",opts.pubTopic, send_buff);
+	mqtt->send(opts.pubTopic,strlen(send_buff),send_buff);
+}
+/* ---------------------------------------------------------------------------*/
+/**
  * @brief initThread 初始化链接硬件云，mqtt链接方式,线程执行，直到链接上后退出
  *
  * @param arg
@@ -334,6 +348,8 @@ static void* initThread(void *arg)
 retry:
 		sleep(5);
 	}
+	sleep(1);
+	getIntercoms();
 	return NULL;
 }
 

@@ -282,13 +282,13 @@ int FaceService::connect(std::shared_ptr<StreamPUBase> pre, std::shared_ptr<Stre
                          frm_info_t &frmFmt, const uint32_t num, std::shared_ptr<FaceCameraBufferAllocator> allocator)
 {
     if (!pre.get() || !next.get()) {
-        pr_err("%s: PU is NULL\n", __func__);
+        pr_err("%s: pre is NULL\n", __func__);
 		ASSERT(0);
     }
     pre->addBufferNotifier(next.get());
     next->prepare(frmFmt, num, allocator);
     if (!next->start()) {
-        pr_err("PU start failed!\n");
+        pr_err("pre start failed!\n");
 		ASSERT(0);
 	}
     return 0;
@@ -298,14 +298,14 @@ int FaceService::connect(std::shared_ptr<CamHwItf::PathBase> mpath, std::shared_
                          frm_info_t& frmFmt, const uint32_t num, std::shared_ptr<FaceCameraBufferAllocator> allocator)
 {
     if (!mpath.get() || !next.get()) {
-        pr_err("%s: PU is NULL\n", __func__);
+        pr_err("%s: mpath is NULL\n", __func__);
 		ASSERT(0);
     }
 
     mpath->addBufferNotifier(next.get());
     next->prepare(frmFmt, num, allocator);
     if (!next->start()) {
-        pr_err("PU start failed!\n");
+        pr_err("mpath start failed!\n");
 		ASSERT(0);
 	}
     return 0;

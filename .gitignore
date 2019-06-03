@@ -16,4 +16,5 @@ gw
 out
 path
 update
-build
+debug
+release

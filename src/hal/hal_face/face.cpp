@@ -39,7 +39,7 @@ using namespace std;
 
 static FaceService::SharedPtr service ;
 
-static string config_path("/temp/face_service.conf");
+static string config_path("/data/face_service.conf");
 
 static void* videoStartThead(void *arg)
 {

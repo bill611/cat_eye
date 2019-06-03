@@ -33,7 +33,7 @@ endif
 # 主程序Makefile
 
 # 在指定目录下生成的应用程序
-EXE = cateye
+EXE = cat_eye
 BIN_TARGET = ${BIN_DIR}/${EXE}
 
 SRC_DIR = $(MAKEROOT)/src
