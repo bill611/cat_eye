@@ -1,8 +1,22 @@
 /*
-*  Copyright (c) 2017 The UCPAAS project authors. All Rights Reserved.
-*
-*/
-
+ * =============================================================================
+ *
+ *       Filename:  protocol_ucpaas.c
+ *
+ *    Description:  云之讯对讲协议
+ *
+ *        Version:  1.0
+ *        Created:  2019-06-04 16:09:13
+ *       Revision:  none
+ *
+ *         Author:  xubin
+ *        Company:  Taichuan
+ *
+ * =============================================================================
+ */
+/* ---------------------------------------------------------------------------*
+ *                      include head files
+ *----------------------------------------------------------------------------*/
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,24 +24,36 @@
 #include <time.h>
 #include <pthread.h>
 
-#include "linux_sdk_demo.h"
-// #define NDEBUG
+#include "sql_handle.h"
+#include "ucpaas/UCSService.h"
+/* ---------------------------------------------------------------------------*
+ *                  extern variables declare
+ *----------------------------------------------------------------------------*/
 
-#if 1
+/* ---------------------------------------------------------------------------*
+ *                  internal functions declare
+ *----------------------------------------------------------------------------*/
+
+/* ---------------------------------------------------------------------------*
+ *                        macro define
+ *----------------------------------------------------------------------------*/
+typedef struct UserStruct {
+	char id[32];
+	char nick_name[32];
+	char token[256];
+	int scope;
+}UserStruct;
+
+/* ---------------------------------------------------------------------------*
+ *                      variables define
+ *----------------------------------------------------------------------------*/
+static UserStruct user_local;
+static UserStruct *user_other;
+
+
 static char userid[32] = "Tc19053151c36eb7d3c7ddc5";
 static char calleeUid[32] = "13267233004";
-static char user_token[512] = "eyJBbGciOiJIUzI1NiIsIkFjY2lkIjoiY2I3MzhjZmNkNmFlYTkxMDZiZTk5OTc2NzZlNzJhMDIiLCJBcHBpZCI6ImFjNTdhMDc3ZGIwYjRjY2JhNzEwNTU5Yzk4NzlkYmQ1IiwiVXNlcmlkIjoiVGMxOTA1MzE1MWMzNmViN2QzYzdkZGM1In0=.wygF30eR9bFSlfrP0oMn3aecL1bVGXaepLLx/AL0h0k=";
-#else
-#if 0
-static char userid[32] = "68491000051922";
-static char calleeUid[32] = "68491000051923";
-static char user_token[512] = "eyJBbGciOiJIUzI1NiIsIkFjY2lkIjoiY2U4OGQ4OWM0ZmU1ODhkODE1MTc3NDA1OGE0ZTA3ZGMiLCJBcHBpZCI6ImJhMjAyYzhlMWM5MzQ1MmI4YzAyNzY3MzJjYmM3ZDE1IiwiVXNlcmlkIjoiNjg0OTEwMDAwNTE5MjIifQ==.XJl/AePNwQg0jzeDamX2oMiMntD7KQGbOF2FXlBd0Yk=";
-#else
-static char userid[32] = "Demotest100051";
-static char calleeUid[32] = "13267233004";
-static char user_token[512] = "eyJBbGciOiJIUzI1NiIsIkFjY2lkIjoiZDU1ODA5MDJjYWI0ZDg4NTNiMDY2NDRhNTVlZjcyMGEiLCJBcHBpZCI6ImFhMmUyYmM2ZTIyZTRmYmZhZjkyNGZhNzVjMDJkYzA5IiwiVXNlcmlkIjoiRGVtb3Rlc3QxMDAwNTEifQ==.Yqk8xpJyW6aX2/OIJbNJU0HEOoAts7oJEmRqZdlDBZ8=";
-#endif
-#endif
+static char user_token[512] = "eyJBbGciOiJIUzI1NiIsIkFjY2lkIjoiY2I3MzhjZmNkNmFlYTkxMDZiZTk5OTc2NzZlNzJhMDIiLCJBcHBpZCI6ImFjNTdhMDc3ZGIwYjRjY2JhNzEwNTU5Yzk4NzlkYmQ1IiwiVXNlcmlkIjoiVGMxOTA1MjhkZjZhMjE0Y2UyOGFlNTJjIn0=.9LOQ4nvBr9B8m9AP7Fo43wYGo1e9QVEnbnZgp0CUzkY=";
 
 static FILE* fw = NULL;
 static int g_isVideoCall = 0;
@@ -36,7 +62,6 @@ static int g_isAutoAnswer = 0;
 static int g_previewEn = 1;
 static int g_externalAVEn = 1;
 
-#if 1
 static char userids[][32] = {
     "Tc190527dabba36d826d1f1",
     "Tc190524396a4d95de7e0156",
@@ -48,21 +73,6 @@ static char tokens[][256] = {
     "eyJBbGciOiJIUzI1NiIsIkFjY2lkIjoiY2I3MzhjZmNkNmFlYTkxMDZiZTk5OTc2NzZlNzJhMDIiLCJBcHBpZCI6ImFjNTdhMDc3ZGIwYjRjY2JhNzEwNTU5Yzk4NzlkYmQ1IiwiVXNlcmlkIjoiVGMxOTA1MjQzOTZhNGQ5NWRlN2UwMTU2In0=.rT9zenbvSSsxil2410Dew25v4FkTe9ltWw9raKEv6i4=",
     "eyJBbGciOiJIUzI1NiIsIkFjY2lkIjoiY2I3MzhjZmNkNmFlYTkxMDZiZTk5OTc2NzZlNzJhMDIiLCJBcHBpZCI6ImFjNTdhMDc3ZGIwYjRjY2JhNzEwNTU5Yzk4NzlkYmQ1IiwiVXNlcmlkIjoiVGMxOTA1MjhkZjZhMjE0Y2UyOGFlNTJjIn0=.9LOQ4nvBr9B8m9AP7Fo43wYGo1e9QVEnbnZgp0CUzkY="
 };
-#else
-static char userids[][32] = {
-    "linux01",
-    "linux02",
-    "linux03",
-    "68491000051922"
-};
-
-static char tokens[][256] = {
-    "eyJBbGciOiJIUzI1NiIsIkFjY2lkIjoiZWQ5NDE2MGJiNTI0ZjQ4ODU3ZDAwYmZmYjg4NmYxMzIiLCJBcHBpZCI6IjgyMzJkNTFlNWJiNTRlZmY5YTAzMzZlY2Y3ZjM2ODJlIiwiVXNlcmlkIjoibGludXgwMSJ9.zY/ReRirk4axrWrWSmXcvVMJAXyxibJdkj3r5AsRX80=",
-    "eyJBbGciOiJIUzI1NiIsIkFjY2lkIjoiZWQ5NDE2MGJiNTI0ZjQ4ODU3ZDAwYmZmYjg4NmYxMzIiLCJBcHBpZCI6IjgyMzJkNTFlNWJiNTRlZmY5YTAzMzZlY2Y3ZjM2ODJlIiwiVXNlcmlkIjoibGludXgwMiJ9.MgTx5aLFfHePHs42QkdzGMKFv5x5bn6oj+FJkn0nfPQ=",
-    "eyJBbGciOiJIUzI1NiIsIkFjY2lkIjoiZWQ5NDE2MGJiNTI0ZjQ4ODU3ZDAwYmZmYjg4NmYxMzIiLCJBcHBpZCI6IjgyMzJkNTFlNWJiNTRlZmY5YTAzMzZlY2Y3ZjM2ODJlIiwiVXNlcmlkIjoibGludXgwMyJ9.rG28n6jQspUdv4TrJFzhwpAxVtnxg/mT1XyoyBhL3so=",
-    "eyJBbGciOiJIUzI1NiIsIkFjY2lkIjoiY2U4OGQ4OWM0ZmU1ODhkODE1MTc3NDA1OGE0ZTA3ZGMiLCJBcHBpZCI6ImJhMjAyYzhlMWM5MzQ1MmI4YzAyNzY3MzJjYmM3ZDE1IiwiVXNlcmlkIjoiNjg0OTEwMDAwNTE5MjIifQ==.XJl/AePNwQg0jzeDamX2oMiMntD7KQGbOF2FXlBd0Yk="
-};
-#endif
 static int userid_num = sizeof(userids)/sizeof(userids[0]);
 
 
@@ -385,21 +395,15 @@ int TUCS_Init()
     vtable.read_data_cb = read_recording_data_cb;
     UCS_RegisterCallbackVtable(&vtable);
 
-    if (UCS_Init() < 0)
-    {
+    if (UCS_Init() < 0) {
         printf("ucs init failed.\n");
         return -1;
     }
 
-#ifndef NDEBUG
-    //UCS_SetLogEnable(1, "/var/upgrade/");
-	//printf("=====================This is No Debug\n\n\n\n");
-    UCS_SetLogEnable(1, NULL);
-#else
     UCS_SetLogEnable(0, NULL);
-#endif
 
     UCS_GetVersion(version);
+	printf("ucpaas version %s\n",version);
 
     UCS_vqecfg_t vqecfg = {1, 1, 1};
     UCS_SetVqeCfg(&vqecfg);
@@ -512,35 +516,33 @@ static void ucsInit(void)
 {
 	
 }
-int ucpaasTest(int argc, char* argv[])
-{
 
-#if defined(NDEBUG)
-	printf("=========================This is no Debug\n\n\n\n\n");
-#endif
+int registUcpaas(void)
+{
     char cmd;
     char c;
-
     TUCS_Init();
 
     sleep(1);
-	printf("id:%s\n",userid );
-	printf("token:%s\n",user_token );
+	sqlGetUserInfo(0,user_local.id,user_local.token,user_local.nick_name,&user_local.scope);
+	int cnt = sqlGetUserInfoStart(1);
+	printf("cnt:%d\n", cnt);
+	int i;
+	user_other = (UserStruct *) calloc(cnt,sizeof(UserStruct));
+	UserStruct * p_user = user_other;
+	for (i=0; i<cnt; i++) {
+		sqlGetUserInfos(p_user->id,p_user->nick_name,&p_user->scope);
+		printf("%d:info:%s,%s,%d\n",i,p_user->id,p_user->nick_name,p_user->scope );
+		p_user++;
+	}
+	sqlGetUserInfoEnd();
+	printf("id:%s\n",user_local.id );
+	printf("token:%s\n",user_local.token );
     UCS_Connect(user_token);
 
     UCS_SetExtAudioTransEnable(g_externalAVEn);
     UCS_SetExtVideoStreamEnable(g_externalAVEn);
-
-#if 0
-    sleep(1);
-    UCS_Dial(calleeUid, 1);
-    g_isVideoCall = 1;
-    
-    while (1)
-    {
-        sleep(1);
-    }
-#else
+	return 0;
     while (cmd != 'q')
     {
         help_usage();
@@ -636,7 +638,6 @@ int ucpaasTest(int argc, char* argv[])
             break;
         }
     }
-#endif
 
     TUCS_Destory();
 

@@ -52,6 +52,7 @@ extern "C" {
 		char product_key[64];
 		char device_secret[64];
 	};
+
 	typedef struct {
         // ethernet
 		int enable;
@@ -65,43 +66,12 @@ extern "C" {
 
 	}TcWifiConfig;
 
-	extern TcWifiConfig tc_wifi_config;
-	/**
-	 * Configuration definition.
-	 */
-	typedef struct _Config {
-        char imei[64];      	// 太川设备机身码
-        char hardcode[64];      // 太川设备硬件码
-        char version[16];      // 太川软件版本
-        char app_url[128];      // appd地址 
-        TcWifiConfig net_config;  // 网络设置
-	} Config;
-
 	enum {
 		TC_SET_STATION,
 		TC_SET_AP,
 	};
 
-	/**
-	 * Global instance variable of configuration.
-	 */
-
-
-	/**
-	 * Loads configuration file.
-	 */
-	void configLoad(void);
-
-	/**
-	 * Saves the configuration to file.
-	 */
 	typedef void (*configCallback)(void);
-	void ConfigSave(configCallback func);
-	void ConfigSavePrivate(void);
-	void ConfigSavePrivateCallback(configCallback func);
-	void configSync(void);
-
-	void tcSetNetwork(int type);
 	/* encry type */
 	enum AWSS_ENC_TYPE {
 		AWSS_ENC_TYPE_NONE,
@@ -144,6 +114,22 @@ extern "C" {
 		signed  char rssi;
 	}TcWifiScan;
 
+	typedef struct _Config {
+        char imei[64];         // 太川设备机身码
+        char hardcode[64];     // 太川设备硬件码
+        char version[16];      // 太川软件版本
+        char app_url[128];     // appd地址 
+		int  timestamp;        // 启动时间戳
+        TcWifiConfig net_config;  // 网络设置
+	} Config;
+
+	void configLoad(void);
+	void ConfigSave(configCallback func);
+	void ConfigSavePrivate(void);
+	void ConfigSavePrivateCallback(configCallback func);
+	void configSync(void);
+
+	void tcSetNetwork(int type);
 	extern Config g_config;
 
 #ifdef __cplusplus

@@ -6,6 +6,6 @@ STRING( REGEX REPLACE ".*/(.*)" "\\1" CURRENT_FOLDER_UCPAAS ${CMAKE_CURRENT_SOUR
 # 生成链接库
 add_library (${CURRENT_FOLDER_UCPAAS} ${SRCS_UCPAAS})
 target_link_libraries(${CURRENT_FOLDER_UCPAAS}
-	UCSService UcsEngine
+	UCSService UcsEngine c
 	)
 

@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <string.h>
 #include "externfunc.h"
 #include "sqlite3.h"
 #include "sqlite.h"
@@ -45,6 +46,14 @@ static int sqlCheck(TSqlite *sql);
  *                      variables define
  *----------------------------------------------------------------------------*/
 static pthread_mutex_t mutex;
+static char *table_user = "CREATE TABLE IF NOT EXISTS UserInfo( \
+ID INTEGER PRIMARY KEY,\
+userId char(32) UNIQUE,\
+type INTEGER, \
+loginToken char(128),\
+nickName char(128),\
+scope INTEGER\
+)";
 
 static TSqliteData dbase = {
 	.file_name = DATABSE_PATH"database.db",
@@ -55,17 +64,10 @@ static TSqliteData dbase = {
 static int sqlCheck(TSqlite *sql)
 {
     int ret;
-	char *string = "CREATE TABLE  WifiList(\
-ID INTEGER PRIMARY KEY,\
-name char(32),\
-password char(64),\
-enable INTEGER,\
-timestamp INTEGER\
-	   	)";
     if (sql == NULL)
         goto sqlCheck_fail;
 
-    ret = LocalQueryOpen(sql,"select ID from WifiList limit 1");
+    ret = LocalQueryOpen(sql,"select ID from UserInfo limit 1");
     sql->Close(sql);
 	if (ret == 1) {
 		backData((char *)sql->file_name);
@@ -75,8 +77,8 @@ timestamp INTEGER\
 sqlCheck_fail:
     DPRINT("sql locoal err\n");
 	if (recoverData(dbase.file_name) == 0) {
-		DPRINT("creat new db:%s\n",string);
-		LocalQueryExec(dbase.sql,string);
+		DPRINT("creat new db:%s\n",table_user);
+		LocalQueryExec(dbase.sql,table_user);
 	} else {
 		dbase.sql->Destroy(dbase.sql);
 		dbase.sql = CreateLocalQuery(dbase.sql->file_name);
@@ -85,59 +87,89 @@ sqlCheck_fail:
 	return FALSE;
 }
 
-int sqlGetDeviceCnt(void)
+int sqlGetUserInfoStart(int type)
 {
-	LocalQueryOpen(dbase.sql,"select * from WifiList ");
+	char buf[128];
+	sprintf(buf,"select * from UserInfo where type = %d",type );
+	pthread_mutex_lock(&mutex);
+	LocalQueryOpen(dbase.sql,buf);
 	return dbase.sql->RecordCount(dbase.sql);
 }
 
-void sqlGetDevice(char *id,
-		int *dev_type,
-		uint16_t *addr,
-		uint16_t *channel,
-		char *product_key,int index)
+void sqlGetUserInfos(
+		char *user_id,
+		char *nick_name,
+		int *scope)
 {
-	int i;
-	LocalQueryOpen(dbase.sql,"select * from WifiList ");
-	for (i=0; i<index; i++) {
-		dbase.sql->Next(dbase.sql);
-	}
-	if (id)
-		LocalQueryOfChar(dbase.sql,"ID",id,32);
-	if (dev_type)
-		*dev_type = LocalQueryOfInt(dbase.sql,"DevType");
-	if (addr)
-		*addr = LocalQueryOfInt(dbase.sql,"Addr");
-	if (channel)
-		*channel = LocalQueryOfInt(dbase.sql,"Channel");
-	if (product_key)
-		LocalQueryOfChar(dbase.sql,"ProductKey",product_key,32);
-}
-void sqlGetDeviceEnd(void)
-{
-	dbase.sql->Close(dbase.sql);
+	*scope = LocalQueryOfInt(dbase.sql,"scope");
+	if (user_id)
+		LocalQueryOfChar(dbase.sql,"userId",user_id,32);
+	if (nick_name)
+		LocalQueryOfChar(dbase.sql,"nickName",nick_name,128);
+	dbase.sql->Next(dbase.sql);
 }
 
-void sqlInsertWifi(
-		char *name,
-		char *password,
-		uint32_t enable,
-		uint32_t security)
+void sqlGetUserInfo(
+		int type,
+		char *user_id,
+		char *login_token,
+		char *nick_name,
+		int *scope)
 {
 	char buf[128];
-	pthread_mutex_lock(&mutex);
-	sprintf(buf, "INSERT INTO WifiList(name,password,enable,timestamp) VALUES('%s','%s','%d','%d')",
-			name, password,enable,security);
-	LocalQueryExec(dbase.sql,buf);
-	dbase.checkFunc(dbase.sql);
+	sprintf(buf,"select * from UserInfo where type = %d",type );
+	LocalQueryOpen(dbase.sql,buf);
+
+	*scope = LocalQueryOfInt(dbase.sql,"scope");
+	if (user_id)
+		LocalQueryOfChar(dbase.sql,"userId",user_id,32);
+	if (login_token)
+		LocalQueryOfChar(dbase.sql,"loginToken",login_token,256);
+	if (nick_name)
+		LocalQueryOfChar(dbase.sql,"nickName",nick_name,128);
+	dbase.sql->Close(dbase.sql);
+}
+void sqlGetUserInfoEnd(void)
+{
+	dbase.sql->Close(dbase.sql);
 	pthread_mutex_unlock(&mutex);
+}
+
+void sqlInsertUserInfoNoBack(
+		char *user_id,
+		char *login_token,
+		char *nick_name,
+		int type,
+		int scope)
+{
+	char buf[512];
+	pthread_mutex_lock(&mutex);
+	if (login_token)
+		sprintf(buf, "INSERT INTO UserInfo(userId,loginToken,nickName,type,scope) VALUES('%s','%s','%s','%d','%d')",
+				user_id, login_token,nick_name,type,scope);
+	else
+		sprintf(buf, "INSERT INTO UserInfo(userId,nickName,type,scope) VALUES('%s','%s','%d','%d')",
+				user_id, nick_name,type,scope);
+	printf("%s\n", buf);
+	LocalQueryExec(dbase.sql,buf);
+	pthread_mutex_unlock(&mutex);
+}
+void sqlInsertUserInfo(
+		char *user_id,
+		char *login_token,
+		char *nick_name,
+		int type,
+		int scope)
+{
+	sqlInsertUserInfoNoBack(user_id,login_token,nick_name,type,scope);
+	dbase.checkFunc(dbase.sql);
 }
 
 void sqlDeleteDevice(char *id)
 {
 	char buf[128];
 	pthread_mutex_lock(&mutex);
-	sprintf(buf, "Delete From WifiList Where ID=\"%s\"", id);
+	sprintf(buf, "Delete From UserInfo Where userId=\"%s\"", id);
 	DPRINT("%s\n",buf);
 	LocalQueryExec(dbase.sql,buf);
 	dbase.checkFunc(dbase.sql);
@@ -148,7 +180,7 @@ void sqlClearDevice(void)
 {
 	char buf[128];
 	pthread_mutex_lock(&mutex);
-	sprintf(buf, "Delete From WifiList");
+	sprintf(buf, "Delete From UserInfo");
 	DPRINT("%s\n",buf);
 	LocalQueryExec(dbase.sql,buf);
 	dbase.checkFunc(dbase.sql);
@@ -158,7 +190,7 @@ int sqlGetDeviceId(uint16_t addr,char *id)
 {
 	char buf[128];
 	pthread_mutex_lock(&mutex);
-	sprintf(buf, "select ID From WifiList Where Addr=\"%d\"", addr);
+	sprintf(buf, "select userId From UserInfo Where Addr=\"%d\"", addr);
 	LocalQueryOpen(dbase.sql,buf);
 	int ret = dbase.sql->RecordCount(dbase.sql);
 	if (ret)
@@ -221,6 +253,10 @@ void sqlGetMideaAddr(char *id,void *data)
 	pthread_mutex_unlock(&mutex);
 }
 
+void sqlCheckBack(void)
+{
+	dbase.checkFunc(dbase.sql);
+}
 
 void sqlInit(void)
 {

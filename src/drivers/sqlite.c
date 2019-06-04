@@ -23,6 +23,7 @@
 #include <pthread.h>
 #include "sqlite3.h"
 #include "sqlite.h"
+#include "externfunc.h"
 #include "debug.h"
 
 /* ---------------------------------------------------------------------------*
@@ -493,10 +494,10 @@ void LocalQueryLoad(TSqliteData *sql)
 		DPRINT("Err:%s open failed\n",sql->file_name);
 		char file_bak[32];
 		sprintf(file_bak,"%s_bak",sql->file_name);
-		// if (fileexists(file_bak) == 1) {
-			// recoverData(sql->file_name,0);
-			// sql->sql = CreateLocalQuery(sql->file_name);
-		// }
+		if (fileexists(file_bak) == 1) {
+			recoverData(sql->file_name);
+			sql->sql = CreateLocalQuery(sql->file_name);
+		}
 	}
 }
 

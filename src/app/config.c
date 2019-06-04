@@ -34,14 +34,15 @@ static EtcValueChar etc_public_char[]={
 };
 
 static EtcValueInt etc_private_int[]={
-{"wireless",	"enable",	&g_config.net_config.enable,		0},
+{"wireless",	"enable",		&g_config.net_config.enable,0},
+{"cloud",		"timestamp",	&g_config.timestamp,		0},
 };
 
 static EtcValueChar etc_private_char[]={
-{"taichuan",	"imei",	    SIZE_CONFIG(g_config.imei),		"0"},
-{"taichuan",	"hardcode",	SIZE_CONFIG(g_config.hardcode),	"0"},
-{"taichuan",	"version",	SIZE_CONFIG(g_config.version),	DEVICE_SVERSION},
-{"taichuan",	"app_url",	SIZE_CONFIG(g_config.app_url),	"123"},
+{"device",		"imei",	    SIZE_CONFIG(g_config.imei),		"0"},
+{"device",		"hardcode",	SIZE_CONFIG(g_config.hardcode),	"0"},
+{"device",		"version",	SIZE_CONFIG(g_config.version),	DEVICE_SVERSION},
+{"cloud",		"app_url",	SIZE_CONFIG(g_config.app_url),	"123"},
 
 {"wireless",	"ssid",	    SIZE_CONFIG(g_config.net_config.ssid),		"MINI"},
 {"wireless",	"mode",	    SIZE_CONFIG(g_config.net_config.mode),		"Infra"},
@@ -241,7 +242,7 @@ static int loadIniFile(dictionary **d,char *file_path,char *sec[])
 
 void configLoad(void)
 {
-	char *sec_private[] = {"taichuan","wireless",NULL};
+	char *sec_private[] = {"device","wireless","cloud",NULL};
 
 	int ret = loadIniFile(&cfg_private_ini,CFG_PRIVATE_DRIVE  INI_PRIVATE_FILENAME,sec_private);
 	configLoadEtcInt(cfg_private_ini,etc_private_int,NELEMENTS(etc_private_int));

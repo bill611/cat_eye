@@ -24,14 +24,17 @@
 #include "my_http.h"
 #include "my_mqtt.h"
 #include "json_dec.h"
+#include "sql_handle.h"
 #include "thread_helper.h"
-#include "protocol.h"
 #include "config.h"
 #include "my_ntp.h"
+#include "externfunc.h"
+#include "protocol.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
+int registUcpaas(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -41,6 +44,11 @@
  *                        macro define
  *----------------------------------------------------------------------------*/
 #define TOPIC_NUM 6
+enum {
+	USER_TYPE_CATEYE,
+	USER_TYPE_OTHERS,
+};
+
 enum {
 	Sys_TestData = 1,			//	Server	Send	测试数据指令 服务端发送测试内容到客户端 客户端必须立即将收到测试内容的data原封Return回来
 	Sys_UploadLog = 2,			//	Server	Post	上传日志指令 要求客户端将异常等日志到服务器
@@ -66,8 +74,8 @@ struct OPTS {
 	char pubTopic[64];
 	char platformUrl[64];
 	char ntp_server_ip[64];
-
 };
+
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
@@ -160,6 +168,60 @@ static void mqttConnectFailure(void* context)
 	printf("[%s]\n", __func__);
 }
 
+static void ceGetIntercoms(CjsonDec *dec)
+{
+	if(dec->changeCurrentObj(dec,"body")) {
+		printf("change body fail\n");	
+		return;
+	}
+	// 保存本机对讲信息
+	if(dec->changeCurrentObj(dec,"self")) {
+		printf("change self fail\n");	
+		return;
+	}
+	char *user_id = NULL;
+	char *login_token = NULL;
+	char *nick_name = NULL;
+	int scope = 0 ;
+	dec->getValueChar(dec,"userId",&user_id);
+	dec->getValueChar(dec,"loginToken",&login_token);
+	dec->getValueChar(dec,"nickName",&nick_name);
+	scope = dec->getValueInt(dec,"scope");
+	sqlInsertUserInfo(user_id,login_token,nick_name,USER_TYPE_CATEYE,scope);
+	if (user_id)
+		free(user_id);
+	if (login_token)
+		free(login_token);
+	if (nick_name)
+		free(nick_name);
+	// 保存对方对讲信息
+	dec->changeObjFront(dec); // 返回上一层
+	if(dec->changeCurrentObj(dec,"targets")) {
+		printf("targets self fail\n");	
+		return;
+	}
+	int size = dec->getArraySize(dec);
+	int i;
+	for (i=0; i<size; i++) {
+		user_id = NULL;
+		nick_name = NULL;
+		scope = 0 ;
+		dec->getArrayChar(dec,i,"userId",&user_id);
+		dec->getArrayChar(dec,i,"nickName",&nick_name);
+		scope = dec->getArrayInt(dec,i,"scope");
+		sqlInsertUserInfoNoBack(user_id,NULL,nick_name,USER_TYPE_OTHERS,scope);
+		if (user_id)
+			free(user_id);
+		if (nick_name)
+			free(nick_name);
+	}
+	sqlCheckBack();
+
+	struct tm *tm_now = getTime();
+	g_config.timestamp = tm_now->tm_hour + tm_now->tm_mday * 24 + tm_now->tm_mon * 30 * 24;
+	ConfigSavePrivate();
+	
+}
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief mqttConnectCallBack 硬件云消息回调
@@ -179,7 +241,7 @@ static int mqttConnectCallBack(void* context, char* topicName, int topicLen, voi
        printf("dealWithSubscription cjsonDecCreate fail!\n");
 	   return -1;
 	}
-	dec->print(dec);
+	// dec->print(dec);
 	char send_buff[128] = {0};
 	int id = dec->getValueInt(dec, "id");
 	int mode = dec->getValueInt(dec, "mode");
@@ -202,6 +264,7 @@ static int mqttConnectCallBack(void* context, char* topicName, int topicLen, voi
 		case CE_SetTargetsIntercom :
 			break;
 		case CE_GetIntercoms :
+			ceGetIntercoms(dec);
 			break;
 		case CE_GetFaces :
 			break;
@@ -238,9 +301,13 @@ connect_end:
 /* ---------------------------------------------------------------------------*/
 static void getIntercoms(void)
 {
+	struct tm *tm_now = getTime();
+	int timestamp_now = tm_now->tm_hour + tm_now->tm_mday * 24 + tm_now->tm_mon * 30 * 24;
+	if (timestamp_now - g_config.timestamp <= 12)
+		return;
 	char send_buff[128] = {0};
 	sprintf(send_buff, "{\"api\": %d,\"time\": %ld,\"mode\": 1,  \"id\": %d,  \"body\": {}}",
-			CE_GetIntercoms,getTimestamp(), ++g_id);
+			CE_GetIntercoms,0l, ++g_id);
 	printf("send_buff[%s]:%s\n",opts.pubTopic, send_buff);
 	mqtt->send(opts.pubTopic,strlen(send_buff),send_buff);
 }
@@ -350,6 +417,9 @@ retry:
 	}
 	sleep(1);
 	getIntercoms();
+#ifndef X86
+	registUcpaas();
+#endif
 	return NULL;
 }
 

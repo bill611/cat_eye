@@ -16,7 +16,7 @@ configure_file (
 option(PLATFORM_RV1108 "This is a option for rv1108" ON)
 
 # 添加编译过程变量
-#set(CMAKE_VERBOSE_MAKEFILE ON)
+# set(CMAKE_VERBOSE_MAKEFILE ON)
 
 # 设置交叉编译环境 ------------
 set(CMAKE_SYSTEM_NAME Linux)
@@ -44,8 +44,11 @@ else()
 endif()
 
 # 设置debug编译和release编译配置
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DWATCHDOG_DEBUG")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DWATCHDOG_DEBUG")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -DWATCHDOG_DEBUG")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -DWATCHDOG_DEBUG")
+
+set(CMAKE_C_FLAGS_RELEASE "-O2")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
 # 设置交叉编译环境 ------------
 
@@ -92,6 +95,7 @@ if (PLATFORM_RV1108)
 		${PROJECT_SOURCE_DIR}/lib/arm
 		${PROJECT_SOURCE_DIR}/lib/arm/sdk_system_lib
 		${PROJECT_SOURCE_DIR}/lib/arm/sdk_rootfs_lib
+		${PROJECT_SOURCE_DIR}/lib/arm/sdk_ucpaas_lib
 		)
 else()
 	link_directories(

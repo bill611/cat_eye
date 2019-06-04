@@ -22,33 +22,33 @@ extern "C" {
 #endif  /* __cplusplus */
 
 #include <stdint.h>
-	extern int sqlGetDeviceCnt(void);
-	extern void sqlGetDevice(char *id,
-			int *dev_type,
-			uint16_t *addr,
-			uint16_t *channel,
-			char *product_key,int index);
-	extern void sqlGetDeviceEnd(void);
-	extern void sqlInsertWifi(
-		char *name,
-		char *password,
-		uint32_t enable,
-		uint32_t security);
-	extern void sqlDeleteDevice(char *id);
-	extern int sqlGetDeviceId(uint16_t addr,char *id);
-	extern void sqlInit(void);
-	extern void sqlClearDevice(void);
-	extern void sqlSetEleQuantity(int value,char *id);
-	extern int sqlGetEleQuantity(char *id);
-	extern void sqlSetMideaAddr(char *id,void *data,int size);
-	extern void sqlGetMideaAddr(char *id,void *data);
-	extern void sqlSetAirConditionPara(char *id,int temp,int mode,int speed);
-	extern void sqlGetAirConditionPara(char *id,int *temp,int *mode,int *speed);
-	extern void sqlSetInfraredArmStatus(char *id,int arm_status);
-	extern void sqlGetInfraredArmStatus(char *id,int *arm_status);
-	extern void sqlSetDoorContactArmStatus(char *id,int arm_status);
-	extern void sqlGetDoorContactArmStatus(char *id,int *arm_status);
 
+	extern void sqlInsertUserInfoNoBack(
+			char *user_id,
+			char *login_token,
+			char *nick_name,
+			int type,
+			int scope);
+	extern void sqlInsertUserInfo(
+			char *user_id,
+			char *login_token,
+			char *nick_name,
+			int type,
+			int scope);
+	extern void sqlGetUserInfo(
+			int type,
+			char *user_id,
+			char *login_token,
+			char *nick_name,
+			int *scope);
+	extern int sqlGetUserInfoStart(int type);
+	extern void sqlGetUserInfos(
+			char *user_id,
+			char *nick_name,
+			int *scope);
+	extern void sqlGetUserInfoEnd(void);
+	extern void sqlCheckBack(void);
+	extern void sqlInit(void);
 
 #ifdef __cplusplus
 }
