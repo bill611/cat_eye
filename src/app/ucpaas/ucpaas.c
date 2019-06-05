@@ -38,16 +38,21 @@
 /* ---------------------------------------------------------------------------*
  *                        macro define
  *----------------------------------------------------------------------------*/
-typedef struct UserStruct {
+typedef struct _UserStruct {
 	char id[32];
 	char nick_name[32];
 	char token[256];
 	int scope;
 }UserStruct;
 
+typedef struct _Callbacks {
+    void (*dial)(void *arg);
+
+}Callbacks;
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
+static Callbacks call_backs;
 static UserStruct user_local;
 static UserStruct *user_other;
 
@@ -83,14 +88,17 @@ static void stopVideoIncomingThread();
 
 
 // UCS connect status callback
-void connect_event_cb(int ev_reason)
+static void connect_event_cb(int ev_reason)
 {
     printf("%s: ev_reason[%d]\n", __FUNCTION__, ev_reason);
 }
 
 // UCS dailing out failed
-void dial_failed_cb(const char* callid, int reason)
+static void dial_failed_cb(const char* callid, int reason)
 {
+    int result = 0; 
+    if (call_backs.dial)
+        call_backs.dial(&result);
     printf("[%s] callid[%s] reason[%d]\n", __FUNCTION__, callid, reason);
     if (g_isVideoCall && g_externalAVEn)
     {
@@ -99,7 +107,7 @@ void dial_failed_cb(const char* callid, int reason)
 }
 
 // call alerting
-void on_alerting_cb(const char* callid)
+static void on_alerting_cb(const char* callid)
 {
     printf("[%s] callid[%s]\n", __FUNCTION__, callid);
     if (g_isVideoCall && g_previewEn && g_externalAVEn)
@@ -109,7 +117,7 @@ void on_alerting_cb(const char* callid)
 }
 
 // new call incoming
-void on_incomingcall_cb(const char* callid, int calltype,
+static void on_incomingcall_cb(const char* callid, int calltype,
     const char* caller_uid, const char* caller_name,
     const char* userdata)
 {
@@ -128,7 +136,7 @@ void on_incomingcall_cb(const char* callid, int calltype,
 }
 
 // call answer
-void on_answer_cb(const char* callid)
+static void on_answer_cb(const char* callid)
 {
     printf("[%s] callid[%s]\n", __FUNCTION__, callid);
     if (g_isVideoCall && g_externalAVEn)
@@ -138,7 +146,7 @@ void on_answer_cb(const char* callid)
 }
 
 // call hangup
-void on_hangup_cb(const char* callid, int reason)
+static void on_hangup_cb(const char* callid, int reason)
 {
     printf("[%s] callid[%s]\n", __FUNCTION__, callid);
 
@@ -154,19 +162,19 @@ void on_hangup_cb(const char* callid, int reason)
 }
 
 // received dtmf
-void received_dtmf_cb(int dtmf_code)
+static void received_dtmf_cb(int dtmf_code)
 {
     printf("[%s] dtmf_code[%d]\n", __FUNCTION__, dtmf_code);
 }
 
 // network quality report between call session
-void network_state_report_cb(int reason, const char* netstate)
+static void network_state_report_cb(int reason, const char* netstate)
 {
     printf("[%s] reason[%d] netstate[%s]\n", __FUNCTION__, reason, netstate);
 }
 
 // UCS through data received callback
-void transdata_received_cb(const char* from_userId,
+static void transdata_received_cb(const char* from_userId,
                         const char* callid,
                         const char* trans_data)
 {
@@ -176,13 +184,13 @@ void transdata_received_cb(const char* from_userId,
     }
 }
 
-void transdata_send_result_cb(int err_code)
+static void transdata_send_result_cb(int err_code)
 {
     printf("transdata_send_result_cb: err_code[%d]\n", err_code);
 }
 
 // UCS invoke it to change video stream
-void set_video_framerate_cb(unsigned int target_width, unsigned int target_height,
+static void set_video_framerate_cb(unsigned int target_width, unsigned int target_height,
     unsigned int frame_rate, unsigned int bitrate)
 {
     printf("set_video_framerate_cb: resolution[%dx%d fps[%d] bitrate[%d]\n",
@@ -193,7 +201,7 @@ void set_video_framerate_cb(unsigned int target_width, unsigned int target_heigh
 // sample_rate -- playout audio sample rate, 16k
 // bytes_per_sample -- bytes of per sample, always 2 bytes = 16bits
 // num_of_channels -- number of playout channels, always = 1
-void init_playout_cb(unsigned int sample_rate,
+static void init_playout_cb(unsigned int sample_rate,
     unsigned int bytes_per_sample,
     unsigned int num_of_channels)
 {
@@ -213,7 +221,7 @@ void init_playout_cb(unsigned int sample_rate,
 static char readStream[MAX_READ_STREAM_SIZE] = { 0 };
 static int readIndex = 0;
 static int streamSize = 0;
-void init_recording_cb(unsigned int sample_rate,
+static void init_recording_cb(unsigned int sample_rate,
     unsigned int bytes_per_sample,
     unsigned int num_of_channels)
 {
@@ -229,7 +237,7 @@ void init_recording_cb(unsigned int sample_rate,
 // UCS read recording 10ms pcm data from external audio device 
 // audio_data -- recording pcm data
 // size -- want to read data len
-int read_recording_data_cb(char * audio_data,
+static int read_recording_data_cb(char * audio_data,
     unsigned int size)
 {
     if (audio_data && size)
@@ -249,7 +257,7 @@ int read_recording_data_cb(char * audio_data,
 // UCS write playout 10ms pcm data to external audio device
 // audio_data -- playout data for external audio device
 // size -- playout data length
-int write_playout_data_cb(const char* audio_data,
+static int write_playout_data_cb(const char* audio_data,
     unsigned int size)
 {
     if (audio_data && size && fw)
@@ -264,7 +272,7 @@ int write_playout_data_cb(const char* audio_data,
 static unsigned char *nal_array[300] = { NULL };
 static int i_nal = 0;
 static unsigned char data264[5000 * 1000] = { 0 };
-int TUCS_extern_capture_init()
+static int TUCS_extern_capture_init()
 {
     FILE *f = NULL;
     int data_len;
@@ -313,7 +321,7 @@ int TUCS_extern_capture_init()
 }
 
 int threadAlive = 0;
-void* TUCS_extern_capture_proc(void* arg)
+static void* TUCS_extern_capture_proc(void* arg)
 {
     int fn = 0;
     
@@ -351,7 +359,7 @@ void* TUCS_extern_capture_proc(void* arg)
 }
 
 pthread_t tid;
-void startVideoIncomingThread()
+static void startVideoIncomingThread()
 {
     printf("\nstartVideoIncomingThread enter\n\n");
     if (tid == 0)
@@ -361,7 +369,7 @@ void startVideoIncomingThread()
     }
 }
 
-void stopVideoIncomingThread()
+static void stopVideoIncomingThread()
 {
     int waiting_time = 2000;
 	int *ptime = &waiting_time;
@@ -374,7 +382,7 @@ void stopVideoIncomingThread()
     tid = 0;
 }
 
-int TUCS_Init()
+static int TUCS_Init()
 {
     char version[UCS_MAX_VERSION_STR_LEN] = { 0 };
     UCS_cb_vtable_t vtable;
@@ -414,12 +422,12 @@ int TUCS_Init()
     return 0;
 }
 
-int TUCS_Destory()
+static int TUCS_Destory()
 {
     return UCS_Destory();
 }
 
-void TUCS_SelectUserid()
+static void TUCS_SelectUserid()
 {
     int selectid = 0;
     
@@ -450,7 +458,7 @@ void TUCS_SelectUserid()
     UCS_Connect(user_token);
 }
 
-void TUCS_GroupDial(int videoCall)
+static void TUCS_GroupDial(int videoCall)
 {
     char input[32] = { 0 };
     char calleds[UCS_MAX_GROUP_DIAL_CALLEE_NUM][32] = { 0 };
@@ -494,7 +502,7 @@ void TUCS_GroupDial(int videoCall)
     }
 }
 
-void help_usage()
+static void help_usage()
 {
     printf("******************Softphone Menu**************************\n");
     printf("        the User   Id           : %s\n", userid);
@@ -520,8 +528,10 @@ static void ucsInit(void)
 
 void ucsDial(char *user_id,void (*callBack)(void *arg))
 {
-
+    call_backs.dial = callBack;
+    UCS_Dial(user_id, eUCS_CALL_TYPE_VIDEO_CALL);
 }
+
 int registUcpaas(void)
 {
     char cmd;
