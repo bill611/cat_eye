@@ -24,6 +24,7 @@
 #include <time.h>
 #include <pthread.h>
 
+#include "ucpaas.h"
 #include "sql_handle.h"
 #include "ucpaas/UCSService.h"
 /* ---------------------------------------------------------------------------*
@@ -517,6 +518,10 @@ static void ucsInit(void)
 	
 }
 
+void ucsDial(char *user_id,void (*callBack)(void *arg))
+{
+
+}
 int registUcpaas(void)
 {
     char cmd;

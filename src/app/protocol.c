@@ -37,6 +37,7 @@
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
 void registHardCloud(void);
+void registTalk(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -471,6 +472,7 @@ void protocolInit(void)
 	protocol->getImei = getImei;
 	protocol->isNeedToUpdate = isNeedToUpdate;
 	registHardCloud();
+	registTalk();
 	// timer_protocol_1s = timerCreate(LAYER_TIME_1S,timer1sThread,NULL);
 	// timer_protocol_1s->start(timer_protocol_1s);
 }

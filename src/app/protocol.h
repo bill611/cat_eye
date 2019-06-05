@@ -29,6 +29,17 @@ extern "C" {
 		int (*isNeedToUpdate)(char *version,char *content);
 	}Protocol;
 	extern Protocol *protocol;
+
+	// 对讲协议
+	struct _ProtocolTalkPriv;
+	typedef struct _ProtocolTalk {
+		struct _ProtocolTalkPriv *priv;
+		void (*dial)(char *user_id,void (*callBack)(void *arg));
+		void (*answer)(void (*callBack)(void *arg));
+		void (*hangup)(void (*callBack)(void *arg));
+	}ProtocolTalk;
+	extern ProtocolTalk *protocol_talk;
+
 	void protocolInit(void);
 
 #ifdef __cplusplus
