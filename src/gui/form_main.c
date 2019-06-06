@@ -259,9 +259,6 @@ static void buttonRecordPress(HWND hwnd, int id, int nc, DWORD add_data)
 	if (nc != BN_CLICKED)
 		return;
 	flag_timer_stop = 1;
-#ifndef X86
-	video_uninit();
-#endif
 }
 static void buttonCapturePress(HWND hwnd, int id, int nc, DWORD add_data)
 {
@@ -379,6 +376,9 @@ static int formMainProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 int createFormMain(HWND hMainWnd)
 {
 	HWND Form = Screen.Find(form_base_priv.name);
+#ifndef X86
+	video_init();
+#endif
 	if(Form) {
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {

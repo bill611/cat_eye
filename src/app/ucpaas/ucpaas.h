@@ -22,6 +22,20 @@ extern "C" {
 #endif  /* __cplusplus */
 
 	void ucsDial(char *user_id,void (*callBack)(void *arg));
+	void ucsAnswer(void (*callBack)(void *arg));
+	void ucsHangup(void (*callBack)(void *arg));
+	void ucsCbDialRet(void (*callBack)(void *arg));
+	void ucsCbIncomingCall(void (*callBack)(void *arg));
+	void ucsSendCmd(char *cmd,char *user_id,void (*callBack)(void *arg));
+	void ucsCbReceivedCmd(void (*callBack)(const char *user_id,void *arg));
+	void ucsCbInitAudio(void (*callBack)(void));
+	void ucsCbPlayAudio(void (*callBack)(const char *data,unsigned int size));
+	void ucsCbStartRecord(void (*callBack)(void));
+	void ucsCbRecording(void (*callBack)(char *data,unsigned int size));
+	void ucsPlayVideo(const unsigned char* frameData, const unsigned int dataLen);
+	void ucsConnect(char *user_token);
+	void registUcpaas(void);
+
 
 #ifdef __cplusplus
 }

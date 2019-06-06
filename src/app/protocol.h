@@ -21,6 +21,18 @@
 extern "C" {
 #endif  /* __cplusplus */
 
+	enum {
+		USER_TYPE_CATEYE,
+		USER_TYPE_OTHERS,
+	};
+
+	typedef struct _UserStruct {
+		char id[32];
+		char nick_name[32];
+		char token[256];
+		int scope;
+	}UserStruct;
+
 	// 局域网协议
 	struct _ProtocolPriv;
 	typedef struct _Protocol {
@@ -31,12 +43,21 @@ extern "C" {
 	extern Protocol *protocol;
 
 	// 对讲协议
-	struct _ProtocolTalkPriv;
 	typedef struct _ProtocolTalk {
-		struct _ProtocolTalkPriv *priv;
+		void (*reload)(void);
 		void (*dial)(char *user_id,void (*callBack)(void *arg));
 		void (*answer)(void (*callBack)(void *arg));
 		void (*hangup)(void (*callBack)(void *arg));
+		void (*connect)(void);
+		void (*cbDialRet)(void (*callBack)(void *arg));
+		void (*cblIncomingCall)(void (*callBack)(void *arg));
+		void (*sendCmd)(char *cmd,char *user_id,void (*callBack)(void *arg));
+		void (*receivedCmd)(void (*callBack)(const char *user_id,void *arg));
+		void (*initAudio)(void (*callBack)(void));
+		void (*playAudio)(void (*callBack)(const char *data,unsigned int size));
+		void (*startRecord)(void (*callBack)(void));
+		void (*recording)(void (*callBack)(char *data,unsigned int size));
+		void (*playVideo)(const unsigned char* frame_data, const unsigned int data_len);
 	}ProtocolTalk;
 	extern ProtocolTalk *protocol_talk;
 

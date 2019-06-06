@@ -13,6 +13,7 @@
 #include "my_static.h"
 #include "my_title.h"
 
+#include "form_video.h"
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
@@ -27,7 +28,8 @@ extern void formSettingStoreLoadBmp(void);
 extern void formSettingQrcodeLoadBmp(void);
 extern void formSettingUpdateLoadBmp(void);
 
-int video_init(void);
+extern int video_init(void);
+extern void formVideoInitInterface(void);
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
  *----------------------------------------------------------------------------*/
@@ -87,7 +89,6 @@ static FontLocation font_load[] = {
 static InitBmpFunc load_bmps_func[] = {
     formMainLoadBmp,
     formSettingLoadBmp,
-	formVideoLoadBmp,
     formSettingWifiLoadBmp,
 	formPasswordLoadBmp,
 	formSettingLocoalLoadBmp,
@@ -150,9 +151,14 @@ static int formVideoLayerProc(HWND hWnd, int message, WPARAM wParam, LPARAM lPar
 				createThread(loadBmpsThread,"1");
                 fontsLoad(font_load);
 				SetTimer(hWnd, IDC_TIMER_1S, TIME_1S);
+
+				formVideoLoadBmp();
+				HWND form = createFormVideo(hWnd,FORM_VIDEO_TYPE_CAPTURE,NULL);
+				ShowWindow(form,SW_HIDE);
 #ifndef X86
 				video_init();
 #endif
+				formVideoInitInterface();
 				// screensaverStart(LCD_ON);
 			} break;
 

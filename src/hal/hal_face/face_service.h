@@ -248,6 +248,7 @@ class FaceService :
 
     std::list<FaceServiceProcessor> processors_;
     std::shared_ptr<FaceCameraBufferAllocator> allocator_;
+	bool run_status;
 };
 
 } // namespace rk

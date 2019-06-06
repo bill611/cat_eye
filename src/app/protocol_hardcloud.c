@@ -34,7 +34,6 @@
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
-int registUcpaas(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -44,11 +43,6 @@ int registUcpaas(void);
  *                        macro define
  *----------------------------------------------------------------------------*/
 #define TOPIC_NUM 6
-enum {
-	USER_TYPE_CATEYE,
-	USER_TYPE_OTHERS,
-};
-
 enum {
 	Sys_TestData = 1,			//	Server	Send	测试数据指令 服务端发送测试内容到客户端 客户端必须立即将收到测试内容的data原封Return回来
 	Sys_UploadLog = 2,			//	Server	Post	上传日志指令 要求客户端将异常等日志到服务器
@@ -220,7 +214,8 @@ static void ceGetIntercoms(CjsonDec *dec)
 	struct tm *tm_now = getTime();
 	g_config.timestamp = tm_now->tm_hour + tm_now->tm_mday * 24 + tm_now->tm_mon * 30 * 24;
 	ConfigSavePrivate();
-	
+	protocol_talk->reload(); 
+	protocol_talk->connect(); 
 }
 /* ---------------------------------------------------------------------------*/
 /**
@@ -303,8 +298,11 @@ static void getIntercoms(void)
 {
 	struct tm *tm_now = getTime();
 	int timestamp_now = tm_now->tm_hour + tm_now->tm_mday * 24 + tm_now->tm_mon * 30 * 24;
-	if (timestamp_now - g_config.timestamp <= 12)
+	if (timestamp_now - g_config.timestamp <= 12) {
+		protocol_talk->reload(); 
+		protocol_talk->connect(); 
 		return;
+	}
 	char send_buff[128] = {0};
 	sprintf(send_buff, "{\"api\": %d,\"time\": %ld,\"mode\": 1,  \"id\": %d,  \"body\": {}}",
 			CE_GetIntercoms,0l, ++g_id);
@@ -417,9 +415,6 @@ retry:
 	}
 	sleep(1);
 	getIntercoms();
-#ifndef X86
-	registUcpaas();
-#endif
 	return NULL;
 }
 

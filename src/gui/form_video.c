@@ -31,6 +31,9 @@
 
 #include "form_video.h"
 #include "form_base.h"
+
+#include "debug.h"
+#include "protocol.h"
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
@@ -148,6 +151,7 @@ static void buttonHangupPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
+	protocol_talk->hangup(NULL);
 	ShowWindow(GetParent(hwnd),SW_HIDE);
 }
 static void buttonUnlockPress(HWND hwnd, int id, int nc, DWORD add_data)
@@ -287,8 +291,10 @@ int createFormVideo(HWND hMainWnd,int type,void (*callback)(void))
 	HWND Form = Screen.Find(form_base_priv.name);
 	form_type = type;
 	if(Form) {
+		DPRINT("video show\n");
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
+		DPRINT("video create,main:%d\n",hMainWnd);
         if (bmp_load_finished == 0) {
             // topMessage(hVideoWnd,TOPBOX_ICON_LOADING,NULL );
             return 0;
@@ -300,4 +306,20 @@ int createFormVideo(HWND hMainWnd,int type,void (*callback)(void))
 	}
 
 	return 0;
+}
+
+void interfaceCreateFormVideoDirect(void *arg)
+{
+	printf("[%s]\n", __func__);
+	int type = *(int *)arg;
+	createFormVideo(0,type,NULL); 
+}
+void interfaceHangup(void *arg)
+{
+	ShowWindow(form_base->hDlg,SW_HIDE);
+}
+
+void formVideoInitInterface(void)
+{
+	protocol_talk->cblIncomingCall(interfaceCreateFormVideoDirect);	
 }

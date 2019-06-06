@@ -100,8 +100,8 @@ static void screenReturnMainForm(void)
 		form = form->next;
 	}
 	while(FormCnt) {
-        // ShowWindow(Forms[FormCnt-1],SW_HIDE);
-        SendMessage(Forms[FormCnt-1],MSG_CLOSE,0,-1);
+		ShowWindow(Forms[FormCnt-1],SW_HIDE);
+        // SendMessage(Forms[FormCnt-1],MSG_CLOSE,0,-1);
 		FormCnt--;
 	}
 	free(Forms);

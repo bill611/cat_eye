@@ -40,6 +40,7 @@ extern "C" {
 		int idc_timer;
 		int auto_close_time;  // 对话框自动关闭时间
 		int auto_close_time_set;  // 对话框自动关闭时间设置，默认为FORM_SETTING_ONTIME
+		int show_video;		  // 界面是否显示视频
 		int (*dlgProc)(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 
 		void (*initPara)(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);

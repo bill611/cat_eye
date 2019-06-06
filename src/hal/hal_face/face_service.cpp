@@ -247,6 +247,9 @@ FaceService::~FaceService()
 
 void FaceService::start(void)
 {
+	if (run_status == true)
+		return;
+	run_status = true;
     for (Camera::SharedPtr cam : cameras_) {
         if (cam->type() == ISP_CAMERA) {
             cam->init(isp_parameter_.format);
@@ -264,6 +267,9 @@ void FaceService::start(void)
 
 void FaceService::stop(void)
 {
+	if (run_status == false)
+		return;
+	run_status = false;
     for (Camera::SharedPtr cam : cameras_) {
         cJSON* processes = nullptr;
         if (cam->type() == ISP_CAMERA) {
