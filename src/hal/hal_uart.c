@@ -40,13 +40,7 @@
 /* ---------------------------------------------------------------------------*
  *                        macro define
  *----------------------------------------------------------------------------*/
-#if (defined ANYKA)
-#define TTY_DEV "/dev/ttySAK"
-#elif (defined NUVOTON) 
 #define TTY_DEV "/dev/ttyS"
-#else
-#define TTY_DEV
-#endif
 
 /* ---------------------------------------------------------------------------*
  *                      variables define
@@ -152,7 +146,8 @@ int halUartOpen(int com,
 			break;
 	}
 	fd = open(ptty,O_RDWR|O_NOCTTY|O_NONBLOCK|O_NDELAY);
-	uartPortSet(fd,baudrate,data_bit,parity,stop_bit);
+	if (fd)
+		uartPortSet(fd,baudrate,data_bit,parity,stop_bit);
 	return fd;
 #endif
 }

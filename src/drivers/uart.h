@@ -21,6 +21,7 @@
 extern "C" {
 #endif  /* __cplusplus */
 
+#include <stdint.h>
 #define MAX_SEND_BUFF 128
 
 	struct _UartServerPriv;
@@ -38,6 +39,7 @@ extern "C" {
 	}UartServer;
 
 	extern UartServer *uartServerCreate(void (*func)(void));
+	extern void uartInit(void(*func)(void));
 	extern UartServer *uart;
 
 #ifdef __cplusplus

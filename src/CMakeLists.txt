@@ -7,8 +7,8 @@ set(SUB_DIRS
 	app 
 	wireless
 	gui
-	hal
 	drivers
+	hal
 	)
 
 foreach(sub ${SUB_DIRS})

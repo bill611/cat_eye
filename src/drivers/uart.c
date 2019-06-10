@@ -296,9 +296,5 @@ UartServer *uartServerCreate(void (*func)(void))
 void uartInit(void(*func)(void))
 {
 	uart = uartServerCreate(func);
-#if (defined ANYKA)
-	uart->open(uart,1,38400);
-#else
-	uart->open(uart,0,38400);
-#endif
+	uart->open(uart,1,9600);
 }

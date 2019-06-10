@@ -38,6 +38,7 @@
  *----------------------------------------------------------------------------*/
 void registHardCloud(void);
 void registTalk(void);
+void registSingleChip(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -473,6 +474,7 @@ void protocolInit(void)
 	protocol->isNeedToUpdate = isNeedToUpdate;
 	registHardCloud();
 	registTalk();
+	registSingleChip();
 	// timer_protocol_1s = timerCreate(LAYER_TIME_1S,timer1sThread,NULL);
 	// timer_protocol_1s->start(timer_protocol_1s);
 }
