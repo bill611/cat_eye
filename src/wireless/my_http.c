@@ -129,7 +129,7 @@ static int post(char *url, char *para, char *out_data)
 	if (para)
 		curl_easy_setopt(easy_handle, CURLOPT_POSTFIELDS, para);
 	struct MemoryStruct chunk;
-	chunk.memory = malloc(1);  /* will be grown as needed by the realloc above */
+	chunk.memory = (char *)malloc(sizeof(char));  /* will be grown as needed by the realloc above */
 	chunk.size = 0;    /* no data at this point */
 	curl_easy_setopt(easy_handle, CURLOPT_WRITEFUNCTION, &postCallBackData);
 	curl_easy_setopt(easy_handle, CURLOPT_WRITEDATA, (void *)&chunk);
@@ -146,7 +146,7 @@ static int post(char *url, char *para, char *out_data)
 		printf("curl post failed :%s\n",curl_easy_strerror(r));
 		goto EXIT;
 	}
-	printf("post:%s\n",chunk.memory);
+	// printf("post:%s\n",chunk.memory);
 	if(out_data)
        memcpy(out_data, chunk.memory, chunk.size);
 

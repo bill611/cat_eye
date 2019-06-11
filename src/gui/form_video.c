@@ -291,10 +291,8 @@ int createFormVideo(HWND hMainWnd,int type,void (*callback)(void))
 	HWND Form = Screen.Find(form_base_priv.name);
 	form_type = type;
 	if(Form) {
-		DPRINT("video show\n");
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
-		DPRINT("video create,main:%d\n",hMainWnd);
         if (bmp_load_finished == 0) {
             // topMessage(hVideoWnd,TOPBOX_ICON_LOADING,NULL );
             return 0;
@@ -310,7 +308,6 @@ int createFormVideo(HWND hMainWnd,int type,void (*callback)(void))
 
 void interfaceCreateFormVideoDirect(void *arg)
 {
-	printf("[%s]\n", __func__);
 	int type = *(int *)arg;
 	createFormVideo(0,type,NULL); 
 }
@@ -321,5 +318,6 @@ void interfaceHangup(void *arg)
 
 void formVideoInitInterface(void)
 {
-	protocol_talk->cblIncomingCall(interfaceCreateFormVideoDirect);	
+	if (protocol_talk)
+		protocol_talk->cblIncomingCall(interfaceCreateFormVideoDirect);	
 }
