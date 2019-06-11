@@ -14,6 +14,10 @@ configure_file (
 
 # 设置默认编译平台
 option(PLATFORM_RV1108 "This is a option for rv1108" ON)
+# 设置编译功能
+option(MODE_UCPASS "This is a option for ucpass" ON)
+option(MODE_FACE "This is a option for face" ON)
+option(MODE_UART "This is a option for face" ON)
 
 # 添加编译过程变量
 # set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -115,7 +119,17 @@ link_libraries (
 	)
 
 if (PLATFORM_RV1108)
-	link_libraries (ts)
+	link_libraries (ts rkrga rkfb ion)
+endif()
+
+if (MODE_UCPASS)
+	add_definitions(-DUSE_UCPASS)
+endif()
+if (MODE_FACE)
+	add_definitions(-DUSE_FACE)
+endif()
+if (MODE_UART)
+	add_definitions(-DUSE_UART)
 endif()
 
 # 添加宏定义

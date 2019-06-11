@@ -3,11 +3,20 @@
 if [ $# == 1 ]; then
 	mkdir -p debug
 	cd debug
-	cmake -DPLATFORM_RV1108=OFF -DCMAKE_BUILD_TYPE=Debug ..
+	cmake \
+		-DCMAKE_BUILD_TYPE=Debug \
+		-DPLATFORM_RV1108=OFF \
+		-DMODE_UCPASS=OFF \
+		-DMODE_FACE=OFF \
+		-DMODE_UART=OFF \
+		..
 else
 	mkdir -p release
 	cd release
-	cmake -DCMAKE_BUILD_TYPE=Release ..
+	cmake \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DMODE_UCPASS=OFF \
+		..
 fi
 make
 if [ $? == 0 ]; then

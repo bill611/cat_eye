@@ -3,18 +3,13 @@ aux_source_directory(. SRCS_HAL)
 
 STRING( REGEX REPLACE ".*/(.*)" "\\1" CURRENT_FOLDER_HAL ${CMAKE_CURRENT_SOURCE_DIR})
 
-if (PLATFORM_RV1108)
-	set(SUB_DIRS_HAL 
-		hal_face 
-		)
-	foreach(sub ${SUB_DIRS_HAL})
-		add_subdirectory(${sub})
-	endforeach()
+if (MODE_FACE)
+	add_subdirectory(hal_face)
 endif()
 
 # 生成链接库
 add_library (${CURRENT_FOLDER_HAL} ${SRCS_HAL})
-if (PLATFORM_RV1108)
-	target_link_libraries (${CURRENT_FOLDER_HAL} ${SUB_DIRS_HAL})
+if (MODE_FACE)
+	target_link_libraries (${CURRENT_FOLDER_HAL} hal_face)
 endif()
 

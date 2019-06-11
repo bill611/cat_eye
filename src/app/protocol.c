@@ -472,7 +472,7 @@ void protocolInit(void)
 	protocol->priv = (ProtocolPriv *) calloc(1,sizeof(ProtocolPriv));
 	protocol->getImei = getImei;
 	protocol->isNeedToUpdate = isNeedToUpdate;
-	registHardCloud();
+	// registHardCloud();
 	registTalk();
 	registSingleChip();
 	// timer_protocol_1s = timerCreate(LAYER_TIME_1S,timer1sThread,NULL);

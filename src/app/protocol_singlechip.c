@@ -54,7 +54,9 @@ char send[] = {0x5A, 0x06, 0x01, 0x41, 0x48,0x5B};
 
 void registSingleChip(void)
 {
-	// uartInit(uartDeal);
+#ifdef USE_UART
+	uartInit(uartDeal);
 	if (uart)
 		uart->send(uart,send,6);
+#endif
 }

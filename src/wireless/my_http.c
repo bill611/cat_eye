@@ -146,7 +146,7 @@ static int post(char *url, char *para, char *out_data)
 		printf("curl post failed :%s\n",curl_easy_strerror(r));
 		goto EXIT;
 	}
-	// printf("post:%s\n",chunk.memory);
+	printf("post:%s\n",chunk.memory);
 	if(out_data)
        memcpy(out_data, chunk.memory, chunk.size);
 

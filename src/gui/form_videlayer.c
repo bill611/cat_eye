@@ -155,7 +155,7 @@ static int formVideoLayerProc(HWND hWnd, int message, WPARAM wParam, LPARAM lPar
 				formVideoLoadBmp();
 				HWND form = createFormVideo(hWnd,FORM_VIDEO_TYPE_CAPTURE,NULL);
 				ShowWindow(form,SW_HIDE);
-#ifndef X86
+#ifdef USE_FACE
 				video_init();
 #endif
 				formVideoInitInterface();

@@ -50,56 +50,82 @@ static void reloadLocalTalk(void)
 }
 static void dial(char *user_id,void (*callBack)(void *arg))
 {
+#ifdef USE_UCPASS
 	ucsDial(user_id,callBack);
+#endif
 }
 static void answer(void (*callBack)(void *arg))
 {
+#ifdef USE_UCPASS
 	ucsAnswer(callBack);
+#endif
 }
 static void hangup(void (*callBack)(void *arg))
 {
+#ifdef USE_UCPASS
 	ucsHangup(callBack);
+#endif
 }
 static void cbDialRet(void (*callBack)(void *arg))
 {
+#ifdef USE_UCPASS
 	ucsCbDialRet(callBack);
+#endif
 }
 static void cblIncomingCall(void (*callBack)(void *arg))
 {
+#ifdef USE_UCPASS
 	ucsCbIncomingCall(callBack);
+#endif
 }
 static void sendCmd(char *cmd,char *user_id,void (*callBack)(void *arg))
 {
+#ifdef USE_UCPASS
 	ucsSendCmd(cmd,user_id,callBack);
+#endif
 }
 static void receivedCmd(void (*callBack)(const char *user_id,void *arg))
 {
+#ifdef USE_UCPASS
 	ucsCbReceivedCmd(callBack);
+#endif
 }
 static void initAudio(void (*callBack)(void))
 {
+#ifdef USE_UCPASS
 	ucsCbInitAudio(callBack);
+#endif
 }
 static void playAudio(void (*callBack)(const char *data,unsigned int size))
 {
+#ifdef USE_UCPASS
 	ucsCbPlayAudio(callBack);
+#endif
 }
 static void startRecord(void (*callBack)(void))
 {
+#ifdef USE_UCPASS
 	ucsCbStartRecord(callBack);
+#endif
 }
 static void recording(void (*callBack)(char *data,unsigned int size))
 {
+#ifdef USE_UCPASS
 	ucsCbRecording(callBack);
+#endif
 }
 static void playVideo(const unsigned char* frame_data, const unsigned int data_len)
 {
+#ifdef USE_UCPASS
 	ucsPlayVideo(frame_data,data_len);
+#endif
 }
 
 static void talkConnect(void)
 {
+#ifdef USE_UCPASS
 	ucsConnect(local_user.token);
+#endif
 }
 
 void registTalk(void)
@@ -111,7 +137,7 @@ void registTalk(void)
 	protocol_talk->connect = talkConnect;
 	protocol_talk->reload = reloadLocalTalk;
 	protocol_talk->cblIncomingCall = cblIncomingCall;
-#ifndef X86
+#ifdef USE_UCPASS
 	registUcpaas();
 #endif
 }
