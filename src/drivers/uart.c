@@ -116,7 +116,7 @@ static void printfbuf(void *pbuf,int size)
 {
 	int i;
 	unsigned char *pData = (unsigned char *)pbuf;
-	DPRINT("SendData[%d]  ",size);
+	DPRINT("[uart-->send,%d]  ",size);
 	for(i=0;i<size;i++) {
 		DPRINT("%02X ",pData[i]);
 	}

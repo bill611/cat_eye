@@ -18,6 +18,8 @@
  *                      include head files
  *----------------------------------------------------------------------------*/
 #include <stdio.h>
+#include <stdint.h>
+#include "debug.h"
 #include "uart.h"
 
 /* ---------------------------------------------------------------------------*
@@ -35,6 +37,7 @@
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
+static char send_buf[] = {0x5A, 0x06, 0x01, 0x41, 0x48,0x5B};
 static void uartDeal(void)
 {
 	unsigned char buff[1024]={0};
@@ -44,19 +47,18 @@ static void uartDeal(void)
 		return;
 	}
 	int i;
-	printf("rec:" );
+	DPRINT("[uart-->reci,%d]",len );
 	for (i=0; i<len; i++) {
-		printf(" %x" ,buff[i] );
+		DPRINT("%02X " ,buff[i] );
 	}
-	printf("\n" );
+	DPRINT("\n" );
 }
-char send[] = {0x5A, 0x06, 0x01, 0x41, 0x48,0x5B};
 
 void registSingleChip(void)
 {
 #ifdef USE_UART
 	uartInit(uartDeal);
 	if (uart)
-		uart->send(uart,send,6);
+		uart->send(uart,send_buf,6);
 #endif
 }
