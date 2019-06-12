@@ -171,8 +171,8 @@ void FaceService::ProcessRun(Camera::SharedPtr cam, cJSON* process_node)
             allocator = allocator_;
 
 		std::cout << "[" << __func__ << i++ << "]" << std::endl;
-		std::cout << name->valuestring << std::endl;
-		std::cout << Parent->valuestring << std::endl;
+		std::cout << "this--->" << name->valuestring << std::endl;
+		std::cout << "parent->" << Parent->valuestring << std::endl;
         if (pre && next)
             connect(pre, next, cam->format(), buffer_count->valueint, allocator);
         if (mpath && next)

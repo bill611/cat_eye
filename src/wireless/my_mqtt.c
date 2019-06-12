@@ -113,6 +113,7 @@ static void onSubscribeFailure(void* context, MQTTAsync_failureData* response)
 }
 static int send(char *pub_topic,int len,void *payload)
 {
+	printf("mqtt send:%s\n", (char *)payload);
 	if (MQTTAsync_send(client, pub_topic, len, payload, 2, 0, NULL) == MQTTASYNC_SUCCESS) 
 		return TRUE;
 	else

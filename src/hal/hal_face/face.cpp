@@ -63,6 +63,7 @@ int video_uninit(void)
 {
 	if (service)
 		service->stop();
+	display_clean_screen();
 }
 
 

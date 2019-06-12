@@ -21,6 +21,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/time.h>
+#include "cJSON.h"
+#include "udp_server.h"
 #include "my_http.h"
 #include "my_mqtt.h"
 #include "json_dec.h"
@@ -29,6 +32,7 @@
 #include "config.h"
 #include "my_ntp.h"
 #include "externfunc.h"
+#include "my_dns.h"
 #include "protocol.h"
 
 /* ---------------------------------------------------------------------------*
@@ -58,6 +62,8 @@ enum {
 	CE_Snap = 6008,				//	Server	Send	抓拍
 	CE_GetConfig = 6009,		//	Server	Send	获取猫眼配置
 	CE_SetConfig = 6010,		//	Server	Send	设置猫眼配置
+	CE_Report = 6011,			//	Client	Post	猫眼数据上报
+	CE_Reset = 6012,			//	Server	Post	重置猫眼配置与数据
 };
 struct OPTS {
 	char client_id[32];
@@ -68,25 +74,60 @@ struct OPTS {
 	char pubTopic[64];
 	char platformUrl[64];
 	char ntp_server_ip[64];
+	char service_host[64];
+	int service_port;
 };
 
+struct DebugInfo{
+	int cmd;
+	char *info;
+};
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
 Protocol*pro_hardcloud;
 static MyHttp *http = NULL;
 static MyMqtt *mqtt = NULL;
+static struct DebugInfo dbg_info[] = {
+	{Sys_TestData,"Sys_TestData"},
+	{Sys_UploadLog,"Sys_UploadLog"},
+	{Sys_Control,"Sys_Control"},
+	{CE_PostAwaken,"CE_PostAwaken"},
+	{CE_SendAwaken,"CE_SendAwaken"},
+	{CE_SetSelfIntercom,"CE_SetSelfIntercom"},
+	{CE_SetTargetsIntercom,"CE_SetTargetsIntercom"},
+	{CE_GetIntercoms,"CE_GetIntercoms"},
+	{CE_GetFaces,"CE_GetFaces"},
+	{CE_SetFace,"CE_SetFace"},
+	{CE_RemoveFace,"CE_RemoveFace"},
+	{CE_Snap,"CE_Snap"},
+	{CE_GetConfig,"CE_GetConfig"},
+	{CE_SetConfig,"CE_SetConfig"},
+	{CE_Report,"CE_Report"},
+	{CE_Reset,"CE_Reset"},
+};
 
 // 正式地址
 // static char *hard_could_api = "https://iot.taichuan.net/v1/Mqtt/GetSevice?num=";
 
 // test地址
 static char *hard_could_api = "http://84.internal.taichuan.net:8080/v1/Mqtt/GetSevice?num=";
+static char *hard_could_hart = "84.internal.taichuan.net";
 
 struct OPTS opts;
 static char subTopic[TOPIC_NUM][100] = {{0,0}};
 static int g_id = 0;
 
+static void printProInfo(int cmd)
+{
+	int i;
+	for (i=0; i<sizeof(dbg_info)/sizeof(struct DebugInfo); i++) {
+		if (cmd == dbg_info[i].cmd) {
+			printf("[%d,%s]\n", cmd,dbg_info[i].info);
+			return;
+		}
+	}
+}
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief getTimestamp 获取当前时间戳
@@ -96,11 +137,18 @@ static int g_id = 0;
 /* ---------------------------------------------------------------------------*/
 static time_t getTimestamp(void)
 {
-	time_t timep;
-	struct tm *p;
-	p = localtime(&timep);
-	timep = mktime(p);
-	return timep;
+	struct timeval tv;
+	gettimeofday(&tv,NULL);
+	return tv.tv_sec;
+}
+static cJSON * packData(int api,int mode,int id)
+{
+	cJSON *root = cJSON_CreateObject();
+	cJSON_AddNumberToObject(root,"api",api);
+	cJSON_AddNumberToObject(root,"time",getTimestamp());
+	cJSON_AddNumberToObject(root,"mode",mode);
+	cJSON_AddNumberToObject(root,"id",id);
+	return root;
 }
 /* ---------------------------------------------------------------------------*/
 /*
@@ -162,15 +210,20 @@ static void mqttConnectFailure(void* context)
 	printf("[%s]\n", __func__);
 }
 
+static void sysTestData(char *data)
+{
+	mqtt->send(opts.pubTopic,strlen(data),data);
+}
+
 static void ceGetIntercoms(CjsonDec *dec)
 {
 	if(dec->changeCurrentObj(dec,"body")) {
-		printf("change body fail\n");	
+		printf("change body fail\n");
 		return;
 	}
 	// 保存本机对讲信息
 	if(dec->changeCurrentObj(dec,"self")) {
-		printf("change self fail\n");	
+		printf("change self fail\n");
 		return;
 	}
 	char *user_id = NULL;
@@ -191,7 +244,7 @@ static void ceGetIntercoms(CjsonDec *dec)
 	// 保存对方对讲信息
 	dec->changeObjFront(dec); // 返回上一层
 	if(dec->changeCurrentObj(dec,"targets")) {
-		printf("targets self fail\n");	
+		printf("targets self fail\n");
 		return;
 	}
 	int size = dec->getArraySize(dec);
@@ -214,9 +267,39 @@ static void ceGetIntercoms(CjsonDec *dec)
 	struct tm *tm_now = getTime();
 	g_config.timestamp = tm_now->tm_hour + tm_now->tm_mday * 24 + tm_now->tm_mon * 30 * 24;
 	ConfigSavePrivate();
-	protocol_talk->reload(); 
-	protocol_talk->connect(); 
+	protocol_talk->reload();
+	protocol_talk->connect();
 }
+
+static void ceGetFaces(int api,int id,CjsonDec *dec)
+{
+	char *send_buff;
+	cJSON *root = packData(api,4,id);
+	cJSON *arry = cJSON_CreateArray();
+	cJSON *obj = cJSON_CreateObject();
+
+	cJSON_AddStringToObject(obj,"id","123");
+	cJSON_AddStringToObject(obj,"nickName","爸爸");
+	cJSON_AddStringToObject(obj,"fileURL","http://pslshdif0.bkt.clouddn.com/CatEye20190612081354913.png");
+	cJSON_AddItemToArray(arry, obj);
+	
+	cJSON_AddItemToObject(root,"body",arry);
+	send_buff = cJSON_PrintUnformatted(root);
+	cJSON_Delete(root);
+	mqtt->send(opts.pubTopic,strlen(send_buff),send_buff);
+	free(send_buff);
+}
+static void ceSetFace(int api,int id,CjsonDec *dec)
+{
+	char *send_buff;
+	cJSON *root = packData(api,4,id);
+	cJSON_AddStringToObject(root,"body","true");
+	send_buff = cJSON_PrintUnformatted(root);
+	cJSON_Delete(root);
+	mqtt->send(opts.pubTopic,strlen(send_buff),send_buff);
+	free(send_buff);
+}
+
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief mqttConnectCallBack 硬件云消息回调
@@ -226,7 +309,7 @@ static void ceGetIntercoms(CjsonDec *dec)
  * @param topicLen
  * @param payload
  *
- * @returns 
+ * @returns
  */
 /* ---------------------------------------------------------------------------*/
 static int mqttConnectCallBack(void* context, char* topicName, int topicLen, void* payload)
@@ -236,15 +319,16 @@ static int mqttConnectCallBack(void* context, char* topicName, int topicLen, voi
        printf("dealWithSubscription cjsonDecCreate fail!\n");
 	   return -1;
 	}
-	// dec->print(dec);
+	dec->print(dec);
 	char send_buff[128] = {0};
 	int id = dec->getValueInt(dec, "id");
 	int mode = dec->getValueInt(dec, "mode");
 	int api= dec->getValueInt(dec, "api");
-	printf("api:%d\n", api);
+	printProInfo(api);
 	switch (api)
 	{
 		case Sys_TestData :
+			sysTestData((char *)payload);
 			break;
 		case Sys_UploadLog :
 			break;
@@ -262,8 +346,10 @@ static int mqttConnectCallBack(void* context, char* topicName, int topicLen, voi
 			ceGetIntercoms(dec);
 			break;
 		case CE_GetFaces :
+			ceGetFaces(api,id,dec);
 			break;
 		case CE_SetFace :
+			ceSetFace(api,id,dec);
 			break;
 		case CE_RemoveFace :
 			break;
@@ -273,19 +359,14 @@ static int mqttConnectCallBack(void* context, char* topicName, int topicLen, voi
 			break;
 		case CE_SetConfig :
 			break;
-	}
-
-	if(1 == mode) {  //服务端需要回复
-		sprintf(send_buff, "{\"api\": 4,\"time\": %ld,\"mode\": 4,  \"id\": %d,  \"body\": true}",
-				 getTimestamp(), id);
-		printf("send_buff:%s\n", send_buff);
-		if (mqtt->send(opts.pubTopic,strlen(send_buff),send_buff) == 0) {
-			goto connect_end ;
-		}
+		case CE_Report :
+			break;
+		case CE_Reset :
+			break;
 	}
 
 connect_end:
-	dec->destroy(dec); 
+	dec->destroy(dec);
 	return 0;
 }
 
@@ -299,15 +380,17 @@ static void getIntercoms(void)
 	struct tm *tm_now = getTime();
 	int timestamp_now = tm_now->tm_hour + tm_now->tm_mday * 24 + tm_now->tm_mon * 30 * 24;
 	if (timestamp_now - g_config.timestamp <= 12) {
-		protocol_talk->reload(); 
-		protocol_talk->connect(); 
+		protocol_talk->reload();
+		protocol_talk->connect();
 		return;
 	}
-	char send_buff[128] = {0};
-	sprintf(send_buff, "{\"api\": %d,\"time\": %ld,\"mode\": 1,  \"id\": %d,  \"body\": {}}",
-			CE_GetIntercoms,0l, ++g_id);
-	printf("send_buff[%s]:%s\n",opts.pubTopic, send_buff);
+	char *send_buff;
+	cJSON *root = packData(CE_GetIntercoms,1,++g_id);
+	cJSON_AddStringToObject(root,"body","");
+	send_buff = cJSON_PrintUnformatted(root);
+	cJSON_Delete(root);
 	mqtt->send(opts.pubTopic,strlen(send_buff),send_buff);
+	free(send_buff);
 }
 /* ---------------------------------------------------------------------------*/
 /**
@@ -315,7 +398,7 @@ static void getIntercoms(void)
  *
  * @param arg
  *
- * @returns 
+ * @returns
  */
 /* ---------------------------------------------------------------------------*/
 static void* initThread(void *arg)
@@ -336,6 +419,7 @@ static void* initThread(void *arg)
 		if(0 != dec->changeCurrentObj(dec,"data"))
 			goto retry;
 
+		dec->print(dec);
 		dec->getValueChar(dec,"ip",&buff);
 
 		if (!buff) {
@@ -355,7 +439,6 @@ static void* initThread(void *arg)
 			goto retry;
 		int size = dec->getArraySize(dec);
 
-		dec->print(dec);
 
 		int i;
 
@@ -396,8 +479,17 @@ static void* initThread(void *arg)
 			strcpy((char*)&opts.platformUrl, buff);
 			free(buff);
 		}
+		if(0 != dec->changeCurrentObj(dec,"catEyeService"))
+			goto retry;
+		dec->getValueChar(dec,"host",&buff);
+		if(NULL != buff) {
+			printf("service_host: %s\n", buff);
+			strcpy((char*)&opts.service_host, buff);
+			free(buff);
+		}
+		opts.service_port = dec->getValueInt(dec,"port");
+		printf("service_port: %d\n", opts.service_port);
 
-		dec->destroy(dec);
 		ntpTime(opts.ntp_server_ip);
 		sprintf(url, "%s:%d", opts.host, opts.port);
 		int ret = mqtt->connect(url,opts.client_id,
@@ -420,6 +512,32 @@ retry:
 
 /* ---------------------------------------------------------------------------*/
 /**
+ * @brief udpHeartThread 硬件云心跳包
+ *
+ * @param arg
+ *
+ * @returns
+ */
+/* ---------------------------------------------------------------------------*/
+static void* udpHeartThread(void *arg)
+{
+	char ip[16];
+	while (1) {
+		memset(ip,0,sizeof(ip));
+		if (opts.service_host[0] == 0) {
+			sleep(1);
+			continue;
+		}
+		dnsGetIp(opts.service_host,ip);
+		if (udp_server) {
+			udp_server->SendBuffer(udp_server,ip,opts.service_port,g_config.imei,strlen(g_config.imei));
+		}
+		sleep(30);
+	}
+	return NULL;
+}
+/* ---------------------------------------------------------------------------*/
+/**
  * @brief registHardCloud 注册硬件云
  */
 /* ---------------------------------------------------------------------------*/
@@ -428,5 +546,6 @@ void registHardCloud(void)
 	http = myHttpCreate();
 	mqtt = myMqttCreate();
 	createThread(initThread,NULL);
+	createThread(udpHeartThread,NULL);
 }
 
