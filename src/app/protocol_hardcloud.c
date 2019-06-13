@@ -299,6 +299,16 @@ static void ceSetFace(int api,int id,CjsonDec *dec)
 	mqtt->send(opts.pubTopic,strlen(send_buff),send_buff);
 	free(send_buff);
 }
+static void ceRemoveFace(int api,int id,CjsonDec *dec)
+{
+	char *send_buff;
+	cJSON *root = packData(api,4,id);
+	cJSON_AddStringToObject(root,"body","true");
+	send_buff = cJSON_PrintUnformatted(root);
+	cJSON_Delete(root);
+	mqtt->send(opts.pubTopic,strlen(send_buff),send_buff);
+	free(send_buff);
+}
 
 /* ---------------------------------------------------------------------------*/
 /**
@@ -352,6 +362,7 @@ static int mqttConnectCallBack(void* context, char* topicName, int topicLen, voi
 			ceSetFace(api,id,dec);
 			break;
 		case CE_RemoveFace :
+			ceRemoveFace(api,id,dec);
 			break;
 		case CE_Snap :
 			break;

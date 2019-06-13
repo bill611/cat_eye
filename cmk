@@ -15,6 +15,7 @@ else
 	cd release
 	cmake \
 		-DCMAKE_BUILD_TYPE=Release \
+		-DMODE_UCPASS=OFF \
 		..
 fi
 make

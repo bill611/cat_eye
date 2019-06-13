@@ -48,6 +48,7 @@ static void* videoStartThead(void *arg)
 	}
 
 	service->start();
+	service->getFileImage("face0_320_180");
 	return NULL;
 }
 

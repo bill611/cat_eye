@@ -33,6 +33,9 @@
 #include <assert.h>
 #include <vector>
 
+#include <face/rkFaceDetectWrapper.h>
+#include <adk/base/image.h>
+
 #include <rk_rga/rk_rga.h>
 #include <adk/base/landmark.h>
 #include <adk/mm/cma_allocator.h>
@@ -199,7 +202,8 @@ void FaceRecognizer::ClearRequest(void)
 FaceRecognizer::FaceRecognizer(FaceRecognizeAlgorithm type, int width, int height)
                 : StreamPUBase("FaceRecognizer", true, true)
 {
-    mode_ = RecognizeMode;
+    mode_ = RegisterMode;
+    // mode_ = RecognizeMode;
 
     rga_fd_ = rk_rga_open();
     ASSERT(rga_fd_ >= 0);
@@ -337,4 +341,31 @@ bool FaceRecognizer::processFrame(shared_ptr<BufferBase> inBuf,
 void FaceRecognizer::RegisterListener(FaceRecognizeListener* listener)
 {
     listener_list_.push_front(listener);
+}
+void FaceRecognizer::getFileImage(char *path)
+{
+    img_buffer_ = std::shared_ptr<Buffer>(CmaAlloc(320 * 180 ));
+    ASSERT(img_buffer_.get() != nullptr);
+	FILE *img_fd = fopen(path,"rb");
+	if (img_fd == NULL) {
+		std::cout << "get:" << path << ",fail" << std::endl;
+		return;
+	}
+	fread(img_buffer_->address(),180*320,1,img_fd);
+	fclose(img_fd);
+    Image* image = new Image(img_buffer_->address(),
+                             (uint32_t)img_buffer_->phys_address(),
+                             img_buffer_->fd(), 320, 180);
+    rkFaceDetectInfos result;
+    int ret = rkFaceDetectWrapper_detect(image->data().address(),(void*)image->data().phys_address(),
+                               image->width(), image->height(), &result);
+	std::cout << path << ":" 
+		<< "ret:" << ret << ","
+		<< result.objectNum << ","
+		<< result.objects[0].x << ","
+		<< result.objects[0].y << ","
+		<< result.objects[0].width << ","
+		<< result.objects[0].height << ","
+		<< std::endl;
+
 }

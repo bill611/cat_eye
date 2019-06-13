@@ -50,7 +50,6 @@ FaceDetector::FaceDetector(FaceDetectAlgorithm type)
 {
     state_ = FaceDetectRunning;
 
-		printf("[%s],type:%d\n", __func__,type);
     switch (type) {
     case kRockchipFaceDetect:
         face_detect_lib_ = std::make_shared<RkFaceDetectLibrary>();
@@ -157,7 +156,9 @@ bool FaceDetector::processFrame(shared_ptr<BufferBase> inBuf,
         ASSERT(buffer.get() != nullptr);
 
         Image::SharedPtr image = buffer->image();
-        FaceArray::SharedPtr faces = CropImage(Detect(*image), image,
+		printf("w:%d,%d\n", image->width(),image->height());
+		FaceArray::SharedPtr array = Detect(*image);
+        FaceArray::SharedPtr faces = CropImage(array, image,
                                                inBuf->getWidth(), inBuf->getHeight());
         buffer->set_faces(faces);
 

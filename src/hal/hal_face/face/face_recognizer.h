@@ -122,12 +122,14 @@ class FaceRecognizer : public StreamPUBase {
         return face_recognize_lib_;
     }
 
+	void getFileImage(char *path);
  private:
     int rga_fd_;
     uint32_t total_;
     std::mutex database_mutex_;
     std::mutex request_mutex_;
     Buffer::SharedPtr rga_buffer_;
+    Buffer::SharedPtr img_buffer_;
     FaceRecognizeMode mode_;
     Thread::SharedPtr processor_;
     std::condition_variable cond_;
