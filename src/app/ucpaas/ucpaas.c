@@ -276,7 +276,7 @@ static void init_playout_cb(unsigned int sample_rate,
 // sample_rate -- recording audio sample rate, 16000
 // bytes_per_sample -- bytes of per sample, always 2 bytes = 16bits
 // num_of_channels -- number of recording channels, always = 1
-#define MAX_READ_STREAM_SIZE (1024 * 1024 * 6)
+#define MAX_READ_STREAM_SIZE (1024 * 1024 * 1)
 static char readStream[MAX_READ_STREAM_SIZE] = { 0 };
 static int readIndex = 0;
 static int streamSize = 0;

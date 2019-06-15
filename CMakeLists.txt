@@ -115,7 +115,7 @@ endif()
 link_libraries (
 	sqlite3 qrencode paho-mqtt3a ssl curl cjson crypto
 	minigui_ths png12 png jpeg freetype
-	z m pthread dl rt
+	z m pthread dl rt stdc++
 	)
 
 if (PLATFORM_RV1108)

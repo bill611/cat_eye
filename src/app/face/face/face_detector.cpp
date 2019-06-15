@@ -156,7 +156,6 @@ bool FaceDetector::processFrame(shared_ptr<BufferBase> inBuf,
         ASSERT(buffer.get() != nullptr);
 
         Image::SharedPtr image = buffer->image();
-		printf("w:%d,%d\n", image->width(),image->height());
 		FaceArray::SharedPtr array = Detect(*image);
         FaceArray::SharedPtr faces = CropImage(array, image,
                                                inBuf->getWidth(), inBuf->getHeight());

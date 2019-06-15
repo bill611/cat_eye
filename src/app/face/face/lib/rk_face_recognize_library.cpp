@@ -113,9 +113,9 @@ int RkFaceRecognizeLibrary::FeatureExtract(Image& image, Face& face,
     float feature_arr[MAX_FACE_FEATURE_SIZE];
     int ret = rkFaceFeature(feature_arr, &rkImage, &rkFace);
     if (ret)
-        pr_err("rkFaceFeature failed, ret = %d\n", ret);
+        printf("rkFaceFeature failed, ret = %d\n", ret);
 	else 
-        pr_info("rkFaceFeature ok\n", ret);
+        printf("rkFaceFeature ok\n", ret);
 
     for (int i = 0; i < MAX_FACE_FEATURE_SIZE; i++)
         feature.feature().push_back(feature_arr[i]);

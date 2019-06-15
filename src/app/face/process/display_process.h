@@ -54,9 +54,11 @@ class DisplayProcess : public StreamPUBase {
     void SetFaces(FaceArray::SharedPtr faces) {
         faces_ = faces;
     }
+    void capture();
  private:
     int rga_fd_;
     FaceArray::SharedPtr faces_;
+	int capture_flag_;
 };
 
 } // namespace rk

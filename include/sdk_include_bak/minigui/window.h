@@ -7542,7 +7542,7 @@ MG_EXPORT int GUIAPI GetIMETargetInfo (IME_TARGET_INFO *info);
  *
  * \sa GetIMEPos
  */
-//MG_EXPORT inline int GUIAPI GetIMEPos (POINT* pt);
+MG_EXPORT inline int GUIAPI GetIMEPos (POINT* pt);
 
 /**
  * \fn int GUIAPI SetIMETargetInfo (const IME_TARGET_INFO *info)
@@ -7576,7 +7576,7 @@ MG_EXPORT int GUIAPI SetIMETargetInfo (const IME_TARGET_INFO *info);
  *
  * \sa SetIMEPos
  */
-//MG_EXPORT inline int GUIAPI SetIMEPos(const POINT* pt);
+MG_EXPORT inline int GUIAPI SetIMEPos(const POINT* pt);
 
     /** @} end of ime_fns */
 

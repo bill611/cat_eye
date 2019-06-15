@@ -6,9 +6,17 @@ STRING( REGEX REPLACE ".*/(.*)" "\\1" CURRENT_FOLDER_APP ${CMAKE_CURRENT_SOURCE_
 if (MODE_UCPASS)
 	add_subdirectory(ucpaas)
 endif()
+
+if (MODE_FACE)
+	add_subdirectory(face)
+endif()
+
 # 生成链接库
 add_library (${CURRENT_FOLDER_APP} ${SRCS_APP})
 if (MODE_UCPASS)
 	target_link_libraries (${CURRENT_FOLDER_APP} ucpaas)
+endif()
+if (MODE_FACE)
+	target_link_libraries (${CURRENT_FOLDER_HAL} face)
 endif()
 

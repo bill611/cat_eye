@@ -348,3 +348,9 @@ void FaceService::getFileImage(char *path)
 	}
 
 }
+void FaceService::capture()
+{
+	std::shared_ptr<DisplayProcess> dis_recognizer =
+		dynamic_pointer_cast<DisplayProcess>(GetProcess("DisplayProcess"));
+	dis_recognizer->capture();
+}

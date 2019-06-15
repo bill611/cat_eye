@@ -80,7 +80,6 @@ int RkFaceDetectLibrary::FaceDetect(Image& image, FaceArray& array)
     printf("rkFaceDetectWrapper_detect cost time: %f ms\n", cost_time / 1000);
 #endif
 
-	static int flag = 0;
     for (int i = 0; i < result.objectNum; i++) {
         rkFaceDetectInfo* info = &result.objects[i];
 
@@ -89,16 +88,15 @@ int RkFaceDetectLibrary::FaceDetect(Image& image, FaceArray& array)
         int size = (info->width) * (info->height);
         float sharpness = info->combined_score;
 
-		printf("id:%d,w:%d,h:%d,sharpness:%f\n",
-			 id,info->width,info->height,sharpness );
 
+		static int flag = 0;
 		if (flag == 0) {
 			flag = 1;
 			char file_name[32];
 			memset(file_name,0,sizeof(file_name));
 			sprintf(file_name,"face%d_%d_%d",i,image.width(),image.height());
 			FILE *img_fd = fopen(file_name,"wb");
-			fwrite(image.data().address(),image.width() * image.height(),1,img_fd);
+			fwrite(image.data().address(),image.width() * image.height()*3/2,1,img_fd);
 			fflush(img_fd);
 			fclose(img_fd);
 		}

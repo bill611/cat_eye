@@ -558,5 +558,12 @@ void registHardCloud(void)
 	mqtt = myMqttCreate();
 	createThread(initThread,NULL);
 	createThread(udpHeartThread,NULL);
+
+	char buff_img[1024*50];
+	int leng = http->post("http://pslshdif0.bkt.clouddn.com/CatEye20190613033922787.jpeg",NULL,buff_img);
+	FILE *fd = fopen("./test.jpg","wb");
+	fwrite(buff_img,leng,1,fd);
+	fflush(fd);
+	fclose(fd);
 }
 

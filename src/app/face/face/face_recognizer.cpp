@@ -42,6 +42,7 @@
 
 #include "face_recognizer.h"
 #include "face_camera_buffer.h"
+#include "jpeg_enc_dec.h"
 
 using namespace rk;
 
@@ -202,8 +203,8 @@ void FaceRecognizer::ClearRequest(void)
 FaceRecognizer::FaceRecognizer(FaceRecognizeAlgorithm type, int width, int height)
                 : StreamPUBase("FaceRecognizer", true, true)
 {
-    mode_ = RegisterMode;
-    // mode_ = RecognizeMode;
+    // mode_ = RegisterMode;
+	mode_ = RecognizeMode;
 
     rga_fd_ = rk_rga_open();
     ASSERT(rga_fd_ >= 0);
@@ -344,28 +345,91 @@ void FaceRecognizer::RegisterListener(FaceRecognizeListener* listener)
 }
 void FaceRecognizer::getFileImage(char *path)
 {
-    img_buffer_ = std::shared_ptr<Buffer>(CmaAlloc(320 * 180 ));
+    img_buffer_ = std::shared_ptr<Buffer>(CmaAlloc(320 * 180 *3 /2 ));
     ASSERT(img_buffer_.get() != nullptr);
 	FILE *img_fd = fopen(path,"rb");
 	if (img_fd == NULL) {
 		std::cout << "get:" << path << ",fail" << std::endl;
 		return;
 	}
-	fread(img_buffer_->address(),180*320,1,img_fd);
+	char jpeg_buff[1024*20];
+	fread(jpeg_buff,10587,1,img_fd);
 	fclose(img_fd);
+	int out_len = 0;
+	jpegDec(jpeg_buff,10587,(char *)img_buffer_->address(),&out_len);
     Image* image = new Image(img_buffer_->address(),
                              (uint32_t)img_buffer_->phys_address(),
                              img_buffer_->fd(), 320, 180);
+	char *p = (char *)image->data().address();
+	for (int i = 0; i < 10; ++i) {
+		printf("%x ",p[320*180*3/2 - i -1] );	
+	}
+		printf("[w:%d,h:%d]\n",image->width(), image->height());
     rkFaceDetectInfos result;
-    int ret = rkFaceDetectWrapper_detect(image->data().address(),(void*)image->data().phys_address(),
-                               image->width(), image->height(), &result);
-	std::cout << path << ":" 
-		<< "ret:" << ret << ","
-		<< result.objectNum << ","
-		<< result.objects[0].x << ","
-		<< result.objects[0].y << ","
-		<< result.objects[0].width << ","
-		<< result.objects[0].height << ","
-		<< std::endl;
+	int i;
+	for (i = 0; i < 10; ++i) {
+		int ret = rkFaceDetectWrapper_detect(image->data().address(),(void*)image->data().phys_address(),
+				image->width(), image->height(), &result);
+		std::cout << path << ":" 
+			<< "ret:" << ret << ","
+			<< result.objectNum << ","
+			<< std::endl;
+		if (result.objectNum) {
+			std::cout << result.objects[0].x << ","
+				<< result.objects[0].y << ","
+				<< result.objects[0].width << ","
+				<< result.objects[0].height << ","
+				<< std::endl;
+			break;
+		}
+	}
+	if (i == 10)
+		return;
+
+    float feature_arr[MAX_FACE_FEATURE_SIZE];
+	rkFaceDetectInfo* info = &result.objects[0];
+	int id = info->id;
+	int size = (info->width) * (info->height);
+	float sharpness = info->combined_score;
+	LandMarkArray landmarks;
+	for (int j = 0; j < 5; j++) {
+		LandMark landmark(info->landmarks[j].x, info->landmarks[j].y);
+		landmarks.push_back(landmark);
+	}
+
+	Rect rect(info->y, info->x, info->y + info->height, info->x + info->width);
+	Face::SharedPtr face = std::make_shared<Face>(id, size, sharpness, landmarks, rect);
+
+
+    RkImage rkImage;
+    rkImage.pixels = (char*)image->data().address();
+    rkImage.type = PIXEL_NV12;
+    rkImage.width = image->width();
+    rkImage.height = image->height();
+
+    struct RkFace rkFace;
+    // rkFace.name = {0};
+    rkFace.id = face->id();
+    rkFace.grade = face->sharpness();
+    rkFace.is_living = 0;
+
+    rkFace.rect.x = face->rect().left();
+    rkFace.rect.y = face->rect().top();
+    rkFace.rect.width = (face->rect().right() - face->rect().left());
+    rkFace.rect.height = (face->rect().bottom() - face->rect().top());
+
+    landmarks = face->landmarks();
+    for (int i = 0; i < MAX_FACE_LANDMARK_NUM; i++) {
+        struct RkPoint* point = &rkFace.landmarks[i];
+        point->x = landmarks.array()[i].x();
+        point->y = landmarks.array()[i].y();
+    }
+    int ret = rkFaceFeature(feature_arr, &rkImage, &rkFace);
+    if (ret)
+        printf("rkFaceFeature failed, ret = %d\n", ret);
+	else  {
+        printf("rkFaceFeature ok,ret = %d,id:%d\n", ret,face->id());
+	}
+	delete image;
 
 }

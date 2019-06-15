@@ -39,6 +39,7 @@ int createFormSetting(HWND hMainWnd,void (*callback)(void));
 int createFormVideo(HWND hVideoWnd,int type,void (*callback)(void));
 int video_init(void);
 int video_uninit(void);
+int video_capture(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -266,6 +267,7 @@ static void buttonCapturePress(HWND hwnd, int id, int nc, DWORD add_data)
 		return;
 	flag_timer_stop = 1;
 	createFormVideo(GetParent(hwnd),FORM_VIDEO_TYPE_CAPTURE,enableAutoClose);
+	video_capture();
 }
 static void buttonVideoPress(HWND hwnd, int id, int nc, DWORD add_data)
 {

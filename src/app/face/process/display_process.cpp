@@ -88,6 +88,15 @@ bool DisplayProcess::processFrame(std::shared_ptr<BufferBase> inBuf,
         display_draw_rect(inBuf->getWidth(), inBuf->getHeight(), dst_buf, rect.left() + 1, rect.top() + 1,
                           rect.right() + 1, rect.bottom() + 1, rgb565_data, NV12);
     }
+	if (capture_flag_ == 1) {
+		capture_flag_ = 0;
+		FILE *dis_fd = fopen("/data/cp.yuv","wb");
+		if (dis_fd) {
+			fwrite((unsigned short *)inBuf->getVirtAddr(),inBuf->getWidth()*inBuf->getHeight()*3/2,1,dis_fd);
+			fflush(dis_fd);
+			fclose(dis_fd);
+		}
+	}
 
     int ret = rk_rga_ionfd_to_ionfd_rotate(rga_fd_,
                                            src_fd, src_w, src_h, src_fmt, vir_w, vir_h,
@@ -102,3 +111,9 @@ bool DisplayProcess::processFrame(std::shared_ptr<BufferBase> inBuf,
 
     return true;
 }
+
+void DisplayProcess::capture()
+{
+	capture_flag_ = 1;
+}
+

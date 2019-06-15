@@ -233,6 +233,7 @@ class FaceService :
             messenger_->SendMessageToSystem(msg.to_string());
     }
 	void getFileImage(char *path);
+	void capture();
 
  private:
     cJSON* root_;

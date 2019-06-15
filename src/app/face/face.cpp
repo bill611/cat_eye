@@ -48,7 +48,8 @@ static void* videoStartThead(void *arg)
 	}
 
 	service->start();
-	service->getFileImage("face0_320_180");
+	service->getFileImage("test.jpg");
+	// service->getFileImage("face_service.conf");
 	return NULL;
 }
 
@@ -65,6 +66,14 @@ int video_uninit(void)
 	if (service)
 		service->stop();
 	display_clean_screen();
+}
+
+
+extern "C" 
+int video_capture(void)
+{
+	if (service)
+		service->capture();
 }
 
 
