@@ -5,8 +5,8 @@ aux_source_directory(. EXE_SRCS)
 # 增加子目录,增加此目录
 set(SUB_DIRS 
 	app 
-	wireless
 	gui
+	wireless
 	drivers
 	hal
 	)
@@ -18,5 +18,9 @@ endforeach()
 add_executable(${EXE} ${EXE_SRCS})
 
 # 链接库
-target_link_libraries (${EXE} ${SUB_DIRS})
+target_link_libraries (${EXE} 
+	-Wl,--start-group
+	${SUB_DIRS}
+	-Wl,--end-group
+	)
 

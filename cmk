@@ -6,7 +6,7 @@ if [ $# == 1 ]; then
 	cmake \
 		-DCMAKE_BUILD_TYPE=Debug \
 		-DPLATFORM_RV1108=OFF \
-		-DMODE_UCPASS=OFF \
+		-DMODE_UCPAAS=OFF \
 		-DMODE_FACE=OFF \
 		-DMODE_UART=OFF \
 		..

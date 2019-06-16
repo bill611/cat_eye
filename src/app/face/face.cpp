@@ -48,7 +48,7 @@ static void* videoStartThead(void *arg)
 	}
 
 	service->start();
-	service->getFileImage("test.jpg");
+	service->getFileImage("yuv.jpg");
 	// service->getFileImage("face_service.conf");
 	return NULL;
 }

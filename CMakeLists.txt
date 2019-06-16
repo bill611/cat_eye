@@ -15,7 +15,7 @@ configure_file (
 # 设置默认编译平台
 option(PLATFORM_RV1108 "This is a option for rv1108" ON)
 # 设置编译功能
-option(MODE_UCPASS "This is a option for ucpass" ON)
+option(MODE_UCPAAS "This is a option for ucpass" ON)
 option(MODE_FACE "This is a option for face" ON)
 option(MODE_UART "This is a option for face" ON)
 
@@ -114,16 +114,16 @@ endif()
 # 添加库文件名称
 link_libraries (
 	sqlite3 qrencode paho-mqtt3a ssl curl cjson crypto
-	minigui_ths png12 png jpeg freetype
-	z m pthread dl rt stdc++
+	minigui_ths png12 png jpeg freetype turbojpeg
+	z m pthread dl rt 
 	)
 
 if (PLATFORM_RV1108)
-	link_libraries (ts rkrga rkfb ion)
+	link_libraries (ts rkrga rkfb ion stdc++)
 endif()
 
-if (MODE_UCPASS)
-	add_definitions(-DUSE_UCPASS)
+if (MODE_UCPAAS)
+	add_definitions(-DUSE_UCPAAS)
 endif()
 if (MODE_FACE)
 	add_definitions(-DUSE_FACE)

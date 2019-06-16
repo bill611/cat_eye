@@ -267,7 +267,9 @@ static void buttonCapturePress(HWND hwnd, int id, int nc, DWORD add_data)
 		return;
 	flag_timer_stop = 1;
 	createFormVideo(GetParent(hwnd),FORM_VIDEO_TYPE_CAPTURE,enableAutoClose);
+#ifdef USE_FACE
 	video_capture();
+#endif
 }
 static void buttonVideoPress(HWND hwnd, int id, int nc, DWORD add_data)
 {

@@ -50,80 +50,80 @@ static void reloadLocalTalk(void)
 }
 static void dial(char *user_id,void (*callBack)(void *arg))
 {
-#ifdef USE_UCPASS
+#ifdef USE_UCPAAS
 	ucsDial(user_id,callBack);
 #endif
 }
 static void answer(void (*callBack)(void *arg))
 {
-#ifdef USE_UCPASS
+#ifdef USE_UCPAAS
 	ucsAnswer(callBack);
 #endif
 }
 static void hangup(void (*callBack)(void *arg))
 {
-#ifdef USE_UCPASS
+#ifdef USE_UCPAAS
 	ucsHangup(callBack);
 #endif
 }
 static void cbDialRet(void (*callBack)(void *arg))
 {
-#ifdef USE_UCPASS
+#ifdef USE_UCPAAS
 	ucsCbDialRet(callBack);
 #endif
 }
 static void cblIncomingCall(void (*callBack)(void *arg))
 {
-#ifdef USE_UCPASS
+#ifdef USE_UCPAAS
 	ucsCbIncomingCall(callBack);
 #endif
 }
 static void sendCmd(char *cmd,char *user_id,void (*callBack)(void *arg))
 {
-#ifdef USE_UCPASS
+#ifdef USE_UCPAAS
 	ucsSendCmd(cmd,user_id,callBack);
 #endif
 }
 static void receivedCmd(void (*callBack)(const char *user_id,void *arg))
 {
-#ifdef USE_UCPASS
+#ifdef USE_UCPAAS
 	ucsCbReceivedCmd(callBack);
 #endif
 }
 static void initAudio(void (*callBack)(void))
 {
-#ifdef USE_UCPASS
+#ifdef USE_UCPAAS
 	ucsCbInitAudio(callBack);
 #endif
 }
 static void playAudio(void (*callBack)(const char *data,unsigned int size))
 {
-#ifdef USE_UCPASS
+#ifdef USE_UCPAAS
 	ucsCbPlayAudio(callBack);
 #endif
 }
 static void startRecord(void (*callBack)(void))
 {
-#ifdef USE_UCPASS
+#ifdef USE_UCPAAS
 	ucsCbStartRecord(callBack);
 #endif
 }
 static void recording(void (*callBack)(char *data,unsigned int size))
 {
-#ifdef USE_UCPASS
+#ifdef USE_UCPAAS
 	ucsCbRecording(callBack);
 #endif
 }
 static void playVideo(const unsigned char* frame_data, const unsigned int data_len)
 {
-#ifdef USE_UCPASS
+#ifdef USE_UCPAAS
 	ucsPlayVideo(frame_data,data_len);
 #endif
 }
 
 static void talkConnect(void)
 {
-#ifdef USE_UCPASS
+#ifdef USE_UCPAAS
 	ucsConnect(local_user.token);
 #endif
 }
@@ -137,7 +137,7 @@ void registTalk(void)
 	protocol_talk->connect = talkConnect;
 	protocol_talk->reload = reloadLocalTalk;
 	protocol_talk->cblIncomingCall = cblIncomingCall;
-#ifdef USE_UCPASS
+#ifdef USE_UCPAAS
 	registUcpaas();
 #endif
 }

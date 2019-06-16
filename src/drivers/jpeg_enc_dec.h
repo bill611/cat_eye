@@ -23,6 +23,9 @@ extern "C" {
 
 
 	int jpegDec (char * data,int data_len,char *out_data,int *out_len);
+	int yuv420p_to_jpeg(const char * filename, const char* pdata,int image_width,int image_height, int quality);
+	void jpegIncDecInit(void);
+	int tjpeg2yuv(unsigned char* jpeg_buffer, int jpeg_size, unsigned char* yuv_buffer, int* yuv_size, int* yuv_type);
 
 #ifdef __cplusplus
 }
