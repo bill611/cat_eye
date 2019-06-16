@@ -358,7 +358,7 @@ void FaceRecognizer::getFileImage(char *path)
 	int out_len = 0;
 	int yuv_type = 0;
 	unsigned char jpeg_buff_out[1024*1000] = {0};
-	tjpeg2yuv(jpeg_buff,5067,jpeg_buff_out,&out_len,&yuv_type);
+	jpegToYuv420sp(jpeg_buff,5067,jpeg_buff_out,&out_len,&yuv_type);
 	// jpegDec(jpeg_buff,5067,jpeg_buff_out,&out_len);
 	img_fd = fopen("yuv_1","wb");
 	if (img_fd) {
