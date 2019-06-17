@@ -336,13 +336,13 @@ void FaceService::disconnect(std::shared_ptr<StreamPUBase> pre, std::shared_ptr<
     next->stop();
     next->releaseBuffers();
 }
-void FaceService::getFileImage(char *path)
+void FaceService::getFileImage(char *path,int w,int h)
 {
 	for (FaceServiceProcessor processor : processors_) {
 		if (strcmp(processor.name, "FaceRecognizer") == 0) {
 			std::shared_ptr<FaceRecognizer> face_recognizer_ =
 				dynamic_pointer_cast<FaceRecognizer>(processor.process_unit);
-			face_recognizer_->getFileImage(path);
+			face_recognizer_->getFileImage(path,w,h);
 			return;
 		}
 	}

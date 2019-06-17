@@ -197,7 +197,7 @@ static void enableAutoClose(void)
 {
 	flag_timer_stop = 0;	
 #ifdef USE_FACE
-	video_init();
+	// video_init();
 #endif
 }
 /* ---------------------------------------------------------------------------*/
@@ -268,7 +268,7 @@ static void buttonCapturePress(HWND hwnd, int id, int nc, DWORD add_data)
 	flag_timer_stop = 1;
 	createFormVideo(GetParent(hwnd),FORM_VIDEO_TYPE_CAPTURE,enableAutoClose);
 #ifdef USE_FACE
-	video_capture();
+	// video_capture();
 #endif
 }
 static void buttonVideoPress(HWND hwnd, int id, int nc, DWORD add_data)
@@ -285,7 +285,7 @@ static void buttonSettingPress(HWND hwnd, int id, int nc, DWORD add_data)
 	flag_timer_stop = 1;
     createFormSetting(GetParent(hwnd),enableAutoClose);
 #ifdef USE_FACE
-	video_uninit();
+	// video_uninit();
 #endif
 }
 
@@ -381,7 +381,7 @@ int createFormMain(HWND hMainWnd)
 {
 	HWND Form = Screen.Find(form_base_priv.name);
 #ifdef USE_FACE
-	video_init();
+	// video_init();
 #endif
 	if(Form) {
 		ShowWindow(Form,SW_SHOWNORMAL);

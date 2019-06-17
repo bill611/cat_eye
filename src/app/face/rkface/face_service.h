@@ -232,7 +232,7 @@ class FaceService :
         if (messenger_)
             messenger_->SendMessageToSystem(msg.to_string());
     }
-	void getFileImage(char *path);
+	void getFileImage(char *path,int w,int h);
 	void capture();
 
  private:

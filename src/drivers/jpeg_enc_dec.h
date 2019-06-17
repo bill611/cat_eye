@@ -25,8 +25,8 @@ extern "C" {
 	void jpegIncDecInit(void);
 
 	int jpegToYuv420sp(unsigned char* jpeg_buffer, int jpeg_size, unsigned char* yuv_buffer, int* yuv_size, int* yuv_type);
-    int yuv420spToJpeg(unsigned char* yuv_buffer,  int width, int height, int subsample, 
-            unsigned char** jpeg_buffer, unsigned long* jpeg_size,int quality);
+	int yuv420spToJpeg(unsigned char* yuv_buffer,  int width, int height, 
+			unsigned char** jpeg_buffer, int* jpeg_size);
 
 #ifdef __cplusplus
 }

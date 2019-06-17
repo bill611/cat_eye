@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <setjmp.h>
 #include <string.h>
+#include "debug.h"
 #include "jpeglib.h"
 #include "turbojpeg.h"
 /* ---------------------------------------------------------------------------*
@@ -83,8 +84,8 @@ static void yuv420spToYuv420p(unsigned char* yuv420sp, unsigned char* yuv420p, i
 
     // u
     for (j = 0, i = 0; j < y_size/2; j+=2, i++) {
-        v_tmp[i] = uv[j];
-        u_tmp[i] = uv[j+1];
+        u_tmp[i] = uv[j];
+        v_tmp[i] = uv[j+1];
     }
 }
 
@@ -119,22 +120,20 @@ static int yuv420pToYuv420sp(unsigned char * yuv420p,unsigned char* yuv420sp,int
     unsigned char* v = yuv420p + y_size * 5 / 4;
 
     unsigned char* y_tmp = yuv420sp;
-    unsigned char* u_tmp = yuv420sp + y_size;
-    unsigned char* v_tmp = yuv420p + y_size + 1;
+    unsigned char* uv_tmp = yuv420sp + y_size;
     //Y
     memcpy(y_tmp, y, y_size);
 
     int i;
     for (i=0; i<y_size/2; i++) {
         if(i%2 == 0) {
-           *u_tmp=*u;
-           u++;
-           u_tmp += 2;
+           *uv_tmp=*u;
+		   u++;
         } else {
-           *v_tmp=*v;
-           v++;
-           v_tmp += 2;
+           *uv_tmp=*v;
+		   v++;
         }
+		uv_tmp++;
     }
 	printf("convert finish\n");
     return 0;
@@ -157,30 +156,40 @@ static int yuv420pToYuv420sp(unsigned char * yuv420p,unsigned char* yuv420sp,int
  */
 /* ---------------------------------------------------------------------------*/
 int yuv420spToJpeg(unsigned char* yuv_buffer,  int width, int height, 
-                             unsigned char** jpeg_buffer, unsigned long* jpeg_size)
+                             unsigned char** jpeg_buffer, int* jpeg_size)
 {
     tjhandle handle = NULL;
+	unsigned char *yuv_buffer_420p;
     int quality = 50; // 编码质量50(1-100)
     int flags = 0;
     int padding = 1; // 1或4均可，但不能是0
     int need_size = 0;
-    int ret = 0;
+    int ret = -1;
 
     int yuv_size = width * height * 3/2;
     handle = tjInitCompress();
+	if (handle == NULL) {
+		goto encode_err;
+	}
+
     need_size = tjBufSizeYUV2(width, padding, height,TJSAMP_420);
     if (need_size != yuv_size) {
-        tjDestroy(handle);
         printf("we detect yuv size: %d, but you give: %d, check again.\n", need_size, yuv_size);
-        return -1;
+		goto encode_end;
     }
-
-    ret = tjCompressFromYUV(handle, yuv_buffer, width, padding, height, 
-            TJSAMP_420, jpeg_buffer, jpeg_size, quality, flags);
+	yuv_buffer_420p = (unsigned char *)calloc(width*height*3/2,1);
+	yuv420spToYuv420p(yuv_buffer,yuv_buffer_420p,width,height);
+    ret = tjCompressFromYUV(handle, yuv_buffer_420p, width, padding, height, 
+            TJSAMP_420, jpeg_buffer, (unsigned long *)jpeg_size, quality, flags);
     if (ret < 0) {
         printf("compress to jpeg failed: %s\n", tjGetErrorStr());
     }
-    tjDestroy(handle);
+
+encode_end:
+	tjDestroy(handle);
+	if(yuv_buffer_420p)
+		free(yuv_buffer_420p);
+encode_err:
     return ret;
 }
 
@@ -199,7 +208,7 @@ int jpegToYuv420sp(unsigned char* jpeg_buffer, int jpeg_size, unsigned char* yuv
     }
     tjDecompressHeader3(handle, jpeg_buffer, jpeg_size, &width, &height, &subsample, &colorspace);
 
-    printf("w: %d h: %d subsample: %d color: %d\n", width, height, subsample, colorspace);
+    DPRINT("w: %d h: %d subsample: %d color: %d\n", width, height, subsample, colorspace);
 
     flags |= 0;
 

@@ -122,7 +122,7 @@ class FaceRecognizer : public StreamPUBase {
         return face_recognize_lib_;
     }
 
-	void getFileImage(char *path);
+	void getFileImage(char *path,int w,int h);
  private:
     int rga_fd_;
     uint32_t total_;

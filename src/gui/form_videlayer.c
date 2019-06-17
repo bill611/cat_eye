@@ -156,7 +156,7 @@ static int formVideoLayerProc(HWND hWnd, int message, WPARAM wParam, LPARAM lPar
 				HWND form = createFormVideo(hWnd,FORM_VIDEO_TYPE_CAPTURE,NULL);
 				ShowWindow(form,SW_HIDE);
 #ifdef USE_FACE
-				video_init();
+				// video_init();
 #endif
 				formVideoInitInterface();
 				// screensaverStart(LCD_ON);

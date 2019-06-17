@@ -33,6 +33,7 @@
 #include "my_ntp.h"
 #include "externfunc.h"
 #include "my_dns.h"
+#include "my_face.h"
 #include "protocol.h"
 
 /* ---------------------------------------------------------------------------*
@@ -556,14 +557,15 @@ void registHardCloud(void)
 {
 	http = myHttpCreate();
 	mqtt = myMqttCreate();
-	createThread(initThread,NULL);
-	createThread(udpHeartThread,NULL);
+	// createThread(initThread,NULL);
+	// createThread(udpHeartThread,NULL);
 
-	// char buff_img[1024*50];
-	// int leng = http->post("http://pslshdif0.bkt.clouddn.com/CatEye20190613033922787.jpeg",NULL,buff_img);
-	// FILE *fd = fopen("./test.jpg","wb");
-	// fwrite(buff_img,leng,1,fd);
-	// fflush(fd);
-	// fclose(fd);
+	unsigned char buff_img[1024*100];
+	FILE *fd = fopen("320_180.jpg","rb");
+	int leng = fread(buff_img,sizeof(buff_img),1,fd);
+	fclose(fd);
+	// int leng = http->post("http://pslshdif0.bkt.clouddn.com/CatEye20190617072617580.jpg",NULL,buff_img);
+	printf("len:%d\n", leng);
+	my_face->regist(buff_img,1280,720,"123","xb");
 }
 

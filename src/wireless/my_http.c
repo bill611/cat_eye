@@ -152,7 +152,7 @@ static int post(char *url, char *para, char *out_data)
 
 EXIT:
 	curl_easy_cleanup(easy_handle);
-	return 0;
+	return chunk.size;
 }
 MyHttp * myHttpCreate(void)
 {

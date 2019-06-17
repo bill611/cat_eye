@@ -343,7 +343,7 @@ void FaceRecognizer::RegisterListener(FaceRecognizeListener* listener)
 {
     listener_list_.push_front(listener);
 }
-void FaceRecognizer::getFileImage(char *path)
+void FaceRecognizer::getFileImage(char *path,int w,int h)
 {
     // img_buffer_ = std::shared_ptr<Buffer>(CmaAlloc(320 * 180 *3 /2 ));
     // ASSERT(img_buffer_.get() != nullptr);
@@ -352,21 +352,26 @@ void FaceRecognizer::getFileImage(char *path)
 		std::cout << "get:" << path << ",fail" << std::endl;
 		return;
 	}
-	unsigned char jpeg_buff[5067] = {0};
-	int leng_read = fread(jpeg_buff,5067,1,img_fd);
+	int size = w*h*3/2;
+	unsigned char *jpeg_buff = (unsigned char *)malloc(size);
+	int leng_read = fread(jpeg_buff,w*h*3/2,1,img_fd);
+	printf("len:%d\n", leng_read);
 	fclose(img_fd);
 	int out_len = 0;
 	int yuv_type = 0;
-	unsigned char jpeg_buff_out[1024*1000] = {0};
-	jpegToYuv420sp(jpeg_buff,5067,jpeg_buff_out,&out_len,&yuv_type);
-	// jpegDec(jpeg_buff,5067,jpeg_buff_out,&out_len);
-	img_fd = fopen("yuv_1","wb");
+	unsigned char *jpeg_buff_out = (unsigned char *)malloc(size);
+	unsigned char *p_jpeg_buff = NULL;
+	jpegToYuv420sp(jpeg_buff,54996  ,jpeg_buff_out,&out_len,&yuv_type);
+	// yuv420spToJpeg(jpeg_buff, w,h,&p_jpeg_buff, &out_len);
+	img_fd = fopen("320_180.yuv","wb");
 	if (img_fd) {
 		fwrite(jpeg_buff_out,out_len,1,img_fd);
 		fflush(img_fd);
 		fclose(img_fd);
 	}
-	// yuv420p_to_jpeg("yuv1.jpg", jpeg_buff,1280,720, 50);
+	free(p_jpeg_buff);
+	free(jpeg_buff);
+	free(jpeg_buff_out);
     // Image* image = new Image(img_buffer_->address(),
                              // (uint32_t)img_buffer_->phys_address(),
                              // img_buffer_->fd(), 320, 180);
