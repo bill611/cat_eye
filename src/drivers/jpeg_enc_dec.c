@@ -166,6 +166,9 @@ int yuv420spToJpeg(unsigned char* yuv_buffer,  int width, int height,
     int need_size = 0;
     int ret = -1;
 
+	if (!yuv_buffer)
+		goto encode_err;
+
     int yuv_size = width * height * 3/2;
     handle = tjInitCompress();
 	if (handle == NULL) {
@@ -193,7 +196,10 @@ encode_err:
     return ret;
 }
 
-int jpegToYuv420sp(unsigned char* jpeg_buffer, int jpeg_size, unsigned char* yuv_buffer, int* yuv_size, int* yuv_type)
+int jpegToYuv420sp(unsigned char* jpeg_buffer, 
+		int jpeg_size, 
+		int *out_width, int *out_height,
+		unsigned char** yuv_buffer, int* yuv_size )
 {
     tjhandle handle = NULL;
     int width, height, subsample, colorspace;
@@ -201,6 +207,8 @@ int jpegToYuv420sp(unsigned char* jpeg_buffer, int jpeg_size, unsigned char* yuv
     int padding = 1; // 1或4均可，但不能是0
     int ret = 0;
 
+	if (!jpeg_buffer)
+		return -1;
     handle = tjInitDecompress();
     if (handle == NULL) {
         printf("%s():%s\n",__func__,tjGetErrorStr() );
@@ -208,11 +216,12 @@ int jpegToYuv420sp(unsigned char* jpeg_buffer, int jpeg_size, unsigned char* yuv
     }
     tjDecompressHeader3(handle, jpeg_buffer, jpeg_size, &width, &height, &subsample, &colorspace);
 
+	*out_width = width;
+	*out_height = height;
     DPRINT("w: %d h: %d subsample: %d color: %d\n", width, height, subsample, colorspace);
 
     flags |= 0;
 
-    *yuv_type = subsample;
     // 注：经测试，指定的yuv采样格式只对YUV缓冲区大小有影响，实际上还是按JPEG本身的YUV格式来转换的
     *yuv_size = tjBufSizeYUV2(width, padding, height, subsample);
 
@@ -227,7 +236,8 @@ int jpegToYuv420sp(unsigned char* jpeg_buffer, int jpeg_size, unsigned char* yuv
     if (ret < 0) {
         printf("compress to jpeg failed: %s\n", tjGetErrorStr());
     }
-    yuv420pToYuv420sp(yuv_buffer_420p,yuv_buffer,width,height);
+     *yuv_buffer =(unsigned char *)malloc(*yuv_size);
+    yuv420pToYuv420sp(yuv_buffer_420p,*yuv_buffer,width,height);
     free(yuv_buffer_420p);
     tjDestroy(handle);
 

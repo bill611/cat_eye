@@ -120,7 +120,6 @@ int MiniGUIMain(int argc, const char* argv[])
 	createThread(timer1sThread,NULL);
 	jpegIncDecInit();
 	myFaceInit();
-	my_face->init();
 	protocolInit();
 	formVideoLayerCreate();
     return 0;

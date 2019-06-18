@@ -54,6 +54,13 @@ loginToken char(128),\
 nickName char(128),\
 scope INTEGER\
 )";
+static char *table_face = "CREATE TABLE IF NOT EXISTS FaceInfo( \
+ID INTEGER PRIMARY KEY,\
+userId char(32) UNIQUE,\
+nickName char(128),\
+fileURL char(256),\
+feature BLOB\
+)";
 
 static TSqliteData dbase = {
 	.file_name = DATABSE_PATH"database.db",
@@ -63,13 +70,15 @@ static TSqliteData dbase = {
 
 static int sqlCheck(TSqlite *sql)
 {
-    int ret;
     if (sql == NULL)
         goto sqlCheck_fail;
 
-    ret = LocalQueryOpen(sql,"select ID from UserInfo limit 1");
+    int ret = LocalQueryOpen(sql,"select ID from UserInfo limit 1");
     sql->Close(sql);
-	if (ret == 1) {
+    int ret1 = LocalQueryOpen(sql,"select ID from FaceInfo limit 1");
+    sql->Close(sql);
+	if (ret == 1 
+			&& ret1 == 1) {
 		backData((char *)sql->file_name);
 		return TRUE;
 	}
@@ -77,8 +86,9 @@ static int sqlCheck(TSqlite *sql)
 sqlCheck_fail:
     DPRINT("sql locoal err\n");
 	if (recoverData(dbase.file_name) == 0) {
-		DPRINT("creat new db:%s\n",table_user);
+		DPRINT("creat new db:%s\n%s\n",table_user,table_face);
 		LocalQueryExec(dbase.sql,table_user);
+		LocalQueryExec(dbase.sql,table_face);
 	} else {
 		dbase.sql->Destroy(dbase.sql);
 		dbase.sql = CreateLocalQuery(dbase.sql->file_name);
@@ -119,14 +129,16 @@ void sqlGetUserInfo(
 	char buf[128];
 	sprintf(buf,"select * from UserInfo where type = %d",type );
 	LocalQueryOpen(dbase.sql,buf);
-
-	*scope = LocalQueryOfInt(dbase.sql,"scope");
-	if (user_id)
-		LocalQueryOfChar(dbase.sql,"userId",user_id,32);
-	if (login_token)
-		LocalQueryOfChar(dbase.sql,"loginToken",login_token,256);
-	if (nick_name)
-		LocalQueryOfChar(dbase.sql,"nickName",nick_name,128);
+	int ret = dbase.sql->RecordCount(dbase.sql);
+	if (ret) {
+		*scope = LocalQueryOfInt(dbase.sql,"scope");
+		if (user_id)
+			LocalQueryOfChar(dbase.sql,"userId",user_id,32);
+		if (login_token)
+			LocalQueryOfChar(dbase.sql,"loginToken",login_token,256);
+		if (nick_name)
+			LocalQueryOfChar(dbase.sql,"nickName",nick_name,128);
+	}
 	dbase.sql->Close(dbase.sql);
 }
 void sqlGetUserInfoEnd(void)
@@ -222,16 +234,29 @@ int sqlGetEleQuantity(char *id)
 	pthread_mutex_unlock(&mutex);
 	return ret;
 }
-void sqlSetMideaAddr(char *id,void *data,int size)
+void sqlInsertFace(char *user_id,
+		char *nick_name,
+		char *url,
+		void *feature,
+		int size)
 {
 	char buf[128];
 	pthread_mutex_lock(&mutex);
-	sprintf(buf, "UPDATE WifiList SET MideaSlaveData=?,Channel=4 \
-		   	Where id = \"%s\"", id);
-	printf("%s\n",buf);
+	sprintf(buf, "select nickName From FaceInfo Where userId=\"%s\"", user_id);
+	LocalQueryOpen(dbase.sql,buf);
+	int ret = dbase.sql->RecordCount(dbase.sql);
+	dbase.sql->Close(dbase.sql);
+	if (ret == 0) {
+		sprintf(buf, "INSERT INTO FaceInfo(userId,nickName,fileURL,feature) VALUES(?,?,?,?)");
+	} else {
+		sprintf(buf, "UPDATE FaceInfo SET userId=?,nickName=?,fileURL=?,feature=? WHERE userId = \"%s\"",user_id);
+	}
 	dbase.sql->prepare(dbase.sql,buf);
-	dbase.sql->reset(dbase.sql);
-	dbase.sql->bind_blob(dbase.sql,data,size);
+	dbase.sql->bind_reset(dbase.sql);
+	dbase.sql->bind_text(dbase.sql,user_id);
+	dbase.sql->bind_text(dbase.sql,nick_name);
+	dbase.sql->bind_text(dbase.sql,url);
+	dbase.sql->bind_blob(dbase.sql,feature,size);
 	dbase.sql->step(dbase.sql);
 	dbase.sql->finalize(dbase.sql);
 	dbase.sql->Close(dbase.sql);
@@ -239,19 +264,43 @@ void sqlSetMideaAddr(char *id,void *data,int size)
 	pthread_mutex_unlock(&mutex);
 }
 
-void sqlGetMideaAddr(char *id,void *data)
+void sqlGetFaceStart(void)
 {
 	char buf[128];
 	pthread_mutex_lock(&mutex);
-	sprintf(buf, "select MideaSlaveData From WifiList Where ID=\"%s\"", id);
+	sprintf(buf, "select userId,nickName,fileURL,feature From FaceInfo ");
 	dbase.sql->prepare(dbase.sql,buf);
-	dbase.sql->reset(dbase.sql);
-	dbase.sql->step(dbase.sql);
-	dbase.sql->getBlobData(dbase.sql,data);
+	
+}
+int sqlGetFace(char *user_id,char *nick_name,char *url,void *feature)
+{
+	int ret = dbase.sql->step(dbase.sql);
+	if (ret != SQLITE_ROW)
+		return 0;
+	dbase.sql->get_reset(dbase.sql);
+	dbase.sql->getBindText(dbase.sql,user_id);
+	dbase.sql->getBindText(dbase.sql,nick_name);
+	dbase.sql->getBindText(dbase.sql,url);
+	dbase.sql->getBlobData(dbase.sql,feature);
+	return 1;
+}
+void sqlGetFaceEnd(void)
+{
 	dbase.sql->finalize(dbase.sql);
 	dbase.sql->Close(dbase.sql);
 	pthread_mutex_unlock(&mutex);
 }
+void sqlDeleteFace(char *id)
+{
+	char buf[256];
+	pthread_mutex_lock(&mutex);
+	sprintf(buf, "Delete From FaceInfo Where userId=\"%s\"", id);
+	DPRINT("%s\n",buf);
+	LocalQueryExec(dbase.sql,buf);
+	dbase.checkFunc(dbase.sql);
+	pthread_mutex_unlock(&mutex);
+}
+
 
 void sqlCheckBack(void)
 {

@@ -54,7 +54,7 @@ static size_t postCallBackData(void *buffer, size_t size, size_t nmemb, void *us
 	size_t realsize = size * nmemb;
 	struct MemoryStruct *mem = (struct MemoryStruct *)user_p;
 
-	mem->memory = realloc(mem->memory, mem->size + realsize + 1);
+	mem->memory = (char *)realloc(mem->memory, mem->size + realsize + 1);
 	if(mem->memory == NULL) {
 		/* out of memory! */
 		printf("not enough memory (realloc returned NULL)\n");
@@ -112,17 +112,17 @@ EXIT:
 	curl_easy_cleanup(easy_handle);
 	return 0;
 }
-static int post(char *url, char *para, char *out_data)
+static int post(char *url, char *para, char **out_data)
 {
 	if (!url) {
 		printf("NULL url!!\n");
-		return -1;
+		return 0;
 	}
 	CURLcode r = CURLE_GOT_NOTHING;
 	CURL *easy_handle = curl_easy_init();
 	if (!easy_handle) {
 		printf("NULL easy_handle!!\n");
-		return -1;
+		return 0;
 	}
 	curl_easy_setopt(easy_handle,CURLOPT_URL,url);
 	// curl_easy_setopt(easy_handle, CURLOPT_POST, 1);
@@ -137,18 +137,20 @@ static int post(char *url, char *para, char *out_data)
 	curl_easy_setopt(easy_handle, CURLOPT_SSL_VERIFYHOST, 0L);
 	r = curl_easy_setopt(easy_handle, CURLOPT_SSL_VERIFYPEER, 0L);
 	if (r != CURLE_OK) {
+		if (chunk.memory)
+			free(chunk.memory);
 		printf("curl post CURLOPT_SSL_VERIFYPEER failed :%s\n",curl_easy_strerror(r));
 		goto EXIT;
 	}
 	r = curl_easy_perform(easy_handle);
 
 	if (r != CURLE_OK) {
+		if (chunk.memory)
+			free(chunk.memory);
 		printf("curl post failed :%s\n",curl_easy_strerror(r));
 		goto EXIT;
 	}
-	// printf("post:%s\n",chunk.memory);
-	if(out_data)
-       memcpy(out_data, chunk.memory, chunk.size);
+	*out_data = chunk.memory;
 
 EXIT:
 	curl_easy_cleanup(easy_handle);

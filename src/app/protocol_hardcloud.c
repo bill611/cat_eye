@@ -23,7 +23,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include "cJSON.h"
-#include "udp_server.h"
+#include "tcp_client.h"
 #include "my_http.h"
 #include "my_mqtt.h"
 #include "json_dec.h"
@@ -34,6 +34,8 @@
 #include "externfunc.h"
 #include "my_dns.h"
 #include "my_face.h"
+#include "jpeg_enc_dec.h"
+#include "debug.h"
 #include "protocol.h"
 
 /* ---------------------------------------------------------------------------*
@@ -216,6 +218,13 @@ static void sysTestData(char *data)
 	mqtt->send(opts.pubTopic,strlen(data),data);
 }
 
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief ceGetIntercoms 获取对讲信息
+ *
+ * @param dec
+ */
+/* ---------------------------------------------------------------------------*/
 static void ceGetIntercoms(CjsonDec *dec)
 {
 	if(dec->changeCurrentObj(dec,"body")) {
@@ -272,39 +281,136 @@ static void ceGetIntercoms(CjsonDec *dec)
 	protocol_talk->connect();
 }
 
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief ceGetFaces 获取人脸信息
+ *
+ * @param api
+ * @param id
+ * @param dec
+ */
+/* ---------------------------------------------------------------------------*/
 static void ceGetFaces(int api,int id,CjsonDec *dec)
 {
 	char *send_buff;
+	char user_id[32];
+	char nick_name[128];
+	char url[256];
 	cJSON *root = packData(api,4,id);
 	cJSON *arry = cJSON_CreateArray();
-	cJSON *obj = cJSON_CreateObject();
+	sqlGetFaceStart();
+	while (1) {
+		memset(user_id,0,sizeof(user_id));
+		memset(nick_name,0,sizeof(nick_name));
+		memset(url,0,sizeof(url));
+		int ret = sqlGetFace(user_id,nick_name,url,NULL);
+		if (ret == 0)
+			break;
+		printf("id:%s,name:%s,url:%s\n", user_id,nick_name,url);
+		cJSON *obj = cJSON_CreateObject();
+		cJSON_AddStringToObject(obj,"id",user_id);
+		cJSON_AddStringToObject(obj,"nickName",nick_name);
+		cJSON_AddStringToObject(obj,"fileURL",url);
+		cJSON_AddItemToArray(arry, obj);
+	};
+	sqlGetFaceEnd();
 
-	cJSON_AddStringToObject(obj,"id","123");
-	cJSON_AddStringToObject(obj,"nickName","爸爸");
-	cJSON_AddStringToObject(obj,"fileURL","http://pslshdif0.bkt.clouddn.com/CatEye20190612081354913.png");
-	cJSON_AddItemToArray(arry, obj);
-	
 	cJSON_AddItemToObject(root,"body",arry);
 	send_buff = cJSON_PrintUnformatted(root);
 	cJSON_Delete(root);
 	mqtt->send(opts.pubTopic,strlen(send_buff),send_buff);
 	free(send_buff);
 }
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief ceSetFace 设置人脸信息
+ *
+ * @param api
+ * @param id
+ * @param dec
+ */
+/* ---------------------------------------------------------------------------*/
 static void ceSetFace(int api,int id,CjsonDec *dec)
 {
 	char *send_buff;
-	cJSON *root = packData(api,4,id);
-	cJSON_AddStringToObject(root,"body","true");
+	cJSON *root;
+	int result = 0;
+
+	if(dec->changeCurrentObj(dec,"body")) {
+		printf("change body fail\n");
+		goto send_return;
+	}
+	char *user_id = NULL;
+	char *nick_name = NULL;
+	char *url = NULL;
+	int scope = 0 ;
+	dec->getValueChar(dec,"fileURL",&url);
+	dec->getValueChar(dec,"id",&user_id);
+	dec->getValueChar(dec,"nickName",&nick_name);
+	if (url) {
+		int w,h;
+		int yuv_len = 0;
+		char *buff_img = NULL;
+		unsigned char *yuv = NULL;
+		int leng = http->post(url,NULL,&buff_img);
+		jpegToYuv420sp((unsigned char *)buff_img, leng,&w,&h, &yuv, &yuv_len);
+		if (my_face->regist(yuv,w,h,user_id,nick_name,url) == 0)
+			result = 1;
+		if (buff_img)
+			free(buff_img);
+		if (yuv)
+			free(yuv);
+		free(url);
+	} else {
+		goto send_return;
+	}
+	if (user_id)
+		free(user_id);
+	if (nick_name)
+		free(nick_name);
+
+send_return:
+	root = packData(api,4,id);
+	if (result)
+		cJSON_AddStringToObject(root,"body","true");
+	else
+		cJSON_AddStringToObject(root,"body","false");
 	send_buff = cJSON_PrintUnformatted(root);
 	cJSON_Delete(root);
 	mqtt->send(opts.pubTopic,strlen(send_buff),send_buff);
 	free(send_buff);
 }
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief ceRemoveFace 删除人脸信息
+ *
+ * @param api
+ * @param id
+ * @param dec
+ */
+/* ---------------------------------------------------------------------------*/
 static void ceRemoveFace(int api,int id,CjsonDec *dec)
 {
 	char *send_buff;
-	cJSON *root = packData(api,4,id);
-	cJSON_AddStringToObject(root,"body","true");
+	int result = 0;
+	cJSON *root;
+	if(dec->changeCurrentObj(dec,"body")) {
+		printf("change body fail\n");
+		goto send_return;
+	}
+	char *user_id = NULL;
+	dec->getValueChar(dec,"id",&user_id);
+	if (user_id) {
+		my_face->deleteOne(user_id);
+		free(user_id);
+	}
+	result = 1;
+send_return:
+	root = packData(api,4,id);
+	if (result)
+		cJSON_AddStringToObject(root,"body","true");
+	else
+		cJSON_AddStringToObject(root,"body","false");
 	send_buff = cJSON_PrintUnformatted(root);
 	cJSON_Delete(root);
 	mqtt->send(opts.pubTopic,strlen(send_buff),send_buff);
@@ -415,11 +521,15 @@ static void getIntercoms(void)
 /* ---------------------------------------------------------------------------*/
 static void* initThread(void *arg)
 {
-	char mqtt_server_content[1024*5] = {0};
+	char *mqtt_server_content = NULL;
 	char url[128] = {0};
 	sprintf(url,"%s%s",hard_could_api,g_config.imei);
 	while (1) {
-		http->post(url,NULL,mqtt_server_content);
+		if (mqtt_server_content) {
+			free(mqtt_server_content);
+			mqtt_server_content = NULL;
+		}
+		http->post(url,NULL,&mqtt_server_content);
 
 		CjsonDec *dec = NULL;
 		char *buff = NULL;
@@ -517,6 +627,10 @@ static void* initThread(void *arg)
 retry:
 		sleep(5);
 	}
+	if (mqtt_server_content) {
+		free(mqtt_server_content);
+		mqtt_server_content = NULL;
+	}
 	sleep(1);
 	getIntercoms();
 	return NULL;
@@ -524,16 +638,17 @@ retry:
 
 /* ---------------------------------------------------------------------------*/
 /**
- * @brief udpHeartThread 硬件云心跳包
+ * @brief tcpHeartThread 硬件云心跳包
  *
  * @param arg
  *
  * @returns
  */
 /* ---------------------------------------------------------------------------*/
-static void* udpHeartThread(void *arg)
+static void* tcpHeartThread(void *arg)
 {
 	char ip[16];
+	int connect_flag = 0;
 	while (1) {
 		memset(ip,0,sizeof(ip));
 		if (opts.service_host[0] == 0) {
@@ -541,9 +656,17 @@ static void* udpHeartThread(void *arg)
 			continue;
 		}
 		dnsGetIp(opts.service_host,ip);
-		if (udp_server) {
-			udp_server->SendBuffer(udp_server,ip,opts.service_port,g_config.imei,strlen(g_config.imei));
-		}
+		if (connect_flag == 0) {
+			if (tcp_client->Connect(tcp_client,ip,opts.service_port,5000) < 0){
+				printf("connect fail,:%s,%d\n",ip,opts.service_port);
+				sleep(1);
+				continue;
+			} else  {
+				connect_flag = 1;
+			}
+		} 
+		tcp_client->SendBuffer(tcp_client,g_config.imei,strlen(g_config.imei));	
+		
 		sleep(30);
 	}
 	return NULL;
@@ -555,17 +678,10 @@ static void* udpHeartThread(void *arg)
 /* ---------------------------------------------------------------------------*/
 void registHardCloud(void)
 {
+	tcpClientInit();
 	http = myHttpCreate();
 	mqtt = myMqttCreate();
-	// createThread(initThread,NULL);
-	// createThread(udpHeartThread,NULL);
-
-	unsigned char buff_img[1024*100];
-	FILE *fd = fopen("320_180.jpg","rb");
-	int leng = fread(buff_img,sizeof(buff_img),1,fd);
-	fclose(fd);
-	// int leng = http->post("http://pslshdif0.bkt.clouddn.com/CatEye20190617072617580.jpg",NULL,buff_img);
-	printf("len:%d\n", leng);
-	my_face->regist(buff_img,1280,720,"123","xb");
+	createThread(initThread,NULL);
+	createThread(tcpHeartThread,NULL);
 }
 

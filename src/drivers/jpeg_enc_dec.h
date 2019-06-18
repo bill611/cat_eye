@@ -24,7 +24,10 @@ extern "C" {
 
 	void jpegIncDecInit(void);
 
-	int jpegToYuv420sp(unsigned char* jpeg_buffer, int jpeg_size, unsigned char* yuv_buffer, int* yuv_size, int* yuv_type);
+	int jpegToYuv420sp(unsigned char* jpeg_buffer, 
+			int jpeg_size, 
+			int *out_width, int *out_height,
+			unsigned char** yuv_buffer, int* yuv_size );
 	int yuv420spToJpeg(unsigned char* yuv_buffer,  int width, int height, 
 			unsigned char** jpeg_buffer, int* jpeg_size);
 

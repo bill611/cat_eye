@@ -332,25 +332,23 @@ static void SQLite_prepare(struct _TSqlite *This,char *SqlCmd)
             SqlCmd,strlen(SqlCmd),
             &This->Private->ppStmt,NULL);
 }
-static void SQLite_reset(struct _TSqlite *This)
+static void SQLite_bind_reset(struct _TSqlite *This)
 {
     sqlite3_reset(This->Private->ppStmt);
 	This->Private->bind_num = 1;
 }
-static void SQLite_get_blob_data(struct _TSqlite *This,void *data)
+static void SQLite_bind_get_reset(struct _TSqlite *This)
 {
-	const void *p;
-	p = sqlite3_column_blob(This->Private->ppStmt,0);
-    int size = sqlite3_column_bytes(This->Private->ppStmt,0);
-	memcpy(data,p,size);
+    // sqlite3_reset(This->Private->ppStmt);
+	This->Private->bind_num = 0;
 }
 static void SQLite_finalize(struct _TSqlite *This)
 {
     sqlite3_finalize(This->Private->ppStmt);
 }
-static void SQLite_step(struct _TSqlite *This)
+static int SQLite_step(struct _TSqlite *This)
 {
-    sqlite3_step(This->Private->ppStmt);
+    return sqlite3_step(This->Private->ppStmt);
 }
 static void SQLite_bind_int(struct _TSqlite *This,int arg)
 {
@@ -365,6 +363,27 @@ static void SQLite_bind_blob(struct _TSqlite *This,void *data,int size)
 static void SQLite_bind_text(struct _TSqlite *This,char *text)
 {
     sqlite3_bind_text(This->Private->ppStmt,This->Private->bind_num,text,-1,SQLITE_STATIC);
+	This->Private->bind_num++;
+}
+
+static void SQLite_get_blob_data(struct _TSqlite *This,void *data)
+{
+	if(data) {
+		const void *p;
+		p = sqlite3_column_blob(This->Private->ppStmt,This->Private->bind_num);
+		int size = sqlite3_column_bytes(This->Private->ppStmt,This->Private->bind_num);
+		memcpy(data,p,size);
+	}
+	This->Private->bind_num++;
+}
+static void SQLite_get_text_data(struct _TSqlite *This,char *data)
+{
+	if (data){
+		const unsigned char *p;
+		int size = sqlite3_column_bytes(This->Private->ppStmt,This->Private->bind_num);
+		p = sqlite3_column_text(This->Private->ppStmt,This->Private->bind_num);
+		memcpy(data,p,size);
+	}
 	This->Private->bind_num++;
 }
 //----------------------------------------------------------------------------
@@ -412,13 +431,15 @@ TSqlite * CreateLocalQuery(const char *FileName)
 	This->LastRowId = SQLite_LastRowId;
 
     This->prepare = SQLite_prepare;
-    This->reset = SQLite_reset;
+    This->bind_reset = SQLite_bind_reset;
+    This->get_reset = SQLite_bind_get_reset;
     This->finalize = SQLite_finalize;
     This->step = SQLite_step;
     This->bind_int = SQLite_bind_int;
     This->bind_text = SQLite_bind_text;
     This->bind_blob = SQLite_bind_blob;
 	This->getBlobData = SQLite_get_blob_data;
+	This->getBindText = SQLite_get_text_data;
     return This;
 }
 //----------------------------------------------------------------------------

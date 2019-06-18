@@ -22,6 +22,7 @@
 #include "rd_face.h"
 #include "my_face.h"
 #include "debug.h"
+#include "sql_handle.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
@@ -48,14 +49,20 @@ static int init(void)
 	}
 	return 0;
 }
-static int regist(unsigned char *image_buff,int w,int h,char *id,char *name)
+static int regist(unsigned char *image_buff,int w,int h,char *id,char *nick_name,char *url)
 {
 	float *feature = NULL;
-	if (rdfaceRegist(image_buff,w,h,&feature) < 0 ){
+	int feature_len = 0;
+	if (rdfaceRegist(image_buff,w,h,&feature,&feature_len) < 0 ){
 		DPRINT("regsit face err!\n");
 		return -1;
 	}
-	// TODO write db
+	sqlInsertFace(id,nick_name,url,feature,feature_len);
+}
+static int deleteOne(char *id)
+{
+	sqlDeleteFace(id);
+	return 0;
 }
 static int recognizer(char *image_buff)
 {
@@ -71,6 +78,8 @@ void myFaceInit(void)
 	my_face = (MyFace *) calloc(1,sizeof(MyFace));
 	my_face->init = init;
 	my_face->regist = regist;
+	my_face->deleteOne = deleteOne;
 	my_face->recognizer = recognizer;
 	my_face->uninit = uninit;
+	my_face->init();
 }

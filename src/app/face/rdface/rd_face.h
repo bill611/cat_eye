@@ -24,7 +24,7 @@ extern "C" {
 
 	int rdfaceInit(void);
 	void rdfaceUninit(void);
-	int rdfaceRegist(unsigned char *image_buff,int w,int h,float **out_feature);
+	int rdfaceRegist(unsigned char *image_buff,int w,int h,float **out_feature,int *out_feature_size);
 
 #ifdef __cplusplus
 }

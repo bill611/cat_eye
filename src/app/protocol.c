@@ -26,6 +26,7 @@
 #include "my_mqtt.h"
 #include "json_dec.h"
 #include "udp_server.h"
+#include "tcp_client.h"
 #include "thread_helper.h"
 #include "externfunc.h"
 #include "protocol.h"

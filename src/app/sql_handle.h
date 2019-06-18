@@ -47,6 +47,16 @@ extern "C" {
 			char *nick_name,
 			int *scope);
 	extern void sqlGetUserInfoEnd(void);
+	extern void sqlInsertFace(char *user_id,
+			char *nick_name,
+			char *url,
+			void *feature,
+			int size);
+
+	extern void sqlGetFaceStart(void);
+	extern int sqlGetFace(char *user_id,char *nick_name,char *url,void *feature);
+	extern void sqlGetFaceEnd(void);
+	extern void sqlDeleteFace(char *id);
 	extern void sqlCheckBack(void);
 	extern void sqlInit(void);
 

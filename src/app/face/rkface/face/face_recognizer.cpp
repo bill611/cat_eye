@@ -358,10 +358,9 @@ void FaceRecognizer::getFileImage(char *path,int w,int h)
 	printf("len:%d\n", leng_read);
 	fclose(img_fd);
 	int out_len = 0;
-	int yuv_type = 0;
 	unsigned char *jpeg_buff_out = (unsigned char *)malloc(size);
 	unsigned char *p_jpeg_buff = NULL;
-	jpegToYuv420sp(jpeg_buff,54996  ,jpeg_buff_out,&out_len,&yuv_type);
+	jpegToYuv420sp(jpeg_buff,54996  ,jpeg_buff_out,&out_len);
 	// yuv420spToJpeg(jpeg_buff, w,h,&p_jpeg_buff, &out_len);
 	img_fd = fopen("320_180.yuv","wb");
 	if (img_fd) {

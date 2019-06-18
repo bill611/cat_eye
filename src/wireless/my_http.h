@@ -22,7 +22,7 @@ extern "C" {
 #endif  /* __cplusplus */
 
 	typedef struct _MyHttp {
-		int (*post)(char *url, char *para, char *out_data);
+		int (*post)(char *url, char *para, char **out_data);
 		int (*download)(char *url, char *para, char *file_path);
 	}MyHttp;
 

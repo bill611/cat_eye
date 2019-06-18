@@ -49,13 +49,15 @@ typedef struct _TSqlite
 	int (*LastRowId)(struct _TSqlite *This);						//取得最后插入影响的ID
 
     void (*prepare)(struct _TSqlite *This,char *SqlCmd);
-    void (*reset)(struct _TSqlite *This);
+    void (*bind_reset)(struct _TSqlite *This);
+    void (*get_reset)(struct _TSqlite *This);
     void (*finalize)(struct _TSqlite *This);
-    void (*step)(struct _TSqlite *This);
+    int (*step)(struct _TSqlite *This);
     void (*bind_int)(struct _TSqlite *This,int arg);
     void (*bind_text)(struct _TSqlite *This,char *text);
     void (*bind_blob)(struct _TSqlite *This,void *data,int size);
 	void (*getBlobData)(struct _TSqlite *This,void *data);
+	void (*getBindText)(struct _TSqlite *This,char *data);
 } TSqlite;
 
 typedef struct _TSqliteData {      
