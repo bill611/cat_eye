@@ -17,7 +17,8 @@ option(PLATFORM_RV1108 "This is a option for rv1108" ON)
 # 设置编译功能
 option(MODE_UCPAAS "This is a option for ucpass" ON)
 option(MODE_FACE "This is a option for face" ON)
-option(MODE_UART "This is a option for face" ON)
+option(MODE_UART "This is a option for uart" ON)
+option(MODE_VIDEO "This is a option for video" ON)
 
 # 添加编译过程变量
 # set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -130,6 +131,9 @@ if (MODE_FACE)
 endif()
 if (MODE_UART)
 	add_definitions(-DUSE_UART)
+endif()
+if (MODE_VIDEO)
+    add_definitions(-DUSE_VIDEO)
 endif()
 
 # 添加宏定义

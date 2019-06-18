@@ -6,8 +6,6 @@
  *    Description:  阅面人脸识别算法
  *
 3.rdfaceRecognizer 人脸检测追踪
-4.getFaceFeature 人脸特征提取
-5.get_fr_feature_similarity_norm_neon 人脸比对，结果大于0.4即可认为是同一人，但最好取人脸库相识度最大的。
  *
  *        Version:  1.0
  *        Created:  2019-06-18 19:34:21
@@ -40,8 +38,6 @@
  *                  internal functions declare
  *----------------------------------------------------------------------------*/
 static void fillFaceTrackBuf(unsigned char *image, int width, int height);
-static int getFaceFeature(struct video_ion* image,  rs_point landmarks21[], float *outFRFeature);
-int DB_similarity_contrast(float *feature , PERSON_INFO *person_info);
 
 /* ---------------------------------------------------------------------------*
  *                        macro define
@@ -52,6 +48,7 @@ int DB_similarity_contrast(float *feature , PERSON_INFO *person_info);
 #define APP_ID "dfe52c64a6a368bf181c76b512d2b3fe"
 
 #define RECOGNITION_TIME 0
+#define TRACK_TIME 0
 
 typedef struct tag_PERSON_INFO
 {
@@ -209,15 +206,14 @@ static void fillFaceTrackBuf(unsigned char *image, int width, int height)
  *
  * @param image
  * @param landmarks21[]
- * @param outFRFeature
+ * @param outFRFeature 特征值
  *
- * @returns 
+ * @returns 0 成功 -1 失败
  */
 /* ---------------------------------------------------------------------------*/
 static int getFaceFeature(struct video_ion* image,  rs_point landmarks21[] , float *outFRFeature)
 {
 	float *pFRFeature = (float *)dst_ion.buffer;
-	int j;
 
 #if RECOGNITION_TIME
 	struct timeval start_time,end_time;
@@ -282,56 +278,56 @@ int rdfaceRegist(unsigned char *image_buff,int w,int h,float **out_feature,int *
 			pFace->track_id, pFace->blur_prob, pFace->front_prob,
 			pFace->left, pFace->top, pFace->right, pFace->bottom);
 
-
-	float face_landmark[FACE_LANDMARK_NUM*2];
-	memcpy(face_landmark, pFace->face_landmark, sizeof(face_landmark));
-
 	//提特征
-	*out_feature = (float *)dst_ion.buffer;
+	*out_feature = (float*)malloc(FACE_RECOGNITION_FEATURE_DIMENSION*sizeof(float));
 	*out_feature_size = FACE_RECOGNITION_FEATURE_DIMENSION;
 
-	if(readsense_face_recognition_lite(model_ion.buffer, (void*)model_ion.phys, raw_ion.buffer, (void*)raw_ion.phys,
-				dst_ion.buffer, (void*)dst_ion.phys, internal_ion.buffer, (void*)internal_ion.phys,
-				dsp_fd,raw_ion.width, raw_ion.height, (float *)face_landmark)){
-		printf("%s:------> readsense_face_recognition_lite failed.\n", __func__);
-		return -1;
-	}
-
-	return 0;
+    return getFaceFeature(&raw_ion,  (rs_point *)pFace->face_landmark,*out_feature);
 }
 
-int rdfaceRecognizer(void)
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief rdfaceRecognizer 探测并识别人脸
+ *
+ * @param image_buff 输入图像
+ * @param w 宽
+ * @param h 高
+ * @param featureCompare 人脸特征比较回调函数,回调中调用rdfaceGetFeatureSimilarity
+ *
+ * @returns 0 成功 -1 失败
+ */
+/* ---------------------------------------------------------------------------*/
+int rdfaceRecognizer(unsigned char *image_buff,int w,int h,int (*featureCompare)(float *feature))
 {
 	int *face_count = (int *)dst_ion.buffer;
 	RSFT_FACE_RESULT *pFace = (RSFT_FACE_RESULT *)((int *)dst_ion.buffer+1);
 	RSFT_FACE_RESULT *pFaceALL =NULL;
-	int ret;
+	int ret = -1;
 	printf("in rdfaceRecognizer\n");
 
+	fillFaceTrackBuf(image_buff,w,h);
 	//人脸检测追踪
-	ret = readsense_face_tracking(model_ion.buffer, (void*)model_ion.phys,
+	int result = readsense_face_tracking(model_ion.buffer, (void*)model_ion.phys,
 		raw_ion.buffer, (void*)raw_ion.phys, dst_ion.buffer, (void*)dst_ion.phys,
 		internal_ion.buffer, (void*)internal_ion.phys, dsp_fd, raw_ion.width, raw_ion.height);
 
-	printf("\nreadsense_face_tracking  return %d \n",ret);
-	if ( ret ==RSFT_LICENCE_VALIDATE_FAIL ) {
+	printf("\nreadsense_face_tracking  return %d \n",result);
+	if ( result == RSFT_LICENCE_VALIDATE_FAIL ) {
 		printf("%s:------> readsense_face_tracking LICENCE_VALIDATE_FAIL.\n", __func__);
-		return -1;
+		goto exit;
 	}
 
-#if 1
 	printf("===>face num=%d\n",*face_count);
 	if (*face_count == 0) {
 		printf("error : face num=0\n");
 		goto exit;
 	}
-#endif
-	int faceCount=*face_count;
+	int faceCount = *face_count;
 
 	pFaceALL = (RSFT_FACE_RESULT *)malloc(faceCount*sizeof(RSFT_FACE_RESULT));
 	if(pFaceALL==NULL) {
 		printf("pFaceALL  malloc error!\n");
-		return -1;
+		goto exit;
 	}
 	memcpy(pFaceALL,pFace,faceCount*sizeof(RSFT_FACE_RESULT));
 
@@ -345,90 +341,67 @@ int rdfaceRecognizer(void)
 		float face_landmark[FACE_LANDMARK_NUM*2];
 		memcpy(face_landmark, pFaceALL[i].face_landmark, sizeof(face_landmark));
 
-		int j=0;
-		printf("face_landmark===> ");
-		for(j=0;j<FACE_LANDMARK_NUM*2;j++)
-		{
-			printf(" %f ",face_landmark[j]);
-
-		}
-		printf("\n");
-
 
 		float *quality_value = (float *)dst_ion.buffer;
 		if(readsense_face_quality(model_ion.buffer,(void*)model_ion.phys,
 						raw_ion.buffer, (void*)raw_ion.phys,dst_ion.buffer, (void*)dst_ion.phys,
 						internal_ion.buffer, (void*)internal_ion.phys, dsp_fd, raw_ion.width, raw_ion.height,
-						face_landmark))
-		{
+						face_landmark)) {
 			printf("%s:------> readsense_face_quality failed.\n", __func__);
 			goto exit;
 		}
 		printf("==>quality_value:%f\n",*quality_value);
-		if(*quality_value<0.25)
-		{
+		if(*quality_value < 0.25) {
 			printf("Low quality=%f\n",*quality_value);
 			continue;
 		}
-	#if	0
-		int *liveness_flag =(int *)dst_ion.buffer;
-		if(readsense_face_liveness_infrared(model_ion.buffer,(void*)model_ion.phys,
-						raw_ion.buffer, (void*)raw_ion.phys,dst_ion.buffer, (void*)dst_ion.phys,
-						internal_ion.buffer, (void*)internal_ion.phys, dsp_fd, raw_ion.width, raw_ion.height,
-						face_landmark))
-		{
-			printf("%s:------> readsense_face_liveness_infrared failed.\n", __func__);
-			goto exit;
-		}
-		if( 0  && *liveness_flag==0)
-		{
-			printf("not liveness!!\n");
-			continue;
-		}
-	#endif
-
-	#if 1
-		float feature[FACE_RECOGNITION_FEATURE_DIMENSION];
-		//提取特征值
-		ret = getFaceFeature(&raw_ion,  (rs_point *)face_landmark,feature);
-
-		PERSON_INFO person_info;
-		//对比
-		if(DB_similarity_contrast(feature,&person_info))
-		{
-			printf("Identify  successful :  %s \n", person_info.name);
-		}
-		else
-		{
-			printf("Identify failure!!\n");
-		}
-	#endif
+        if (featureCompare) {
+            float feature[FACE_RECOGNITION_FEATURE_DIMENSION];
+            //提取特征值
+            if (getFaceFeature(&raw_ion,  (rs_point *)face_landmark,feature) == 0) {
+                if (featureCompare(feature) == 0) {
+                    ret = 0;
+                    break;
+                }
+            }
+        } else {
+            ret = 0;
+            break;
+        }
 	}
 
-
-
-	free(pFaceALL);
-
-	return ret;
 exit:
 	free(pFaceALL);
-	return -1;
+    readsense_clear_tracking_state();
+	return ret;
 }
 
 
-
-
-#if 1
-
-
-static float get_fr_feature_similarity_norm_neon(float *feature1, float *feature2, int dimension)
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief rdfaceGetFeatureSimilarity 人脸特征对比，结果大于0.4，可以认为是
+ * 同一人，但最好取人脸库相识度最大的
+ *
+ * @param feature1
+ * @param feature2
+ *
+ * @returns 返回相似度 0-1之间,>0.4可以认为是同一人
+ */
+/* ---------------------------------------------------------------------------*/
+float rdfaceGetFeatureSimilarity(float *feature1, float *feature2)
 {
 	int i;
+    int dimension = FACE_RECOGNITION_FEATURE_DIMENSION;
 	int iter = dimension >> 5;
+#if TRACK_TIME
+    struct timeval start_time,end_time;
+    float cost_time;
+
+    gettimeofday(&start_time,NULL);
+#endif
 	float32x4_t sum1 = vdupq_n_f32(0.0);
 	float32x4_t sum2 = vdupq_n_f32(0.0);
-	for (i = 0; i < iter; i++)
-	{
+	for (i = 0; i < iter; i++) {
 		float32x4_t f1_0 = vld1q_f32(feature1);
 		float32x4_t f2_0 = vld1q_f32(feature2);
 		sum1 = vaddq_f32(sum1, vmulq_f32(f1_0, f2_0));
@@ -465,68 +438,13 @@ static float get_fr_feature_similarity_norm_neon(float *feature1, float *feature
 		feature2 += 32;
 	}
 	sum1 = vaddq_f32(sum1, sum2);
-	return vgetq_lane_f32(sum1, 0) + vgetq_lane_f32(sum1, 1) + vgetq_lane_f32(sum1, 2) + vgetq_lane_f32(sum1, 3);
-}
+	float ret = vgetq_lane_f32(sum1, 0) + vgetq_lane_f32(sum1, 1) + vgetq_lane_f32(sum1, 2) + vgetq_lane_f32(sum1, 3);
 
-
-int DB_similarity_contrast(float *feature , PERSON_INFO *person_info)
-{
-	int ret=0;
-	int i=0;
-	float similarity_ret=0;
-
-	for(i=0;i<g_DB_face.face_num;i++)
-	{
-#define TRACK_TIME 0
 #if TRACK_TIME
-		struct timeval start_time,end_time;
-		float cost_time;
-
-		gettimeofday(&start_time,NULL);
+    gettimeofday(&end_time,NULL);
+    cost_time = (1000000*end_time.tv_sec) + end_time.tv_usec - (1000000*start_time.tv_sec) - start_time.tv_usec;
+    printf("rdfaceGetFeatureSimilarity cost time: %f ms\n", cost_time / 1000);
 #endif
-		similarity_ret = get_fr_feature_similarity_norm_neon(g_DB_face.person_data[i].DB_feature, feature,FACE_RECOGNITION_FEATURE_DIMENSION );
-#if TRACK_TIME
-		gettimeofday(&end_time,NULL);
-		cost_time = (1000000*end_time.tv_sec) + end_time.tv_usec - (1000000*start_time.tv_sec) - start_time.tv_usec;
-	//	if (cost_time > 1000)
-		{
-			printf("get_fr_feature_similarity_norm_neon cost time: %f ms\n", cost_time / 1000);
-		}
-#endif
-		printf("(%d)----cmp ret=%f \n",i,similarity_ret);
-		if(similarity_ret>0.4)
-		{
-			ret=1;
-			person_info->id = i;
 
-			memcpy(person_info->name, g_DB_face.person_data[i].name,strlen(g_DB_face.person_data[i].name));
-
-			break;
-		}
-	}
-	return ret;
+    return ret;
 }
-#endif
-
-
-
-
-
-int rktest(int argc,char *argv[])
-{
-
-	char *path = NULL;
-	char *info = NULL;
-	int mode=0;
-
-	// fillFaceTrackBuf(  buff, WIDTH_MAX , HEIGHT_MAX);
-
-
-		//识别
-		rdfaceRecognizer();
-		readsense_clear_tracking_state();
-
-	return 0;
-}
-
-

@@ -12,6 +12,10 @@ if (MODE_UCPAAS)
 	set(SUB_DIRS_APP ${SUB_DIRS_APP} ucpaas )
 endif()
 
+if (MODE_VIDEO)
+	set(SUB_DIRS_APP ${SUB_DIRS_APP} video )
+endif()
+
 foreach(sub ${SUB_DIRS_APP})
 	add_subdirectory(${sub})
 endforeach()

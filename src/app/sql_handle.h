@@ -53,6 +53,7 @@ extern "C" {
 			void *feature,
 			int size);
 
+    extern int sqlGetFaceCount(void);
 	extern void sqlGetFaceStart(void);
 	extern int sqlGetFace(char *user_id,char *nick_name,char *url,void *feature);
 	extern void sqlGetFaceEnd(void);

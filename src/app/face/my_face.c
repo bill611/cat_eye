@@ -19,6 +19,7 @@
  *----------------------------------------------------------------------------*/
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "rd_face.h"
 #include "my_face.h"
 #include "debug.h"
@@ -35,6 +36,7 @@
 /* ---------------------------------------------------------------------------*
  *                        macro define
  *----------------------------------------------------------------------------*/
+#define SIMILAYRITY 0.4
 
 /* ---------------------------------------------------------------------------*
  *                      variables define
@@ -53,21 +55,59 @@ static int regist(unsigned char *image_buff,int w,int h,char *id,char *nick_name
 {
 	float *feature = NULL;
 	int feature_len = 0;
+    int ret = -1;
 	if (rdfaceRegist(image_buff,w,h,&feature,&feature_len) < 0 ){
 		DPRINT("regsit face err!\n");
-		return -1;
+        goto regist_end;
 	}
+    ret = 0;
 	sqlInsertFace(id,nick_name,url,feature,feature_len);
+regist_end:
+    if (feature)
+        free(feature);
+    return ret;
 }
+
 static int deleteOne(char *id)
 {
 	sqlDeleteFace(id);
 	return 0;
 }
-static int recognizer(char *image_buff)
+
+static int featureCompareCallback(float *feature)
 {
-	
+    char user_id[32];
+    char nick_name[128];
+    char url[256];
+    float feature_src[512];
+    int result = -1;
+    sqlGetFaceStart();
+    while (1) {
+        memset(user_id,0,sizeof(user_id));
+        memset(nick_name,0,sizeof(nick_name));
+        memset(url,0,sizeof(url));
+        int ret = sqlGetFace(user_id,nick_name,url,feature_src);
+        if (ret == 0)
+            break;
+        float result = rdfaceGetFeatureSimilarity(feature_src,feature);
+        if (result > SIMILAYRITY) {
+            printf("id:%s,name:%s,url:%s\n", user_id,nick_name,url);
+            result = 0;
+            break; 
+        }
+    };
+    sqlGetFaceEnd();
+    return result;
 }
+
+static int recognizer(char *image_buff,int w,int h)
+{
+    if (sqlGetFaceCount())
+        return rdfaceRecognizer(image_buff,w,h,featureCompareCallback);
+    else
+        return rdfaceRecognizer(image_buff,w,h,NULL);
+}
+
 static void uninit(void)
 {
 	rdfaceUninit();

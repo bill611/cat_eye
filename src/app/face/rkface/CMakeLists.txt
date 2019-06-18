@@ -18,7 +18,7 @@ set(FACE_CAPTURE_LIB rkmedia mpp)
 add_definitions(-DUSE_H264_ENCODER=1)
 set(H264_ENCODER_LIB rkmedia mpp)
 
-set(SRC_HAL_FACE
+set(SRC_APP_RKFACE
     face.cpp
     face_service.cpp
     camera/cif_camera.cpp
@@ -47,7 +47,7 @@ add_definitions(
 	-DWIN_W=1280 -DWIN_H=720 -DVIDEO_DISPLAY_ROTATE_ANGLE=0
 )
 
-add_library (${CURRENT_FOLDER_APP_FACE_RK} ${SRC_HAL_FACE}) 
+add_library (${CURRENT_FOLDER_APP_FACE_RK} ${SRC_APP_RKFACE}) 
 
 target_link_libraries(${CURRENT_FOLDER_APP_FACE_RK}
     rkrga rkfb ion pthread adk messenger nanomsg cjson

@@ -264,6 +264,16 @@ void sqlInsertFace(char *user_id,
 	pthread_mutex_unlock(&mutex);
 }
 
+int sqlGetFaceCount(void)
+{
+	pthread_mutex_lock(&mutex);
+	LocalQueryOpen(dbase.sql,"select userId From FaceInfo");
+	int ret = dbase.sql->RecordCount(dbase.sql);
+	dbase.sql->Close(dbase.sql);
+	pthread_mutex_unlock(&mutex);
+	return ret;
+
+}
 void sqlGetFaceStart(void)
 {
 	char buf[128];

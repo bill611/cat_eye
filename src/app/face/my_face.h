@@ -25,7 +25,7 @@ extern "C" {
 		int (*init)(void);
 		int (*deleteOne)(char *id);
 		int (*regist)(unsigned char *image_buff,int w,int h,char *id,char *nick_name,char *url);
-		int (*recognizer)(char *image_buff);
+		int (*recognizer)(char *image_buff,int w,int h);
 		void (*uninit)(void);
 	}MyFace;
 
