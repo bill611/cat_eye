@@ -168,7 +168,7 @@ static int queueGet(Queue *This,void *data)
  * @returns
  */
 /* ----------------------------------------------------------------*/
-Queue * queueCreate(char *queue_name,QueueType type,unsigned int Size)
+Queue * queueCreate(const char *queue_name,QueueType type,unsigned int Size)
 {
 	Queue * This = (Queue *)calloc(1,sizeof(Queue));
 	if(This == NULL) {

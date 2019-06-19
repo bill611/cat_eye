@@ -5,6 +5,9 @@
 
 #include "camerahal.h"
 #include "camerabuf.h"
+#include "process/display_process.h"
+#include "process/cammer_process.h"
+#include "process/encoder_process.h"
 
 
 class RKVideo {
@@ -33,8 +36,11 @@ class RKVideo {
     struct rk_cams_dev_info cam_info;
     std::shared_ptr<RKCameraBufferAllocator> ptr_allocator;
     CameraFactory cam_factory;
-    std::list<shared_ptr<RKCameraHal>> camhals;
+    std::shared_ptr<RKCameraHal> cam_dev;
+
     std::shared_ptr<DisplayProcess> display_process;
+    std::shared_ptr<CammerProcess> cammer_process;
+    std::shared_ptr<Encoder> encode_process;
 };
 
 

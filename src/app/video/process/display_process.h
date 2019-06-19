@@ -7,10 +7,6 @@
 #include <rk_rga/rk_rga.h>
 
 
-
-
-#define VIDEO_DISPLAY_ROTATE_ANGLE 90
-
 class DisplayProcess : public StreamPUBase {
  public:
     DisplayProcess();
@@ -18,6 +14,7 @@ class DisplayProcess : public StreamPUBase {
 
     bool processFrame(std::shared_ptr<BufferBase> input,
                             std::shared_ptr<BufferBase> output) override;
+	void setVideoBlack(void);
  private:
     int rga_fd;
 };

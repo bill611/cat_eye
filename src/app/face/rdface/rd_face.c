@@ -5,7 +5,6 @@
  *
  *    Description:  阅面人脸识别算法
  *
-3.rdfaceRecognizer 人脸检测追踪
  *
  *        Version:  1.0
  *        Created:  2019-06-18 19:34:21
@@ -37,7 +36,6 @@
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
  *----------------------------------------------------------------------------*/
-static void fillFaceTrackBuf(unsigned char *image, int width, int height);
 
 /* ---------------------------------------------------------------------------*
  *                        macro define
@@ -48,44 +46,29 @@ static void fillFaceTrackBuf(unsigned char *image, int width, int height);
 #define APP_ID "dfe52c64a6a368bf181c76b512d2b3fe"
 
 #define RECOGNITION_TIME 0
-#define TRACK_TIME 0
-
-typedef struct tag_PERSON_INFO
-{
-	char name[32];
-	int id;
-	float DB_feature[10][FACE_RECOGNITION_FEATURE_DIMENSION];
-}PERSON_INFO;
-
-typedef struct tag_FACE_DB
-{
-	int face_num;
-	PERSON_INFO person_data[10];
-}FACE_DB;
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
-static const char* g_fd_weights_path = FACE_MODEL_PATH"fd.weights.bin";
-static const char* g_fl_weights_path = FACE_MODEL_PATH"fl.weights.bin";
-static const char* g_fle_light_weights_path = FACE_MODEL_PATH"fle_light.weights.bin";
-static const char* g_fle_infrared_weights_path = FACE_MODEL_PATH"fle_infrared.weights.bin";
-static const char* g_fgs_weights_path = FACE_MODEL_PATH"fgs.weights.bin";
-static const char* g_fr_lite_weights_path = FACE_MODEL_PATH"fr_lite.weights.bin";
-static const char* g_fq_weights_path = FACE_MODEL_PATH"fq.weights.bin";
-static const char* g_fla_weights_path = FACE_MODEL_PATH"fla.weights.bin";
+static const char* g_fd_weights_path 			= FACE_MODEL_PATH"fd.weights.bin";
+static const char* g_fl_weights_path 			= FACE_MODEL_PATH"fl.weights.bin";
+static const char* g_fle_light_weights_path 	= FACE_MODEL_PATH"fle_light.weights.bin";
+static const char* g_fle_infrared_weights_path 	= FACE_MODEL_PATH"fle_infrared.weights.bin";
+static const char* g_fgs_weights_path 			= FACE_MODEL_PATH"fgs.weights.bin";
+static const char* g_fr_lite_weights_path 		= FACE_MODEL_PATH"fr_lite.weights.bin";
+static const char* g_fq_weights_path 			= FACE_MODEL_PATH"fq.weights.bin";
+static const char* g_fla_weights_path 			= FACE_MODEL_PATH"fla.weights.bin";
 
 static struct video_ion model_ion;
 static struct video_ion raw_ion;
 static struct video_ion dst_ion;
 static struct video_ion internal_ion;
-static int dsp_fd;
 
-FACE_DB g_DB_face;
+static int dsp_fd;
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief rdfaceInit 初始化人脸识别算法
  *
- * @returns 
+ * @returns
  */
 /* ---------------------------------------------------------------------------*/
 int rdfaceInit(void)
@@ -193,7 +176,7 @@ void rdfaceUninit(void)
 /* ---------------------------------------------------------------------------*/
 static void fillFaceTrackBuf(unsigned char *image, int width, int height)
 {
-	printf("face->width:%d height:%d\n",width,height);
+	// printf("face->width:%d height:%d\n",width,height);
 	raw_ion.width = width;
 	raw_ion.height = height;
 	raw_ion.size = width * height * 3 / 2;
@@ -260,10 +243,9 @@ int rdfaceRegist(unsigned char *image_buff,int w,int h,float **out_feature,int *
 	fillFaceTrackBuf(image_buff,w,h);
 
 	//人脸追踪
-	ret = readsense_face_detection(model_ion.buffer, (void*)model_ion.phys,
+	ret = readsense_face_detection_and_landmark(model_ion.buffer, (void*)model_ion.phys,
 			raw_ion.buffer, (void*)raw_ion.phys, dst_ion.buffer, (void*)dst_ion.phys,
 			internal_ion.buffer, (void*)internal_ion.phys, dsp_fd, raw_ion.width, raw_ion.height);
-	printf("readsense_face_detection_and_landmark  return %d \n",ret);
 	if ( ret !=0 ) {
 		printf("%s:------> readsense_face_detection_and_landmark LICENCE_VALIDATE_FAIL.\n", __func__);
 		return -1;
@@ -274,13 +256,13 @@ int rdfaceRegist(unsigned char *image_buff,int w,int h,float **out_feature,int *
 		return -1;
 	}
 
-	printf("\ntrackId: %d, blur: %f,front_prob:%f  ,position is: [%d, %d, %d, %d] \n",
-			pFace->track_id, pFace->blur_prob, pFace->front_prob,
-			pFace->left, pFace->top, pFace->right, pFace->bottom);
+	// printf("\ntrackId: %d, blur: %f,front_prob:%f  ,position is: [%d, %d, %d, %d] \n",
+			// pFace->track_id, pFace->blur_prob, pFace->front_prob,
+			// pFace->left, pFace->top, pFace->right, pFace->bottom);
 
 	//提特征
 	*out_feature = (float*)malloc(FACE_RECOGNITION_FEATURE_DIMENSION*sizeof(float));
-	*out_feature_size = FACE_RECOGNITION_FEATURE_DIMENSION;
+	*out_feature_size = FACE_RECOGNITION_FEATURE_DIMENSION*sizeof(float);
 
     return getFaceFeature(&raw_ion,  (rs_point *)pFace->face_landmark,*out_feature);
 }
@@ -303,7 +285,6 @@ int rdfaceRecognizer(unsigned char *image_buff,int w,int h,int (*featureCompare)
 	RSFT_FACE_RESULT *pFace = (RSFT_FACE_RESULT *)((int *)dst_ion.buffer+1);
 	RSFT_FACE_RESULT *pFaceALL =NULL;
 	int ret = -1;
-	printf("in rdfaceRecognizer\n");
 
 	fillFaceTrackBuf(image_buff,w,h);
 	//人脸检测追踪
@@ -311,15 +292,15 @@ int rdfaceRecognizer(unsigned char *image_buff,int w,int h,int (*featureCompare)
 		raw_ion.buffer, (void*)raw_ion.phys, dst_ion.buffer, (void*)dst_ion.phys,
 		internal_ion.buffer, (void*)internal_ion.phys, dsp_fd, raw_ion.width, raw_ion.height);
 
-	printf("\nreadsense_face_tracking  return %d \n",result);
+	// printf("\nreadsense_face_tracking  return %d \n",result);
 	if ( result == RSFT_LICENCE_VALIDATE_FAIL ) {
 		printf("%s:------> readsense_face_tracking LICENCE_VALIDATE_FAIL.\n", __func__);
 		goto exit;
 	}
 
-	printf("===>face num=%d\n",*face_count);
+	// printf("===>face num=%d\n",*face_count);
 	if (*face_count == 0) {
-		printf("error : face num=0\n");
+		// printf("error : face num=0\n");
 		goto exit;
 	}
 	int faceCount = *face_count;
@@ -334,9 +315,9 @@ int rdfaceRecognizer(unsigned char *image_buff,int w,int h,int (*featureCompare)
 	int i=0;
 
 	for(i=0; i<faceCount ; i++) {
-		printf("face_count:%d , facenum:%d: ,trackId: %d, blur: %f,front_prob:%f  ,position is: [%d, %d, %d, %d] \n",
-				faceCount,i,pFaceALL[i].track_id, pFaceALL[i].blur_prob, pFaceALL[i].front_prob,
-				pFaceALL[i].left, pFaceALL[i].top, pFaceALL[i].right, pFaceALL[i].bottom);
+		// printf("face_count:%d , facenum:%d: ,trackId: %d, blur: %f,front_prob:%f  ,position is: [%d, %d, %d, %d] \n",
+				// faceCount,i,pFaceALL[i].track_id, pFaceALL[i].blur_prob, pFaceALL[i].front_prob,
+				// pFaceALL[i].left, pFaceALL[i].top, pFaceALL[i].right, pFaceALL[i].bottom);
 
 		float face_landmark[FACE_LANDMARK_NUM*2];
 		memcpy(face_landmark, pFaceALL[i].face_landmark, sizeof(face_landmark));
@@ -350,9 +331,9 @@ int rdfaceRecognizer(unsigned char *image_buff,int w,int h,int (*featureCompare)
 			printf("%s:------> readsense_face_quality failed.\n", __func__);
 			goto exit;
 		}
-		printf("==>quality_value:%f\n",*quality_value);
+		// printf("==>quality_value:%f\n",*quality_value);
 		if(*quality_value < 0.25) {
-			printf("Low quality=%f\n",*quality_value);
+			// printf("Low quality=%f\n",*quality_value);
 			continue;
 		}
         if (featureCompare) {
@@ -372,7 +353,7 @@ int rdfaceRecognizer(unsigned char *image_buff,int w,int h,int (*featureCompare)
 
 exit:
 	free(pFaceALL);
-    readsense_clear_tracking_state();
+    // readsense_clear_tracking_state();
 	return ret;
 }
 
@@ -393,12 +374,6 @@ float rdfaceGetFeatureSimilarity(float *feature1, float *feature2)
 	int i;
     int dimension = FACE_RECOGNITION_FEATURE_DIMENSION;
 	int iter = dimension >> 5;
-#if TRACK_TIME
-    struct timeval start_time,end_time;
-    float cost_time;
-
-    gettimeofday(&start_time,NULL);
-#endif
 	float32x4_t sum1 = vdupq_n_f32(0.0);
 	float32x4_t sum2 = vdupq_n_f32(0.0);
 	for (i = 0; i < iter; i++) {
@@ -438,13 +413,5 @@ float rdfaceGetFeatureSimilarity(float *feature1, float *feature2)
 		feature2 += 32;
 	}
 	sum1 = vaddq_f32(sum1, sum2);
-	float ret = vgetq_lane_f32(sum1, 0) + vgetq_lane_f32(sum1, 1) + vgetq_lane_f32(sum1, 2) + vgetq_lane_f32(sum1, 3);
-
-#if TRACK_TIME
-    gettimeofday(&end_time,NULL);
-    cost_time = (1000000*end_time.tv_sec) + end_time.tv_usec - (1000000*start_time.tv_sec) - start_time.tv_usec;
-    printf("rdfaceGetFeatureSimilarity cost time: %f ms\n", cost_time / 1000);
-#endif
-
-    return ret;
+	return vgetq_lane_f32(sum1, 0) + vgetq_lane_f32(sum1, 1) + vgetq_lane_f32(sum1, 2) + vgetq_lane_f32(sum1, 3);
 }

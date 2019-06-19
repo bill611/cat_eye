@@ -523,7 +523,7 @@ static void *udpSocketReadThread(void *arg)
  * @returns
  */
 /* ---------------------------------------------------------------------------*/
-TUDPServer* udpServerCreate(int Port,char *queue_name)
+TUDPServer* udpServerCreate(int Port,const char *queue_name)
 {
 	int ret;
 	int opt = 1;

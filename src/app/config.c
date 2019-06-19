@@ -36,6 +36,7 @@ static EtcValueChar etc_public_char[]={
 static EtcValueInt etc_private_int[]={
 {"wireless",	"enable",		&g_config.net_config.enable,0},
 {"cloud",		"timestamp",	&g_config.timestamp,		0},
+{"device",		"capture_count",&g_config.capture_count,	1},
 };
 
 static EtcValueChar etc_private_char[]={

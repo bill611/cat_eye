@@ -120,6 +120,7 @@ extern "C" {
         char version[16];      // 太川软件版本
         char app_url[128];     // appd地址 
 		int  timestamp;        // 启动时间戳
+		int capture_count;	   // 抓拍图片数量
         TcWifiConfig net_config;  // 网络设置
 	} Config;
 

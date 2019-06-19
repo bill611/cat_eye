@@ -13,6 +13,7 @@
 #include "my_static.h"
 #include "my_title.h"
 
+#include "my_video.h"
 #include "form_video.h"
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
@@ -28,7 +29,6 @@ extern void formSettingStoreLoadBmp(void);
 extern void formSettingQrcodeLoadBmp(void);
 extern void formSettingUpdateLoadBmp(void);
 
-extern int video_init(void);
 extern void formVideoInitInterface(void);
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -155,9 +155,7 @@ static int formVideoLayerProc(HWND hWnd, int message, WPARAM wParam, LPARAM lPar
 				formVideoLoadBmp();
 				HWND form = createFormVideo(hWnd,FORM_VIDEO_TYPE_CAPTURE,NULL);
 				ShowWindow(form,SW_HIDE);
-#ifdef USE_FACE
-				// video_init();
-#endif
+				my_video->start();
 				formVideoInitInterface();
 				// screensaverStart(LCD_ON);
 			} break;

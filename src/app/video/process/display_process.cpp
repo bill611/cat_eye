@@ -36,7 +36,6 @@ bool DisplayProcess::processFrame(std::shared_ptr<BufferBase> inBuf,
 
     int dst_w = disp_width;
     int dst_h = disp_height;
-    //int rotate_angle = (out_device == OUT_DEVICE_HDMI ? 0 : VIDEO_DISPLAY_ROTATE_ANGLE);
 	int rotate_angle = (out_device == OUT_DEVICE_HDMI ? 0 : 0);
 
     int ret = rk_rga_ionfd_to_ionfd_rotate(rga_fd,
@@ -48,23 +47,6 @@ bool DisplayProcess::processFrame(std::shared_ptr<BufferBase> inBuf,
         return false;
     }
 
-#ifdef TEST_WRITE_SP_TO_FILE
-      //write to file
-      char fname[50] = {0};
-      static int frames = 0;
-      snprintf(fname, 30, "/tmp/yuv_%dx%d.yuv", src_w, src_h);
-      frames++;
-      if ((frames > 25) && (frames < 31)) {
-        FILE* yuv_file =  fopen(fname, "a+");
-        if (yuv_file) {
-          fwrite(inBuf->getVirtAddr(), inBuf->getDataSize(), 1, yuv_file);
-          printf("write 0x%x bytes to file!", inBuf->getDataSize());
-          fclose(yuv_file);
-        } else
-          printf("open file %s error", fname);
-      }
-#endif
-
     if (rk_fb_video_disp(video_win) < -1){
 		printf("rk_fb_video_disp failed\n");
 	}
@@ -72,3 +54,18 @@ bool DisplayProcess::processFrame(std::shared_ptr<BufferBase> inBuf,
     return true;
 }
 
+void DisplayProcess::setVideoBlack()
+{
+    int disp_width = 0, disp_height = 0;
+    struct win* video_win = rk_fb_getvideowin();
+
+    int out_device = rk_fb_get_out_device(&disp_width, &disp_height);
+
+	int screen_size = disp_width*disp_height;
+	memset(video_win->buffer,0,screen_size);
+	memset(video_win->buffer + screen_size,0x80,screen_size/2);
+
+    if (rk_fb_video_disp(video_win) < -1){
+		printf("rk_fb_video_disp failed\n");
+	}
+}

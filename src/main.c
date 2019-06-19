@@ -32,6 +32,7 @@
 #include "sql_handle.h"
 #include "config.h"
 #include "my_face.h"
+#include "my_video.h"
 #include "jpeg_enc_dec.h"
 #include "form_videlayer.h"
 
@@ -119,6 +120,7 @@ int MiniGUIMain(int argc, const char* argv[])
 	gpioInputRegist();
 	createThread(timer1sThread,NULL);
 	jpegIncDecInit();
+	myVideoInit();
 	myFaceInit();
 	protocolInit();
 	formVideoLayerCreate();

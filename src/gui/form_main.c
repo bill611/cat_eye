@@ -29,6 +29,8 @@
 #include "my_status.h"
 #include "my_static.h"
 
+#include "my_video.h"
+
 #include "form_video.h"
 #include "form_base.h"
 /* ---------------------------------------------------------------------------*
@@ -37,9 +39,6 @@
 extern void formSettingLoadBmp(void);
 int createFormSetting(HWND hMainWnd,void (*callback)(void));
 int createFormVideo(HWND hVideoWnd,int type,void (*callback)(void));
-int video_init(void);
-int video_uninit(void);
-int video_capture(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -196,9 +195,7 @@ static int formMainTimerGetState(int idc_timer)
 static void enableAutoClose(void)
 {
 	flag_timer_stop = 0;	
-#ifdef USE_FACE
-	// video_init();
-#endif
+	my_video->start();
 }
 /* ---------------------------------------------------------------------------*/
 /**
@@ -267,9 +264,7 @@ static void buttonCapturePress(HWND hwnd, int id, int nc, DWORD add_data)
 		return;
 	flag_timer_stop = 1;
 	createFormVideo(GetParent(hwnd),FORM_VIDEO_TYPE_CAPTURE,enableAutoClose);
-#ifdef USE_FACE
-	// video_capture();
-#endif
+	my_video->capture(g_config.capture_count);
 }
 static void buttonVideoPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
@@ -284,9 +279,7 @@ static void buttonSettingPress(HWND hwnd, int id, int nc, DWORD add_data)
 		return;
 	flag_timer_stop = 1;
     createFormSetting(GetParent(hwnd),enableAutoClose);
-#ifdef USE_FACE
-	// video_uninit();
-#endif
+	my_video->stop();
 }
 
 /* ---------------------------------------------------------------------------*/
@@ -380,9 +373,7 @@ static int formMainProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 int createFormMain(HWND hMainWnd)
 {
 	HWND Form = Screen.Find(form_base_priv.name);
-#ifdef USE_FACE
-	// video_init();
-#endif
+	my_video->start();
 	if(Form) {
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {

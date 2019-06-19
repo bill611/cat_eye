@@ -22,10 +22,9 @@ extern "C" {
 #endif  /* __cplusplus */
 
 	typedef struct _MyFace{
-		int (*init)(void);
 		int (*deleteOne)(char *id);
 		int (*regist)(unsigned char *image_buff,int w,int h,char *id,char *nick_name,char *url);
-		int (*recognizer)(char *image_buff,int w,int h);
+		void (*recognizer)(char *image_buff,int w,int h);
 		void (*uninit)(void);
 	}MyFace;
 

@@ -60,7 +60,7 @@ extern "C" {
 	} TUDPServer;
 
 
-	TUDPServer* udpServerCreate(int Port,char *queue_name);
+	TUDPServer* udpServerCreate(int Port,const char *queue_name);
     void udpServerInit(void (*udpSocketRead)(SocketHandle *ABinding,SocketPacket *AData),
             int port);
     extern TUDPServer *udp_server;

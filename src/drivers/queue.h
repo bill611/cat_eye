@@ -37,7 +37,7 @@ extern "C" {
 		void (*destroy)(struct _Queue *This);
 	}Queue;
 
-	Queue * queueCreate(char *queue_name,
+	Queue * queueCreate(const char *queue_name,
 			QueueType type,
 			unsigned int Size);
 

@@ -24,6 +24,7 @@
 #include "my_face.h"
 #include "debug.h"
 #include "sql_handle.h"
+#include "thread_helper.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
@@ -89,9 +90,9 @@ static int featureCompareCallback(float *feature)
         int ret = sqlGetFace(user_id,nick_name,url,feature_src);
         if (ret == 0)
             break;
-        float result = rdfaceGetFeatureSimilarity(feature_src,feature);
-        if (result > SIMILAYRITY) {
-            printf("id:%s,name:%s,url:%s\n", user_id,nick_name,url);
+        float ret1 = rdfaceGetFeatureSimilarity(feature_src,feature);
+        if (ret1 > SIMILAYRITY) {
+            printf("recognizer->id:%s,name:%s,url:%s\n", user_id,nick_name,url);
             result = 0;
             break; 
         }
@@ -100,12 +101,14 @@ static int featureCompareCallback(float *feature)
     return result;
 }
 
-static int recognizer(char *image_buff,int w,int h)
+static void recognizer(char *image_buff,int w,int h)
 {
-    if (sqlGetFaceCount())
-        return rdfaceRecognizer(image_buff,w,h,featureCompareCallback);
-    else
-        return rdfaceRecognizer(image_buff,w,h,NULL);
+	int ret;
+	if (sqlGetFaceCount()) {
+        ret = rdfaceRecognizer(image_buff,w,h,featureCompareCallback);
+	} else {
+        ret = rdfaceRecognizer(image_buff,w,h,NULL);
+	}
 }
 
 static void uninit(void)
@@ -113,13 +116,16 @@ static void uninit(void)
 	rdfaceUninit();
 }
 
-void myFaceInit(void)
+static void* myFaceInitThread(void *arg)
 {
+	init();	
 	my_face = (MyFace *) calloc(1,sizeof(MyFace));
-	my_face->init = init;
 	my_face->regist = regist;
 	my_face->deleteOne = deleteOne;
 	my_face->recognizer = recognizer;
 	my_face->uninit = uninit;
-	my_face->init();
+}
+void myFaceInit(void)
+{
+	createThread(myFaceInitThread,NULL);
 }
