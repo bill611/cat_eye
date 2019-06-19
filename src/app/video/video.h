@@ -40,7 +40,7 @@ class RKVideo {
 
     std::shared_ptr<DisplayProcess> display_process;
     std::shared_ptr<CammerProcess> cammer_process;
-    std::shared_ptr<Encoder> encode_process;
+    std::shared_ptr<H264Encoder> encode_process;
 };
 
 

@@ -25,9 +25,9 @@ RKVideo::RKVideo()
     cammer_process = std::make_shared<CammerProcess>();
 	if (cammer_process.get() == nullptr)
 		std::cout << "[rv_video]CammerProcess make_shared error" << std::endl;
-    encode_process = std::make_shared<Encoder>();
-	if (encode_process.get() == nullptr)
-		std::cout << "[rv_video]CammerProcess make_shared error" << std::endl;
+    encode_process = std::make_shared<H264Encoder>();
+    if (encode_process.get() == nullptr)
+        std::cout << "[rv_video]CammerProcess make_shared error" << std::endl;
 
 	connect(cam_dev->mpath(), cammer_process, cam_dev->format(), 0, nullptr);
 }
@@ -38,20 +38,20 @@ RKVideo::~RKVideo()
 	cam_dev->stop();
     ptr_allocator.reset();
     display_process.reset();
-	encode_process.reset();
+	// encode_process.reset();
 
 }
 
 void RKVideo::start(void)
 {
 	connect(cam_dev->mpath(), display_process, cam_dev->format(), 0, nullptr);
-	connect(cam_dev->mpath(), encode_process, cam_dev->format(), 0, nullptr);
+	// connect(cam_dev->mpath(), encode_process, cam_dev->format(), 0, nullptr);
 }
 
 void RKVideo::stop(void)
 {
 	disconnect(cam_dev->mpath(), display_process);
-	disconnect(cam_dev->mpath(), encode_process);
+	// disconnect(cam_dev->mpath(), encode_process);
 	display_process->setVideoBlack();
 }
 

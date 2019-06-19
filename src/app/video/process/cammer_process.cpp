@@ -93,7 +93,7 @@ CammerProcess::~CammerProcess()
 }
 
 bool CammerProcess::processFrame(std::shared_ptr<BufferBase> inBuf,
-                                        std::shared_ptr<BufferBase> outBuf)
+                                 std::shared_ptr<BufferBase> outBuf)
 {
 	if (get_img_ready == false)
 		return true;	
