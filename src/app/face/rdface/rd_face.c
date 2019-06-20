@@ -42,7 +42,7 @@
  *----------------------------------------------------------------------------*/
 #define WIDTH_MAX 1280
 #define HEIGHT_MAX 720
-#define FACE_MODEL_PATH "/data/face_model/"
+#define FACE_MODEL_PATH "/root/usr/face_model/"
 #define APP_ID "dfe52c64a6a368bf181c76b512d2b3fe"
 
 #define RECOGNITION_TIME 0

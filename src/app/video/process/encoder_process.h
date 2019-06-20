@@ -19,14 +19,40 @@ class H264Encoder : public StreamPUBase {
             std::shared_ptr<BufferBase> outBuf) override;
 
     int Start(void);
+    int StartYuv(void);
     void Reset(void);
 
     bool init(int width, int height);
 
+    FILE* fd(void) const {
+        return fd_;
+    }
 
+	ImageInfo* image_info(void) const {
+        return image_info_;
+    }
+
+	rk::Buffer::SharedPtr encoder_src(void) const {
+        return encoder_src_;
+    }
+
+	rk::Buffer::SharedPtr encoder_dst(void) const  {
+        return encoder_dst_;
+    }
+
+    std::shared_ptr<rkmedia::VideoEncoder> encoder(void) const {
+        return encoder_;
+    }
+
+	Queue *queue(void) const {
+		return queue_;
+	};
  private:
 
-	Queue *queue;
+    FILE* fd_;
+    bool is_working_;
+	Queue *queue_;
+    ImageInfo* image_info_;
     rk::Buffer::SharedPtr encoder_src_;
     rk::Buffer::SharedPtr encoder_dst_;
 

@@ -31,6 +31,7 @@ class RKVideo {
     void disconnect(std::shared_ptr<StreamPUBase> pre, 
 		                 std::shared_ptr<StreamPUBase> next);
 
+    void startRecord(void);
  private:
  	
     struct rk_cams_dev_info cam_info;

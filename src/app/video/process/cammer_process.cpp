@@ -64,9 +64,9 @@ static void* cammerProcessThread(void *arg)
 	Queue *queue = (Queue *)arg;
 	while (1) {
 		queue->get(queue,&camm_info);
-		if (my_face){
-			my_face->recognizer(camm_info.data,camm_info.w,camm_info.h);
-		}
+		// if (my_face){
+			// my_face->recognizer(camm_info.data,camm_info.w,camm_info.h);
+		// }
 		usleep(100000);
 		pthread_mutex_lock(&mutex);
 		get_img_ready = true;

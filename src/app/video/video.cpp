@@ -25,7 +25,7 @@ RKVideo::RKVideo()
     cammer_process = std::make_shared<CammerProcess>();
 	if (cammer_process.get() == nullptr)
 		std::cout << "[rv_video]CammerProcess make_shared error" << std::endl;
-    encode_process = std::make_shared<H264Encoder>();
+    encode_process = std::make_shared<H264Encoder>(1280,720);
     if (encode_process.get() == nullptr)
         std::cout << "[rv_video]CammerProcess make_shared error" << std::endl;
 
@@ -38,20 +38,20 @@ RKVideo::~RKVideo()
 	cam_dev->stop();
     ptr_allocator.reset();
     display_process.reset();
-	// encode_process.reset();
+	encode_process.reset();
 
 }
 
 void RKVideo::start(void)
 {
 	connect(cam_dev->mpath(), display_process, cam_dev->format(), 0, nullptr);
-	// connect(cam_dev->mpath(), encode_process, cam_dev->format(), 0, nullptr);
+	connect(cam_dev->mpath(), encode_process, cam_dev->format(), 0, nullptr);
 }
 
 void RKVideo::stop(void)
 {
 	disconnect(cam_dev->mpath(), display_process);
-	// disconnect(cam_dev->mpath(), encode_process);
+	disconnect(cam_dev->mpath(), encode_process);
 	display_process->setVideoBlack();
 }
 
@@ -87,6 +87,10 @@ void RKVideo::disconnect(std::shared_ptr<CamHwItf::PathBase> mpath,
     next->releaseBuffers();
 }
 
+void RKVideo::startRecord(void)
+{
+	encode_process->StartYuv();
+}
 extern "C" 
 int rkVideoInit(void)
 {
@@ -116,5 +120,16 @@ int rkVideoStop(void)
 
 extern "C" 
 int rkVideoStopCapture(void)
+{
+}
+
+extern "C" 
+int rkVideoStartRecord(void)
+{
+	rkvideo->startRecord();
+}
+
+extern "C" 
+int rkVideoStopRecord(void)
 {
 }

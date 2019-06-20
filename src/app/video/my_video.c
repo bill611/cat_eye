@@ -30,6 +30,8 @@ int rkVideoInit(void);
 int rkVideoStart(void);
 int rkVideoStop(void);
 int rkVideoStopCapture(void);
+int rkVideoStartRecord(void);
+int rkVideoStopRecord(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -58,7 +60,15 @@ static void stop(void)
 }
 static void capture(int count)
 {
-	// video_capture();
+	rkVideoStopCapture();
+}
+static void recordStart(int count)
+{
+	rkVideoStartRecord();
+}
+static void recordStop(void)
+{
+	rkVideoStopRecord();
 }
 
 void myVideoInit(void)
@@ -68,5 +78,6 @@ void myVideoInit(void)
 	my_video->start = start;
 	my_video->stop = stop;
 	my_video->capture = capture;
+	my_video->recordStart = recordStart;
 	my_video->init();
 }

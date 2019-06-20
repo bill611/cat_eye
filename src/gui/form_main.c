@@ -271,6 +271,7 @@ static void buttonVideoPress(HWND hwnd, int id, int nc, DWORD add_data)
 	if (nc != BN_CLICKED)
 		return;
 	flag_timer_stop = 1;
+	my_video->recordStart(0);
 	createFormVideo(GetParent(hwnd),FORM_VIDEO_TYPE_RECORD,enableAutoClose);
 }
 static void buttonSettingPress(HWND hwnd, int id, int nc, DWORD add_data)

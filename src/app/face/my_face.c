@@ -118,12 +118,12 @@ static void uninit(void)
 
 static void* myFaceInitThread(void *arg)
 {
-	init();	
 	my_face = (MyFace *) calloc(1,sizeof(MyFace));
 	my_face->regist = regist;
 	my_face->deleteOne = deleteOne;
 	my_face->recognizer = recognizer;
 	my_face->uninit = uninit;
+	my_face->init = init;
 }
 void myFaceInit(void)
 {

@@ -38,114 +38,135 @@
  *                        macro define
  *----------------------------------------------------------------------------*/
 using namespace rk;
+
+#define ALIGN(value, bits) (((value) + ((bits) - 1)) & (~((bits) - 1)))
+#define ALIGN_CUT(value, bits) ((value) & (~((bits) - 1)))
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+
+#define IAMGE_MAX_W 1280
+#define IAMGE_MAX_H 720
+#define IMAGE_MAX_DATA (IAMGE_MAX_W * IAMGE_MAX_H * 3 / 2 )
+
 typedef struct _H264Data {
 	int type;
 	int w,h;
-	char data[10];
+	char data[IMAGE_MAX_DATA];
 }H264Data;
 
+#define ENCODE_LOG(...)       \
+do {                          \
+    printf("\033[1;34;40m");  \
+    printf("[h264encoder]");      \
+    printf(__VA_ARGS__);      \
+    printf("\033[0m");        \
+} while (0)
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
 
 static pthread_mutex_t mutex_encode;		//队列控制互斥信号
+static bool encode_finished = false;
 
 static void* encoderProcessThread(void *arg)
 {
 	H264Data h264_info;
-	Queue *queue = (Queue *)arg;
+	H264Encoder *process = (H264Encoder *)arg;
+	int frame = 0;
 	while (1) {
-		queue->get(queue,&h264_info);
+		process->queue()->get(process->queue(),&h264_info);
+#if 0
+        ImageInfo* info = process->image_info();
+		rk::Buffer::SharedPtr encoder_src = process->encoder_src();
+		rk::Buffer::SharedPtr encoder_dst = process->encoder_dst();
+        memcpy(encoder_src->address(), h264_info.data, h264_info.w * h264_info.h * 3 / 2);
+
+        rkmedia::MediaBuffer src_buffer(encoder_src->address(), encoder_src->size(), encoder_src->fd());
+        std::shared_ptr<rkmedia::ImageBuffer> src =
+                        std::make_shared<rkmedia::ImageBuffer>(src_buffer, *info);
+
+        rkmedia::MediaBuffer dst_buffer(encoder_dst->address(), encoder_dst->size(), encoder_dst->fd());
+        std::shared_ptr<rkmedia::ImageBuffer> dst =
+                        std::make_shared<rkmedia::ImageBuffer>(dst_buffer, *info);
+
+        src->SetValidSize(h264_info.w * h264_info.h * 3 / 2);
+        dst->SetValidSize(h264_info.w * h264_info.h * 3 / 2);
+
+        if (process->encoder()->Process(src, dst, nullptr) != 0) {
+            ENCODE_LOG("encoder process failed.\n");
+            ASSERT(0);
+        }
+		size_t out_len = dst->GetValidSize();
+		fprintf(stderr, "frame %d encoded, type %s, out %d bytes\n", frame,
+				dst->GetUserFlag() & rkmedia::MediaBuffer::kIntra ? "I frame" : "P frame", out_len);
+        if (fwrite(dst->GetPtr(), dst->GetValidSize(), 1, process->fd()) == 0) {
+            ENCODE_LOG("fwrite failed\n");
+            ASSERT(0);
+        }
+#else
+        if (fwrite(h264_info.data, h264_info.w*h264_info.h*3/2, 1, process->fd()) == 0) {
+            ENCODE_LOG("fwrite failed\n");
+            ASSERT(0);
+        }
+#endif
+		if (frame++ > 300)
+			break;
 	}
-	return NULL;	
+	encode_finished = true;
+	fflush(process->fd());
+	fclose(process->fd());
+	ENCODE_LOG("%s(),%d\n", __func__,__LINE__);
+	return NULL;
 }
-// void* EncoderProcessor(void* data)
-// {
-    // Encoder* process = (Encoder*)data;
-    // ASSERT(process != nullptr);
-
-    // while (process->ProcessorStatus() == kThreadRunning) {
-        // EncodeRequest* request = process->PopRequest();
-        // if (request == nullptr)
-            // continue;
-
-        // ImageInfo* info = process->image_info();
-        // Buffer::SharedPtr encoder_src = process->encoder_src();
-        // Buffer::SharedPtr encoder_dst = process->encoder_dst();
-
-        // memcpy(encoder_src->address(), request->frame, request->width * request->height * 3 / 2);
-
-        // rkmedia::MediaBuffer src_buffer(encoder_src->address(), encoder_src->size(), encoder_src->fd());
-        // std::shared_ptr<rkmedia::ImageBuffer> src =
-                        // std::make_shared<rkmedia::ImageBuffer>(src_buffer, *info);
-
-        // rkmedia::MediaBuffer dst_buffer(encoder_dst->address(), encoder_dst->size(), encoder_dst->fd());
-        // std::shared_ptr<rkmedia::ImageBuffer> dst =
-                        // std::make_shared<rkmedia::ImageBuffer>(dst_buffer, *info);
-
-        // src->SetValidSize(request->width * request->height * 3 / 2);
-        // dst->SetValidSize(request->width * request->height * 3 / 2);
-
-        // if (process->encoder()->Process(src, dst, nullptr) != 0) {
-            // printf("encoder process failed.\n");
-            // ASSERT(0);
-        // }
-
-        // if (fwrite(dst->GetPtr(), dst->GetValidSize(), 1, process->fd()) == 0) {
-            // printf("fwrite failed\n");
-            // ASSERT(0);
-        // }
-
-        // process->DestroyRequest(request);
-    // }
-
-    // return nullptr;
-// }
 
 bool H264Encoder::init(int width, int height)
 {
-    // image_info_->pix_fmt = PIX_FMT_NV12;
-    // image_info_->width = width;
-    // image_info_->height = height;
-    // image_info_->vir_width = ALIGN(width, 16);
-    // image_info_->vir_height = ALIGN(height, 16);
+	ENCODE_LOG("%s(),%d\n", __func__,__LINE__);
+	image_info_->pix_fmt = PIX_FMT_NV12;
+	image_info_->width = width;
+	image_info_->height = height;
+	image_info_->vir_width = ALIGN(width, 16);
+	image_info_->vir_height = ALIGN(height, 16);
 
-    // MediaConfig config;
-    // VideoConfig &video_cfg = config.vid_cfg;
-    // ImageConfig &image_cfg = video_cfg.image_cfg;
-    // image_cfg.image_info = *image_info_;
-    // image_cfg.qp_init = 24;
-    // video_cfg.qp_step = 4;
-    // video_cfg.qp_min = 12;
-    // video_cfg.qp_max = 48;
-    // video_cfg.bit_rate = width * height * 7;
-    // if (video_cfg.bit_rate > 1000000) {
-      // video_cfg.bit_rate /= 1000000;
-      // video_cfg.bit_rate *= 1000000;
-    // }
-    // video_cfg.frame_rate = 30;
-    // video_cfg.level = 52;
-    // video_cfg.gop_size = video_cfg.frame_rate;
-    // video_cfg.profile = 100;
-    // video_cfg.rc_quality = "best";
-    // video_cfg.rc_mode = "cbr";
+	MediaConfig config;
+	VideoConfig &video_cfg = config.vid_cfg;
+	ImageConfig &image_cfg = video_cfg.image_cfg;
+	image_cfg.image_info = *image_info_;
+	image_cfg.qp_init = 24;
+	video_cfg.qp_step = 4;
+	video_cfg.qp_min = 12;
+	video_cfg.qp_max = 48;
+	video_cfg.bit_rate = width * height * 7;
+	if (video_cfg.bit_rate > 1000000) {
+	  video_cfg.bit_rate /= 1000000;
+	  video_cfg.bit_rate *= 1000000;
+	}
+	video_cfg.frame_rate = 30;
+	video_cfg.level = 52;
+	video_cfg.gop_size = video_cfg.frame_rate;
+	video_cfg.profile = 100;
+	video_cfg.rc_quality = "best";
+	video_cfg.rc_mode = "cbr";
 
-    // return encoder_->InitConfig(config);
+	ENCODE_LOG("%s(),%d\n", __func__,__LINE__);
+	return encoder_->InitConfig(config);
 }
 
 H264Encoder::H264Encoder(int frame_width, int frame_height)
     : StreamPUBase("H264Encoder", true, true)
 {
+	ENCODE_LOG("%s(),%d\n", __func__,__LINE__);
+    fd_ = nullptr;
+    is_working_ = false;
 	pthread_mutexattr_t mutexattr;
 	pthread_mutexattr_init(&mutexattr);
     pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE_NP);
     pthread_mutex_init(&mutex_encode, &mutexattr);
 
-	queue = queueCreate("decode_process",QUEUE_BLOCK,sizeof(H264Data));
-	createThread(encoderProcessThread,queue);
+	queue_ = queueCreate("decode_process",QUEUE_BLOCK,sizeof(H264Data));
+	createThread(encoderProcessThread,this);
 
-    // image_info_ = (ImageInfo*)malloc(sizeof(ImageInfo));
-    // ASSERT(image_info_ != nullptr);
+	image_info_ = (ImageInfo*)malloc(sizeof(ImageInfo));
+	ASSERT(image_info_ != nullptr);
 
     rkmedia::REFLECTOR(Encoder)::DumpFactories();
 
@@ -162,17 +183,21 @@ H264Encoder::H264Encoder(int frame_width, int frame_height)
     ASSERT(encoder_dst_.get() != nullptr);
 
     bool ret = init(frame_width, frame_height);
-    // ASSERT(ret == true);
+	ASSERT(ret == true);
+	ENCODE_LOG("%s(),%d\n", __func__,__LINE__);
 
 }
 H264Encoder::H264Encoder()
 {
-    
+
 }
 
 H264Encoder::~H264Encoder()
 {
-    // encoder_.reset();
+    CmaFree(encoder_dst_.get());
+    CmaFree(encoder_src_.get());
+    encoder_.reset();
+    free(image_info_);
 }
 
 
@@ -182,21 +207,48 @@ int H264Encoder::Start(void)
     void * data = nullptr;
     size_t size = 0;
 
-    encoder_->GetExtraData(data, size);
-    // if (fwrite(data, size, 1, fd_) == 0) {
-        // printf("fwrite failed\n");
-        // ASSERT(0);
-    // }
+    if (fd_) {
+        fclose(fd_);
+        fd_ = nullptr;
+    }
 
-    // is_working_ = true;
+	fd_ = fopen("./h264.h264", "wb");
+	ASSERT(fd_ != nullptr);
+
+	encoder_->GetExtraData(data, size);
+	if (fwrite(data, size, 1, fd_) == 0) {
+		ENCODE_LOG("fwrite failed\n");
+		ASSERT(0);
+	}
+
+	is_working_ = true;
     // frame_count_ = 0;
 
     return 0;
 }
 
+int H264Encoder::StartYuv(void)
+{
+
+    void * data = nullptr;
+    size_t size = 0;
+
+    if (fd_) {
+        fclose(fd_);
+        fd_ = nullptr;
+    }
+
+	fd_ = fopen("yuv.nv12", "wb");
+	ASSERT(fd_ != nullptr);
+
+	is_working_ = true;
+    // frame_count_ = 0;
+
+    return 0;
+}
 void H264Encoder::Reset(void)
 {
-    // is_working_ = false;
+	is_working_ = false;
     // frame_count_ = 0;
 }
 
@@ -204,5 +256,12 @@ bool H264Encoder::processFrame(std::shared_ptr<BufferBase> inBuf,
                                std::shared_ptr<BufferBase> outBuf)
 {
 
+	if (encode_finished == true || is_working_ == false)
+		return true;
+	H264Data h264_info;
+	h264_info.w = inBuf->getWidth();
+	h264_info.h = inBuf->getHeight();
+	memcpy(h264_info.data,inBuf->getVirtAddr(),inBuf->getDataSize());
+	queue_->post(queue_,&h264_info);
     return true;
 }
