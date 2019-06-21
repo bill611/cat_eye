@@ -21,17 +21,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include "debug.h"
+#include "h264_enc_dec/mpi_enc_api.h"
+#include "video_server.h"
+#include "my_face.h"
 #include "my_video.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
-int rkVideoInit(void);
-int rkVideoStart(void);
-int rkVideoStop(void);
-int rkVideoStopCapture(void);
-int rkVideoStartRecord(void);
-int rkVideoStopRecord(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -48,7 +45,9 @@ MyVideo *my_video;
 
 static void init(void)
 {
+	myH264EncInit();
 	rkVideoInit();
+	myFaceInit();
 }
 static void start(void)
 {

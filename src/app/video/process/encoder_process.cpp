@@ -19,7 +19,10 @@
  *----------------------------------------------------------------------------*/
 #include <adk/mm/cma_allocator.h>
 #include <adk/utils/assert.h>
+#include <stdio.h>
+#include <stdlib.h>
 
+#include "h264_enc_dec/mpi_enc_api.h"
 #include "encoder_process.h"
 #include "thread_helper.h"
 #include "debug.h"
@@ -37,6 +40,7 @@
 /* ---------------------------------------------------------------------------*
  *                        macro define
  *----------------------------------------------------------------------------*/
+#define USE_MIDEA_MODE 0
 using namespace rk;
 
 #define ALIGN(value, bits) (((value) + ((bits) - 1)) & (~((bits) - 1)))
@@ -50,7 +54,7 @@ using namespace rk;
 typedef struct _H264Data {
 	int type;
 	int w,h;
-	char data[IMAGE_MAX_DATA];
+	unsigned char data[IMAGE_MAX_DATA];
 }H264Data;
 
 #define ENCODE_LOG(...)       \
@@ -74,7 +78,7 @@ static void* encoderProcessThread(void *arg)
 	int frame = 0;
 	while (1) {
 		process->queue()->get(process->queue(),&h264_info);
-#if 0
+#if USE_MIDEA_MODE
         ImageInfo* info = process->image_info();
 		rk::Buffer::SharedPtr encoder_src = process->encoder_src();
 		rk::Buffer::SharedPtr encoder_dst = process->encoder_dst();
@@ -103,10 +107,15 @@ static void* encoderProcessThread(void *arg)
             ASSERT(0);
         }
 #else
-        if (fwrite(h264_info.data, h264_info.w*h264_info.h*3/2, 1, process->fd()) == 0) {
+		unsigned char *out_data = NULL;
+		int size = 0;
+		if (my_h264enc)
+			size = my_h264enc->encode(my_h264enc,h264_info.data, &out_data);
+        if (fwrite(out_data, 1, size, process->fd()) == 0) {
             ENCODE_LOG("fwrite failed\n");
-            ASSERT(0);
         }
+		if (out_data)
+			free(out_data);
 #endif
 		if (frame++ > 300)
 			break;
@@ -114,6 +123,8 @@ static void* encoderProcessThread(void *arg)
 	encode_finished = true;
 	fflush(process->fd());
 	fclose(process->fd());
+	if (my_h264enc)
+		my_h264enc->unInit(my_h264enc);
 	ENCODE_LOG("%s(),%d\n", __func__,__LINE__);
 	return NULL;
 }
@@ -163,8 +174,8 @@ H264Encoder::H264Encoder(int frame_width, int frame_height)
     pthread_mutex_init(&mutex_encode, &mutexattr);
 
 	queue_ = queueCreate("decode_process",QUEUE_BLOCK,sizeof(H264Data));
-	createThread(encoderProcessThread,this);
 
+#if USE_MIDEA_MODE
 	image_info_ = (ImageInfo*)malloc(sizeof(ImageInfo));
 	ASSERT(image_info_ != nullptr);
 
@@ -184,12 +195,22 @@ H264Encoder::H264Encoder(int frame_width, int frame_height)
 
     bool ret = init(frame_width, frame_height);
 	ASSERT(ret == true);
+#endif
+	createThread(encoderProcessThread,this);
 	ENCODE_LOG("%s(),%d\n", __func__,__LINE__);
-
 }
 H264Encoder::H264Encoder()
 {
+	ENCODE_LOG("%s(),%d\n", __func__,__LINE__);
+    fd_ = nullptr;
+    is_working_ = false;
+	pthread_mutexattr_t mutexattr;
+	pthread_mutexattr_init(&mutexattr);
+    pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE_NP);
+    pthread_mutex_init(&mutex_encode, &mutexattr);
 
+	queue_ = queueCreate("decode_process",QUEUE_BLOCK,sizeof(H264Data));
+	createThread(encoderProcessThread,this);
 }
 
 H264Encoder::~H264Encoder()
@@ -201,9 +222,11 @@ H264Encoder::~H264Encoder()
 }
 
 
-int H264Encoder::Start(void)
+int H264Encoder::Start(int width,int height)
 {
 
+	if (my_h264enc)
+		my_h264enc->init(my_h264enc,width, height);
     void * data = nullptr;
     size_t size = 0;
 
@@ -215,12 +238,13 @@ int H264Encoder::Start(void)
 	fd_ = fopen("./h264.h264", "wb");
 	ASSERT(fd_ != nullptr);
 
+#if USE_MIDEA_MODE
 	encoder_->GetExtraData(data, size);
 	if (fwrite(data, size, 1, fd_) == 0) {
 		ENCODE_LOG("fwrite failed\n");
 		ASSERT(0);
 	}
-
+#endif
 	is_working_ = true;
     // frame_count_ = 0;
 

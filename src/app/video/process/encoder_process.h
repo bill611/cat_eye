@@ -18,7 +18,7 @@ class H264Encoder : public StreamPUBase {
     bool processFrame(std::shared_ptr<BufferBase> inBuf,
             std::shared_ptr<BufferBase> outBuf) override;
 
-    int Start(void);
+    int Start(int width,int height);
     int StartYuv(void);
     void Reset(void);
 

@@ -3,7 +3,7 @@ STRING( REGEX REPLACE ".*/(.*)" "\\1" CURRENT_FOLDER_APP_VIDEO ${CMAKE_CURRENT_S
 
 set(SRC_APP_VIDEO
     my_video.c
-    video.cpp
+    video_server.cpp
 	h264_enc_dec/mpi_dec_api.c
 	h264_enc_dec/mpi_enc_api.c
 	camera/camerahal.cpp

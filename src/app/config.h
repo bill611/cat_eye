@@ -118,7 +118,7 @@ extern "C" {
         char imei[64];         // 太川设备机身码
         char hardcode[64];     // 太川设备硬件码
         char version[16];      // 太川软件版本
-        char app_url[128];     // appd地址 
+        char app_url[128];     // app地址 
 		int  timestamp;        // 启动时间戳
 		int capture_count;	   // 抓拍图片数量
         TcWifiConfig net_config;  // 网络设置

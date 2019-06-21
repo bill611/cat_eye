@@ -43,6 +43,8 @@
  *                      variables define
  *----------------------------------------------------------------------------*/
 MyFace *my_face;
+static int face_init_finished = 0;
+
 static int init(void)
 {
 	if(rdfaceInit()<0) {
@@ -50,10 +52,14 @@ static int init(void)
 		DPRINT("rdfaceInit error!");
 		return -1;
 	}
+	face_init_finished = 1;
 	return 0;
 }
+
 static int regist(unsigned char *image_buff,int w,int h,char *id,char *nick_name,char *url)
 {
+	if (face_init_finished == 0)
+        goto regist_end;
 	float *feature = NULL;
 	int feature_len = 0;
     int ret = -1;
@@ -103,6 +109,8 @@ static int featureCompareCallback(float *feature)
 
 static void recognizer(char *image_buff,int w,int h)
 {
+	if (face_init_finished == 0)
+        return;
 	int ret;
 	if (sqlGetFaceCount()) {
         ret = rdfaceRecognizer(image_buff,w,h,featureCompareCallback);
@@ -114,9 +122,10 @@ static void recognizer(char *image_buff,int w,int h)
 static void uninit(void)
 {
 	rdfaceUninit();
+	face_init_finished = 0;
 }
 
-static void* myFaceInitThread(void *arg)
+void myFaceInit(void)
 {
 	my_face = (MyFace *) calloc(1,sizeof(MyFace));
 	my_face->regist = regist;
@@ -124,8 +133,6 @@ static void* myFaceInitThread(void *arg)
 	my_face->recognizer = recognizer;
 	my_face->uninit = uninit;
 	my_face->init = init;
-}
-void myFaceInit(void)
-{
-	createThread(myFaceInitThread,NULL);
+	face_init_finished = 0;
+	init();
 }

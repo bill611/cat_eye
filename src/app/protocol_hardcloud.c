@@ -354,8 +354,9 @@ static void ceSetFace(int api,int id,CjsonDec *dec)
 		unsigned char *yuv = NULL;
 		int leng = http->post(url,NULL,&buff_img);
 		jpegToYuv420sp((unsigned char *)buff_img, leng,&w,&h, &yuv, &yuv_len);
-		if (my_face->regist(yuv,w,h,user_id,nick_name,url) == 0)
-			result = 1;
+		if (my_face)
+			if (my_face->regist(yuv,w,h,user_id,nick_name,url) == 0)
+				result = 1;
 		if (buff_img)
 			free(buff_img);
 		if (yuv)
@@ -401,7 +402,8 @@ static void ceRemoveFace(int api,int id,CjsonDec *dec)
 	char *user_id = NULL;
 	dec->getValueChar(dec,"id",&user_id);
 	if (user_id) {
-		my_face->deleteOne(user_id);
+		if (my_face)
+			my_face->deleteOne(user_id);
 		free(user_id);
 	}
 	result = 1;
