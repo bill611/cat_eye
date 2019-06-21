@@ -46,8 +46,8 @@ MyVideo *my_video;
 static void init(void)
 {
 	myH264EncInit();
-	rkVideoInit();
 	myFaceInit();
+	rkVideoInit();
 }
 static void start(void)
 {

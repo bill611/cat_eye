@@ -106,22 +106,6 @@ bool CammerProcess::processFrame(std::shared_ptr<BufferBase> inBuf,
 	pthread_mutex_lock(&mutex);
 	get_img_ready = false;
 	pthread_mutex_unlock(&mutex);
-#ifdef TEST_WRITE_SP_TO_FILE
-      //write to file
-      char fname[50] = {0};
-      static int frames = 0;
-      snprintf(fname, 30, "/tmp/yuv_%dx%d.yuv", src_w, src_h);
-      frames++;
-      if ((frames > 25) && (frames < 31)) {
-        FILE* yuv_file =  fopen(fname, "a+");
-        if (yuv_file) {
-          fwrite(inBuf->getVirtAddr(), inBuf->getDataSize(), 1, yuv_file);
-          printf("write 0x%x bytes to file!", inBuf->getDataSize());
-          fclose(yuv_file);
-        } else
-          printf("open file %s error", fname);
-      }
-#endif
 
     return true;
 }
