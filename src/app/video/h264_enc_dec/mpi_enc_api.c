@@ -452,7 +452,6 @@ static int mpi_enc_test(H264Encode *This,MpiEncTestCmd *cmd)
 
 			This->priv->sps_pps_head = (unsigned char *)malloc(This->priv->sps_pps_head_size);
 			memcpy(This->priv->sps_pps_head,ptr,This->priv->sps_pps_head_size);
-            packet = NULL;
         }
     }
 
@@ -488,6 +487,9 @@ static void mpiH264EncUnInit(H264Encode *This)
 {
     MpiEncTestData *p = This->priv->p;
 
+	if (This->priv->sps_pps_head)
+		free(This->priv->sps_pps_head);
+	This->priv->sps_pps_head = NULL;
     int ret = p->mpi->reset(p->ctx);
     if (ret) {
         mpp_err("mpi->reset failed\n");

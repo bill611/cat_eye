@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "rd_face.h"
+#include "face/rdface/rd_face.h"
 #include "my_face.h"
 #include "debug.h"
 #include "sql_handle.h"
@@ -47,6 +47,7 @@ static int face_init_finished = 0;
 
 static int init(void)
 {
+	face_init_finished = 0;
 	if(rdfaceInit()<0) {
 		rdfaceUninit();
 		DPRINT("rdfaceInit error!");

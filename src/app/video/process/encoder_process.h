@@ -9,54 +9,41 @@
 #include <adk/mm/buffer.h>
 #include "queue.h"
 
+typedef void (*EncCallbackFunc)(void *data,int size);
 class H264Encoder : public StreamPUBase {
  public:
-    H264Encoder(int frame_width, int frame_height);
     H264Encoder();
     virtual ~H264Encoder();
 
     bool processFrame(std::shared_ptr<BufferBase> inBuf,
             std::shared_ptr<BufferBase> outBuf) override;
 
-    int Start(int width,int height);
-    int StartYuv(void);
-    void Reset(void);
-
-    bool init(int width, int height);
+    int startEnc(int width,int height,EncCallbackFunc encCallback);
+    int stopEnc(void);
 
     FILE* fd(void) const {
         return fd_;
     }
 
-	ImageInfo* image_info(void) const {
-        return image_info_;
-    }
-
-	rk::Buffer::SharedPtr encoder_src(void) const {
-        return encoder_src_;
-    }
-
-	rk::Buffer::SharedPtr encoder_dst(void) const  {
-        return encoder_dst_;
-    }
-
-    std::shared_ptr<rkmedia::VideoEncoder> encoder(void) const {
-        return encoder_;
-    }
-
 	Queue *queue(void) const {
 		return queue_;
+	}
+	bool start_enc(void) const {
+		return start_enc_;
 	};
+
+	EncCallbackFunc encCallback(void) const {
+		return encCallback_;
+	};
+
  private:
 
     FILE* fd_;
-    bool is_working_;
+    bool start_enc_;
+    bool last_frame_;
 	Queue *queue_;
-    ImageInfo* image_info_;
-    rk::Buffer::SharedPtr encoder_src_;
-    rk::Buffer::SharedPtr encoder_dst_;
+	EncCallbackFunc encCallback_;
 
-    std::shared_ptr<rkmedia::VideoEncoder> encoder_;
 };
 
 

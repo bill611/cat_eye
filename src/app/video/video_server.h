@@ -2,7 +2,7 @@
 #define _VIDEO_SERVICE_H
 
 int rkVideoInit(void);
-int rkVideoStart(void);
+int rkVideoDisplayOnOff(int type);
 int rkVideoStop(void);
 int rkVideoStopCapture(void);
 int rkVideoStartRecord(void);

@@ -22,7 +22,6 @@ extern "C" {
 #endif  /* __cplusplus */
 
 	typedef struct _MyVideo {
-		void (*init)(void);
 		void (*start)(void);
 		void (*stop)(void);
 		void (*capture)(int count);

@@ -266,11 +266,6 @@ static void udpLocalgetMsg(SocketHandle *ABinding,SocketPacket *AData)
 	}
 }
 
-static void timer1sThread(void *arg)
-{
-
-}
-
 unsigned long long htonll(unsigned long long val)
 {
 #if 1
@@ -473,10 +468,9 @@ void protocolInit(void)
 	protocol->priv = (ProtocolPriv *) calloc(1,sizeof(ProtocolPriv));
 	protocol->getImei = getImei;
 	protocol->isNeedToUpdate = isNeedToUpdate;
+
 	registHardCloud();
 	registTalk();
 	registSingleChip();
-	// timer_protocol_1s = timerCreate(LAYER_TIME_1S,timer1sThread,NULL);
-	// timer_protocol_1s->start(timer_protocol_1s);
 }
 

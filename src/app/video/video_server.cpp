@@ -3,7 +3,7 @@
 #include "camerahal.h"
 #include "camerabuf.h"
 #include "process/display_process.h"
-#include "process/cammer_process.h"
+#include "process/face_process.h"
 #include "process/encoder_process.h"
 
 
@@ -12,21 +12,15 @@ class RKVideo {
     RKVideo();
     ~RKVideo();
 
-    virtual void start(void);
-    virtual void stop(void);
 	int connect(std::shared_ptr<CamHwItf::PathBase> mpath, 
 		            std::shared_ptr<StreamPUBase> next,
                     frm_info_t& frmFmt, const uint32_t num, 
                     std::shared_ptr<RKCameraBufferAllocator> allocator);
-    int connect(std::shared_ptr<StreamPUBase> pre, 
-		            std::shared_ptr<StreamPUBase> next,
-                    frm_info_t &frmFmt, const uint32_t num, 
-                    std::shared_ptr<RKCameraBufferAllocator> allocator);
-
     void disconnect(std::shared_ptr<CamHwItf::PathBase> mpath, 
 		                 std::shared_ptr<StreamPUBase> next);
-    void disconnect(std::shared_ptr<StreamPUBase> pre, 
-		                 std::shared_ptr<StreamPUBase> next);
+
+    void displayOnOff(bool type);
+	void h264EncOnOff(bool type,EncCallbackFunc callback);
 
     void startRecord(void);
  private:
@@ -37,12 +31,11 @@ class RKVideo {
     std::shared_ptr<RKCameraHal> cam_dev;
 
     std::shared_ptr<DisplayProcess> display_process;
-    std::shared_ptr<CammerProcess> cammer_process;
+    std::shared_ptr<FaceProcess> face_process;
     std::shared_ptr<H264Encoder> encode_process;
 };
 
 static RKVideo* rkvideo = NULL;
-static int video_state = 0;
 
 RKVideo::RKVideo()
 {
@@ -65,38 +58,22 @@ RKVideo::RKVideo()
 	if (display_process.get() == nullptr)
 		std::cout << "[rv_video]DisplayProcess make_shared error" << std::endl;
 
-    cammer_process = std::make_shared<CammerProcess>();
-	if (cammer_process.get() == nullptr)
-		std::cout << "[rv_video]CammerProcess make_shared error" << std::endl;
+    face_process = std::make_shared<FaceProcess>();
+	if (face_process.get() == nullptr)
+		std::cout << "[rv_video]FaceProcess make_shared error" << std::endl;
 
-    // encode_process = std::make_shared<H264Encoder>();
-    // if (encode_process.get() == nullptr)
-        // std::cout << "[rv_video]H264Encoder make_shared error" << std::endl;
+	encode_process = std::make_shared<H264Encoder>();
+	if (encode_process.get() == nullptr)
+		std::cout << "[rv_video]H264Encoder make_shared error" << std::endl;
 
-	connect(cam_dev->mpath(), cammer_process, cam_dev->format(), 0, nullptr);
+	// connect(cam_dev->mpath(), face_process, cam_dev->format(), 0, nullptr);
 }
 
 RKVideo::~RKVideo()
 {
 	printf("[rv_video:%s]\n",__func__);
 	cam_dev->stop();
-    ptr_allocator.reset();
-    display_process.reset();
-	// encode_process.reset();
 
-}
-
-void RKVideo::start(void)
-{
-	connect(cam_dev->mpath(), display_process, cam_dev->format(), 0, nullptr);
-	// connect(cam_dev->mpath(), encode_process, cam_dev->format(), 0, nullptr);
-}
-
-void RKVideo::stop(void)
-{
-	disconnect(cam_dev->mpath(), display_process);
-	// disconnect(cam_dev->mpath(), encode_process);
-	display_process->setVideoBlack();
 }
 
 int RKVideo::connect(std::shared_ptr<CamHwItf::PathBase> mpath, 
@@ -131,6 +108,26 @@ void RKVideo::disconnect(std::shared_ptr<CamHwItf::PathBase> mpath,
     next->releaseBuffers();
 }
 
+void RKVideo::displayOnOff(bool type)
+{
+	if (type == true)
+		connect(cam_dev->mpath(), display_process, cam_dev->format(), 0, nullptr);
+	else {
+		disconnect(cam_dev->mpath(), display_process);
+		display_process->setVideoBlack();
+	}
+}
+void RKVideo::h264EncOnOff(bool type,EncCallbackFunc callback)
+{
+	if (type == true) {
+		connect(cam_dev->mpath(), encode_process, cam_dev->format(), 0, nullptr);
+		encode_process->startEnc(1280,720,callback);
+	} else {
+		encode_process->stopEnc();
+		disconnect(cam_dev->mpath(), encode_process);
+	}
+}
+
 void RKVideo::startRecord(void)
 {
 	// encode_process->Start(1280,720);
@@ -144,22 +141,19 @@ int rkVideoInit(void)
 }
 
 extern "C" 
-int rkVideoStart(void)
+int rkVideoDisplayOnOff(int type)
 {
-	if (video_state == 1)
-		return 0;
-	video_state = 1;
-	rkvideo->start();
+	if (type)
+		rkvideo->displayOnOff(true);
+	else
+		rkvideo->displayOnOff(false);
 	return 0;
 }
 
 extern "C" 
 int rkVideoStop(void)
 {
-	if (video_state == 0)
-		return 0;
-	video_state = 0;
-	rkvideo->stop();
+	// rkvideo->stop();
 }
 
 

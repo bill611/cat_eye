@@ -33,6 +33,7 @@ extern "C" {
 		struct _QueuePriv *priv;
 		void (*post)(struct _Queue *,void *data);
 		int (*get)(struct _Queue *,void *data);
+		void (*setDataSize)(struct _Queue *,int size);
 
 		void (*destroy)(struct _Queue *This);
 	}Queue;

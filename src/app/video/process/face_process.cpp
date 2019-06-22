@@ -1,7 +1,7 @@
 /*
  * =============================================================================
  *
- *       Filename:  cammer_process.c
+ *       Filename:  face_process.c
  *
  *    Description:  摄像头数据流接口
  *
@@ -18,7 +18,7 @@
  *                      include head files
  *----------------------------------------------------------------------------*/
 #include <stdio.h>
-#include "cammer_process.h"
+#include "face_process.h"
 #include "thread_helper.h"
 #include "my_face.h"
 #include "debug.h"
@@ -58,7 +58,7 @@ static bool get_img_ready; // 是否可以获取图片数据，当在处理图�
 
 
 //#define TEST_WRITE_SP_TO_FILE
-static void* cammerProcessThread(void *arg)
+static void* faceProcessThread(void *arg)
 {
 	CammerData camm_info;
 	Queue *queue = (Queue *)arg;
@@ -75,24 +75,24 @@ static void* cammerProcessThread(void *arg)
 	return NULL;	
 }
 
-CammerProcess::CammerProcess()
-     : StreamPUBase("CammerProcess", true, true)
+FaceProcess::FaceProcess()
+     : StreamPUBase("FaceProcess", true, true)
 {
 	pthread_mutexattr_t mutexattr;
 	pthread_mutexattr_init(&mutexattr);
     pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE_NP);
     pthread_mutex_init(&mutex, &mutexattr);
 
-	cammer_queue = queueCreate("cammer_process",QUEUE_BLOCK,sizeof(CammerData));
+	cammer_queue = queueCreate("face_process",QUEUE_BLOCK,sizeof(CammerData));
 	get_img_ready = true;
-	createThread(cammerProcessThread,cammer_queue);
+	createThread(faceProcessThread,cammer_queue);
 }
 
-CammerProcess::~CammerProcess()
+FaceProcess::~FaceProcess()
 {
 }
 
-bool CammerProcess::processFrame(std::shared_ptr<BufferBase> inBuf,
+bool FaceProcess::processFrame(std::shared_ptr<BufferBase> inBuf,
                                  std::shared_ptr<BufferBase> outBuf)
 {
 	if (get_img_ready == false)

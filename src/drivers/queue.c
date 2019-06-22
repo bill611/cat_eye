@@ -159,6 +159,19 @@ static int queueGet(Queue *This,void *data)
 	return 0;
 }
 
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief queueSetDataSize 重新设置队列数据大小
+ *
+ * @param This
+ * @param size
+ */
+/* ---------------------------------------------------------------------------*/
+static	void queueSetDataSize(Queue *This,int size)
+{
+	This->priv->size = size;
+}
+
 /* ----------------------------------------------------------------*/
 /**
  * @brief queueCreate 创建对列
