@@ -41,26 +41,25 @@
  *                        macro define
  *----------------------------------------------------------------------------*/
 enum {
-	EVENT_DISPLAY_ON,	// 开视频显示
-	EVENT_DISPLAY_OFF,  // 关视频显示
 	EVENT_FACE_ON,		// 打开人脸识别功能
+	EVENT_FACE_OFF,		// 关闭人脸识别功能
+	EVENT_REGIST_FACE,	// 注册人脸
+	EVENT_TALK_ON,	    // 开始对讲
+	EVENT_TALK_OFF,	    // 结束对讲
 };
 
 enum {
-	ST_DISPLAY_ON, 	// 视频显示状态
-	ST_DISPLAY_OFF, // 视频显示关闭状态
-	ST_FACE_ON,		// 人脸识别开启状态
-	ST_FACE_OFF,	// 人脸识别关闭状态
+	ST_IDLE,		// 空闲状态
+	ST_FACE,		// 人脸识别开启状态
 	ST_TALK,		// 对讲状态
 	ST_RECORDING, 	// 录像状态
 	ST_CAPTURE, 	// 抓拍状态
 };
 
 enum {
-	DO_DISPLAY_ON,	// 打开视频显示
-	DO_DISPLAY_OFF, // 关闭视频显示
 	DO_FACE_ON, 	// 人脸识别开启
 	DO_FACE_OFF, 	// 人脸识别关闭
+    DO_FACE_REGIST, // 注册人脸
 	DO_FAIL, 		// 信息发送失败
 };
 
@@ -71,7 +70,7 @@ typedef struct _StmData {
 
 typedef struct _StmDo {
 	int action;
-	void (*proc)(void *data);
+	int (*proc)(void *data);
 }StmDo;
 /* ---------------------------------------------------------------------------*
  *                      variables define
@@ -80,41 +79,59 @@ MyVideo *my_video;
 static StMachine* stm;
 static StateTable state_table[] =
 {
-	{EVENT_DISPLAY_ON,	ST_DISPLAY_OFF,	ST_DISPLAY_ON,	DO_DISPLAY_ON},
-
-	{EVENT_DISPLAY_OFF,	ST_DISPLAY_ON,	ST_DISPLAY_OFF,	DO_DISPLAY_OFF},
-
-	{EVENT_FACE_ON,		ST_DISPLAY_ON,	ST_DISPLAY_ON,	DO_FACE_ON},
+	{EVENT_FACE_ON,		ST_IDLE,	ST_FACE,	DO_FACE_ON},
+	{EVENT_FACE_OFF,	ST_FACE,	ST_IDLE,	DO_FACE_OFF},
+	{EVENT_REGIST_FACE,	ST_FACE,	ST_FACE,	DO_FACE_REGIST},
 
 };
 
-static void stmDoFail(void *data)
+static int stmDoFail(void *data)
 {
 	int msg = *(int *)data;
+    switch (msg)
+    {
+        case DO_FACE_ON:
+            break;
+        case DO_FACE_OFF:
+            break;
+        default:
+            break;
+    }
 	printf("%s()%d\n",__func__,msg);
 }
-static void stmDoDislpayOn(void *data)
+
+static int stmDoFaceOn(void *data)
 {
-	rkVideoDisplayOnOff(1);
+    rkVideoFaceOnOff(1);
 }
-static void stmDoDislpayOff(void *data)
+
+static int stmDoFaceOff(void *data)
 {
-	rkVideoDisplayOnOff(0);
+    rkVideoFaceOnOff(0);
+}
+
+static int stmDoFaceRegist(void *data)
+{
+   if (my_face)
+      return my_face->regist((MyFaceRegistData *)data);
+   else
+       return -1;
 }
 
 static StmDo stm_do[] =
 {
-	{DO_DISPLAY_ON,	stmDoDislpayOn},
-	{DO_DISPLAY_OFF,stmDoDislpayOff},
 	{DO_FAIL,		stmDoFail},
+	{DO_FACE_ON,    stmDoFaceOn},
+	{DO_FACE_OFF,   stmDoFaceOff},
+	{DO_FACE_REGIST,stmDoFaceRegist},
 };
 
-static void stmHandle(StMachine *This,int result,void *data)
+static int stmHandle(StMachine *This,int result,void *data)
 {
 	if (result) {
-		stm_do[This->getCurRun(This)].proc(data);
+		return stm_do[This->getCurRun(This)].proc(data);
 	} else {
-		stm_do[DO_FAIL].proc(data);
+		return stm_do[DO_FAIL].proc(data);
 	}
 }
 
@@ -125,16 +142,11 @@ static void init(void)
 	rkVideoInit();
 }
 
-static void start(void)
+static void faceStart(void)
 {
-	if (stm)
-		stm->msgPost(stm,EVENT_DISPLAY_ON,NULL);
+    stm->msgPost(stm,EVENT_FACE_ON,NULL);
 }
-static void stop(void)
-{
-	if (stm)
-		stm->msgPost(stm,EVENT_DISPLAY_OFF,NULL);
-}
+
 static void capture(int count)
 {
 	rkVideoStopCapture();
@@ -148,15 +160,45 @@ static void recordStop(void)
 	rkVideoStopRecord();
 }
 
+static void showVideo(void)
+{
+	rkVideoDisplayOnOff(1);
+    faceStart();
+}
+static void hideVideo(void)
+{
+	rkVideoDisplayOnOff(0);
+}
+
+static int faceRegist( unsigned char *image_buff,int w,int h,char *id,char *nick_name,char *url)
+{
+    MyFaceRegistData face_data;
+    face_data.image_buff = image_buff;
+    face_data.w = w;
+    face_data.h = h;
+    face_data.id = id;
+    face_data.nick_name = nick_name;
+    face_data.url = url;
+    return stm->msgPostSync(stm,EVENT_REGIST_FACE,&face_data);
+}
+static void faceDelete(char *id)
+{
+    if (my_face)
+        my_face->deleteOne(id);
+}
+
 void myVideoInit(void)
 {
 	my_video = (MyVideo *) calloc(1,sizeof(MyVideo));
-	my_video->start = start;
-	my_video->stop = stop;
+	my_video->showVideo = showVideo;
+	my_video->hideVideo = hideVideo;
+	my_video->faceStart = faceStart;
+	my_video->faceRegist = faceRegist;
+	my_video->faceDelete = faceDelete;
 	my_video->capture = capture;
 	my_video->recordStart = recordStart;
 	init();
-	stm = stateMachineCreate(ST_DISPLAY_OFF,
+	stm = stateMachineCreate(ST_FACE,
 			state_table,
 			sizeof (state_table) / sizeof ((state_table) [0]),
 			0,

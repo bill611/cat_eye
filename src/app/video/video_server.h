@@ -3,6 +3,7 @@
 
 int rkVideoInit(void);
 int rkVideoDisplayOnOff(int type);
+int rkVideoFaceOnOff(int type);
 int rkVideoStop(void);
 int rkVideoStopCapture(void);
 int rkVideoStartRecord(void);

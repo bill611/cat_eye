@@ -33,7 +33,7 @@
 #include "my_ntp.h"
 #include "externfunc.h"
 #include "my_dns.h"
-#include "my_face.h"
+#include "my_video.h"
 #include "jpeg_enc_dec.h"
 #include "debug.h"
 #include "protocol.h"
@@ -354,17 +354,16 @@ static void ceSetFace(int api,int id,CjsonDec *dec)
 		unsigned char *yuv = NULL;
 		int leng = http->post(url,NULL,&buff_img);
 		jpegToYuv420sp((unsigned char *)buff_img, leng,&w,&h, &yuv, &yuv_len);
-		if (my_face)
-			if (my_face->regist(yuv,w,h,user_id,nick_name,url) == 0)
+		if (my_video)
+			if (my_video->faceRegist(yuv,w,h,user_id,nick_name,url) == 0)
 				result = 1;
 		if (buff_img)
 			free(buff_img);
 		if (yuv)
 			free(yuv);
-		free(url);
-	} else {
-		goto send_return;
 	}
+    if (url)
+		free(url);
 	if (user_id)
 		free(user_id);
 	if (nick_name)
@@ -402,8 +401,8 @@ static void ceRemoveFace(int api,int id,CjsonDec *dec)
 	char *user_id = NULL;
 	dec->getValueChar(dec,"id",&user_id);
 	if (user_id) {
-		if (my_face)
-			my_face->deleteOne(user_id);
+		if (my_video)
+			my_video->faceDelete(user_id);
 		free(user_id);
 	}
 	result = 1;

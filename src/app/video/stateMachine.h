@@ -36,8 +36,29 @@ extern "C" {
 		void  *(*initPara)(struct _StMachine *,int size);
 		int  (*getCurrentstate)(struct _StMachine *);
 		int  (*getCurRun)(struct _StMachine *);
+        /* ---------------------------------------------------------------------------*/
+        /**
+         * @brief 发送异步消息
+         *
+         * @param 
+         * @param msg 消息值
+         * @param data 附加数据，需要用initPara初始化
+         */
+        /* ---------------------------------------------------------------------------*/
 		void  (*msgPost)(struct _StMachine *,int msg,void *data);
-		void  (*handle)(struct _StMachine *,int result,void *data);
+        /* ---------------------------------------------------------------------------*/
+        /**
+         * @brief  发送同步消息
+         *
+         * @param 
+         * @param msg 消息值
+         * @param data 附加数据，直接传入参数，无需初始化
+         *
+         * @returns -1为未找到当前消息对应执行动作，其他为执行动作返回值
+         */
+        /* ---------------------------------------------------------------------------*/
+		int  (*msgPostSync)(struct _StMachine *,int msg,void *data);
+		int  (*handle)(struct _StMachine *,int result,void *data);
 		void  (*destroy)(struct _StMachine **);
 	}StMachine;
 
@@ -45,7 +66,7 @@ extern "C" {
 			StateTable *state_table, 
 			int num,
 			int id,
-			void (*handle)(StMachine *,int result,void *data));
+			int (*handle)(StMachine *,int result,void *data));
 
 #ifdef __cplusplus
 }

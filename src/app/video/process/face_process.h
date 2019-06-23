@@ -28,6 +28,9 @@ class FaceProcess : public StreamPUBase {
 
     bool processFrame(std::shared_ptr<BufferBase> input,
                             std::shared_ptr<BufferBase> output) override;
+    void faceInit(void);
+    void faceUnInit(void);
+    int faceRegist(void *data);
  private:
 	Queue *cammer_queue;
 };

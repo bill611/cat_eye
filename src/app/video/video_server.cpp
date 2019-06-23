@@ -20,11 +20,14 @@ class RKVideo {
 		                 std::shared_ptr<StreamPUBase> next);
 
     void displayOnOff(bool type);
+    void faceOnOff(bool type);
 	void h264EncOnOff(bool type,EncCallbackFunc callback);
 
     void startRecord(void);
  private:
  	
+    bool display_state_;
+    bool face_state_;
     struct rk_cams_dev_info cam_info;
     std::shared_ptr<RKCameraBufferAllocator> ptr_allocator;
     CameraFactory cam_factory;
@@ -39,7 +42,8 @@ static RKVideo* rkvideo = NULL;
 
 RKVideo::RKVideo()
 {
-	printf("[rv_video:%s]\n",__func__);
+    display_state_ = false;
+
     memset(&cam_info, 0, sizeof(cam_info));
     CamHwItf::getCameraInfos(&cam_info);
     if (cam_info.num_camers <= 0) {
@@ -110,11 +114,33 @@ void RKVideo::disconnect(std::shared_ptr<CamHwItf::PathBase> mpath,
 
 void RKVideo::displayOnOff(bool type)
 {
-	if (type == true)
-		connect(cam_dev->mpath(), display_process, cam_dev->format(), 0, nullptr);
-	else {
-		disconnect(cam_dev->mpath(), display_process);
-		display_process->setVideoBlack();
+    if (type == true) {
+        if (display_state_ == false) {
+            display_state_ = true;
+            connect(cam_dev->mpath(), display_process, cam_dev->format(), 0, nullptr);
+        }
+    } else {
+        if (display_state_ == true) {
+            display_state_ = false;
+            disconnect(cam_dev->mpath(), display_process);
+            display_process->setVideoBlack();
+        }
+	}
+}
+void RKVideo::faceOnOff(bool type)
+{
+    if (type == true) {
+        if (face_state_ == false) {
+            face_state_ = true;
+            face_process->faceInit();
+            connect(cam_dev->mpath(), face_process, cam_dev->format(), 0, nullptr);
+        }
+    } else {
+        if (face_state_ == true) {
+            face_state_ = false;
+            disconnect(cam_dev->mpath(), face_process);
+            face_process->faceUnInit();
+        }
 	}
 }
 void RKVideo::h264EncOnOff(bool type,EncCallbackFunc callback)
@@ -148,6 +174,15 @@ int rkVideoDisplayOnOff(int type)
 	else
 		rkvideo->displayOnOff(false);
 	return 0;
+}
+
+extern "C" 
+int rkVideoFaceOnOff(int type)
+{
+	if (type)
+		rkvideo->faceOnOff(true);
+	else
+		rkvideo->faceOnOff(false);
 }
 
 extern "C" 

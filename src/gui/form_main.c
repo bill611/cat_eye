@@ -195,7 +195,7 @@ static int formMainTimerGetState(int idc_timer)
 static void enableAutoClose(void)
 {
 	flag_timer_stop = 0;	
-	my_video->start();
+	my_video->showVideo();
 }
 /* ---------------------------------------------------------------------------*/
 /**
@@ -280,7 +280,7 @@ static void buttonSettingPress(HWND hwnd, int id, int nc, DWORD add_data)
 		return;
 	flag_timer_stop = 1;
     createFormSetting(GetParent(hwnd),enableAutoClose);
-	my_video->stop();
+	my_video->hideVideo();
 }
 
 /* ---------------------------------------------------------------------------*/
@@ -374,7 +374,7 @@ static int formMainProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 int createFormMain(HWND hMainWnd)
 {
 	HWND Form = Screen.Find(form_base_priv.name);
-	my_video->start();
+	my_video->showVideo();
 	if(Form) {
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {

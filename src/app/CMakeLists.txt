@@ -4,16 +4,16 @@ aux_source_directory(. SRCS_APP)
 STRING( REGEX REPLACE ".*/(.*)" "\\1" CURRENT_FOLDER_APP ${CMAKE_CURRENT_SOURCE_DIR})
 
 
-if (MODE_FACE)
-	set(SUB_DIRS_APP ${SUB_DIRS_APP} face )
-endif()
-
 if (MODE_UCPAAS)
 	set(SUB_DIRS_APP ${SUB_DIRS_APP} ucpaas )
 endif()
 
 if (MODE_VIDEO)
 	set(SUB_DIRS_APP ${SUB_DIRS_APP} video )
+endif()
+
+if (MODE_FACE)
+	set(SUB_DIRS_APP ${SUB_DIRS_APP} face )
 endif()
 
 foreach(sub ${SUB_DIRS_APP})

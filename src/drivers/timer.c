@@ -158,7 +158,6 @@ static void timerResetTick(Timer *This)
 
 static void realTimerCreateDefault(Timer *This,double value,void (*function)(int timerid,int arg))
 {
-	int result;
 	pthread_mutexattr_t mutexattr;
 
 	// 嵌套式线程锁

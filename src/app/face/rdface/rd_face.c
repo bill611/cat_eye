@@ -279,7 +279,8 @@ int rdfaceRegist(unsigned char *image_buff,int w,int h,float **out_feature,int *
  * @returns 0 成功 -1 失败
  */
 /* ---------------------------------------------------------------------------*/
-int rdfaceRecognizer(unsigned char *image_buff,int w,int h,int (*featureCompare)(float *feature))
+int rdfaceRecognizer(unsigned char *image_buff,int w,int h,
+        int (*featureCompare)(float *feature,void *face_data_out),void *face_data_out)
 {
 	int *face_count = (int *)dst_ion.buffer;
 	RSFT_FACE_RESULT *pFace = (RSFT_FACE_RESULT *)((int *)dst_ion.buffer+1);
@@ -340,7 +341,7 @@ int rdfaceRecognizer(unsigned char *image_buff,int w,int h,int (*featureCompare)
             float feature[FACE_RECOGNITION_FEATURE_DIMENSION];
             //提取特征值
             if (getFaceFeature(&raw_ion,  (rs_point *)face_landmark,feature) == 0) {
-                if (featureCompare(feature) == 0) {
+                if (featureCompare(feature,face_data_out) == 0) {
                     ret = 0;
                     break;
                 }

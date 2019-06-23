@@ -21,10 +21,24 @@
 extern "C" {
 #endif  /* __cplusplus */
 
+    typedef struct _MyFaceData {
+        char user_id[32];
+        char nick_name[128];
+        char url[256];
+    }MyFaceData;
+
+    typedef struct _MyFaceRegistData {
+        unsigned char *image_buff;
+        int w,h;
+        char *id;
+        char *nick_name;
+        char *url;
+    }MyFaceRegistData;
+
 	typedef struct _MyFace{
 		int (*init)(void);
 		int (*deleteOne)(char *id);
-		int (*regist)(unsigned char *image_buff,int w,int h,char *id,char *nick_name,char *url);
+		int (*regist)(MyFaceRegistData *data);
 		void (*recognizer)(char *image_buff,int w,int h);
 		void (*uninit)(void);
 	}MyFace;

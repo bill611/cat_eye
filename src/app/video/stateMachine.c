@@ -26,14 +26,6 @@
 #include "stateMachine.h"
 
 /* ---------------------------------------------------------------------------*
- *                  extern variables declare
- *----------------------------------------------------------------------------*/
-
-/* ---------------------------------------------------------------------------*
- *                  internal functions declare
- *----------------------------------------------------------------------------*/
-
-/* ---------------------------------------------------------------------------*
  *                        macro define
  *----------------------------------------------------------------------------*/
 #if DBG_MACHINE > 0
@@ -53,11 +45,21 @@ typedef struct _MsgData {
 
 typedef struct _StMachinePriv {
 	Queue *queue;
+    pthread_mutex_t mutex;
 	StateTable *funcentry;
 	int cur_state;
 	int status_run;	
 	int table_num;			
 }StMachinePriv;
+/* ---------------------------------------------------------------------------*
+ *                  extern variables declare
+ *----------------------------------------------------------------------------*/
+static int stmExecEntry(StMachine *This,int msg);
+
+/* ---------------------------------------------------------------------------*
+ *                  internal functions declare
+ *----------------------------------------------------------------------------*/
+
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
@@ -79,6 +81,16 @@ static void stmMsgPost(StMachine* This,int msg,void *data)
 	This->priv->queue->post(This->priv->queue,&msg_data);
 }
 
+static int stmMsgPostSync(StMachine* This,int msg,void *data)
+{
+    int ret = -1;
+	pthread_mutex_lock(&This->priv->mutex);
+    if (stmExecEntry(This,msg)) {
+        ret = This->handle(This,1,data);
+    }
+	pthread_mutex_unlock(&This->priv->mutex);
+    return ret;
+}
 
 
 /* ---------------------------------------------------------------------------*/
@@ -91,16 +103,16 @@ static void stmMsgPost(StMachine* This,int msg,void *data)
  * @returns 1成功 0失败
  */
 /* ---------------------------------------------------------------------------*/
-static int stmExecEntry(StMachine *This,MsgData * msg)
+static int stmExecEntry(StMachine *This,int msg)
 {
 	int num = This->priv->table_num;
 	StateTable *funcentry = This->priv->funcentry;
 
     for (; num > 0; num--,funcentry++) {
-		if (		(msg->msg == funcentry->msg) 
+		if (		(msg == funcentry->msg) 
 				&& 	(This->priv->cur_state == funcentry->cur_state)) {
 			DBG_P("[ST]msg:%d,cur:%d,next:%d,do:%d\n",
-					msg->msg,
+					msg,
 					funcentry->cur_state,
 					funcentry->next_state,
 					funcentry->run);
@@ -181,12 +193,14 @@ static void *stmThread(void *arg)
     while(1) {
 		memset(&msg_data,0,sizeof(MsgData));
 		stm->priv->queue->get(stm->priv->queue,&msg_data);
-		if (stmExecEntry(stm,&msg_data))
+        pthread_mutex_lock(&stm->priv->mutex);
+		if (stmExecEntry(stm,msg_data.msg))
 			stm->handle(stm,1,msg_data.data);
 		else
 			stm->handle(stm,0,&msg_data.msg);
 		if (msg_data.data)
 			free(msg_data.data);
+        pthread_mutex_unlock(&stm->priv->mutex);
     }
     pthread_exit(NULL);
     return NULL;
@@ -210,7 +224,7 @@ StMachine* stateMachineCreate(int init_state,
 		StateTable *state_table, 
 		int num,
 		int id,
-		void (*handle)(StMachine *This,int result,void *data))
+		int (*handle)(StMachine *This,int result,void *data))
 {
 
 	StMachine *This = (StMachine *)calloc(1,sizeof(StMachine));
@@ -220,9 +234,15 @@ StMachine* stateMachineCreate(int init_state,
 	This->priv->cur_state = init_state;
 	This->priv->queue = queueCreate("stm",QUEUE_BLOCK,1);
 
+	pthread_mutexattr_t mutexattr;
+	pthread_mutexattr_init(&mutexattr);
+    pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE_NP);
+    pthread_mutex_init(&This->priv->mutex, &mutexattr);
+
 	This->id = id;
 
 	This->msgPost = stmMsgPost;
+	This->msgPostSync = stmMsgPostSync;
 	This->handle = handle;
 	This->initPara = stmInitPara;
 	This->getCurrentstate = stmGetCurrentState;

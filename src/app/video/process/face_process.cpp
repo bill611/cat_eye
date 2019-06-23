@@ -84,7 +84,6 @@ FaceProcess::FaceProcess()
     pthread_mutex_init(&mutex, &mutexattr);
 
 	cammer_queue = queueCreate("face_process",QUEUE_BLOCK,sizeof(CammerData));
-	get_img_ready = true;
 	createThread(faceProcessThread,cammer_queue);
 }
 
@@ -110,3 +109,24 @@ bool FaceProcess::processFrame(std::shared_ptr<BufferBase> inBuf,
     return true;
 }
 
+void FaceProcess::faceInit(void)
+{
+    if (my_face)    
+        my_face->init();
+	get_img_ready = true;
+}
+
+void FaceProcess::faceUnInit(void)
+{
+    if (my_face)    
+        my_face->uninit();
+	get_img_ready = false;
+}
+
+int FaceProcess::faceRegist(void *data)
+{
+    MyFaceRegistData *face_data = (MyFaceRegistData *)data;
+    if (!my_face)
+        return -1;
+    return my_face->regist(face_data);
+}
