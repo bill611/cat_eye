@@ -93,7 +93,7 @@ static int regist(MyFaceRegistData *data)
         goto regist_end;
 	float *feature = NULL;
 	int feature_len = 0;
-    int ret = -1;
+	int ret = -1;
 	if (rdfaceRegist(data->image_buff,data->w,data->h,&feature,&feature_len) < 0 ){
 		DPRINT("regsit face err!\n");
         goto regist_end;
@@ -125,8 +125,8 @@ static int featureCompareCallback(float *feature,void *face_data_out)
             break;
         float ret1 = rdfaceGetFeatureSimilarity(feature_src,feature);
         if (ret1 > SIMILAYRITY) {
-            // printf("recognizer->id:%s,name:%s,url:%s\n", 
-                    // data.user_id,data.nick_name,data.url);
+			// printf("recognizer->id:%s,name:%s,url:%s\n", 
+					// data.user_id,data.nick_name,data.url);
             result = 0;
             if (face_data_out)
                 memcpy(face_data_out,&data,sizeof(MyFaceData));
@@ -180,5 +180,5 @@ void myFaceInit(void)
 	my_face->recognizer = recognizer;
 	my_face->uninit = uninit;
 	my_face->init = init;
-    createThread(threadInit,NULL);
+    createThread(threadTimer1s,NULL);
 }

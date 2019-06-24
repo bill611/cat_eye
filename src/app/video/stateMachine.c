@@ -86,6 +86,7 @@ static int stmMsgPostSync(StMachine* This,int msg,void *data)
     int ret = -1;
 	pthread_mutex_lock(&This->priv->mutex);
     if (stmExecEntry(This,msg)) {
+		printf("%s\n",__func__ );
         ret = This->handle(This,1,data);
     }
 	pthread_mutex_unlock(&This->priv->mutex);

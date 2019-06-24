@@ -57,10 +57,10 @@ enum {
 };
 
 enum {
+	DO_FAIL, 		// 信息发送失败
 	DO_FACE_ON, 	// 人脸识别开启
 	DO_FACE_OFF, 	// 人脸识别关闭
     DO_FACE_REGIST, // 注册人脸
-	DO_FAIL, 		// 信息发送失败
 };
 
 typedef struct _StmData {
@@ -112,10 +112,10 @@ static int stmDoFaceOff(void *data)
 
 static int stmDoFaceRegist(void *data)
 {
-   if (my_face)
-      return my_face->regist((MyFaceRegistData *)data);
-   else
-       return -1;
+	if (my_face)
+		return my_face->regist((MyFaceRegistData *)data);
+	else
+		return -1;
 }
 
 static StmDo stm_do[] =
@@ -163,7 +163,7 @@ static void recordStop(void)
 static void showVideo(void)
 {
 	rkVideoDisplayOnOff(1);
-    faceStart();
+	faceStart();
 }
 static void hideVideo(void)
 {
@@ -198,7 +198,7 @@ void myVideoInit(void)
 	my_video->capture = capture;
 	my_video->recordStart = recordStart;
 	init();
-	stm = stateMachineCreate(ST_FACE,
+	stm = stateMachineCreate(ST_IDLE,
 			state_table,
 			sizeof (state_table) / sizeof ((state_table) [0]),
 			0,

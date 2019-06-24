@@ -43,6 +43,7 @@ static RKVideo* rkvideo = NULL;
 RKVideo::RKVideo()
 {
     display_state_ = false;
+	face_state_ = false;
 
     memset(&cam_info, 0, sizeof(cam_info));
     CamHwItf::getCameraInfos(&cam_info);
