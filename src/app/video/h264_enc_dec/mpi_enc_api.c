@@ -312,8 +312,10 @@ static int test_mpp_run(H264Encode *This,unsigned char *in_data,unsigned char **
     MppApi *mpi;
     MppCtx ctx;
 	MpiEncTestData *p = This->priv->p;
-    if (NULL == p)
+	if (NULL == p) {
+		printf("%s()%d\n", __func__,__LINE__);
         return 0;
+	}
 
     mpi = p->mpi;
     ctx = p->ctx;

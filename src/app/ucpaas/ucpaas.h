@@ -32,7 +32,7 @@ extern "C" {
 	void ucsCbPlayAudio(void (*callBack)(const char *data,unsigned int size));
 	void ucsCbStartRecord(void (*callBack)(void));
 	void ucsCbRecording(void (*callBack)(char *data,unsigned int size));
-	void ucsPlayVideo(const unsigned char* frameData, const unsigned int dataLen);
+	void ucsSendVideo(const unsigned char* frameData, const unsigned int dataLen);
 	void ucsConnect(char *user_token);
 	void registUcpaas(void);
 

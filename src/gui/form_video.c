@@ -32,6 +32,7 @@
 #include "form_video.h"
 #include "form_base.h"
 
+#include "my_video.h"
 #include "debug.h"
 #include "protocol.h"
 /* ---------------------------------------------------------------------------*
@@ -151,7 +152,11 @@ static void buttonHangupPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
-	protocol_talk->hangup(NULL);
+	if (form_type == FORM_VIDEO_TYPE_RECORD) {
+		my_video->recordStop();
+	} else {
+		protocol_talk->hangup(NULL);
+	}
 	ShowWindow(GetParent(hwnd),SW_HIDE);
 }
 static void buttonUnlockPress(HWND hwnd, int id, int nc, DWORD add_data)
@@ -310,6 +315,8 @@ void interfaceCreateFormVideoDirect(void *arg)
 {
 	int type = *(int *)arg;
 	createFormVideo(0,type,NULL); 
+	if(protocol_talk)
+		protocol_talk->answer(NULL);
 }
 void interfaceHangup(void *arg)
 {

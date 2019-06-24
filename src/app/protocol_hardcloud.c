@@ -633,7 +633,7 @@ retry:
 		mqtt_server_content = NULL;
 	}
 	sleep(1);
-	getIntercoms();
+	// getIntercoms();
 	return NULL;
 }
 
@@ -679,10 +679,11 @@ static void* tcpHeartThread(void *arg)
 /* ---------------------------------------------------------------------------*/
 void registHardCloud(void)
 {
-	tcpClientInit();
-	http = myHttpCreate();
-	mqtt = myMqttCreate();
-	createThread(initThread,NULL);
-	createThread(tcpHeartThread,NULL);
+	// tcpClientInit();
+	// http = myHttpCreate();
+	// mqtt = myMqttCreate();
+	// createThread(initThread,NULL);
+	// createThread(tcpHeartThread,NULL);
+
 }
 

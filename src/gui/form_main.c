@@ -196,6 +196,7 @@ static void enableAutoClose(void)
 {
 	flag_timer_stop = 0;	
 	my_video->showVideo();
+	my_video->recordStop();
 }
 /* ---------------------------------------------------------------------------*/
 /**

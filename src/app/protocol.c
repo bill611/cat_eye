@@ -469,6 +469,7 @@ void protocolInit(void)
 	protocol->getImei = getImei;
 	protocol->isNeedToUpdate = isNeedToUpdate;
 
+	jpegIncDecInit();
 	registHardCloud();
 	registTalk();
 	registSingleChip();

@@ -477,7 +477,7 @@ static int TUCS_Init()
         return -1;
     }
 
-    UCS_SetLogEnable(0, NULL);
+    UCS_SetLogEnable(1, NULL);
 
     UCS_GetVersion(version);
 	DPRINT("ucpaas version %s\n",version);
@@ -485,7 +485,7 @@ static int TUCS_Init()
     UCS_vqecfg_t vqecfg = {0, 0, 0};
     UCS_SetVqeCfg(&vqecfg);
 
-    TUCS_extern_capture_init();
+    // TUCS_extern_capture_init();
     
     return 0;
 }
@@ -566,13 +566,22 @@ void ucsCbRecording(void (*callBack)(char *data,unsigned int size))
 {
     call_backs.recording = callBack;
 }
-void ucsPlayVideo(const unsigned char* frameData, const unsigned int dataLen)
+void ucsSendVideo(const unsigned char* frameData, const unsigned int dataLen)
 {
+	DPRINT("send:%d\n", dataLen);
 	UCS_PushExternalVideoStream(frameData,dataLen);
+}
+void ucsReceiveVideo(const unsigned char* frameData,
+	   	const unsigned int *dataLen,
+		long long *timeStamp,
+		int *frameType)
+{
+	UCS_get_video_frame(frameData, dataLen,timeStamp,frameType);
 }
 void ucsConnect(char *user_token)
 {
-	UCS_DisConnect();
+	DPRINT("token:%s\n",user_token);
+	// UCS_DisConnect();
     UCS_Connect(user_token);
 }
 

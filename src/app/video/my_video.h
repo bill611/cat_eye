@@ -31,6 +31,7 @@ extern "C" {
         void (*faceDelete)(char *id); // 删除人脸
 		void (*capture)(int count);
 		void (*recordStart)(int count);
+		void (*recordStop)(void);
 	}MyVideo;
 	extern MyVideo *my_video;
 	void myVideoInit(void);

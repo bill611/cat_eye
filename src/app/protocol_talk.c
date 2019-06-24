@@ -24,6 +24,7 @@
 #include <arpa/inet.h>
 #include "sql_handle.h"
 #include "protocol.h"
+#include "my_video.h"
 #include "ucpaas.h"
 
 /* ---------------------------------------------------------------------------*
@@ -59,6 +60,8 @@ static void answer(void (*callBack)(void *arg))
 #ifdef USE_UCPAAS
 	ucsAnswer(callBack);
 #endif
+	my_video->recordStart(0);
+
 }
 static void hangup(void (*callBack)(void *arg))
 {
@@ -140,4 +143,6 @@ void registTalk(void)
 #ifdef USE_UCPAAS
 	registUcpaas();
 #endif
+	protocol_talk->reload();
+	protocol_talk->connect();
 }
