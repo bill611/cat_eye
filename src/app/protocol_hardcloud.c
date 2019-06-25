@@ -679,11 +679,11 @@ static void* tcpHeartThread(void *arg)
 /* ---------------------------------------------------------------------------*/
 void registHardCloud(void)
 {
-	// tcpClientInit();
-	// http = myHttpCreate();
-	// mqtt = myMqttCreate();
-	// createThread(initThread,NULL);
-	// createThread(tcpHeartThread,NULL);
+	tcpClientInit();
+	http = myHttpCreate();
+	mqtt = myMqttCreate();
+	createThread(initThread,NULL);
+	createThread(tcpHeartThread,NULL);
 
 }
 

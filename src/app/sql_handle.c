@@ -128,6 +128,7 @@ void sqlGetUserInfo(
 {
 	char buf[128];
 	sprintf(buf,"select * from UserInfo where type = %d",type );
+	pthread_mutex_lock(&mutex);
 	LocalQueryOpen(dbase.sql,buf);
 	int ret = dbase.sql->RecordCount(dbase.sql);
 	if (ret) {
@@ -140,6 +141,7 @@ void sqlGetUserInfo(
 			LocalQueryOfChar(dbase.sql,"nickName",nick_name,128);
 	}
 	dbase.sql->Close(dbase.sql);
+	pthread_mutex_unlock(&mutex);
 }
 void sqlGetUserInfoEnd(void)
 {
