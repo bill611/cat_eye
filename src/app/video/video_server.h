@@ -7,9 +7,8 @@ int rkVideoInit(void);
 int rkVideoDisplayOnOff(int type);
 int rkVideoFaceOnOff(int type);
 int rkVideoStop(void);
-int rkVideoStopCapture(void);
-int rkVideoStartRecord(int w,int h,EncCallbackFunc encCallback);
-int rkVideoStopRecord(void);
+int rkH264EncOn(int w,int h,EncCallbackFunc encCallback);
+int rkH264EncOff(void);
 
 #endif
 

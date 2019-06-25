@@ -127,14 +127,9 @@ static FormBasePriv form_base_priv = {
 };
 
 static int bmp_load_finished = 0;
-static int flag_timer_stop = 0;
 static int form_type = FORM_VIDEO_TYPE_CAPTURE;
 static FormBase* form_base = NULL;
 
-static void enableAutoClose(void)
-{
-	flag_timer_stop = 0;
-}
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief formVideoTimerProc1s 窗口相关定时函数
@@ -155,7 +150,7 @@ static void buttonHangupPress(HWND hwnd, int id, int nc, DWORD add_data)
 	if (form_type == FORM_VIDEO_TYPE_RECORD) {
 		my_video->recordStop();
 	} else {
-		protocol_talk->hangup(NULL);
+		protocol_talk->hangup();
 	}
 	ShowWindow(GetParent(hwnd),SW_HIDE);
 }
@@ -191,7 +186,8 @@ static void updateDisplay(HWND hDlg)
 	if (form_type == FORM_VIDEO_TYPE_CAPTURE) {
 		ShowWindow(GetDlgItem(hDlg,IDC_BUTTON_UNLOCK),SW_HIDE);
 		ShowWindow(GetDlgItem(hDlg,IDC_BUTTON_HANGUP),SW_HIDE);
-	} else if (form_type == FORM_VIDEO_TYPE_RECORD) {
+	}else{	
+	// } else if (form_type == FORM_VIDEO_TYPE_RECORD) {
 		ShowWindow(GetDlgItem(hDlg,IDC_BUTTON_UNLOCK),SW_HIDE);
 		ShowWindow(GetDlgItem(hDlg,IDC_BUTTON_HANGUP),SW_SHOWNORMAL);
 		myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_HANGUP), 467,451);
@@ -241,29 +237,12 @@ static int formVideoProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
 	{
-		case MSG_INITDIALOG:
-			{
-				// SetTimer(hDlg, IDC_TIMER_1S, TIME_1S);
-                // HDC hdc = GetClientDC (hDlg);
-                // mlsSetSlaveScreenInfo(hdc,MLS_INFOMASK_ALL,1,0,
-                        // MLS_BLENDMODE_COLORKEY,0x00000100,0x00,3);
-                // mlsEnableSlaveScreen(hdc,1);
-			} break;
-
-		// case MSG_ERASEBKGND:
-			// {
-				// drawBackground(hDlg,
-						   // (HDC)wParam,
-						   // (const RECT*)lParam,NULL,0);
-			// } return 0;
-
-
 		case MSG_TIMER:
 			{
-				if (flag_timer_stop)
-					return 0;
+				// video界面不自动关闭
 				if (wParam == IDC_TIMER_1S){
 					formVideoTimerProc1s(hDlg);
+					return 0;
 				}
 			} break;
 
@@ -311,20 +290,20 @@ int createFormVideo(HWND hMainWnd,int type,void (*callback)(void))
 	return 0;
 }
 
-void interfaceCreateFormVideoDirect(void *arg)
+static void interfaceCreateFormVideoDirect(void *arg)
 {
 	int type = *(int *)arg;
-	createFormVideo(0,type,NULL); 
-	if(protocol_talk)
-		protocol_talk->answer(NULL);
+	createFormVideo(0,FORM_VIDEO_TYPE_MONITOR,NULL); 
 }
-void interfaceHangup(void *arg)
+static void interfaceHangup(void)
 {
 	ShowWindow(form_base->hDlg,SW_HIDE);
 }
 
 void formVideoInitInterface(void)
 {
-	if (protocol_talk)
-		protocol_talk->cblIncomingCall(interfaceCreateFormVideoDirect);	
+	if (protocol_talk) {
+		protocol_talk->uiIncomingCall = interfaceCreateFormVideoDirect;
+		protocol_talk->uiHangup = interfaceHangup;
+	}
 }

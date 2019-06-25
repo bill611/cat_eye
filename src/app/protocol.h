@@ -45,12 +45,15 @@ extern "C" {
 	// 对讲协议
 	typedef struct _ProtocolTalk {
 		void (*reload)(void);
-		void (*dial)(char *user_id,void (*callBack)(void *arg));
-		void (*answer)(void (*callBack)(void *arg));
-		void (*hangup)(void (*callBack)(void *arg));
+		void (*dial)(char *user_id);
+		void (*answer)(void);
+		void (*hangup)(void);
 		void (*connect)(void);
 		void (*cbDialRet)(void (*callBack)(void *arg));
-		void (*cblIncomingCall)(void (*callBack)(void *arg));
+
+		void (*uiIncomingCall)(void *arg);
+		void (*uiHangup)(void);
+
 		void (*sendCmd)(char *cmd,char *user_id,void (*callBack)(void *arg));
 		void (*receivedCmd)(void (*callBack)(const char *user_id,void *arg));
 		void (*initAudio)(void (*callBack)(void));

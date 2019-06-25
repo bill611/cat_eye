@@ -173,22 +173,106 @@ static void faceStart(void)
 
 static void capture(int count)
 {
-	rkVideoStopCapture();
+	// rkVideoStopCapture();
 }
 
+static unsigned char *nal_array[300] = { NULL };
+static int i_nal = 0;
+#define H264SIZE (50*1024)
+static unsigned char data264[H264SIZE] = {0};
+int TUCS_extern_capture_init()
+{
+    FILE *f = NULL;
+    int data_len;
+    unsigned char *fdata = data264;
+    f = fopen("stream_chn0.h264", "rb");
+
+    if ( NULL == f)
+    {
+        return 0;
+    }
+    memset(data264, 0x00, H264SIZE);
+    memset(nal_array, 0x00, sizeof(nal_array));
+    i_nal = 0;
+	printf("befor fread\n");
+    data_len = fread(fdata, sizeof(unsigned char), H264SIZE, f);
+    if (f)
+    {
+        fclose(f);
+    }
+    
+    printf("Read videw %d\n",data_len);
+    int len = 0;
+    i_nal = 0;
+
+    unsigned char *p = (unsigned char*)fdata;
+
+    while ((len < data_len - 4) && (i_nal < 30))
+    {
+        if (p[0] == 0 && p[1] == 0 && p[2] == 0 && p[3] == 1)
+        {
+            nal_array[i_nal++] = p;
+            len += 4;
+            p += 4;
+            continue;
+        }
+        if (p[0] == 0 && p[1] == 0 && p[2] == 1)
+        {
+            nal_array[i_nal++] = p;
+            len += 3;
+            p += 3;
+            continue;
+        }
+        p++;
+        len++;
+    }
+    
+    return 0;
+}
+
+// FILE *fd;
+// int count = 0;
+    // int fn = 0;
 static void encCallbackFunc(void *data,int size)
 {
-	ucsSendVideo(data,size);
+	// if (++count < 1000){
+		// fwrite(data,1,size,fd);
+		// if (count == 1000) {
+			// fflush(fd);
+			// fclose(fd);
+		// }
+	// }
+		// if (nal_array[fn] != NULL && nal_array[fn+1] != NULL) {
+			// ucsSendVideo(nal_array[fn],nal_array[fn + 1] - nal_array[fn]);
+		// }
+		// fn++;
+		// if (fn > i_nal - 3)
+		// {
+			// fn = 0;
+		// }
+		ucsSendVideo(data,size);
 }
 static void recordStart(int count)
 {
-	rkVideoStartRecord(1280,720,encCallbackFunc);
+	// TUCS_extern_capture_init();
+	// count = 0;
+	// fd = fopen("480p.h264","wb");
+    // fn = 0;
+	rkH264EncOn(320,240,encCallbackFunc);
 }
 static void recordStop(void)
 {
-	rkVideoStopRecord();
+	rkH264EncOff();
 }
 
+static void transVideoStart(void)
+{
+	rkH264EncOn(320,240,encCallbackFunc);
+}
+static void transVideoStop(void)
+{
+	rkH264EncOff();
+}
 static void showVideo(void)
 {
 	rkVideoDisplayOnOff(1);
@@ -227,6 +311,8 @@ void myVideoInit(void)
 	my_video->capture = capture;
 	my_video->recordStart = recordStart;
 	my_video->recordStop = recordStop;
+	my_video->transVideoStart = transVideoStart;
+	my_video->transVideoStop = transVideoStop;
 	init();
 	stm = stateMachineCreate(ST_IDLE,
 			state_table,

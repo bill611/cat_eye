@@ -21,10 +21,8 @@ class RKVideo {
 
     void displayOnOff(bool type);
     void faceOnOff(bool type);
-	void h264EncOnOff(bool type);
+	void h264EncOnOff(bool type,int w,int h,EncCallbackFunc encCallback);
 
-    void startRecord(int w,int h,EncCallbackFunc encCallback);
-    void stopRecord(void);
  private:
  	
     bool display_state_;
@@ -78,7 +76,6 @@ RKVideo::RKVideo()
 
 RKVideo::~RKVideo()
 {
-	printf("[rv_video:%s]\n",__func__);
 	cam_dev->stop();
 
 }
@@ -146,28 +143,21 @@ void RKVideo::faceOnOff(bool type)
         }
 	}
 }
-void RKVideo::h264EncOnOff(bool type)
+void RKVideo::h264EncOnOff(bool type,int w,int h,EncCallbackFunc encCallback)
 {
-    if (type == true) {
-        if (h264enc_state_ == false) {
-            h264enc_state_ = true;
+	if (type == true) {
+		if (h264enc_state_ == false) {
+			h264enc_state_ = true;
 			connect(cam_dev->mpath(), encode_process, cam_dev->format(), 1, ptr_allocator);
-        }
-    } else {
-        if (h264enc_state_ == true) {
-            h264enc_state_ = false;
+			encode_process->startEnc(w,h,encCallback);
+		}
+	} else {
+		if (h264enc_state_ == true) {
+			h264enc_state_ = false;
+			encode_process->stopEnc();
 			disconnect(cam_dev->mpath(), encode_process);
-        }
+		}
 	}
-}
-
-void RKVideo::startRecord(int w,int h,EncCallbackFunc encCallback)
-{
-	encode_process->startEnc(w,h,encCallback);
-}
-void RKVideo::stopRecord(void)
-{
-	encode_process->stopEnc();
 }
 
 extern "C" 
@@ -197,26 +187,14 @@ int rkVideoFaceOnOff(int type)
 }
 
 extern "C" 
-int rkVideoStop(void)
+int rkH264EncOn(int w,int h,EncCallbackFunc encCallback)
 {
-	// rkvideo->stop();
-}
-
-
-extern "C" 
-int rkVideoStopCapture(void)
-{
+	rkvideo->h264EncOnOff(true,w,h,encCallback);
 }
 
 extern "C" 
-int rkVideoStartRecord(int w,int h,EncCallbackFunc encCallback)
+int rkH264EncOff(void)
 {
-	rkvideo->h264EncOnOff(1);
-	rkvideo->startRecord(w,h,encCallback);
+	rkvideo->h264EncOnOff(false,0,0,NULL);
 }
 
-extern "C" 
-int rkVideoStopRecord(void)
-{
-	rkvideo->h264EncOnOff(0);
-}

@@ -44,35 +44,17 @@ typedef struct _DebugInfo {
 	const char *content;
 }DebugInfo;
 
-typedef struct _Callbacks {
-    void (*dial)(void *arg);
-    void (*answer)(void *arg);
-    void (*hangup)(void *arg);
-    void (*dialRet)(void *arg);
-    void (*incomingCall)(void *arg);
-    void (*sendCmd)(void *arg);
-    void (*receivedCmd)(const char *user_id,void *arg);
-    void (*initAudio)(void);
-    void (*startRecord)(void);
-    void (*recording)(char *data,unsigned int size);
-    void (*playAudio)(const char *data,unsigned int size);
-}Callbacks;
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
 
 static Callbacks call_backs;
 
-static FILE* fw = NULL;
 static int g_isVideoCall = 0;
 
 static int g_isAutoAnswer = 0;
 static int g_previewEn = 1;
 static int g_externalAVEn = 1;
-
-static int TUCS_extern_capture_init();
-static void startVideoIncomingThread();
-static void stopVideoIncomingThread();
 
 
 static const char * ucDebugInfo(int ev_reason)
@@ -137,14 +119,9 @@ static void connect_event_cb(int ev_reason)
 static void dial_failed_cb(const char* callid, int reason)
 {
     int result = 0; 
-    if (call_backs.dial)
-        call_backs.dial(&result);
+    if (call_backs.dialFail)
+        call_backs.dialFail(&result);
     DPRINT("[%s] callid[%s] reason[%s]\n", __FUNCTION__, callid, ucDebugInfo(reason));
-	return ;
-    if (g_isVideoCall && g_externalAVEn)
-    {
-        stopVideoIncomingThread();
-    }
 }
 
 // call alerting
@@ -153,11 +130,6 @@ static void on_alerting_cb(const char* callid)
 	if (call_backs.dialRet)
 		call_backs.dialRet((void *)callid);
     DPRINT("[%s] callid[%s]\n", __FUNCTION__, callid);
-	return;
-    if (g_isVideoCall && g_previewEn && g_externalAVEn)
-    {
-        startVideoIncomingThread();
-    }
 }
 
 // new call incoming
@@ -169,17 +141,6 @@ static void on_incomingcall_cb(const char* callid, int calltype,
         __FUNCTION__, callid, calltype, caller_uid, caller_name, userdata);
 	if (call_backs.incomingCall)
 		call_backs.incomingCall((void *)caller_uid);
-	return;
-    g_isVideoCall = calltype;
-    if (g_isVideoCall && g_previewEn && g_externalAVEn)
-    {
-        startVideoIncomingThread();
-    }
-
-    if (g_isAutoAnswer)
-    {
-        UCS_CallAnswer();
-    }
 }
 
 // call answer
@@ -188,11 +149,6 @@ static void on_answer_cb(const char* callid)
     DPRINT("[%s] callid[%s]\n", __FUNCTION__, callid);
     if (call_backs.answer)
         call_backs.answer((void *)callid);
-	return;
-    if (g_isVideoCall && g_externalAVEn)
-    {
-        startVideoIncomingThread();
-    }
 }
 
 // call hangup
@@ -201,16 +157,6 @@ static void on_hangup_cb(const char* callid, int reason)
     DPRINT("[%s] callid[%s] reason[%s]\n", __FUNCTION__, callid,ucDebugInfo(reason));
 	if (call_backs.hangup)
 		call_backs.hangup((void *)callid);
-	return;
-    if (fw)
-	{
-		fclose(fw);
-	}
-
-    if (g_isVideoCall && g_externalAVEn)
-    {
-        stopVideoIncomingThread();
-    }
 }
 
 // received dtmf
@@ -263,37 +209,18 @@ static void init_playout_cb(unsigned int sample_rate,
 {
 	if (call_backs.initAudio)
 		call_backs.initAudio();
-	return;
-//    fw = fopen("/home/playout_t.pcm", "wb");
-    fw = fopen("/var/upgrade/playout_t.pcm", "wb");
-	if (NULL == fw)
-	{
-		DPRINT("Failed to open playout_t.pcm\n");
-	}
 }
 
 // UCS init external recording device with given parameters
 // sample_rate -- recording audio sample rate, 16000
 // bytes_per_sample -- bytes of per sample, always 2 bytes = 16bits
 // num_of_channels -- number of recording channels, always = 1
-#define MAX_READ_STREAM_SIZE (1024 * 1024 * 1)
-static char readStream[MAX_READ_STREAM_SIZE] = { 0 };
-static int readIndex = 0;
-static int streamSize = 0;
 static void init_recording_cb(unsigned int sample_rate,
     unsigned int bytes_per_sample,
     unsigned int num_of_channels)
 {
 	if (call_backs.startRecord)
 		call_backs.startRecord();
-	return;
-//    FILE *fp = fopen("/home/cuiniao.pcm", "rb");
-    FILE *fp = fopen("/var/upgrade/cuiniao.pcm", "rb");
-	if (fp)
-	{
-		streamSize = fread(readStream, 1, MAX_READ_STREAM_SIZE, fp);
-		fclose(fp);
-	}
 }
 
 // UCS read recording 10ms pcm data from external audio device 
@@ -305,18 +232,6 @@ static int read_recording_data_cb(char * audio_data,
 	if (call_backs.recording)
 		call_backs.recording(audio_data,size);
 	return 0;
-    if (audio_data && size)
-	{
-		if (readIndex + size > streamSize)
-		{
-			readIndex = 0;
-		}
-		memcpy(audio_data, &readStream[readIndex], size);
-		readIndex += size;
-
-		return 0;
-	}
-	return -1;
 }
 
 // UCS write playout 10ms pcm data to external audio device
@@ -328,126 +243,6 @@ static int write_playout_data_cb(const char* audio_data,
 	if (call_backs.playAudio)
 		call_backs.playAudio(audio_data,size);
 	return 0;
-    if (audio_data && size && fw)
-	{
-		fwrite(audio_data, 1, size, fw);
-		return 0;
-	}
-
-	return -1;
-}
-
-static unsigned char *nal_array[300] = { NULL };
-static int i_nal = 0;
-static unsigned char data264[5000 * 1000] = { 0 };
-static int TUCS_extern_capture_init()
-{
-    FILE *f = NULL;
-    int data_len;
-    unsigned char *fdata = data264;
-//    f = fopen("/home/stream_chn0.h264", "rb");
-    f = fopen("/var/upgrade/stream_chn0.h264", "rb");
-    if ( NULL == f)
-    {
-        return 0;
-    }
-    memset(data264, 0x00, sizeof(data264));
-    memset(nal_array, 0x00, sizeof(nal_array));
-    i_nal = 0;
-    data_len = fread(fdata, sizeof(unsigned char), sizeof(data264), f);
-    if (f)
-    {
-        fclose(f);
-    }
-    
-    int len = 0;
-    i_nal = 0;
-
-    unsigned char *p = (unsigned char*)fdata;
-
-    while (len < data_len - 4)
-    {
-        if (p[0] == 0 && p[1] == 0 && p[2] == 0 && p[3] == 1)
-        {
-            nal_array[i_nal++] = p;
-            len += 4;
-            p += 4;
-            continue;
-        }
-        if (p[0] == 0 && p[1] == 0 && p[2] == 1)
-        {
-            nal_array[i_nal++] = p;
-            len += 3;
-            p += 3;
-            continue;
-        }
-        p++;
-        len++;
-    }
-    
-    return 0;
-}
-
-int threadAlive = 0;
-static void* TUCS_extern_capture_proc(void* arg)
-{
-    int fn = 0;
-    
-    usleep(1000 * 1000);
-    DPRINT("TUCS_extern_capture_proc enter\n");
-
-    if ( i_nal <= 0 )
-    {
-        DPRINT("TUCS_extern_capture_proc failed with no nal unit\n");
-        return NULL;
-    }
-    
-    while ( threadAlive)
-    {
-        if (nal_array[fn] != NULL && nal_array[fn+1] != NULL)
-        {
-            // DPRINT("TUCS_extern_capture_proc fn[%d]\n", fn);
-            int res = UCS_PushExternalVideoStream(nal_array[fn], nal_array[fn + 1] - nal_array[fn]);
-            if ( res < 0 )
-            {
-                DPRINT("TUCS_extern_capture_proc failed.[%d]\n", i_nal);
-            }
-        }
-        fn++;
-        if (fn > i_nal - 3)
-        {
-            fn = 0;
-        }
-
-        usleep(50 * 1000);
-    }
-
-    DPRINT("TUCS_extern_capture_proc exit\n");
-    return NULL;
-}
-
-pthread_t tid;
-static void startVideoIncomingThread()
-{
-    DPRINT("\nstartVideoIncomingThread enter\n\n");
-    if (tid == 0)
-    {
-        threadAlive = 1;
-        pthread_create(&tid, NULL, TUCS_extern_capture_proc, NULL);
-    }
-}
-
-static void stopVideoIncomingThread()
-{
-    int waiting_time = 2000;
-	int *ptime = &waiting_time;
-
-    threadAlive = 0;
-    if (tid)
-    {
-        pthread_join(tid, (void**)&ptime);
-    }
-    tid = 0;
 }
 
 static int TUCS_Init()
@@ -477,7 +272,7 @@ static int TUCS_Init()
         return -1;
     }
 
-    UCS_SetLogEnable(1, NULL);
+    UCS_SetLogEnable(0, NULL);
 
     UCS_GetVersion(version);
 	DPRINT("ucpaas version %s\n",version);
@@ -485,8 +280,6 @@ static int TUCS_Init()
     UCS_vqecfg_t vqecfg = {0, 0, 0};
     UCS_SetVqeCfg(&vqecfg);
 
-    // TUCS_extern_capture_init();
-    
     return 0;
 }
 
@@ -496,81 +289,46 @@ static int TUCS_Destory()
 }
 
 
-static void help_usage()
+void ucsLoadInterface(Callbacks *interface)
 {
-    DPRINT("**********************************************************\n");
-    DPRINT("    a. Connect                     ~ b. Disconnect\n");
-    DPRINT("    c. Set the Callee Id           ~ d. switch ring preview\n");
-    DPRINT("    e. Select Userid               ~ f. Enable VQE\n");
-    DPRINT("    1. Audio Call                  ~ 2. Video call\n");
-    DPRINT("    3. Video Group Call            ~ 4. Hangup the Call\n");
-    DPRINT("    5. Answer the Incoming Call    ~ 6. Send transdata\n");
-    DPRINT("    7. Audio Direct Call           ~ 8. Audio Group Call\n");
-    DPRINT("    q. Quit the program\n");
-    DPRINT("**********************************************************\n");
+	call_backs.dialFail = interface->dialFail;
+	call_backs.answer = interface->answer;
+	call_backs.hangup = interface->hangup;
+	call_backs.dialRet = interface->dialRet;
+	call_backs.incomingCall = interface->incomingCall;
+	call_backs.sendCmd = interface->sendCmd;
+	call_backs.receivedCmd = interface->receivedCmd;
+	call_backs.initAudio = interface->initAudio;
+	call_backs.startRecord = interface->startRecord;
+	call_backs.recording = interface->recording;
+	call_backs.playAudio = interface->playAudio;
 }
-
-static void ucsInit(void)
+void ucsDial(char *user_id)
 {
-	
-}
-
-void ucsDial(char *user_id,void (*callBack)(void *arg))
-{
-    call_backs.dial = callBack;
     UCS_Dial(user_id, eUCS_CALL_TYPE_VIDEO_CALL);
 }
 
-void ucsAnswer(void (*callBack)(void *arg))
+void ucsAnswer(void)
 {
-    call_backs.answer = callBack;
 	UCS_CallAnswer();
 }
 
-void ucsHangup(void (*callBack)(void *arg))
+void ucsHangup(void)
 {
-    call_backs.hangup = callBack;
 	UCS_CallHangUp();
 }
-void ucsCbDialRet(void (*callBack)(void *arg))
-{
-    call_backs.dialRet = callBack;
-}
-void ucsCbIncomingCall(void (*callBack)(void *arg))
-{
-    call_backs.incomingCall = callBack;
-}
 
-void ucsSendCmd(char *cmd,char *user_id,void (*callBack)(void *arg))
+void ucsSendCmd(char *cmd,char *user_id)
 {
-    call_backs.sendCmd = callBack;
 	UCS_SendTransData(0, user_id, cmd, strlen(cmd));
 }
-void ucsCbReceivedCmd(void (*callBack)(const char *user_id,void *arg))
-{
-    call_backs.receivedCmd = callBack;
-}
-void ucsCbInitAudio(void (*callBack)(void))
-{
-    call_backs.initAudio = callBack;
-}
-void ucsCbPlayAudio(void (*callBack)(const char *data,unsigned int size))
-{
-    call_backs.playAudio = callBack;
-}
-void ucsCbStartRecord(void (*callBack)(void))
-{
-    call_backs.startRecord = callBack;
-}
-void ucsCbRecording(void (*callBack)(char *data,unsigned int size))
-{
-    call_backs.recording = callBack;
-}
+
 void ucsSendVideo(const unsigned char* frameData, const unsigned int dataLen)
 {
 	DPRINT("send:%d\n", dataLen);
 	UCS_PushExternalVideoStream(frameData,dataLen);
 }
+
 void ucsReceiveVideo(const unsigned char* frameData,
 	   	const unsigned int *dataLen,
 		long long *timeStamp,
@@ -578,6 +336,7 @@ void ucsReceiveVideo(const unsigned char* frameData,
 {
 	UCS_get_video_frame(frameData, dataLen,timeStamp,frameType);
 }
+
 void ucsConnect(char *user_token)
 {
 	DPRINT("token:%s\n",user_token);
@@ -593,9 +352,9 @@ void registUcpaas(void)
     UCS_SetExtVideoStreamEnable(g_externalAVEn);
 	UCS_ViERingPreviewEnable(1);            
 	UCS_vqecfg_t vqecfg;
-	vqecfg.aec_enable = 1;
-	vqecfg.agc_enable = 1;
-	vqecfg.ns_enable = 1;
+	vqecfg.aec_enable = 0;
+	vqecfg.agc_enable = 0;
+	vqecfg.ns_enable = 0;
 	UCS_SetVqeCfg(&vqecfg);
 }
 int unregistUcpaas(void)

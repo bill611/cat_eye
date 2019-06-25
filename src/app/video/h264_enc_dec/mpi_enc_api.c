@@ -269,7 +269,7 @@ static MPP_RET test_mpp_setup(MpiEncTestData *p)
          * 40 / 41 / 42         - 1080p@30fps / 1080p@30fps / 1080p@60fps
          * 50 / 51 / 52         - 4K@30fps
          */
-        codec_cfg->h264.level    = 40;
+        codec_cfg->h264.level    = 31;
         codec_cfg->h264.entropy_coding_mode  = 1;
         codec_cfg->h264.cabac_init_idc  = 0;
         codec_cfg->h264.transform8x8_mode = 1;

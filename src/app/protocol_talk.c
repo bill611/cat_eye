@@ -25,7 +25,7 @@
 #include "sql_handle.h"
 #include "protocol.h"
 #include "my_video.h"
-#include "ucpaas.h"
+#include "ucpaas/ucpaas.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
@@ -49,74 +49,35 @@ static void reloadLocalTalk(void)
 	sqlGetUserInfo(USER_TYPE_CATEYE,local_user.id,local_user.token,local_user.nick_name,&local_user.scope);
 	printf("[%s]id:%s,token:%s\n",__func__,local_user.id,local_user.token );
 }
-static void dial(char *user_id,void (*callBack)(void *arg))
+static void dial(char *user_id)
 {
 #ifdef USE_UCPAAS
-	ucsDial(user_id,callBack);
+	ucsDial(user_id);
 #endif
 }
-static void answer(void (*callBack)(void *arg))
-{
-#ifdef USE_UCPAAS
-	ucsAnswer(callBack);
-#endif
-	my_video->recordStart(0);
 
-}
-static void hangup(void (*callBack)(void *arg))
+static void hangup(void)
 {
 #ifdef USE_UCPAAS
-	ucsHangup(callBack);
+	ucsHangup();
 #endif
 }
-static void cbDialRet(void (*callBack)(void *arg))
+
+static void answer(void)
 {
 #ifdef USE_UCPAAS
-	ucsCbDialRet(callBack);
+	ucsAnswer();
 #endif
+	// my_video->recordStart(0);
 }
-static void cblIncomingCall(void (*callBack)(void *arg))
+
+static void sendCmd(char *cmd,char *user_id)
 {
 #ifdef USE_UCPAAS
-	ucsCbIncomingCall(callBack);
+	ucsSendCmd(cmd,user_id);
 #endif
 }
-static void sendCmd(char *cmd,char *user_id,void (*callBack)(void *arg))
-{
-#ifdef USE_UCPAAS
-	ucsSendCmd(cmd,user_id,callBack);
-#endif
-}
-static void receivedCmd(void (*callBack)(const char *user_id,void *arg))
-{
-#ifdef USE_UCPAAS
-	ucsCbReceivedCmd(callBack);
-#endif
-}
-static void initAudio(void (*callBack)(void))
-{
-#ifdef USE_UCPAAS
-	ucsCbInitAudio(callBack);
-#endif
-}
-static void playAudio(void (*callBack)(const char *data,unsigned int size))
-{
-#ifdef USE_UCPAAS
-	ucsCbPlayAudio(callBack);
-#endif
-}
-static void startRecord(void (*callBack)(void))
-{
-#ifdef USE_UCPAAS
-	ucsCbStartRecord(callBack);
-#endif
-}
-static void recording(void (*callBack)(char *data,unsigned int size))
-{
-#ifdef USE_UCPAAS
-	ucsCbRecording(callBack);
-#endif
-}
+
 static void playVideo(const unsigned char* frame_data, const unsigned int data_len)
 {
 #ifdef USE_UCPAAS
@@ -131,6 +92,72 @@ static void talkConnect(void)
 #endif
 }
 
+static void cbDialFail(void *arg)
+{
+
+}
+static void cbAnswer(void *arg)
+{
+
+}
+static void cbHangup(void *arg)
+{
+	if (protocol_talk->uiHangup)
+		protocol_talk->uiHangup();
+	if (my_video)
+		my_video->transVideoStop();
+}
+static void cbDialRet(void *arg)
+{
+
+}
+static void cblIncomingCall(void *arg)
+{
+	if (protocol_talk->uiIncomingCall)
+		protocol_talk->uiIncomingCall(arg);
+	if (my_video)
+		my_video->transVideoStart();
+	protocol_talk->answer();
+}
+static void cbSendCmd(void *arg)
+{
+
+}
+static void cbReceivedCmd(const char *user_id,void *arg)
+{
+
+}
+static void cbInitAudio(void)
+{
+
+}
+static void cbStartRecord(void)
+{
+
+}
+static void cbRecording(char *data,unsigned int size)
+{
+
+}
+static void cbPlayAudio(const char *data,unsigned int size)
+{
+
+}
+
+static Callbacks interface = {
+	.dialFail = cbDialFail,
+	.answer = cbAnswer,
+	.hangup = cbHangup,
+	.dialRet = cbDialRet,
+	.incomingCall = cblIncomingCall,
+	.sendCmd = cbSendCmd,
+	.receivedCmd = cbReceivedCmd,
+	.initAudio = cbInitAudio,
+	.startRecord = cbStartRecord,
+	.recording = cbRecording,
+	.playAudio = cbPlayAudio,
+};
+
 void registTalk(void)
 {
 	protocol_talk = (ProtocolTalk *) calloc(1,sizeof(ProtocolTalk));
@@ -139,7 +166,7 @@ void registTalk(void)
 	protocol_talk->hangup = hangup;
 	protocol_talk->connect = talkConnect;
 	protocol_talk->reload = reloadLocalTalk;
-	protocol_talk->cblIncomingCall = cblIncomingCall;
+	ucsLoadInterface(&interface);
 #ifdef USE_UCPAAS
 	registUcpaas();
 #endif

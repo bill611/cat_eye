@@ -32,6 +32,8 @@ extern "C" {
 		void (*capture)(int count);
 		void (*recordStart)(int count);
 		void (*recordStop)(void);
+		void (*transVideoStart)(void);
+		void (*transVideoStop)(void);
 	}MyVideo;
 	extern MyVideo *my_video;
 	void myVideoInit(void);

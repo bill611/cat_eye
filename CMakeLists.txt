@@ -115,7 +115,7 @@ endif()
 # 添加库文件名称
 link_libraries (
 	sqlite3 qrencode paho-mqtt3a ssl curl cjson crypto
-	minigui_ths png12 png jpeg freetype turbojpeg
+	minigui_ths png12 png jpeg freetype turbojpeg yuv
 	z m pthread dl rt 
 	)
 

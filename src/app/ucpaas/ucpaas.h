@@ -21,21 +21,29 @@
 extern "C" {
 #endif  /* __cplusplus */
 
-	void ucsDial(char *user_id,void (*callBack)(void *arg));
-	void ucsAnswer(void (*callBack)(void *arg));
-	void ucsHangup(void (*callBack)(void *arg));
-	void ucsCbDialRet(void (*callBack)(void *arg));
-	void ucsCbIncomingCall(void (*callBack)(void *arg));
-	void ucsSendCmd(char *cmd,char *user_id,void (*callBack)(void *arg));
-	void ucsCbReceivedCmd(void (*callBack)(const char *user_id,void *arg));
-	void ucsCbInitAudio(void (*callBack)(void));
-	void ucsCbPlayAudio(void (*callBack)(const char *data,unsigned int size));
-	void ucsCbStartRecord(void (*callBack)(void));
-	void ucsCbRecording(void (*callBack)(char *data,unsigned int size));
+	typedef struct _Callbacks {
+		void (*dialFail)(void *arg);
+		void (*answer)(void *arg);
+		void (*hangup)(void *arg);
+		void (*dialRet)(void *arg);
+		void (*incomingCall)(void *arg);
+		void (*sendCmd)(void *arg);
+		void (*receivedCmd)(const char *user_id,void *arg);
+		void (*initAudio)(void);
+		void (*startRecord)(void);
+		void (*recording)(char *data,unsigned int size);
+		void (*playAudio)(const char *data,unsigned int size);
+	}Callbacks;
+
+	void ucsDial(char *user_id);
+	void ucsAnswer(void);
+	void ucsHangup(void);
+	void ucsSendCmd(char *cmd,char *user_id);
 	void ucsSendVideo(const unsigned char* frameData, const unsigned int dataLen);
 	void ucsConnect(char *user_token);
 	void registUcpaas(void);
 
+	void ucsLoadInterface(Callbacks *interface);
 
 #ifdef __cplusplus
 }

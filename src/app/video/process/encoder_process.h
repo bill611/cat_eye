@@ -32,6 +32,13 @@ class H264Encoder : public StreamPUBase {
 		return start_enc_;
 	};
 
+	int getWidth(void) const {
+		return width_;
+	}
+	int getHeight(void) const {
+		return height_;
+	}
+
 	EncCallbackFunc encCallback(void) const {
 		return encCallback_;
 	};
@@ -41,6 +48,8 @@ class H264Encoder : public StreamPUBase {
     FILE* fd_;
     bool start_enc_;
     bool last_frame_;
+	int width_;
+	int height_;
 	Queue *queue_;
 	EncCallbackFunc encCallback_;
 
