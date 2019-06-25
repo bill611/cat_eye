@@ -40,7 +40,8 @@ extern "C" {
 	void ucsHangup(void);
 	void ucsSendCmd(char *cmd,char *user_id);
 	void ucsSendVideo(const unsigned char* frameData, const unsigned int dataLen);
-	void ucsConnect(char *user_token);
+	int ucsConnect(char *user_token);
+    void ucsDisconnect(void);
 	void registUcpaas(void);
 
 	void ucsLoadInterface(Callbacks *interface);

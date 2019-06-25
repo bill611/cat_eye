@@ -278,7 +278,7 @@ static void ceGetIntercoms(CjsonDec *dec)
 	g_config.timestamp = tm_now->tm_hour + tm_now->tm_mday * 24 + tm_now->tm_mon * 30 * 24;
 	ConfigSavePrivate();
 	protocol_talk->reload();
-	protocol_talk->connect();
+	protocol_talk->reconnect();
 }
 
 /* ---------------------------------------------------------------------------*/
@@ -499,8 +499,6 @@ static void getIntercoms(void)
 	struct tm *tm_now = getTime();
 	int timestamp_now = tm_now->tm_hour + tm_now->tm_mday * 24 + tm_now->tm_mon * 30 * 24;
 	if (timestamp_now - g_config.timestamp <= 12) {
-		protocol_talk->reload();
-		protocol_talk->connect();
 		return;
 	}
 	char *send_buff;
@@ -633,7 +631,7 @@ retry:
 		mqtt_server_content = NULL;
 	}
 	sleep(1);
-	// getIntercoms();
+    getIntercoms();
 	return NULL;
 }
 

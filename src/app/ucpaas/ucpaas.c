@@ -337,11 +337,18 @@ void ucsReceiveVideo(const unsigned char* frameData,
 	UCS_get_video_frame(frameData, dataLen,timeStamp,frameType);
 }
 
-void ucsConnect(char *user_token)
+int ucsConnect(char *user_token)
 {
 	DPRINT("token:%s\n",user_token);
-	// UCS_DisConnect();
-    UCS_Connect(user_token);
+    if (user_token[0] != 0) {
+        UCS_Connect(user_token);
+        return 1;
+    }
+    return 0;
+}
+void ucsDisconnect(void)
+{
+    UCS_DisConnect();
 }
 
 void registUcpaas(void)

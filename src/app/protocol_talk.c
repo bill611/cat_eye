@@ -43,9 +43,11 @@
  *----------------------------------------------------------------------------*/
 ProtocolTalk *protocol_talk;
 static UserStruct local_user;
+static int has_connect = 0; // 判断是否有连接过，如果有，则重连调用disconnect
 
 static void reloadLocalTalk(void)
 {
+    memset(&local_user,0,sizeof(UserStruct));
 	sqlGetUserInfo(USER_TYPE_CATEYE,local_user.id,local_user.token,local_user.nick_name,&local_user.scope);
 	printf("[%s]id:%s,token:%s\n",__func__,local_user.id,local_user.token );
 }
@@ -68,7 +70,6 @@ static void answer(void)
 #ifdef USE_UCPAAS
 	ucsAnswer();
 #endif
-	// my_video->recordStart(0);
 }
 
 static void sendCmd(char *cmd,char *user_id)
@@ -88,10 +89,25 @@ static void playVideo(const unsigned char* frame_data, const unsigned int data_l
 static void talkConnect(void)
 {
 #ifdef USE_UCPAAS
+	if (ucsConnect(local_user.token))
+        has_connect = 1;
+#endif
+}
+static void talkReconnect(void)
+{
+#ifdef USE_UCPAAS
+    if (has_connect)
+        ucsDisconnect();
 	ucsConnect(local_user.token);
 #endif
 }
 
+static void sendVideo(void *data,int size)
+{
+#ifdef USE_UCPAAS
+    ucsSendVideo(data,size);
+#endif    
+}
 static void cbDialFail(void *arg)
 {
 
@@ -165,7 +181,9 @@ void registTalk(void)
 	protocol_talk->answer = answer;
 	protocol_talk->hangup = hangup;
 	protocol_talk->connect = talkConnect;
+	protocol_talk->reconnect = talkReconnect;
 	protocol_talk->reload = reloadLocalTalk;
+	protocol_talk->sendVideo = sendVideo;
 	ucsLoadInterface(&interface);
 #ifdef USE_UCPAAS
 	registUcpaas();

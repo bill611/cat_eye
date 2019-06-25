@@ -290,7 +290,7 @@ int createFormVideo(HWND hMainWnd,int type,void (*callback)(void))
 	return 0;
 }
 
-static void interfaceCreateFormVideoDirect(void *arg)
+void interfaceCreateFormVideoDirect(void *arg)
 {
 	int type = *(int *)arg;
 	createFormVideo(0,FORM_VIDEO_TYPE_MONITOR,NULL); 

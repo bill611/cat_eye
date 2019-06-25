@@ -65,8 +65,9 @@ do {                          \
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
-static int NV12Scale(unsigned char *psrc_buf, int psrc_w, int psrc_h, unsigned char **pdst_buf, int pdst_w, int pdst_h, libyuv::FilterModeEnum pfmode)
+static int NV12Scale(unsigned char *psrc_buf, int psrc_w, int psrc_h, unsigned char **pdst_buf, int pdst_w, int pdst_h)
 {
+	libyuv::FilterModeEnum pfmode = libyuv::kFilterNone;
     unsigned char *i420_buf1 = (unsigned char *)malloc((psrc_w * psrc_h * 3) >> 1);
     unsigned char *i420_buf2 = (unsigned char *)malloc((pdst_w * pdst_h * 3) >> 1);
     *pdst_buf = (unsigned char *)malloc((pdst_w * pdst_h * 3) >> 1);
@@ -108,13 +109,12 @@ static void* encoderProcessThread(void *arg)
 {
 	H264Data h264_info;
 	H264Encoder *process = (H264Encoder *)arg;
-	libyuv::FilterModeEnum fmode = libyuv::kFilterNone;
 	while (process->start_enc() == true) {
 		process->queue()->get(process->queue(),&h264_info);
 		unsigned char *out_data = NULL;
 		int size = 0;
 		unsigned char *nv12_scale_data = NULL;
-		NV12Scale(h264_info.data, 1280, 720, &nv12_scale_data, process->getWidth(), process->getHeight(), fmode);
+		NV12Scale(h264_info.data, 1280, 720, &nv12_scale_data, process->getWidth(), process->getHeight());
 		if (my_h264enc)
 			size = my_h264enc->encode(my_h264enc,nv12_scale_data, &out_data);
 		if (process->encCallback())

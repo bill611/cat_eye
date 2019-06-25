@@ -49,17 +49,18 @@ extern "C" {
 		void (*answer)(void);
 		void (*hangup)(void);
 		void (*connect)(void);
-		void (*cbDialRet)(void (*callBack)(void *arg));
+		void (*reconnect)(void);
 
 		void (*uiIncomingCall)(void *arg);
 		void (*uiHangup)(void);
 
-		void (*sendCmd)(char *cmd,char *user_id,void (*callBack)(void *arg));
-		void (*receivedCmd)(void (*callBack)(const char *user_id,void *arg));
-		void (*initAudio)(void (*callBack)(void));
-		void (*playAudio)(void (*callBack)(const char *data,unsigned int size));
-		void (*startRecord)(void (*callBack)(void));
-		void (*recording)(void (*callBack)(char *data,unsigned int size));
+		void (*sendCmd)(char *cmd,char *user_id);
+		void (*receivedCmd)(const char *user_id,void *arg);
+		void (*sendVideo)(void *data,int size);
+		void (*initAudio)(void);
+		void (*playAudio)(const char *data,unsigned int size);
+		void (*startRecord)(void);
+		void (*recording)(char *data,unsigned int size);
 		void (*playVideo)(const unsigned char* frame_data, const unsigned int data_len);
 	}ProtocolTalk;
 	extern ProtocolTalk *protocol_talk;
