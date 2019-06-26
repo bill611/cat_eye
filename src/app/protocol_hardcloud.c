@@ -498,6 +498,8 @@ static void getIntercoms(void)
 {
 	struct tm *tm_now = getTime();
 	int timestamp_now = tm_now->tm_hour + tm_now->tm_mday * 24 + tm_now->tm_mon * 30 * 24;
+	printf("timestamp :now:%d,old:%d,div:%d\n",
+		 timestamp_now, g_config.timestamp,timestamp_now - g_config.timestamp);
 	if (timestamp_now - g_config.timestamp <= 12) {
 		return;
 	}

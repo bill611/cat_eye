@@ -33,7 +33,7 @@ extern "C" {
 	 * @param dir IO方向, HAL_INPUT或HAL_OUTPUT
 	 */
 	/* ---------------------------------------------------------------------------*/
-	void halGpioSetMode(int port_id,int port_mask,int dir);
+	void halGpioSetMode(int port_id,char *port_name,int dir);
 	/* ---------------------------------------------------------------------------*/
 	/**
 	 * @brief halGpioOut 硬件层 设置输出电平
@@ -43,7 +43,7 @@ extern "C" {
 	 * @param value  0低电平  1高电平
 	 */
 	/* ---------------------------------------------------------------------------*/
-	void halGpioOut(int port_id,int port_mask,int value);
+	void halGpioOut(int port_id,char *port_name,int value);
 	/* ---------------------------------------------------------------------------*/
 	/**
 	 * @brief halGpioIn 硬件层 获取电平输入值
@@ -54,7 +54,7 @@ extern "C" {
 	 * @returns  0低电平  1高电平
 	 */
 	/* ---------------------------------------------------------------------------*/
-	int halGpioIn(int port_id,int port_mask);
+	int halGpioIn(int port_id,char * port_name);
 
 #ifdef __cplusplus
 }

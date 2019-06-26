@@ -6,7 +6,7 @@
  *    Description:  创建GPIO对象
  *
  *        Version:  1.0
- *        Created:  2015-12-24 09:26:29 
+ *        Created:  2015-12-24 09:26:29
  *       Revision:  1.0
  *
  *         Author:  xubin
@@ -24,16 +24,17 @@ extern "C" {
 #define FLASH_FOREVER	0x7FFFFFFF
 
 	typedef enum {
-		ENUM_GPIO_ZIGBEE_POWER,	// zigbee 电源
-		ENUM_GPIO_WIFI_POWER,	// wifi 电源
-		ENUM_GPIO_LED_WIFI,		// 电源灯(指示wifi)
-		ENUM_GPIO_LED_RESET,	// 复位灯
-		ENUM_GPIO_LED_ONLINE,		// wifi灯(指示是否连上平台)
-		ENUM_GPIO_LED_NET_IN,	// 入网指示灯
-		ENUM_GPIO_LED_POWER,	// 电源指示灯
-
-		ENUM_GPIO_RESET,	// 复位按键
-		ENUM_GPIO_MODE,	// 激活按键
+		ENUM_GPIO_MICKEY,   // MIC: H外L内
+		ENUM_GPIO_SPKL,		// SPK:机内 高开低关
+		ENUM_GPIO_SPKR,     // SPK:机外 高开低关
+		ENUM_GPIO_KEYLED1,  // 红灯 高开低关
+		ENUM_GPIO_KEYLED2,  // 白灯 高开低关
+		ENUM_GPIO_IRLEDEN,  // 红外灯 高开低关
+		ENUM_GPIO_ASNKEY,   // 消回音 H外L内
+		ENUM_GPIO_MICEN,    // 模拟电子开关电源使能脚 高关低开
+		ENUM_GPIO_SDCTRL,   // TF卡2.0标准时拉高  TF卡3.0标准时拉低
+		ENUM_GPIO_ICRAIN,   // 1.	A高B低 为白天彩色模式
+		ENUM_GPIO_ICBAIN,   // 2.	A低B高为晚上黑白模式
 	}GPIO_TBL;
 
 	typedef enum {//50ms为周期

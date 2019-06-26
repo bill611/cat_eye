@@ -43,7 +43,7 @@
 #define GPIO_MAX_INPUT_TASK 32
 typedef struct _MyGpioTable {
 	int       portid;
-	int       mask;
+	char      *name;
 	int       active;		//有效值
 	int 	  default_value;	//默认值
 	int  	  active_time;
@@ -69,46 +69,23 @@ typedef struct _MyGpioPriv {
 	int task_num;
 }MyGpioPriv;
 
- 
-#if (defined ANYKA)
-#define GPIO_ZIGBEE_POWER		84,-1,1,IO_ACTIVE
-#define GPIO_WIFI_POWER			83,-1,1,IO_ACTIVE
-#define GPIO_LED_WIFI			80,-1,0,IO_INACTIVE  // 双色灯，绿
-#define GPIO_LED_RESET			-1,-1,0,IO_NO_EXIST
-#define GPIO_LED_ONLINE			79,-1,0,IO_INACTIVE  // 双色灯，红
-#define GPIO_LED_NET_IN			-1,-1,0,IO_NO_EXIST
-#define GPIO_LED_POWER			23,-1,0,IO_ACTIVE  // 单色灯，红
 
-#define GPIO_RESET				85,-1,0,IO_INPUT
-#define GPIO_MODE				80,-1,0,IO_INPUT
-#else
-
-#define GPIO_ZIGBEE_POWER		'c',15,1,IO_ACTIVE
-#define GPIO_WIFI_POWER			'e',0, 1,IO_ACTIVE
-#define GPIO_LED_WIFI			'c',14,0,IO_INACTIVE
-#define GPIO_LED_RESET			'd',11,0,IO_INACTIVE
-#define GPIO_LED_ONLINE			'd',10,0,IO_INACTIVE
-#define GPIO_LED_NET_IN			'c',13,0,IO_ACTIVE
-#define GPIO_LED_POWER			'c',0, 0,IO_ACTIVE
-
-#define GPIO_RESET				'e',1,0,IO_INPUT
-#define GPIO_MODE				'd',3,0,IO_INPUT
-#endif
 /* ----------------------------------------------------------------*
  *                      variables define
  *-----------------------------------------------------------------*/
 
 static MyGpioTable gpio_normal_tbl[]={
-	{GPIO_ZIGBEE_POWER,	0},
-	{GPIO_WIFI_POWER,	0},
-	{GPIO_LED_WIFI,		0},
-	{GPIO_LED_RESET,	0},
-	{GPIO_LED_ONLINE,	0},
-	{GPIO_LED_NET_IN,	0},
-	{GPIO_LED_POWER,	0},
-
-	{GPIO_RESET,		30},
-	{GPIO_MODE,			1},
+	{ENUM_GPIO_MICKEY, "mickey",0,IO_ACTIVE},
+	{ENUM_GPIO_SPKL,   "spkctl",0,IO_ACTIVE},
+	{ENUM_GPIO_SPKR,   "spkctr",0,IO_ACTIVE},
+	{ENUM_GPIO_KEYLED1,"keyled1",0,IO_ACTIVE},
+	{ENUM_GPIO_KEYLED2,"keyled2",0,IO_ACTIVE},
+	{ENUM_GPIO_IRLEDEN,"irleden",0,IO_ACTIVE},
+	{ENUM_GPIO_ASNKEY, "asnkey",0,IO_ACTIVE},
+	{ENUM_GPIO_MICEN,  "micen", 0,IO_ACTIVE},
+	{ENUM_GPIO_SDCTRL, "sdctrl",0,IO_ACTIVE},
+	{ENUM_GPIO_ICRAIN, "icrain",0,IO_ACTIVE},
+	{ENUM_GPIO_ICBAIN, "icrbin",0,IO_ACTIVE},
 };
 
 MyGpio *gpio = NULL;
@@ -162,9 +139,9 @@ static void myGpioSetValueNow(MyGpio *This,int port,int  Value)
 
 	pthread_mutex_lock(&This->priv->mutex);
 	if (table->current_value)
-		halGpioOut(table->portid,table->mask,1);
+		halGpioOut(table->portid,table->name,1);
 	else
-		halGpioOut(table->portid,table->mask,0);
+		halGpioOut(table->portid,table->name,0);
 	pthread_mutex_unlock(&This->priv->mutex);
 }
 
@@ -186,7 +163,7 @@ static int myGpioRead(MyGpio *This,int port)
 		goto return_value;
 	}
 #ifndef X86
-	if (halGpioIn(table->portid,table->mask))
+	if (halGpioIn(table->portid,table->name))
 		table->current_value = 1;
 	else
 		table->current_value = 0;
@@ -380,9 +357,9 @@ static void myGpioInit(MyGpio *This)
 		}
 
 		if (table->default_value != IO_INPUT) {
-			halGpioSetMode(table->portid,table->mask,HAL_OUTPUT);
+			halGpioSetMode(table->portid,table->name,HAL_OUTPUT);
 		} else {
-			halGpioSetMode(table->portid,table->mask,HAL_INPUT);
+			halGpioSetMode(table->portid,table->name,HAL_INPUT);
 		}
 		if (table->default_value != IO_INPUT)//设置默认值
 			myGpioSetValueNow(This,i,table->default_value);
@@ -434,9 +411,9 @@ static void myGpioHandle(MyGpio *This)
 		}
 
 		if (table->current_value)
-			halGpioOut(table->portid,table->mask,1);
+			halGpioOut(table->portid,table->name,1);
 		else
-			halGpioOut(table->portid,table->mask,0);
+			halGpioOut(table->portid,table->name,0);
 		table++;
 	}
 }

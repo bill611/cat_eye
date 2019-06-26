@@ -145,7 +145,7 @@ static int stmDoTalkOn(void *data)
 static int stmDoTalkOff(void *data)
 {
 	rkH264EncOff();
-    stm->msgPost(stm,EV_FACE_ON,NULL);
+    // stm->msgPost(stm,EV_FACE_ON,NULL);
 }
 
 static StmDo stm_do[] =

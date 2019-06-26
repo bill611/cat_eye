@@ -339,7 +339,6 @@ void ucsReceiveVideo(const unsigned char* frameData,
 
 int ucsConnect(char *user_token)
 {
-	DPRINT("token:%s\n",user_token);
     if (user_token[0] != 0) {
         UCS_Connect(user_token);
         return 1;
