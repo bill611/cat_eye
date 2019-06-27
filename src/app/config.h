@@ -23,6 +23,7 @@ extern "C" {
 #define QRCODE_IMIE CFG_PRIVATE_DRIVE"imei.png"
 #define QRCODE_APP CFG_PRIVATE_DRIVE"app_url.png"
 #define SDCARD_PATH "./"
+#define AUDIO_PATH "./res/wav/"
 #else
 #define UPDATE_FILE	"/tmp/Update.cab"
 #define CFG_PUBLIC_DRIVE "./"
@@ -31,6 +32,7 @@ extern "C" {
 #define QRCODE_IMIE CFG_PRIVATE_DRIVE"imei.png"
 #define QRCODE_APP CFG_PRIVATE_DRIVE"app_url.png"
 #define SDCARD_PATH "/mnt/sdcard/"
+#define AUDIO_PATH "/root/usr/res/wav/"
 #endif
 
 

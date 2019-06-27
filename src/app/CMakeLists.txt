@@ -13,7 +13,7 @@ if (MODE_VIDEO)
 endif()
 
 if (MODE_FACE)
-	set(SUB_DIRS_APP ${SUB_DIRS_APP} face )
+	set(SUB_DIRS_APP ${SUB_DIRS_APP} rdface )
 endif()
 
 foreach(sub ${SUB_DIRS_APP})

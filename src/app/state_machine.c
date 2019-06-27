@@ -23,7 +23,7 @@
 #include <pthread.h>
 #include "queue.h"
 #include "thread_helper.h"
-#include "stateMachine.h"
+#include "state_machine.h"
 
 /* ---------------------------------------------------------------------------*
  *                        macro define

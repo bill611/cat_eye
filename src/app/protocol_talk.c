@@ -25,6 +25,7 @@
 #include "sql_handle.h"
 #include "protocol.h"
 #include "my_video.h"
+#include "my_mixer.h"
 #include "ucpaas/ucpaas.h"
 
 /* ---------------------------------------------------------------------------*
@@ -44,6 +45,7 @@
 ProtocolTalk *protocol_talk;
 static UserStruct local_user;
 static int has_connect = 0; // 判断是否有连接过，如果有，则重连调用disconnect
+static int audio_fp = 0;
 
 static void reloadLocalTalk(void)
 {
@@ -79,13 +81,6 @@ static void sendCmd(char *cmd,char *user_id)
 #endif
 }
 
-static void playVideo(const unsigned char* frame_data, const unsigned int data_len)
-{
-#ifdef USE_UCPAAS
-	ucsPlayVideo(frame_data,data_len);
-#endif
-}
-
 static void talkConnect(void)
 {
 #ifdef USE_UCPAAS
@@ -105,7 +100,7 @@ static void talkReconnect(void)
 static void sendVideo(void *data,int size)
 {
 #ifdef USE_UCPAAS
-    ucsSendVideo(data,size);
+	ucsSendVideo(data,size);
 #endif    
 }
 static void cbDialFail(void *arg)
@@ -122,6 +117,10 @@ static void cbHangup(void *arg)
 		protocol_talk->uiHangup();
 	if (my_video)
 		my_video->transVideoStop();
+	// if (my_mixer) {
+		// if (audio_fp > 0)
+			// my_mixer->DeInitPlay(my_mixer,&audio_fp);	
+	// }
 }
 static void cbDialRet(void *arg)
 {
@@ -143,11 +142,12 @@ static void cbReceivedCmd(const char *user_id,void *arg)
 {
 
 }
-static void cbInitAudio(void)
+static void cbInitAudio(unsigned int rate,unsigned int bytes_per_sample,unsigned int channle)
 {
-
+	// if (my_mixer)
+		// my_mixer->InitPlayAndRec(my_mixer,&audio_fp,rate,2);
 }
-static void cbStartRecord(void)
+static void cbStartRecord(unsigned int rate,unsigned int bytes_per_sample,unsigned int channle)
 {
 
 }
@@ -157,7 +157,8 @@ static void cbRecording(char *data,unsigned int size)
 }
 static void cbPlayAudio(const char *data,unsigned int size)
 {
-
+	// if (my_mixer)
+		// my_mixer->Write(my_mixer,audio_fp,data,size);
 }
 
 static Callbacks interface = {

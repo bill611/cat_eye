@@ -26,7 +26,7 @@
 #include "jpeg_enc_dec.h"
 #include "video_server.h"
 #include "my_face.h"
-#include "stateMachine.h"
+#include "state_machine.h"
 #include "ucpaas/ucpaas.h"
 #include "protocol.h"
 #include "my_video.h"

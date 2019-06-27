@@ -989,7 +989,6 @@ int pcm_close(struct pcm *pcm)
 {
     if (pcm == &bad_pcm)
         return 0;
-
     pcm_hw_munmap_status(pcm);
 
     if (pcm->flags & PCM_MMAP) {

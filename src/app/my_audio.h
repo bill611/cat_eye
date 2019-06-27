@@ -1,12 +1,12 @@
 /*
  * =============================================================================
  *
- *       Filename:  tinyplay.h
+ *       Filename:  my_audio.h
  *
- *    Description:  rv1108音频接口
+ *    Description:  播放相关音频文件
  *
  *        Version:  1.0
- *        Created:  2019-06-26 15:44:41 
+ *        Created:  2019-06-27 13:26:32 
  *       Revision:  none
  *
  *         Author:  xubin
@@ -14,18 +14,14 @@
  *
  * =============================================================================
  */
-#ifndef _TINYPLAY_H
-#define _TINYPLAY_H
+#ifndef _MY_AUDIO_H
+#define _MY_AUDIO_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif  /* __cplusplus */
 
-	int rvMixerOpen(int sample,int channle,int bit);
-	void rvMixerClose(void);
-	int rvMixerWrite(void *data,int size);
-	void rvMixerInit(void);
-
+	void myAudioPlayRecognizer(char *usr_name);
 
 #ifdef __cplusplus
 }

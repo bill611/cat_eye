@@ -29,8 +29,8 @@ extern "C" {
 		void (*incomingCall)(void *arg);
 		void (*sendCmd)(void *arg);
 		void (*receivedCmd)(const char *user_id,void *arg);
-		void (*initAudio)(void);
-		void (*startRecord)(void);
+		void (*initAudio)(unsigned int rate,unsigned int bytes_per_sample,unsigned int channle);
+		void (*startRecord)(unsigned int rate,unsigned int bytes_per_sample,unsigned int channle);
 		void (*recording)(char *data,unsigned int size);
 		void (*playAudio)(const char *data,unsigned int size);
 	}Callbacks;

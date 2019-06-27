@@ -31,11 +31,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include <signal.h>
 
 struct cmd {
-    const char *filename;
-    const char *filetype;
     unsigned int card;
     unsigned int device;
     int flags;
@@ -44,43 +41,9 @@ struct cmd {
 };
 
 
-#define ID_RIFF 0x46464952
-#define ID_WAVE 0x45564157
-#define ID_FMT  0x20746d66
-#define ID_DATA 0x61746164
-
-struct riff_wave_header {
-    uint32_t riff_id;
-    uint32_t riff_sz;
-    uint32_t wave_id;
-};
-
-struct chunk_header {
-    uint32_t id;
-    uint32_t sz;
-};
-
-struct chunk_fmt {
-    uint16_t audio_format;
-    uint16_t num_channels;
-    uint32_t sample_rate;
-    uint32_t byte_rate;
-    uint16_t block_align;
-    uint16_t bits_per_sample;
-};
-
-struct ctx {
-    struct pcm *pcm;
-
-    struct riff_wave_header wave_header;
-    struct chunk_header chunk_header;
-    struct chunk_fmt chunk_fmt;
-
-    FILE *file;
-};
-
 static struct cmd g_cmd;
-static struct ctx g_ctx;
+static struct pcm *pcm;
+
 int check_param(struct pcm_params *params, unsigned int param, unsigned int value,
                  char *param_name, char *param_unit)
 {
@@ -105,7 +68,7 @@ int check_param(struct pcm_params *params, unsigned int param, unsigned int valu
     return is_within_bounds;
 }
 
-int sample_is_playable(const struct cmd *cmd)
+static int sample_is_playable(struct cmd *cmd)
 {
     struct pcm_params *params;
     int can_play;
@@ -128,81 +91,12 @@ int sample_is_playable(const struct cmd *cmd)
 }
 
 
-void ctx_free(struct ctx *ctx)
+void rvMixerPlayInit(void)
 {
-    if (ctx == NULL) {
-        return;
-    }
-    if (ctx->pcm != NULL) {
-        pcm_close(ctx->pcm);
-    }
-}
-
-
-int play_sample(struct ctx *ctx);
-
-int tinyplay()
-{
-    struct cmd cmd;
-
-
-
-    // if (ctx_init(&ctx, &cmd) < 0) {
-        // return EXIT_FAILURE;
-    // }
-
-    /* TODO get parameters from context */
-    printf("playing '%s': %u ch, %u hz, %u bit\n",
-           cmd.filename,
-           cmd.config.channels,
-           cmd.config.rate,
-           cmd.bits);
-
-    // if (play_sample(&ctx) < 0) {
-        // ctx_free(&ctx);
-        // return EXIT_FAILURE;
-    // }
-
-    // ctx_free(&ctx);
-    return EXIT_SUCCESS;
-}
-
-int play_sample(struct ctx *ctx)
-{
-    char *buffer;
-    int size;
-    int num_read;
-
-    size = pcm_frames_to_bytes(ctx->pcm, pcm_get_buffer_size(ctx->pcm));
-    buffer = malloc(size);
-    if (!buffer) {
-        fprintf(stderr, "unable to allocate %d bytes\n", size);
-        return -1;
-    }
-
-
-    do {
-        num_read = fread(buffer, 1, size, ctx->file);
-        if (num_read > 0) {
-		if (pcm_writei(ctx->pcm, buffer, pcm_bytes_to_frames(ctx->pcm, num_read)) < 0) {
-                fprintf(stderr, "error playing sample\n");
-                break;
-            }
-        }
-    } while (num_read > 0);
-
-    free(buffer);
-    return 0;
-}
-
-void rvMixerInit(void)
-{
-    g_cmd.filename = NULL;
-    g_cmd.filetype = NULL;
     g_cmd.card = 0;
     g_cmd.device = 0;
     g_cmd.flags = PCM_OUT;
-    g_cmd.config.period_size = 1024;
+    g_cmd.config.period_size = 512;
     g_cmd.config.period_count = 4;
     g_cmd.config.channels = 2;
     g_cmd.config.rate = 48000;
@@ -213,46 +107,46 @@ void rvMixerInit(void)
     g_cmd.bits = 16;
 }
 
-int rvMixerOpen(int sample,int channle,int bit)
+int rvMixerPlayOpen(int sample,int channle,int bit)
 {
-    struct pcm_config config = g_cmd.config;
-
     if (bit == 8) {
-        config.format = PCM_FORMAT_S8;
+        g_cmd.config.format = PCM_FORMAT_S8;
     } else if (bit == 16) {
-        config.format = PCM_FORMAT_S16_LE;
+        g_cmd.config.format = PCM_FORMAT_S16_LE;
     } else if (bit == 24) {
-        config.format = PCM_FORMAT_S24_3LE;
+        g_cmd.config.format = PCM_FORMAT_S24_3LE;
     } else if (bit == 32) {
-        config.format = PCM_FORMAT_S32_LE;
+        g_cmd.config.format = PCM_FORMAT_S32_LE;
     }
-	config.rate = sample;
-	config.channels = channle;
+	g_cmd.config.rate = sample;
+	g_cmd.config.channels = channle;
 	printf("playing %u ch, %u hz, %u bit\n",
-			config.channels,                       
-			config.rate,bit);                                 
-    g_ctx.pcm = pcm_open(g_cmd.card,
+			g_cmd.config.channels,
+			g_cmd.config.rate,bit);
+	sample_is_playable(&g_cmd);
+    pcm = pcm_open(g_cmd.card,
                         g_cmd.device,
                         g_cmd.flags,
-                        &config);
-    if (g_ctx.pcm == NULL) {
+                        &g_cmd.config);
+    if (pcm == NULL) {
         fprintf(stderr, "failed to allocate memory for pcm\n");
         return -1;
-    } else if (!pcm_is_ready(g_ctx.pcm)) {
+    } else if (!pcm_is_ready(pcm)) {
         fprintf(stderr, "failed to open for pcm %u,%u\n", g_cmd.card, g_cmd.device);
-        pcm_close(g_ctx.pcm);
+        pcm_close(pcm);
         return -1;
     }
-	return pcm_get_file_descriptor(g_ctx.pcm);	
+	return pcm_get_file_descriptor(pcm);
 }
 
-void rvMixerClose(void)
+void rvMixerPlayClose(void)
 {
-	pcm_close(g_ctx.pcm);
+	pcm_close(pcm);
 }
 
-int rvMixerWrite(void *data,int size)
+int rvMixerPlayWrite(void *data,int size)
 {
-	return pcm_writei(g_ctx.pcm, data, size);
+	int ret = pcm_writei(pcm, data, pcm_bytes_to_frames(pcm, size));
+	return g_cmd.config.period_count * ret;
 }
 

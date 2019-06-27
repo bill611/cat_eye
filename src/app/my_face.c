@@ -21,11 +21,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "face/rdface/rd_face.h"
+#include "rdface/rd_face.h"
 #include "my_face.h"
 #include "debug.h"
 #include "sql_handle.h"
 #include "thread_helper.h"
+#include "my_audio.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
@@ -125,8 +126,8 @@ static int featureCompareCallback(float *feature,void *face_data_out)
             break;
         float ret1 = rdfaceGetFeatureSimilarity(feature_src,feature);
         if (ret1 > SIMILAYRITY) {
-			// printf("recognizer->id:%s,name:%s,url:%s\n", 
-					// data.user_id,data.nick_name,data.url);
+			printf("similyrity:%f,:%s,name:%s,url:%s\n", 
+					ret1,data.user_id,data.nick_name,data.url);
             result = 0;
             if (face_data_out)
                 memcpy(face_data_out,&data,sizeof(MyFaceData));
@@ -146,18 +147,13 @@ static void recognizer(char *image_buff,int w,int h)
 	if (sqlGetFaceCount()) {
         ret = rdfaceRecognizer(image_buff,w,h,featureCompareCallback,&face_data);
         if (ret == 0) {
-            if (strcmp(face_data.nick_name,face_data_last.nick_name) == 0) {
+            if (strcmp(face_data.nick_name,face_data_last.nick_name)) {
                 if (recognize_intaval == 0) {
                     recognize_intaval = RECOGNIZE_INTAVAL;
                     printf("recognizer->id:%s,name:%s,url:%s\n", 
                             face_data.user_id,face_data.nick_name,face_data.url);
-                    // TODO;
+					myAudioPlayRecognizer(face_data.nick_name);
                 }
-            } else {
-                recognize_intaval = RECOGNIZE_INTAVAL;
-                printf("recognizer->id:%s,name:%s,url:%s\n", 
-                        face_data.user_id,face_data.nick_name,face_data.url);
-                // TODO  
             }
             memcpy(&face_data_last,&face_data,sizeof(MyFaceData));
         }

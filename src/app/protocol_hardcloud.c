@@ -511,6 +511,11 @@ static void getIntercoms(void)
 	mqtt->send(opts.pubTopic,strlen(send_buff),send_buff);
 	free(send_buff);
 }
+
+static void ntpGetTimeCallback(void)
+{
+    getIntercoms();
+}
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief initThread 初始化链接硬件云，mqtt链接方式,线程执行，直到链接上后退出
@@ -613,7 +618,7 @@ static void* initThread(void *arg)
 		opts.service_port = dec->getValueInt(dec,"port");
 		printf("service_port: %d\n", opts.service_port);
 
-		ntpTime(opts.ntp_server_ip);
+		ntpTime(opts.ntp_server_ip,ntpGetTimeCallback);
 		sprintf(url, "%s:%d", opts.host, opts.port);
 		int ret = mqtt->connect(url,opts.client_id,
 				10,
@@ -633,7 +638,6 @@ retry:
 		mqtt_server_content = NULL;
 	}
 	sleep(1);
-    getIntercoms();
 	return NULL;
 }
 

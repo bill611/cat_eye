@@ -207,8 +207,13 @@ static void init_playout_cb(unsigned int sample_rate,
     unsigned int bytes_per_sample,
     unsigned int num_of_channels)
 {
+    DPRINT("[%s]rate:%d,sample:%d,channle:%d \n", 
+			__func__,
+			sample_rate,
+			bytes_per_sample,
+			num_of_channels);
 	if (call_backs.initAudio)
-		call_backs.initAudio();
+		call_backs.initAudio(sample_rate,16,num_of_channels);
 }
 
 // UCS init external recording device with given parameters
@@ -219,8 +224,13 @@ static void init_recording_cb(unsigned int sample_rate,
     unsigned int bytes_per_sample,
     unsigned int num_of_channels)
 {
+    DPRINT("[%s]rate:%d,sample:%d,channle:%d \n", 
+			__func__,
+			sample_rate,
+			bytes_per_sample,
+			num_of_channels);
 	if (call_backs.startRecord)
-		call_backs.startRecord();
+		call_backs.startRecord(sample_rate,bytes_per_sample,num_of_channels);
 }
 
 // UCS read recording 10ms pcm data from external audio device 
@@ -229,6 +239,7 @@ static void init_recording_cb(unsigned int sample_rate,
 static int read_recording_data_cb(char * audio_data,
     unsigned int size)
 {
+	DPRINT("[%s]size:%s\n", __func__,size);
 	if (call_backs.recording)
 		call_backs.recording(audio_data,size);
 	return 0;

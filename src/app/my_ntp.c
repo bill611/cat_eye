@@ -92,7 +92,7 @@ typedef struct
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
-
+static void (*getTimeCallBcak)(void);
 // extern ntpServer[32];
 static void ntpSendPacket(int fd)
 {
@@ -201,6 +201,8 @@ static int ntpModLocalTime(struct timeval newtime)
 #ifndef X86
     system(time_buff);
 #endif
+	if (getTimeCallBcak)
+		getTimeCallBcak();
     return 0;
 }
 
@@ -280,8 +282,9 @@ end_thread:
     return NULL;
 }
 
-void ntpTime(char *server_ip)
+void ntpTime(char *server_ip,void (*callBack)(void))
 {
+	getTimeCallBcak = callBack;
 	if (server_ip)
 		createThread(ntpTimeThread,server_ip);
 }

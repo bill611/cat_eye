@@ -377,7 +377,6 @@ int createFormMain(HWND hMainWnd)
 {
 	HWND Form = Screen.Find(form_base_priv.name);
 	my_video->showVideo();
-	playwavfile("./dad.wav");
 	if(Form) {
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {

@@ -75,12 +75,22 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
                             enum pcm_format format, unsigned int period_size,
                             unsigned int period_count, unsigned int capture_time);
 
-void sigint_handler(int sig)
-{
-    if (sig == SIGINT){
-        capturing = 0;
-    }
-}
+
+
+static struct pcm_config g_pcm_config;
+static struct pcm *g_pcm;
+static int dev_card,dev_device;
+
+
+
+
+
+
+
+
+
+
+
 
 int tinycap(int argc, char **argv)
 {
@@ -190,25 +200,9 @@ int tinycap(int argc, char **argv)
         fseek(file, sizeof(struct wav_header), SEEK_SET);
     }
 
-    /* install signal handler and begin capturing */
-    signal(SIGINT, sigint_handler);
     frames = capture_sample(file, card, device, header.num_channels,
                             header.sample_rate, format,
                             period_size, period_count, capture_time);
-    if (prinfo) {
-        printf("Captured %u frames\n", frames);
-    }
-
-    /* write header now all information is known */
-    if (!no_header) {
-        header.data_sz = frames * header.block_align;
-        header.riff_sz = header.data_sz + sizeof(header) - 8;
-        fseek(file, 0, SEEK_SET);
-        fwrite(&header, sizeof(struct wav_header), 1, file);
-    }
-
-    fclose(file);
-
     return 0;
 }
 
@@ -275,3 +269,37 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
     return total_frames_read;
 }
 
+int rvMixerCaptureOpen(void)
+{
+    g_pcm = pcm_open(dev_card, dev_device, PCM_IN, &g_pcm_config);
+    if (!g_pcm || !pcm_is_ready(g_pcm)) {
+        fprintf(stderr, "Unable to open PCM device (%s)\n",
+                pcm_get_error(g_pcm));
+        return 0;
+    }
+	return pcm_get_file_descriptor(g_pcm);
+}
+void rvMixerCaptureClose(void)
+{
+	pcm_close(g_pcm);
+}
+int rvMixerCaptureRead(void *data,int size)
+{
+	int ret = pcm_readi(g_pcm, data, size);
+	printf("ret:%d\n", ret);
+	return g_pcm_config.period_count * ret;
+}
+void rvMixerCaptureInit(void)
+{
+    memset(&g_pcm_config, 0, sizeof(g_pcm_config));
+    g_pcm_config.channels = 2;
+    g_pcm_config.rate = 8000;
+    g_pcm_config.period_size = 1024;
+    g_pcm_config.period_count = 4;
+    g_pcm_config.format = PCM_FORMAT_S16_LE;
+    g_pcm_config.start_threshold = 0;
+    g_pcm_config.stop_threshold = 0;
+    g_pcm_config.silence_threshold = 0;
+	dev_card = 0;
+	dev_device = 0;
+}

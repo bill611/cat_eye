@@ -76,8 +76,8 @@ RKVideo::RKVideo()
 
 RKVideo::~RKVideo()
 {
-	cam_dev->stop();
-
+	if (cam_dev)
+		cam_dev->stop();
 }
 
 int RKVideo::connect(std::shared_ptr<CamHwItf::PathBase> mpath, 
@@ -114,6 +114,8 @@ void RKVideo::disconnect(std::shared_ptr<CamHwItf::PathBase> mpath,
 
 void RKVideo::displayOnOff(bool type)
 {
+	if (!cam_dev)
+		return;
     if (type == true) {
         if (display_state_ == false) {
             display_state_ = true;
@@ -129,6 +131,8 @@ void RKVideo::displayOnOff(bool type)
 }
 void RKVideo::faceOnOff(bool type)
 {
+	if (!cam_dev)
+		return;
     if (type == true) {
         if (face_state_ == false) {
             face_state_ = true;
@@ -145,6 +149,8 @@ void RKVideo::faceOnOff(bool type)
 }
 void RKVideo::h264EncOnOff(bool type,int w,int h,EncCallbackFunc encCallback)
 {
+	if (!cam_dev)
+		return;
 	if (type == true) {
 		if (h264enc_state_ == false) {
 			h264enc_state_ = true;
@@ -170,7 +176,6 @@ int rkVideoInit(void)
 extern "C" 
 int rkVideoDisplayOnOff(int type)
 {
-	return 0;
 	if (type)
 		rkvideo->displayOnOff(true);
 	else

@@ -45,25 +45,25 @@ extern "C" {
 	typedef struct _TMixer
 	{
 		struct _TMixerPriv *Priv;
-		void (*Destroy)(struct _TMixer *this);
-		int (*Open)(struct _TMixer *this,int Sample,int CH);
-		int (*Close)(struct _TMixer *this,int *Handle);
-		int (*Read)(struct _TMixer *this,void *pBuffer,int Size);
-		int (*ReadBuf)(struct _TMixer *this,void *AudioBuf,int NeedSize);
-		int (*WriteBuffer)(struct _TMixer *this,int Handle,const void *pBuffer,int Size);
-		int (*Write)(struct _TMixer *this,int Handle,const void *pBuffer,int Size);
-		void (*InitVolume)(struct _TMixer *this,int Volume,int bSlience);	//初始化音量
-		int (*GetVolume)(struct _TMixer *this,int type);					//返回音量
-		int (*SetVolume)(struct _TMixer *this,int Volume,int type);			//设置音量
-		int (*SetVolumeEx)(struct _TMixer *this,int Volume);				//用外部函数设置音量
-		void (*SetSlience)(struct _TMixer *this,int bSlience);				//设置是否静音
-		int (*GetSlience)(struct _TMixer *this);							//返回是否静音
-		void (*ClearRecBuffer)(struct _TMixer *this);
-		void (*ClearPlayBuffer)(struct _TMixer *this);
-		void (*InitPlayAndRec)(struct _TMixer *this, int *handle);
-		void (*InitPlay8K)(struct _TMixer *this, int *handle);
-		void (*DeInitPlay)(struct _TMixer *this, int *handle);
-		void (*DeInitPlay8K)(struct _TMixer *this, int *handle);
+		void (*Destroy)(struct _TMixer *);
+		int (*Open)(struct _TMixer *,int Sample,int CH);
+		int (*Close)(struct _TMixer *,int *Handle);
+		int (*Read)(struct _TMixer *,void *pBuffer,int Size);
+		int (*ReadBuf)(struct _TMixer *,void *AudioBuf,int NeedSize);
+		int (*WriteBuffer)(struct _TMixer *,int Handle,const void *pBuffer,int Size);
+		int (*Write)(struct _TMixer *,int Handle,const void *pBuffer,int Size);
+		void (*InitVolume)(struct _TMixer *,int Volume,int bSlience);	//初始化音量
+		int (*GetVolume)(struct _TMixer *,int type);					//返回音量
+		int (*SetVolume)(struct _TMixer *,int Volume,int type);			//设置音量
+		int (*SetVolumeEx)(struct _TMixer *,int Volume);				//用外部函数设置音量
+		void (*SetSlience)(struct _TMixer *,int bSlience);				//设置是否静音
+		int (*GetSlience)(struct _TMixer *);							//返回是否静音
+		void (*ClearRecBuffer)(struct _TMixer *);
+		void (*ClearPlayBuffer)(struct _TMixer *);
+		void (*InitPlayAndRec)(struct _TMixer *, int *handle,int sample,int channle);
+		void (*InitPlay8K)(struct _TMixer *, int *handle);
+		void (*DeInitPlay)(struct _TMixer *, int *handle);
+		void (*DeInitPlay8K)(struct _TMixer *, int *handle);
 	} TMixer;
 
 	//创建一个混音器
