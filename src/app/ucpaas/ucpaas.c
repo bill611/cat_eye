@@ -239,7 +239,6 @@ static void init_recording_cb(unsigned int sample_rate,
 static int read_recording_data_cb(char * audio_data,
     unsigned int size)
 {
-	DPRINT("[%s]size:%s\n", __func__,size);
 	if (call_backs.recording)
 		call_backs.recording(audio_data,size);
 	return 0;
@@ -340,8 +339,8 @@ void ucsSendVideo(const unsigned char* frameData, const unsigned int dataLen)
 	UCS_PushExternalVideoStream(frameData,dataLen);
 }
 
-void ucsReceiveVideo(const unsigned char* frameData,
-	   	const unsigned int *dataLen,
+void ucsReceiveVideo(unsigned char* frameData,
+	   	unsigned int *dataLen,
 		long long *timeStamp,
 		int *frameType)
 {

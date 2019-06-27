@@ -117,10 +117,10 @@ static void cbHangup(void *arg)
 		protocol_talk->uiHangup();
 	if (my_video)
 		my_video->transVideoStop();
-	// if (my_mixer) {
-		// if (audio_fp > 0)
-			// my_mixer->DeInitPlay(my_mixer,&audio_fp);	
-	// }
+	if (my_mixer) {
+		if (audio_fp > 0)
+			my_mixer->DeInitPlay(my_mixer,&audio_fp);	
+	}
 }
 static void cbDialRet(void *arg)
 {
@@ -144,8 +144,8 @@ static void cbReceivedCmd(const char *user_id,void *arg)
 }
 static void cbInitAudio(unsigned int rate,unsigned int bytes_per_sample,unsigned int channle)
 {
-	// if (my_mixer)
-		// my_mixer->InitPlayAndRec(my_mixer,&audio_fp,rate,2);
+	if (my_mixer)
+		my_mixer->InitPlayAndRec(my_mixer,&audio_fp,rate,2);
 }
 static void cbStartRecord(unsigned int rate,unsigned int bytes_per_sample,unsigned int channle)
 {
@@ -157,8 +157,8 @@ static void cbRecording(char *data,unsigned int size)
 }
 static void cbPlayAudio(const char *data,unsigned int size)
 {
-	// if (my_mixer)
-		// my_mixer->Write(my_mixer,audio_fp,data,size);
+	if (my_mixer)
+		my_mixer->Write(my_mixer,audio_fp,data,size);
 }
 
 static Callbacks interface = {

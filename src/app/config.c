@@ -131,7 +131,6 @@ static void configSaveEtcInt(dictionary *cfg_ini, EtcValueInt *etc_file,
 	for (i=0; i<length; i++) {
 		sprintf(buf,"%s:%s",etc_file->section,etc_file->key);
 		sprintf(data,"%d",*etc_file->value);
-		DPRINT("[%s]%s,%s\n", __FUNCTION__,buf,data);
 		iniparser_set(cfg_ini, buf, data);
 		etc_file++;
 	}
