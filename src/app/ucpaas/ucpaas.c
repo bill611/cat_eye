@@ -240,7 +240,7 @@ static int read_recording_data_cb(char * audio_data,
     unsigned int size)
 {
 	if (call_backs.recording)
-		call_backs.recording(audio_data,size);
+		call_backs.recording(audio_data,size/4);
 	return 0;
 }
 
@@ -335,7 +335,7 @@ void ucsSendCmd(char *cmd,char *user_id)
 
 void ucsSendVideo(const unsigned char* frameData, const unsigned int dataLen)
 {
-	DPRINT("send:%d\n", dataLen);
+	// DPRINT("send:%d\n", dataLen);
 	UCS_PushExternalVideoStream(frameData,dataLen);
 }
 

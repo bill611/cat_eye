@@ -286,15 +286,15 @@ void rvMixerCaptureClose(void)
 int rvMixerCaptureRead(void *data,int size)
 {
 	int ret = pcm_readi(g_pcm, data, size);
-	printf("ret:%d\n", ret);
-	return g_pcm_config.period_count * ret;
+	// printf("ret:%d\n", ret);
+	return  g_pcm_config.period_count * ret;
 }
 void rvMixerCaptureInit(void)
 {
     memset(&g_pcm_config, 0, sizeof(g_pcm_config));
     g_pcm_config.channels = 2;
     g_pcm_config.rate = 8000;
-    g_pcm_config.period_size = 1024;
+    g_pcm_config.period_size = 512;
     g_pcm_config.period_count = 4;
     g_pcm_config.format = PCM_FORMAT_S16_LE;
     g_pcm_config.start_threshold = 0;

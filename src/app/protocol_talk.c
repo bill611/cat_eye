@@ -26,6 +26,7 @@
 #include "protocol.h"
 #include "my_video.h"
 #include "my_mixer.h"
+#include "my_gpio.h"
 #include "ucpaas/ucpaas.h"
 
 /* ---------------------------------------------------------------------------*
@@ -144,6 +145,7 @@ static void cbReceivedCmd(const char *user_id,void *arg)
 }
 static void cbInitAudio(unsigned int rate,unsigned int bytes_per_sample,unsigned int channle)
 {
+	gpio->SetValue(gpio,ENUM_GPIO_MICKEY,IO_ACTIVE);
 	if (my_mixer)
 		my_mixer->InitPlayAndRec(my_mixer,&audio_fp,rate,2);
 }
@@ -153,7 +155,8 @@ static void cbStartRecord(unsigned int rate,unsigned int bytes_per_sample,unsign
 }
 static void cbRecording(char *data,unsigned int size)
 {
-
+	if (my_mixer)
+		my_mixer->Read(my_mixer,data,size);
 }
 static void cbPlayAudio(const char *data,unsigned int size)
 {
