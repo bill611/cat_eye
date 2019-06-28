@@ -47,6 +47,7 @@
  *----------------------------------------------------------------------------*/
 MyFace *my_face;
 
+static pthread_mutex_t mutex; // 初始化过程线程锁,初始化过程不可被打断
 static int face_init_finished = 0; // 初始化是否结束，未结束时不处理其他功能
 static MyFaceData face_data_last;// 最后一次人脸识别结果，如果为同一人，则每30秒处理一次结果
 static int recognize_intaval = 0; // 识别结果处理间隔
@@ -62,13 +63,16 @@ static int recognize_intaval = 0; // 识别结果处理间隔
 /* ---------------------------------------------------------------------------*/
 static void* threadInit(void *arg)
 {
+	pthread_mutex_lock(&mutex);
 	face_init_finished = 0;
 	if(rdfaceInit() < 0) {
 		rdfaceUninit();
 		DPRINT("rdfaceInit error!");
+		pthread_mutex_unlock(&mutex);
 		return NULL;
 	}
 	face_init_finished = 1;
+	pthread_mutex_unlock(&mutex);
     return NULL;
 }
 static void* threadTimer1s(void *arg)
@@ -92,6 +96,8 @@ static int regist(MyFaceRegistData *data)
 {
 	if (face_init_finished == 0)
         goto regist_end;
+	if (pthread_mutex_trylock(&mutex) != 0)
+		return -1;
 	float *feature = NULL;
 	int feature_len = 0;
 	int ret = -1;
@@ -104,6 +110,7 @@ static int regist(MyFaceRegistData *data)
 regist_end:
     if (feature)
         free(feature);
+	pthread_mutex_unlock(&mutex);
     return ret;
 }
 
@@ -142,6 +149,8 @@ static void recognizer(char *image_buff,int w,int h)
 {
 	if (face_init_finished == 0)
         return;
+	if (pthread_mutex_trylock(&mutex) != 0)
+		return ;
 	int ret;
     MyFaceData face_data;
 	if (sqlGetFaceCount()) {
@@ -160,12 +169,15 @@ static void recognizer(char *image_buff,int w,int h)
 	} else {
         ret = rdfaceRecognizer(image_buff,w,h,NULL,&face_data);
 	}
+	pthread_mutex_unlock(&mutex);
 }
 
 static void uninit(void)
 {
-	rdfaceUninit();
+	pthread_mutex_lock(&mutex);
 	face_init_finished = 0;
+	rdfaceUninit();
+	pthread_mutex_unlock(&mutex);
 }
 
 void myFaceInit(void)
@@ -176,5 +188,11 @@ void myFaceInit(void)
 	my_face->recognizer = recognizer;
 	my_face->uninit = uninit;
 	my_face->init = init;
+
+	pthread_mutexattr_t mutexattr;
+	pthread_mutexattr_init(&mutexattr);
+    pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE_NP);
+    pthread_mutex_init(&mutex, &mutexattr);
+
     createThread(threadTimer1s,NULL);
 }

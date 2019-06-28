@@ -163,6 +163,8 @@ static int mixerClose(TMixer *This,int *Handle)
 static int mixerRead(TMixer *This,void *pBuffer,int Size)
 {
     int ret = 0;
+	if (This->Priv->audiofp1 == -1)
+		This->Priv->audiofp1 = rvMixerCaptureOpen();
 	if (This->Priv->audiofp1 != -1) {
 		ret = rvMixerCaptureRead(pBuffer,Size);
 	}
@@ -183,13 +185,8 @@ static int mixerRead(TMixer *This,void *pBuffer,int Size)
 /* ----------------------------------------------------------------*/
 static int mixerReadBuffer(TMixer *This, void *AudioBuf, int NeedSize)
 {
-	int RealSize = 0;
-	if (This->Priv->audiofp1 == -1) {
-		goto mixer_read_end;
-	}
-	RealSize = This->Read(This,AudioBuf,NeedSize);
+	int RealSize = This->Read(This,AudioBuf,NeedSize);
 
-mixer_read_end:
 	return RealSize;
 }
 
@@ -316,14 +313,14 @@ static int mixerSetVolume(struct _TMixer *This,int type,int Volume)
 	Value |= buf;
 
 	if (type) {
-		if( -1 == ioctl(This->Priv->mixer_fd1 , MIXER_WRITE(SOUND_MIXER_PCM), &Value)) {
+		if(rvMixerSetPlayVolume(Value) == EXIT_FAILURE) {
 			fprintf(stdout,"Set Volume %d ,%s\n", Value,strerror(errno));
             ret = -2;
             goto mixer_set_voluem_end;
 		}
 		This->Priv->PlayVolume = Volume;
 	} else {
-		if( -1 == ioctl(This->Priv->mixer_fd , MIXER_WRITE(SOUND_MIXER_PCM), &Value)) {
+		if(rvMixerSetCaptureVolume(Value) == EXIT_FAILURE) {
 			fprintf(stdout,"Set Volume %d ,%s\n", Value,strerror(errno));
             ret = -2;
             goto mixer_set_voluem_end;
@@ -453,7 +450,7 @@ static void mixerClearPlayBuffer(TMixer *This)
 static void mixerInitPlayAndRec(TMixer *This,int *handle,int sample,int channle)
 {
 	int fp;
-	fp = This->Open(This,8000,2);
+	fp = This->Open(This,FMT8K,2);
 	if (fp <= 0) {
 		return;
 	}
@@ -484,6 +481,8 @@ static void mixerInitPlay8K(TMixer *This,int *handle)
 /* ----------------------------------------------------------------*/
 static void mixerDeInitPlay(TMixer *This,int *handle)
 {
+	rvMixerCaptureClose();
+	This->Priv->audiofp1 = -1;
 	// anykaCaptureStop();
 	This->ClearPlayBuffer(This);
 	This->Close(This, handle);
@@ -542,7 +541,6 @@ TMixer* mixerCreate(void)
 
 	This->Priv->Inited = 0;
 	This->Priv->audiofp = -1;
-	This->Priv->audiofp1 = rvMixerCaptureOpen();
 
 	This->Destroy = mixerDestroy;
 	This->Open = mixerOpen;

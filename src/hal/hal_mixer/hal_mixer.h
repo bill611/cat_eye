@@ -31,6 +31,8 @@ extern "C" {
 	int rvMixerCaptureRead(void *data,int size);
 	void rvMixerCaptureInit(void);
 
+	int rvMixerSetPlayVolume(int value);
+	int rvMixerSetCaptureVolume(int value);
 #ifdef __cplusplus
 }
 #endif  /* __cplusplus */

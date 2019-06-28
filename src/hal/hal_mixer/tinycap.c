@@ -271,6 +271,7 @@ unsigned int capture_sample(FILE *file, unsigned int card, unsigned int device,
 
 int rvMixerCaptureOpen(void)
 {
+	printf("[%s]\n", __func__);
     g_pcm = pcm_open(dev_card, dev_device, PCM_IN, &g_pcm_config);
     if (!g_pcm || !pcm_is_ready(g_pcm)) {
         fprintf(stderr, "Unable to open PCM device (%s)\n",
@@ -281,6 +282,7 @@ int rvMixerCaptureOpen(void)
 }
 void rvMixerCaptureClose(void)
 {
+	printf("[%s]\n", __func__);
 	pcm_close(g_pcm);
 }
 int rvMixerCaptureRead(void *data,int size)
@@ -293,7 +295,7 @@ void rvMixerCaptureInit(void)
 {
     memset(&g_pcm_config, 0, sizeof(g_pcm_config));
     g_pcm_config.channels = 2;
-    g_pcm_config.rate = 8000;
+    g_pcm_config.rate = 16000;
     g_pcm_config.period_size = 512;
     g_pcm_config.period_count = 4;
     g_pcm_config.format = PCM_FORMAT_S16_LE;

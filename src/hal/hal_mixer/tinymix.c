@@ -406,3 +406,24 @@ static void tinymix_set_value(struct mixer *mixer, const char *control,
     }
 }
 
+int rvMixerSetPlayVolume(int value)
+{
+	char value1[8],value2[8];
+	char *cmd[5] = { "rvmixer", "set", "0",NULL,NULL};
+	cmd[3] = value1;
+	cmd[4] = value2;
+	sprintf(value1,"%d",value);
+	sprintf(value2,"%d",value);
+	return tinymix(5,cmd);
+}
+int rvMixerSetCaptureVolume(int value)
+{
+	char value_buff[8];
+	char *cmd[4] = { "rvmixer", "set"};
+	cmd[3] = value_buff;
+	sprintf(value_buff,"%d",value);
+	cmd[2] = "1";
+	tinymix(4,cmd);
+	cmd[2] = "2";
+	return tinymix(4,cmd);
+}
