@@ -50,7 +50,7 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 static void buttonRecordPress(HWND hwnd, int id, int nc, DWORD add_data);
 static void buttonCapturePress(HWND hwnd, int id, int nc, DWORD add_data);
 static void buttonVideoPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonMonitorPress(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonAccessPress(HWND hwnd, int id, int nc, DWORD add_data);
 static void buttonSettingPress(HWND hwnd, int id, int nc, DWORD add_data);
 
 /* ---------------------------------------------------------------------------*
@@ -88,7 +88,7 @@ enum {
     IDC_BUTTON_RECORD,
     IDC_BUTTON_CAPTURE,
     IDC_BUTTON_VIDEO,
-    IDC_BUTTON_MONITOR,
+    IDC_BUTTON_ACCESS,
     IDC_BUTTON_SETTING,
 
     IDC_STATE_COM,
@@ -123,9 +123,9 @@ static MyCtrlStatic ctrls_static[] = {
 
 static MyCtrlButton ctrls_button[] = {
 	{IDC_BUTTON_RECORD,	MYBUTTON_TYPE_TWO_STATE,"记录",80,451,buttonRecordPress},
-	{IDC_BUTTON_CAPTURE,MYBUTTON_TYPE_TWO_STATE,"抓拍",338,451,buttonCapturePress},
-	{IDC_BUTTON_MONITOR,MYBUTTON_TYPE_TWO_STATE,"监视",457,451,buttonMonitorPress},
-	{IDC_BUTTON_VIDEO,	MYBUTTON_TYPE_TWO_STATE,"录像",597,451,buttonVideoPress},
+	{IDC_BUTTON_CAPTURE,MYBUTTON_TYPE_TWO_STATE,"抓拍",273,451,buttonCapturePress},
+	{IDC_BUTTON_ACCESS, MYBUTTON_TYPE_TWO_STATE,"门禁",467,451,buttonAccessPress},
+	{IDC_BUTTON_VIDEO,	MYBUTTON_TYPE_TWO_STATE,"录像",662,451,buttonVideoPress},
 	{IDC_BUTTON_SETTING,MYBUTTON_TYPE_TWO_STATE,"设置",855,451,buttonSettingPress},
 	{0},
 };
@@ -233,8 +233,8 @@ static void formMainTimerProc1s(HWND hwnd)
 	if (power_old == 0 || power_old != power) {
 		power_old = power;
 		if (power >= 80) {
-			SendMessage(GetDlgItem (hwnd, IDC_MYSTATUS_BATTERY),
-					MSG_MYSTATUS_SET_LEVEL,1,0);
+			// SendMessage(GetDlgItem (hwnd, IDC_MYSTATUS_BATTERY),
+					// MSG_MYSTATUS_SET_LEVEL,1,0);
 		}
 		sprintf(power_lever,"%d%%",power);
 		SendMessage(GetDlgItem (hwnd, IDC_MYSTATIC_BATTERY),
@@ -271,7 +271,7 @@ static void buttonCapturePress(HWND hwnd, int id, int nc, DWORD add_data)
 	createFormVideo(GetParent(hwnd),FORM_VIDEO_TYPE_CAPTURE,enableAutoClose);
 	my_video->capture(g_config.capture_count);
 }
-static void buttonMonitorPress(HWND hwnd, int id, int nc, DWORD add_data)
+static void buttonAccessPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;

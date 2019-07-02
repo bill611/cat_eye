@@ -85,14 +85,10 @@ FaceProcess::FaceProcess()
     pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE_NP);
     pthread_mutex_init(&mutex, &mutexattr);
 
-    if (my_face)    
-        my_face->init();
 }
 
 FaceProcess::~FaceProcess()
 {
-    if (my_face)    
-        my_face->uninit();
 }
 
 bool FaceProcess::processFrame(std::shared_ptr<BufferBase> inBuf,
@@ -113,6 +109,8 @@ bool FaceProcess::processFrame(std::shared_ptr<BufferBase> inBuf,
 
 void FaceProcess::faceInit(void)
 {
+    if (my_face)    
+        my_face->init();
 	camm_info.get_data_end = 0;
 	start_enc_ = true;
 	createThread(faceProcessThread,this);
@@ -120,6 +118,8 @@ void FaceProcess::faceInit(void)
 
 void FaceProcess::faceUnInit(void)
 {
+    if (my_face)    
+        my_face->uninit();
 	camm_info.get_data_end = 0;
 	start_enc_ = false;
 }

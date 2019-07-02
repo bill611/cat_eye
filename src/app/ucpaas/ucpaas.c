@@ -360,16 +360,17 @@ void registUcpaas(Callbacks *interface)
 	call_backs.recording = interface->recording;
 	call_backs.playAudio = interface->playAudio;
 
-    TUCS_Init();
+	if (TUCS_Init() == 0) {
+		UCS_SetExtAudioTransEnable(g_externalAVEn);
+		UCS_SetExtVideoStreamEnable(g_externalAVEn);
+		UCS_ViERingPreviewEnable(1);            
+		UCS_vqecfg_t vqecfg;
+		vqecfg.aec_enable = 0;
+		vqecfg.agc_enable = 0;
+		vqecfg.ns_enable = 0;
+		UCS_SetVqeCfg(&vqecfg);
+	}
 
-    UCS_SetExtAudioTransEnable(g_externalAVEn);
-    UCS_SetExtVideoStreamEnable(g_externalAVEn);
-	UCS_ViERingPreviewEnable(1);            
-	UCS_vqecfg_t vqecfg;
-	vqecfg.aec_enable = 0;
-	vqecfg.agc_enable = 0;
-	vqecfg.ns_enable = 0;
-	UCS_SetVqeCfg(&vqecfg);
 }
 int unregistUcpaas(void)
 {

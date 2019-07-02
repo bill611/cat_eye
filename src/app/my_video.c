@@ -153,7 +153,7 @@ static int stmDoTalkOff(void *data)
 #ifdef USE_VIDEO
 	rkH264EncOff();
 #endif
-    // stm->msgPost(stm,EV_FACE_ON,NULL);
+	stm->msgPost(stm,EV_FACE_ON,NULL);
 }
 
 static StmDo stm_do[] =
