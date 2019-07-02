@@ -18,7 +18,6 @@
 #define _FACE_PROCESS_H
 
 #include <CameraHal/StrmPUBase.h>
-#include "queue.h"
 
 
 class FaceProcess : public StreamPUBase {
@@ -28,11 +27,15 @@ class FaceProcess : public StreamPUBase {
 
     bool processFrame(std::shared_ptr<BufferBase> input,
                             std::shared_ptr<BufferBase> output) override;
+	bool start_enc(void) const {
+		return start_enc_;
+	};
+
     void faceInit(void);
     void faceUnInit(void);
     int faceRegist(void *data);
  private:
-	Queue *cammer_queue;
+    bool start_enc_;
 };
 
 

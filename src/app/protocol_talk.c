@@ -125,7 +125,7 @@ static void cbHangup(void *arg)
 }
 static void cbDialRet(void *arg)
 {
-
+	my_video->transVideoStart();
 }
 static void cblIncomingCall(void *arg)
 {
@@ -188,9 +188,8 @@ void registTalk(void)
 	protocol_talk->reconnect = talkReconnect;
 	protocol_talk->reload = reloadLocalTalk;
 	protocol_talk->sendVideo = sendVideo;
-	ucsLoadInterface(&interface);
 #ifdef USE_UCPAAS
-	registUcpaas();
+	registUcpaas(&interface);
 #endif
 	protocol_talk->reload();
 	protocol_talk->connect();

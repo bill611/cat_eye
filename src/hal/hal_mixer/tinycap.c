@@ -276,7 +276,7 @@ int rvMixerCaptureOpen(void)
     if (!g_pcm || !pcm_is_ready(g_pcm)) {
         fprintf(stderr, "Unable to open PCM device (%s)\n",
                 pcm_get_error(g_pcm));
-        return 0;
+        return -1;
     }
 	return pcm_get_file_descriptor(g_pcm);
 }
@@ -295,7 +295,7 @@ void rvMixerCaptureInit(void)
 {
     memset(&g_pcm_config, 0, sizeof(g_pcm_config));
     g_pcm_config.channels = 2;
-    g_pcm_config.rate = 16000;
+    g_pcm_config.rate = 8000;
     g_pcm_config.period_size = 512;
     g_pcm_config.period_count = 4;
     g_pcm_config.format = PCM_FORMAT_S16_LE;

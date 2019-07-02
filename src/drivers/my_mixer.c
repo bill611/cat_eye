@@ -541,6 +541,7 @@ TMixer* mixerCreate(void)
 
 	This->Priv->Inited = 0;
 	This->Priv->audiofp = -1;
+	This->Priv->audiofp1 = -1;
 
 	This->Destroy = mixerDestroy;
 	This->Open = mixerOpen;

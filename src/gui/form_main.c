@@ -33,6 +33,7 @@
 
 #include "form_video.h"
 #include "form_base.h"
+#include "protocol.h"
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
@@ -49,6 +50,7 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 static void buttonRecordPress(HWND hwnd, int id, int nc, DWORD add_data);
 static void buttonCapturePress(HWND hwnd, int id, int nc, DWORD add_data);
 static void buttonVideoPress(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonMonitorPress(HWND hwnd, int id, int nc, DWORD add_data);
 static void buttonSettingPress(HWND hwnd, int id, int nc, DWORD add_data);
 
 /* ---------------------------------------------------------------------------*
@@ -86,6 +88,7 @@ enum {
     IDC_BUTTON_RECORD,
     IDC_BUTTON_CAPTURE,
     IDC_BUTTON_VIDEO,
+    IDC_BUTTON_MONITOR,
     IDC_BUTTON_SETTING,
 
     IDC_STATE_COM,
@@ -121,6 +124,7 @@ static MyCtrlStatic ctrls_static[] = {
 static MyCtrlButton ctrls_button[] = {
 	{IDC_BUTTON_RECORD,	MYBUTTON_TYPE_TWO_STATE,"记录",80,451,buttonRecordPress},
 	{IDC_BUTTON_CAPTURE,MYBUTTON_TYPE_TWO_STATE,"抓拍",338,451,buttonCapturePress},
+	{IDC_BUTTON_MONITOR,MYBUTTON_TYPE_TWO_STATE,"监视",457,451,buttonMonitorPress},
 	{IDC_BUTTON_VIDEO,	MYBUTTON_TYPE_TWO_STATE,"录像",597,451,buttonVideoPress},
 	{IDC_BUTTON_SETTING,MYBUTTON_TYPE_TWO_STATE,"设置",855,451,buttonSettingPress},
 	{0},
@@ -266,6 +270,14 @@ static void buttonCapturePress(HWND hwnd, int id, int nc, DWORD add_data)
 	flag_timer_stop = 1;
 	createFormVideo(GetParent(hwnd),FORM_VIDEO_TYPE_CAPTURE,enableAutoClose);
 	my_video->capture(g_config.capture_count);
+}
+static void buttonMonitorPress(HWND hwnd, int id, int nc, DWORD add_data)
+{
+	if (nc != BN_CLICKED)
+		return;
+	flag_timer_stop = 1;
+	protocol_talk->dial("Tc190612842ad46167d22f98");
+	createFormVideo(GetParent(hwnd),FORM_VIDEO_TYPE_TALK,enableAutoClose);
 }
 static void buttonVideoPress(HWND hwnd, int id, int nc, DWORD add_data)
 {

@@ -63,6 +63,7 @@ static int recognize_intaval = 0; // 识别结果处理间隔
 /* ---------------------------------------------------------------------------*/
 static void* threadInit(void *arg)
 {
+#ifdef USE_FACE
 	pthread_mutex_lock(&mutex);
 	face_init_finished = 0;
 	if(rdfaceInit() < 0) {
@@ -73,6 +74,7 @@ static void* threadInit(void *arg)
 	}
 	face_init_finished = 1;
 	pthread_mutex_unlock(&mutex);
+#endif
     return NULL;
 }
 static void* threadTimer1s(void *arg)
@@ -94,6 +96,7 @@ static int init(void)
 
 static int regist(MyFaceRegistData *data)
 {
+#ifdef USE_FACE
 	if (face_init_finished == 0)
         goto regist_end;
 	if (pthread_mutex_trylock(&mutex) != 0)
@@ -112,6 +115,7 @@ regist_end:
         free(feature);
 	pthread_mutex_unlock(&mutex);
     return ret;
+#endif
 }
 
 static int deleteOne(char *id)
@@ -122,6 +126,7 @@ static int deleteOne(char *id)
 
 static int featureCompareCallback(float *feature,void *face_data_out)
 {
+#ifdef USE_FACE
     MyFaceData data;
     float feature_src[512];
     int result = -1;
@@ -143,10 +148,12 @@ static int featureCompareCallback(float *feature,void *face_data_out)
     };
     sqlGetFaceEnd();
     return result;
+#endif
 }
 
 static void recognizer(char *image_buff,int w,int h)
 {
+#ifdef USE_FACE
 	if (face_init_finished == 0)
         return;
 	if (pthread_mutex_trylock(&mutex) != 0)
@@ -170,14 +177,18 @@ static void recognizer(char *image_buff,int w,int h)
         ret = rdfaceRecognizer(image_buff,w,h,NULL,&face_data);
 	}
 	pthread_mutex_unlock(&mutex);
+#endif
 }
 
 static void uninit(void)
 {
+#ifdef USE_FACE
 	pthread_mutex_lock(&mutex);
 	face_init_finished = 0;
 	rdfaceUninit();
 	pthread_mutex_unlock(&mutex);
+#endif
+	printf("face uninited\n");
 }
 
 void myFaceInit(void)
@@ -193,6 +204,7 @@ void myFaceInit(void)
 	pthread_mutexattr_init(&mutexattr);
     pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE_NP);
     pthread_mutex_init(&mutex, &mutexattr);
+	pthread_mutexattr_destroy(&mutexattr);
 
     createThread(threadTimer1s,NULL);
 }

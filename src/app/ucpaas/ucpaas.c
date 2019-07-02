@@ -299,20 +299,6 @@ static int TUCS_Destory()
 }
 
 
-void ucsLoadInterface(Callbacks *interface)
-{
-	call_backs.dialFail = interface->dialFail;
-	call_backs.answer = interface->answer;
-	call_backs.hangup = interface->hangup;
-	call_backs.dialRet = interface->dialRet;
-	call_backs.incomingCall = interface->incomingCall;
-	call_backs.sendCmd = interface->sendCmd;
-	call_backs.receivedCmd = interface->receivedCmd;
-	call_backs.initAudio = interface->initAudio;
-	call_backs.startRecord = interface->startRecord;
-	call_backs.recording = interface->recording;
-	call_backs.playAudio = interface->playAudio;
-}
 void ucsDial(char *user_id)
 {
     UCS_Dial(user_id, eUCS_CALL_TYPE_VIDEO_CALL);
@@ -360,8 +346,20 @@ void ucsDisconnect(void)
     UCS_DisConnect();
 }
 
-void registUcpaas(void)
+void registUcpaas(Callbacks *interface)
 {
+	call_backs.dialFail = interface->dialFail;
+	call_backs.answer = interface->answer;
+	call_backs.hangup = interface->hangup;
+	call_backs.dialRet = interface->dialRet;
+	call_backs.incomingCall = interface->incomingCall;
+	call_backs.sendCmd = interface->sendCmd;
+	call_backs.receivedCmd = interface->receivedCmd;
+	call_backs.initAudio = interface->initAudio;
+	call_backs.startRecord = interface->startRecord;
+	call_backs.recording = interface->recording;
+	call_backs.playAudio = interface->playAudio;
+
     TUCS_Init();
 
     UCS_SetExtAudioTransEnable(g_externalAVEn);

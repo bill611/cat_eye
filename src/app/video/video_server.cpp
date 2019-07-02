@@ -136,14 +136,14 @@ void RKVideo::faceOnOff(bool type)
     if (type == true) {
         if (face_state_ == false) {
             face_state_ = true;
-            connect(cam_dev->mpath(), face_process, cam_dev->format(), 0, nullptr);
             face_process->faceInit();
+            connect(cam_dev->mpath(), face_process, cam_dev->format(), 0, nullptr);
         }
     } else {
         if (face_state_ == true) {
             face_state_ = false;
-            face_process->faceUnInit();
             disconnect(cam_dev->mpath(), face_process);
+            face_process->faceUnInit();
         }
 	}
 }

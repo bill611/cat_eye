@@ -115,12 +115,12 @@ endif()
 # 添加库文件名称
 link_libraries (
 	sqlite3 qrencode paho-mqtt3a ssl curl cjson crypto
-	minigui_ths png12 png jpeg freetype turbojpeg yuv
+	minigui_ths png12 png jpeg freetype turbojpeg 
 	z m pthread dl rt 
 	)
 
 if (PLATFORM_RV1108)
-	link_libraries (ts rkrga rkfb ion stdc++)
+	link_libraries (ts rkrga rkfb ion yuv stdc++)
 endif()
 
 if (MODE_UCPAAS)

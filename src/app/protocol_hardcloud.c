@@ -91,6 +91,7 @@ struct DebugInfo{
 Protocol*pro_hardcloud;
 static MyHttp *http = NULL;
 static MyMqtt *mqtt = NULL;
+static int mqtt_connect_state,ntp_connect_state;
 static struct DebugInfo dbg_info[] = {
 	{Sys_TestData,"Sys_TestData"},
 	{Sys_UploadLog,"Sys_UploadLog"},
@@ -207,6 +208,7 @@ static void mqttConnectSuccess(void* context)
 		if (subTopic[i][0] != '\0')
 			mqtt->subcribe(subTopic[i], mqttSubcribeSuccess, mqttSubcribeFailure);
 	}
+	ntp_connect_state = 1;
 }
 static void mqttConnectFailure(void* context)
 {
@@ -514,7 +516,7 @@ static void getIntercoms(void)
 
 static void ntpGetTimeCallback(void)
 {
-    getIntercoms();
+	mqtt_connect_state = 1;
 }
 /* ---------------------------------------------------------------------------*/
 /**
@@ -676,6 +678,18 @@ static void* tcpHeartThread(void *arg)
 	}
 	return NULL;
 }
+
+static void* getIntercomsThread(void *arg)
+{
+	while (1) {
+		if (mqtt_connect_state && ntp_connect_state) {
+			getIntercoms();
+			break;
+		}
+		sleep(1);
+	}
+	return NULL;
+}
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief registHardCloud 注册硬件云
@@ -683,11 +697,14 @@ static void* tcpHeartThread(void *arg)
 /* ---------------------------------------------------------------------------*/
 void registHardCloud(void)
 {
+	mqtt_connect_state = 0;
+	ntp_connect_state = 0;
 	tcpClientInit();
 	http = myHttpCreate();
 	mqtt = myMqttCreate();
 	createThread(initThread,NULL);
 	createThread(tcpHeartThread,NULL);
+	createThread(getIntercomsThread,NULL);
 
 }
 

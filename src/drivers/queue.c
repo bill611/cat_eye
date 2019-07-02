@@ -127,6 +127,10 @@ static void queuePost(Queue * This,void *data)
 		}
 
 		This->priv->buf[This->priv->index_post] = (void *) calloc (1,This->priv->size);
+		if (This->priv->buf[This->priv->index_post] == NULL) {
+			printf("[%s] can't calloc memory\n", __func__);
+			return;
+		}
 		memcpy(This->priv->buf[This->priv->index_post],data,This->priv->size);
 		This->priv->index_post++;
 		This->priv->current_length++;

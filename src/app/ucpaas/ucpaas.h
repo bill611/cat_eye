@@ -42,9 +42,7 @@ extern "C" {
 	void ucsSendVideo(const unsigned char* frameData, const unsigned int dataLen);
 	int ucsConnect(char *user_token);
     void ucsDisconnect(void);
-	void registUcpaas(void);
-
-	void ucsLoadInterface(Callbacks *interface);
+	void registUcpaas(Callbacks *interface);
 
 #ifdef __cplusplus
 }

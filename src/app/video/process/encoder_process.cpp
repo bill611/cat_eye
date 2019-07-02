@@ -21,6 +21,7 @@
 #include <adk/utils/assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
 
 #include "h264_enc_dec/mpi_enc_api.h"
 #include "encoder_process.h"
@@ -50,6 +51,7 @@ using namespace rk;
 #define IMAGE_MAX_DATA (IAMGE_MAX_W * IAMGE_MAX_H * 3 / 2 )
 
 typedef struct _H264Data {
+	int get_data_end;
 	int type;
 	int w,h;
 	unsigned char data[IMAGE_MAX_DATA];
@@ -65,6 +67,8 @@ do {                          \
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
+static H264Data h264_info;
+static pthread_mutex_t enc_mutex;
 static int NV12Scale(unsigned char *psrc_buf, int psrc_w, int psrc_h, unsigned char **pdst_buf, int pdst_w, int pdst_h)
 {
 	libyuv::FilterModeEnum pfmode = libyuv::kFilterNone;
@@ -107,10 +111,12 @@ static int NV12Scale(unsigned char *psrc_buf, int psrc_w, int psrc_h, unsigned c
 
 static void* encoderProcessThread(void *arg)
 {
-	H264Data h264_info;
 	H264Encoder *process = (H264Encoder *)arg;
 	while (process->start_enc() == true) {
-		process->queue()->get(process->queue(),&h264_info);
+		if (h264_info.get_data_end == 0) {
+			usleep(10000);
+			continue;
+		}
 		unsigned char *out_data = NULL;
 		int size = 0;
 		unsigned char *nv12_scale_data = NULL;
@@ -123,6 +129,9 @@ static void* encoderProcessThread(void *arg)
 			free(out_data);
 		if (nv12_scale_data)
 			free(nv12_scale_data);
+		pthread_mutex_lock(&enc_mutex);
+		h264_info.get_data_end = 0;
+		pthread_mutex_unlock(&enc_mutex);
 	}
 	if (my_h264enc)
 		my_h264enc->unInit(my_h264enc);
@@ -137,7 +146,11 @@ H264Encoder::H264Encoder()
 
 	myH264EncInit();
 
-	queue_ = queueCreate("decode_process",QUEUE_BLOCK,sizeof(H264Data));
+	pthread_mutexattr_t mutexattr;
+	pthread_mutexattr_init(&mutexattr);
+    pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE_NP);
+    pthread_mutex_init(&enc_mutex, &mutexattr);
+	pthread_mutexattr_destroy(&mutexattr);
 }
 
 H264Encoder::~H264Encoder()
@@ -154,6 +167,8 @@ int H264Encoder::startEnc(int width,int height,EncCallbackFunc encCallback)
 	encCallback_ = encCallback;
 	start_enc_ = true;
 	last_frame_ = false;
+	h264_info.get_data_end = 0;
+	memset(&h264_info,0,sizeof(h264_info));
 	createThread(encoderProcessThread,this);
     return 0;
 }
@@ -175,10 +190,13 @@ bool H264Encoder::processFrame(std::shared_ptr<BufferBase> inBuf,
 		return true;
 	}
 post_frame:
-	H264Data h264_info;
-	h264_info.w = inBuf->getWidth();
-	h264_info.h = inBuf->getHeight();
-	memcpy(h264_info.data,inBuf->getVirtAddr(),inBuf->getDataSize());
-	queue_->post(queue_,&h264_info);
+	if (h264_info.get_data_end == 0) {
+		h264_info.w = inBuf->getWidth();
+		h264_info.h = inBuf->getHeight();
+		memcpy(h264_info.data,inBuf->getVirtAddr(),inBuf->getDataSize());
+		pthread_mutex_lock(&enc_mutex);
+		h264_info.get_data_end = 1;
+		pthread_mutex_unlock(&enc_mutex);
+	}
     return true;
 }

@@ -116,12 +116,16 @@ static int stmDoFail(void *data)
 
 static int stmDoFaceOn(void *data)
 {
+#ifdef USE_VIDEO
     rkVideoFaceOnOff(1);
+#endif
 }
 
 static int stmDoFaceOff(void *data)
 {
+#ifdef USE_VIDEO
     rkVideoFaceOnOff(0);
+#endif
     stm->msgPost(stm,EV_FACE_OFF_FINISH,NULL);
 }
 
@@ -139,12 +143,16 @@ static void encCallbackFunc(void *data,int size)
 }
 static int stmDoTalkOn(void *data)
 {
+#ifdef USE_VIDEO
 	rkH264EncOn(320,240,encCallbackFunc);
+#endif
 }
 
 static int stmDoTalkOff(void *data)
 {
+#ifdef USE_VIDEO
 	rkH264EncOff();
+#endif
     // stm->msgPost(stm,EV_FACE_ON,NULL);
 }
 
@@ -171,12 +179,18 @@ static void init(void)
 {
 	jpegIncDecInit();
 	myFaceInit();
+#ifdef USE_VIDEO
 	rkVideoInit();
+#endif
 }
 
 static void faceStart(void)
 {
     stm->msgPost(stm,EV_FACE_ON,NULL);
+}
+static void faceStop(void)
+{
+    stm->msgPost(stm,EV_FACE_OFF,NULL);
 }
 
 static void capture(int count)
@@ -184,17 +198,25 @@ static void capture(int count)
 	// rkVideoStopCapture();
 }
 
-// static void encCallbackFunc(void *data,int size)
-// {
-    // ucsSendVideo(data,size);
-// }
+FILE *fp;
+static void recordEncCallbackFunc(void *data,int size)
+{
+	fwrite(data,1,size,fp);
+}
 static void recordStart(int count)
 {
-	// rkH264EncOn(320,240,encCallbackFunc);
+#ifdef USE_VIDEO
+	fp = fopen("test.h264","wb");
+	rkH264EncOn(320,240,recordEncCallbackFunc);
+#endif
 }
 static void recordStop(void)
 {
+#ifdef USE_VIDEO
 	rkH264EncOff();
+	fflush(fp);
+	fclose(fp);
+#endif
 }
 
 static void transVideoStart(void)
@@ -207,12 +229,16 @@ static void transVideoStop(void)
 }
 static void showVideo(void)
 {
+#ifdef USE_VIDEO
 	rkVideoDisplayOnOff(1);
-	// faceStart();
+#endif
+	faceStart();
 }
 static void hideVideo(void)
 {
+#ifdef USE_VIDEO
 	rkVideoDisplayOnOff(0);
+#endif
 }
 
 static int faceRegist( unsigned char *image_buff,int w,int h,char *id,char *nick_name,char *url)
@@ -238,6 +264,7 @@ void myVideoInit(void)
 	my_video->showVideo = showVideo;
 	my_video->hideVideo = hideVideo;
 	my_video->faceStart = faceStart;
+	my_video->faceStop = faceStop;
 	my_video->faceRegist = faceRegist;
 	my_video->faceDelete = faceDelete;
 	my_video->capture = capture;

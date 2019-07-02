@@ -97,7 +97,7 @@ void playWavStop()
 	while(!thread_exit || (soundfp > 0)) {
 		usleep(10000);
 	}
-	if (soundfp > 0)
+	if (my_mixer && soundfp > 0)
 		my_mixer->Close(my_mixer, &soundfp);
 
 }
@@ -153,9 +153,10 @@ static void * threadWav(void *file_name)
 			wav_size,
 			wav_msg.wav_format.samples_per_sec,
 			wav_msg.wav_format.channle);
-	soundfp = my_mixer->Open(my_mixer,
-			wav_msg.wav_format.samples_per_sec,
-			wav_msg.wav_format.channle);
+	if (my_mixer)
+		soundfp = my_mixer->Open(my_mixer,
+				wav_msg.wav_format.samples_per_sec,
+				wav_msg.wav_format.channle);
 	if(soundfp <= 0) {
 		printf("wav can't open sound card!\n");
 		goto done1;
@@ -172,14 +173,16 @@ static void * threadWav(void *file_name)
 			printf("Read data size is less zero!\n");
 			break;
 		}
-
-		my_mixer->WriteBuffer(my_mixer,soundfp,wav_buf,read_size);
+		if (my_mixer)
+			my_mixer->WriteBuffer(my_mixer,soundfp,wav_buf,read_size);
 		wav_size-=read_size;
 		// usleep(1);
 	}
 	usleep(100000);
-	my_mixer->ClearPlayBuffer(my_mixer);
-	my_mixer->Close(my_mixer, &soundfp);
+	if (my_mixer) {
+		my_mixer->ClearPlayBuffer(my_mixer);
+		my_mixer->Close(my_mixer, &soundfp);
+	}
 
 done1:
 	fclose(fp);

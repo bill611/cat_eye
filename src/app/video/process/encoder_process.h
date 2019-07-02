@@ -7,7 +7,6 @@
 #include <rkmedia/buffer.h>
 #include <rkmedia/image.h>
 #include <adk/mm/buffer.h>
-#include "queue.h"
 
 typedef void (*EncCallbackFunc)(void *data,int size);
 class H264Encoder : public StreamPUBase {
@@ -25,9 +24,6 @@ class H264Encoder : public StreamPUBase {
         return fd_;
     }
 
-	Queue *queue(void) const {
-		return queue_;
-	}
 	bool start_enc(void) const {
 		return start_enc_;
 	};
@@ -50,7 +46,6 @@ class H264Encoder : public StreamPUBase {
     bool last_frame_;
 	int width_;
 	int height_;
-	Queue *queue_;
 	EncCallbackFunc encCallback_;
 
 };

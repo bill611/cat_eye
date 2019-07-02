@@ -128,7 +128,9 @@ int rdfaceInit(void)
 				g_fr_lite_weights_path, g_fq_weights_path,
 				0,
 				APP_ID,
-				"f090638b22014521fee7b9de8c02fb071fc4d54e9062c84dc23daa289ae6f9b13dc6b467aed88b65033336ae725e72bfdacee34d1f41a8f57f22b3f0050216d3")) {
+				"ea15e2876d514524c873b6159b86f2f5d715819598ee3b116e51cb2338b8ffbe5556ef1d9e7ee21739588fd631923ffd80df7158e7e6fb561eac7faa8252f67e"
+				//旧板 "f090638b22014521fee7b9de8c02fb071fc4d54e9062c84dc23daa289ae6f9b13dc6b467aed88b65033336ae725e72bfdacee34d1f41a8f57f22b3f0050216d3"
+				)) {
 
 		printf("%s:------> readsense_initial_face_sdk failed.\n", __func__);
 		goto exit_dsp;
