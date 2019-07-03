@@ -51,14 +51,18 @@ static int audio_fp = 0;
 static void reloadLocalTalk(void)
 {
     memset(&local_user,0,sizeof(UserStruct));
-	sqlGetUserInfo(USER_TYPE_CATEYE,local_user.id,local_user.token,local_user.nick_name,&local_user.scope);
+	sqlGetUserInfoUseType(USER_TYPE_CATEYE,local_user.id,local_user.token,local_user.nick_name,&local_user.scope);
 	printf("[%s]id:%s,token:%s\n",__func__,local_user.id,local_user.token );
 }
-static void dial(char *user_id)
+static void dial(int type,char *user_id,char *ui_title)
 {
 #ifdef USE_UCPAAS
 	ucsDial(user_id);
 #endif
+	if (protocol_talk->uiShowFormVideo)
+		protocol_talk->uiShowFormVideo(type,ui_title);
+	if (my_video)
+		my_video->transVideoStart();
 }
 
 static void hangup(void)
@@ -68,11 +72,13 @@ static void hangup(void)
 #endif
 }
 
-static void answer(void)
+static void answer(char *ui_title)
 {
 #ifdef USE_UCPAAS
 	ucsAnswer();
 #endif
+	if (protocol_talk->uiAnswer)
+		protocol_talk->uiAnswer(ui_title);
 }
 
 static void sendCmd(char *cmd,char *user_id)
@@ -129,11 +135,22 @@ static void cbDialRet(void *arg)
 }
 static void cblIncomingCall(void *arg)
 {
-	if (protocol_talk->uiIncomingCall)
-		protocol_talk->uiIncomingCall(arg);
+	char nick_name[128] = {0};
+	char ui_title[128] = {0};
+	int scope;
+	int ret = sqlGetUserInfoUseUserId((char *)arg,nick_name,&scope);
+	if (ret == 0)
+		return;
+	sprintf(ui_title,"%s 正在呼叫",nick_name);
+	if (protocol_talk->uiShowFormVideo)
+		protocol_talk->uiShowFormVideo(scope,ui_title);
 	if (my_video)
 		my_video->transVideoStart();
-	protocol_talk->answer();
+	if (scope == DEV_TYPE_HOUSEHOLDAPP) {
+		memset(ui_title,0,sizeof(ui_title));
+		sprintf(ui_title,"%s 正在监视猫眼",nick_name);
+		protocol_talk->answer(ui_title);
+	}
 }
 static void cbSendCmd(void *arg)
 {

@@ -21,8 +21,6 @@
 extern "C" {
 #endif  /* __cplusplus */
 
-#include <stdint.h>
-
 	extern void sqlInsertUserInfoNoBack(
 			char *user_id,
 			char *login_token,
@@ -35,10 +33,14 @@ extern "C" {
 			char *nick_name,
 			int type,
 			int scope);
-	extern void sqlGetUserInfo(
+	extern int sqlGetUserInfoUseType(
 			int type,
 			char *user_id,
 			char *login_token,
+			char *nick_name,
+			int *scope);
+	extern int sqlGetUserInfoUseUserId(
+			char *user_id,
 			char *nick_name,
 			int *scope);
 	extern int sqlGetUserInfoStart(int type);

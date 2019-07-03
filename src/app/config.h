@@ -126,6 +126,8 @@ extern "C" {
 		int  timestamp;        // 启动时间戳
 		int capture_count;	   // 抓拍图片数量
         TcWifiConfig net_config;  // 网络设置
+
+
 	} Config;
 
 	void configLoad(void);

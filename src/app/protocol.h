@@ -25,6 +25,14 @@ extern "C" {
 		USER_TYPE_CATEYE,
 		USER_TYPE_OTHERS,
 	};
+	enum {
+		DEV_TYPE_UNDEFINED = 0, //未定义
+		DEV_TYPE_ENTRANCEMACHINE = 1, //智能门禁
+		DEV_TYPE_HOUSEHOLDAPP = 2, //住户手机APP
+		DEV_TYPE_INNERDOORMACHINE = 3, //室内主机
+		DEV_TYPE_SECURITYSTAFFAPP = 4, //保安手机APP
+		DEV_TYPE_HOUSEENTRANCEMACHINE = 5, //户门口机
+	};
 
 	typedef struct _UserStruct {
 		char id[32];
@@ -45,14 +53,15 @@ extern "C" {
 	// 对讲协议
 	typedef struct _ProtocolTalk {
 		void (*reload)(void);
-		void (*dial)(char *user_id);
-		void (*answer)(void);
+		void (*dial)(int type,char *user_id,char *ui_title);
+		void (*answer)(char *ui_title);
 		void (*hangup)(void);
 		void (*connect)(void);
 		void (*reconnect)(void);
 
-		void (*uiIncomingCall)(void *arg);
+		void (*uiShowFormVideo)(int type,char *name);
 		void (*uiHangup)(void);
+		void (*uiAnswer)(char *name);
 
 		void (*sendCmd)(char *cmd,char *user_id);
 		void (*receivedCmd)(const char *user_id,void *arg);

@@ -71,7 +71,7 @@ static void* faceProcessThread(void *arg)
 			my_face->recognizer(camm_info.data,camm_info.w,camm_info.h);
 		}
 		pthread_mutex_lock(&mutex);
-		camm_info.get_data_end = 1;
+		camm_info.get_data_end = 0;
 		pthread_mutex_unlock(&mutex);
 	}
 	return NULL;	

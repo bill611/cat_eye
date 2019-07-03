@@ -99,8 +99,7 @@ static int regist(MyFaceRegistData *data)
 #ifdef USE_FACE
 	if (face_init_finished == 0)
         goto regist_end;
-	if (pthread_mutex_trylock(&mutex) != 0)
-		return -1;
+	pthread_mutex_lock(&mutex);
 	float *feature = NULL;
 	int feature_len = 0;
 	int ret = -1;

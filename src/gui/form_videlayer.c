@@ -99,9 +99,7 @@ static InitBmpFunc load_bmps_func[] = {
 };
 
 static HWND hwnd_videolayer = HWND_INVALID;
-static BITMAP bkg;
 static BmpLocation base_bmps[] = {
-	{&bkg,"main/bg_1.png"},
 	{NULL},
 };
 

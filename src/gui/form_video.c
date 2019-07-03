@@ -18,6 +18,7 @@
  *                      include head files
  *----------------------------------------------------------------------------*/
 #include <time.h>
+#include <string.h>
 #include "externfunc.h"
 #include "debug.h"
 #include "screen.h"
@@ -70,9 +71,12 @@ enum {
 
     IDC_MYSTATIC_TIME,
     IDC_MYSTATIC_BATTERY,
+    IDC_MYSTATIC_TITLE,
 
     IDC_BUTTON_UNLOCK,
     IDC_BUTTON_HANGUP,
+    IDC_BUTTON_CAPTURE,
+    IDC_BUTTON_RECORD,
 
     IDC_STATE_COM,
 
@@ -91,12 +95,15 @@ static MyCtrlStatus ctrls_status[] = {
 static MyCtrlStatic ctrls_static[] = {
     {IDC_MYSTATIC_TIME,   MYSTATIC_TYPE_TEXT,0,0,1024,40,"",0xffffff,0x00000060},
     {IDC_MYSTATIC_BATTERY,MYSTATIC_TYPE_TEXT,910,0,45,34,"",0xffffff,0x00000000},
+    {IDC_MYSTATIC_TITLE,  MYSTATIC_TYPE_TEXT,400,0,200,40,"",0xffffff,0x00000000},
 	{0},
 };
 
 static MyCtrlButton ctrls_button[] = {
 	{IDC_BUTTON_HANGUP,MYBUTTON_TYPE_TWO_STATE,"挂断",80,451,buttonHangupPress},
 	{IDC_BUTTON_UNLOCK,MYBUTTON_TYPE_TWO_STATE,"开门",338,451,buttonUnlockPress},
+	{IDC_BUTTON_CAPTURE,MYBUTTON_TYPE_TWO_STATE,"抓拍",338,451,buttonUnlockPress},
+	{IDC_BUTTON_RECORD,MYBUTTON_TYPE_TWO_STATE,"录像",338,451,buttonUnlockPress},
 	{0},
 };
 
@@ -181,16 +188,50 @@ static void formVideoReleaseBmp(void)
 	bmpsRelease(base_bmps);
 }
 
+static void updateTitle(char *name)
+{
+	if (name) {
+		SendMessage(GetDlgItem (form_base->hDlg, IDC_MYSTATIC_TITLE),
+				MSG_MYSTATIC_SET_TITLE,(WPARAM)name,0);
+	}
+}
+
 static void updateDisplay(HWND hDlg)
 {
-	if (form_type == FORM_VIDEO_TYPE_CAPTURE) {
-		ShowWindow(GetDlgItem(hDlg,IDC_BUTTON_UNLOCK),SW_HIDE);
-		ShowWindow(GetDlgItem(hDlg,IDC_BUTTON_HANGUP),SW_HIDE);
-	}else{	
-	// } else if (form_type == FORM_VIDEO_TYPE_RECORD) {
-		ShowWindow(GetDlgItem(hDlg,IDC_BUTTON_UNLOCK),SW_HIDE);
-		ShowWindow(GetDlgItem(hDlg,IDC_BUTTON_HANGUP),SW_SHOWNORMAL);
-		myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_HANGUP), 467,451);
+	int button_status[] = {0,0,0,0};
+	int button_num = IDC_BUTTON_UNLOCK;
+	switch(form_type) 
+	{
+		case FORM_VIDEO_TYPE_CAPTURE:
+			break;
+		case FORM_VIDEO_TYPE_MONITOR:
+		case FORM_VIDEO_TYPE_RECORD:
+			button_status[IDC_BUTTON_HANGUP - button_num] = 1;
+			myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_HANGUP), 467,451);
+			break;
+		case FORM_VIDEO_TYPE_TALK :
+			button_status[IDC_BUTTON_UNLOCK - button_num] = 1;
+			button_status[IDC_BUTTON_HANGUP - button_num] = 1;
+			myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_UNLOCK), 209,451);
+			myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_HANGUP), 726,451);
+			break;
+		case FORM_VIDEO_TYPE_OUTDOOR:
+			button_status[IDC_BUTTON_CAPTURE - button_num] = 1;
+			button_status[IDC_BUTTON_RECORD - button_num] = 1;
+			button_status[IDC_BUTTON_HANGUP - button_num] = 1;
+			myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_CAPTURE), 208,451);
+			myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_HANGUP), 467,451);
+			myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_RECORD), 726,451);
+			break;
+		default:
+			break;
+	}
+	int i;
+	for (i=0; i<sizeof(button_status)/sizeof(button_status[0]); i++) {
+		if (button_status[i] == 0)	
+			ShowWindow(GetDlgItem(hDlg,button_num + i),SW_HIDE);
+		else
+			ShowWindow(GetDlgItem(hDlg,button_num + i),SW_SHOWNORMAL);
 	}
 }
 
@@ -290,20 +331,39 @@ int createFormVideo(HWND hMainWnd,int type,void (*callback)(void))
 	return 0;
 }
 
-static void interfaceCreateFormVideoDirect(void *arg)
+static void interfaceCreateFormVideoDirect(int type,char *name)
 {
-	int type = *(int *)arg;
-	createFormVideo(0,FORM_VIDEO_TYPE_MONITOR,NULL); 
+	switch (type) 
+	{
+		case DEV_TYPE_HOUSEHOLDAPP:
+		case DEV_TYPE_SECURITYSTAFFAPP:
+		case DEV_TYPE_INNERDOORMACHINE:
+			createFormVideo(0,FORM_VIDEO_TYPE_MONITOR,NULL); 
+			break;
+		case DEV_TYPE_ENTRANCEMACHINE:
+		case DEV_TYPE_HOUSEENTRANCEMACHINE:
+			createFormVideo(0,FORM_VIDEO_TYPE_TALK,NULL); 
+			break;
+		case DEV_TYPE_UNDEFINED:
+		default:
+			break;
+	}
+	updateTitle(name);
 }
 static void interfaceHangup(void)
 {
 	ShowWindow(form_base->hDlg,SW_HIDE);
 }
+static void interfaceAnswer(char *name)
+{
+	updateTitle(name);
+}
 
 void formVideoInitInterface(void)
 {
 	if (protocol_talk) {
-		protocol_talk->uiIncomingCall = interfaceCreateFormVideoDirect;
+		protocol_talk->uiShowFormVideo = interfaceCreateFormVideoDirect;
 		protocol_talk->uiHangup = interfaceHangup;
+		protocol_talk->uiAnswer = interfaceAnswer;
 	}
 }

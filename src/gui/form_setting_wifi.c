@@ -714,7 +714,7 @@ int createFormSettingWifi(HWND hMainWnd,void (*callback)(void))
 	HWND Form = Screen.Find(form_base_priv.name);
 	if(Form) {
         showSwichOnOff(form_base->hDlg,g_config.net_config.enable);
-        SetTimer(form_base->hDlg,IDC_TIMER_100MS,2);
+        SetTimer(form_base->hDlg,IDC_TIMER_100MS,3);
         SetTimer(form_base->hDlg,IDC_TIMER_1S,FORM_TIMER_1S);
 		ShowWindow(Form,SW_SHOWNORMAL);
 		scrollviewInit();

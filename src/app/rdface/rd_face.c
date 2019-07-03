@@ -77,15 +77,15 @@ int rdfaceInit(void)
 	model_ion.client = -1;
 
 
-	printf("=-====into rdfaceInit()====\n");
+	printf("=====into rdfaceInit()====\n");
 
 
-	printf("====>>alloc model_ion!!\n");
 	if (video_ion_alloc_rational(&model_ion, 32 * 1024, 1024, 1, 1)) {
 		printf("%s: %d -----> model_ion alloc failed.\n", __func__, __LINE__);
 		goto exit;
 	}
 
+	printf("==>>alloc model_ion.size:%d !!\n",model_ion.size);
 
 	raw_ion.fd = -1;
 	raw_ion.client = -1;

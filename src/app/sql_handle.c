@@ -119,7 +119,7 @@ void sqlGetUserInfos(
 	dbase.sql->Next(dbase.sql);
 }
 
-void sqlGetUserInfo(
+int sqlGetUserInfoUseType(
 		int type,
 		char *user_id,
 		char *login_token,
@@ -142,6 +142,26 @@ void sqlGetUserInfo(
 	}
 	dbase.sql->Close(dbase.sql);
 	pthread_mutex_unlock(&mutex);
+	return ret;
+}
+int sqlGetUserInfoUseUserId(
+		char *user_id,
+		char *nick_name,
+		int *scope)
+{
+	char buf[128];
+	sprintf(buf,"select * from UserInfo where userId = \"%s\"",user_id );
+	pthread_mutex_lock(&mutex);
+	LocalQueryOpen(dbase.sql,buf);
+	int ret = dbase.sql->RecordCount(dbase.sql);
+	if (ret) {
+		*scope = LocalQueryOfInt(dbase.sql,"scope");
+		if (nick_name)
+			LocalQueryOfChar(dbase.sql,"nickName",nick_name,128);
+	}
+	dbase.sql->Close(dbase.sql);
+	pthread_mutex_unlock(&mutex);
+	return ret;
 }
 void sqlGetUserInfoEnd(void)
 {

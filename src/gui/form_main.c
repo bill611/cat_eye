@@ -112,7 +112,7 @@ static BmpLocation base_bmps[] = {
 static MyCtrlStatus ctrls_status[] = {
     {IDC_MYSTATUS_WIFI,   "wifi",16,10,5},
 	{IDC_MYSTATUS_SDCARD, "sdcard",54,8,1},
-	{IDC_MYSTATUS_BATTERY,"Battery",963,10,3},
+	// {IDC_MYSTATUS_BATTERY,"Battery",963,10,3},
 	{0},
 };
 static MyCtrlStatic ctrls_static[] = {
@@ -200,7 +200,7 @@ static void enableAutoClose(void)
 {
 	flag_timer_stop = 0;	
 	my_video->showVideo();
-	my_video->recordStop();
+	// my_video->recordStop();
 }
 /* ---------------------------------------------------------------------------*/
 /**
@@ -276,8 +276,7 @@ static void buttonAccessPress(HWND hwnd, int id, int nc, DWORD add_data)
 	if (nc != BN_CLICKED)
 		return;
 	flag_timer_stop = 1;
-	protocol_talk->dial("Tc190612842ad46167d22f98");
-	createFormVideo(GetParent(hwnd),FORM_VIDEO_TYPE_TALK,enableAutoClose);
+	// createFormVideo(GetParent(hwnd),FORM_VIDEO_TYPE_TALK,enableAutoClose);
 }
 static void buttonVideoPress(HWND hwnd, int id, int nc, DWORD add_data)
 {

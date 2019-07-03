@@ -116,7 +116,7 @@ static int mixerOpen(TMixer *This,int sample,int ch)
 	//打开声卡放音句柄 确保视频文件停止播放
 	do {
 		// printf("mixer open sample:%d,ch:%d\n", sample,ch);
-		This->Priv->audiofp = rvMixerPlayOpen(sample,ch,16);
+		This->Priv->audiofp = rvMixerPlayOpen(sample,2,16);
 		if (This->Priv->audiofp > 0)
 			break;
 		usleep(100000);
@@ -481,9 +481,8 @@ static void mixerInitPlay8K(TMixer *This,int *handle)
 /* ----------------------------------------------------------------*/
 static void mixerDeInitPlay(TMixer *This,int *handle)
 {
-	rvMixerCaptureClose();
+	// rvMixerCaptureClose();
 	This->Priv->audiofp1 = -1;
-	// anykaCaptureStop();
 	This->ClearPlayBuffer(This);
 	This->Close(This, handle);
 }

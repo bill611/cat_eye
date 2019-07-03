@@ -26,6 +26,7 @@ extern "C" {
 		FORM_VIDEO_TYPE_RECORD,  	// 录像
 		FORM_VIDEO_TYPE_TALK,  		// 门口机通话
 		FORM_VIDEO_TYPE_MONITOR,  	// APP监视
+		FORM_VIDEO_TYPE_OUTDOOR,  	// 监视门口
 	};
 
 	int createFormVideo(HWND hVideoWnd,int type,void (*callback)(void));
