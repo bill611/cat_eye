@@ -165,7 +165,7 @@ static void paint(HWND hWnd,HDC hdc)
 	MyTitleCtrlInfo* pInfo = (MyTitleCtrlInfo*)(pCtrl->dwAddData2);
 
     // 绘制背景色
-    myFillBox(hdc,rc_bmp,pInfo->bkg_color);
+    myFillBox(hdc,&rc_bmp,pInfo->bkg_color);
     // 写标题
     SetTextColor(hdc,pInfo->font_color);
     SetBkMode(hdc,BM_TRANSPARENT);

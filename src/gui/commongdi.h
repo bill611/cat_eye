@@ -75,7 +75,7 @@ extern "C" {
 	void drawRectangle (HDC hdc,  int x0, int y0, int x1, int y1, int color);
 	void wndEraseBackground(HWND hWnd,HDC hdc, const RECT* pClipRect,BITMAP *pImage,int Left,int Top,int Width,int Height);
 	void getPartFromBmp(const BITMAP *bmp,BITMAP *DstBitmap,int Left,int Top,int Width,int Height);
-	void myFillBox(HDC hdc, RECT rc, int color);
+	void myFillBox(HDC hdc, RECT *rc, int color);
 	void translateIconPart(HDC hdc,int x,int y,int w,int h,BITMAP *FgBmp,int LineIconCnt,int IconIdx,int t,
 			BOOL Translate);
 

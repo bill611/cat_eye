@@ -12,6 +12,7 @@
 #include "my_status.h"
 #include "my_static.h"
 #include "my_title.h"
+#include "my_battery.h"
 
 #include "my_video.h"
 #include "form_video.h"
@@ -75,7 +76,8 @@ static MyCtrls ctrls[] = {
     {initMyButton,&my_button},
     {initMyStatus,&my_status},
     {initMyStatic,&my_static},
-    {initMyTitle,&my_title},
+    {initMyTitle, &my_title},
+    {initMyBattery,&my_battery},
     {NULL},
 };
 static FontLocation font_load[] = {

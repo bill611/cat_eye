@@ -24,6 +24,7 @@
 #include <mpi/mpp_common.h>
 
 #include "utils.h"
+#include "mpi_dec_api.h"
 
 #define MPI_DEC_LOOP_COUNT          4
 #define MPI_DEC_STREAM_SIZE         (SZ_4K)
@@ -90,6 +91,7 @@ static OptionInfo mpi_dec_cmd[] = {
     {"n",               "frame_number",         "max output frame number"},
 };
 
+H264Decode *my_h264enc;
 static int decode_simple(MpiDecLoopData *data)
 {
     RK_U32 pkt_done = 0;
@@ -922,3 +924,23 @@ int mpitest(int argc, char **argv)
     return ret;
 }
 
+static int mpiH264Decode(H264Encode *This,unsigned char *in_data,unsigned char **out_data)
+{
+	
+}
+static void mpiH264DecInit(H264Encode *This,int width,int height)
+{
+	
+}
+static void mpiH264DecUnInit(H264Encode *This)
+{
+	
+}
+void myH264EncInit(void)
+{
+	my_h264dec = (H264Decode *)calloc(1,sizeof(H264Decode));
+	my_h264dec->priv = (H264DecodePriv *)calloc(1,sizeof(H264DecodePriv));
+	my_h264dec->init = mpiH264DecInit;	
+	my_h264dec->unInit = mpiH264DecUnInit;	
+	my_h264dec->encode = mpiH264Decode;	
+}

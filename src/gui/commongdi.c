@@ -48,9 +48,11 @@
  * @param color 颜色
  */
 /* ----------------------------------------------------------------*/
-void myFillBox(HDC hdc, RECT rc, int color)
+void myFillBox(HDC hdc, RECT *rc, int color)
 {
-	HDC	mem_dc = CreateMemDC (RECTW(rc), RECTH(rc), 32, 
+#define PRECTW(rc)    ((rc)->right - (rc)->left)
+#define PRECTH(rc)    ((rc)->bottom - (rc)->top)
+	HDC	mem_dc = CreateMemDC (PRECTW(rc), PRECTH(rc), 32, 
 			MEMDC_FLAG_HWSURFACE | MEMDC_FLAG_SRCALPHA | MEMDC_FLAG_SRCCOLORKEY,
 			0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF);
 	SetBrushColor (mem_dc, RGBA2Pixel (mem_dc,
@@ -58,8 +60,8 @@ void myFillBox(HDC hdc, RECT rc, int color)
 				(color & 0x00ff0000) >> 16,
 				(color & 0x0000ff00) >> 8,
 				(color & 0x000000ff)) );
-	FillBox (mem_dc, rc.left, rc.top, RECTW(rc),RECTH(rc));
-	BitBlt (mem_dc, rc.left, rc.top, RECTW(rc), RECTH(rc), hdc, 0, 0,0);
+	FillBox (mem_dc, rc->left, rc->top, PRECTW(rc),PRECTH(rc));
+	BitBlt (mem_dc, rc->left, rc->top, PRECTW(rc), PRECTH(rc), hdc, 0, 0,0);
 	DeleteMemDC (mem_dc);
 }
 

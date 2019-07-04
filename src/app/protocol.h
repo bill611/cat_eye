@@ -66,6 +66,7 @@ extern "C" {
 		void (*sendCmd)(char *cmd,char *user_id);
 		void (*receivedCmd)(const char *user_id,void *arg);
 		void (*sendVideo)(void *data,int size);
+		void (*receiveVideo)(void *data,int *size);
 		void (*initAudio)(void);
 		void (*playAudio)(const char *data,unsigned int size);
 		void (*startRecord)(void);

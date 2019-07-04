@@ -110,6 +110,10 @@ static void sendVideo(void *data,int size)
 	ucsSendVideo(data,size);
 #endif    
 }
+static void receiveVideo(void *data,int *size)
+{
+	
+}
 static void cbDialFail(void *arg)
 {
 
@@ -137,10 +141,17 @@ static void cblIncomingCall(void *arg)
 {
 	char nick_name[128] = {0};
 	char ui_title[128] = {0};
-	int scope;
-	int ret = sqlGetUserInfoUseUserId((char *)arg,nick_name,&scope);
-	if (ret == 0)
-		return;
+	int scope = 0;
+	// int ret = sqlGetUserInfoUseUserId((char *)arg,nick_name,&scope);
+	// if (ret == 0) {
+	//	printf("can't find usr_id:%s\n", (char *)arg); 
+	// return;
+	// }
+	
+	// test
+	sprintf(nick_name,"%s",(char *)arg);
+	scope = DEV_TYPE_ENTRANCEMACHINE;
+
 	sprintf(ui_title,"%s 正在呼叫",nick_name);
 	if (protocol_talk->uiShowFormVideo)
 		protocol_talk->uiShowFormVideo(scope,ui_title);
@@ -205,6 +216,7 @@ void registTalk(void)
 	protocol_talk->reconnect = talkReconnect;
 	protocol_talk->reload = reloadLocalTalk;
 	protocol_talk->sendVideo = sendVideo;
+	protocol_talk->receiveVideo = receiveVideo;
 #ifdef USE_UCPAAS
 	registUcpaas(&interface);
 #endif

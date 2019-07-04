@@ -161,6 +161,9 @@ static void uartDeal(void)
 			if (data[0] & (1<<2)) {
 				protocol_talk->dial(1,"Tc190612842ad46167d22f98",NULL);
 			}
+			if (data[0] & (1<<3)) {
+				protocol_talk->answer("");
+			}
 			cmdPacket(CMD_REPORT,0,NULL,0);
 			break;
 		case CMD_ERR_RESPONSE:

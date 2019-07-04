@@ -21,7 +21,13 @@
 extern "C" {
 #endif  /* __cplusplus */
 
+	enum {
+		BATTERY_NORMAL,
+		BATTERY_CHARGING,
+	};
+
 	int halBatteryGetEle(void);
+	int halBatteryGetState(void);
 
 #ifdef __cplusplus
 }

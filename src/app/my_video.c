@@ -44,11 +44,11 @@
  *----------------------------------------------------------------------------*/
 enum {
 	EV_FACE_ON,			// 打开人脸识别功能
-	EV_FACE_OFF,			// 关闭人脸识别功能
+	EV_FACE_OFF,		// 关闭人脸识别功能
 	EV_FACE_OFF_FINISH,	// 关闭人脸识别功能结束
 	EV_REGIST_FACE,		// 注册人脸
 	EV_TALK_ON,	    	// 开始对讲
-	EV_TALK_OFF,	    	// 结束对讲
+	EV_TALK_OFF,	    // 结束对讲
 };
 
 enum {

@@ -336,7 +336,8 @@ void ucsReceiveVideo(unsigned char* frameData,
 int ucsConnect(char *user_token)
 {
     if (user_token[0] != 0) {
-        UCS_Connect(user_token);
+        // UCS_Connect(user_token);
+        UCS_Connect("eyJBbGciOiJIUzI1NiIsIkFjY2lkIjoiY2I3MzhjZmNkNmFlYTkxMDZiZTk5OTc2NzZlNzJhMDIiLCJBcHBpZCI6ImFjNTdhMDc3ZGIwYjRjY2JhNzEwNTU5Yzk4NzlkYmQ1IiwiVXNlcmlkIjoiVGNjMTkwNDFiZDI1YjQ0ZWY0YmJjZDgifQ==.Du+oG8HxUJBfaLDfaCcVanWRNCSvLSxVnQOHFRDzMAA=");
         return 1;
     }
     return 0;

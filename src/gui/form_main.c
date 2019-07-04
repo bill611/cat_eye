@@ -28,6 +28,7 @@
 #include "my_button.h"
 #include "my_status.h"
 #include "my_static.h"
+#include "my_battery.h"
 
 #include "my_video.h"
 
@@ -80,7 +81,8 @@ enum {
 	IDC_TIMER_1S  = IDC_FORM_MAIN_START,
     IDC_MYSTATUS_WIFI ,
     IDC_MYSTATUS_SDCARD,
-    IDC_MYSTATUS_BATTERY,
+
+    IDC_MYBATTERY,
 
     IDC_MYSTATIC_DATE,
     IDC_MYSTATIC_BATTERY,
@@ -117,7 +119,6 @@ static MyCtrlStatus ctrls_status[] = {
 };
 static MyCtrlStatic ctrls_static[] = {
     {IDC_MYSTATIC_DATE,   MYSTATIC_TYPE_TEXT,0,0,1024,40,"",0xffffff,0x00000060},
-    {IDC_MYSTATIC_BATTERY,MYSTATIC_TYPE_TEXT,910,0,45,34,"",0xffffff,0x00000000},
 	{0},
 };
 
@@ -130,6 +131,10 @@ static MyCtrlButton ctrls_button[] = {
 	{0},
 };
 
+static MyCtrlBattery ctrls_battery[] = {
+    {IDC_MYBATTERY,   910,0,110,40},
+	{0},
+};
 
 static MY_CTRLDATA ChildCtrls [] = {
 };
@@ -228,17 +233,19 @@ static void formMainTimerProc1s(HWND hwnd)
 	}
 	// 更新电量
 	static int power_old = 0;
-    char power_lever[16] = {0};
 	int power = halBatteryGetEle();
 	if (power_old == 0 || power_old != power) {
 		power_old = power;
-		if (power >= 80) {
-			// SendMessage(GetDlgItem (hwnd, IDC_MYSTATUS_BATTERY),
-					// MSG_MYSTATUS_SET_LEVEL,1,0);
-		}
-		sprintf(power_lever,"%d%%",power);
-		SendMessage(GetDlgItem (hwnd, IDC_MYSTATIC_BATTERY),
-				MSG_MYSTATIC_SET_TITLE,(WPARAM)power_lever,0);
+		SendMessage(GetDlgItem (hwnd, IDC_MYBATTERY),
+				MSG_SET_QUANTITY,(WPARAM)power,0);
+	}
+	// 更新充电状态
+	static int power_state_old = 0;
+	int power_state = halBatteryGetState();
+	if (power_state_old == 0 || power_state_old != power_state) {
+		power_state_old = power_state;
+		SendMessage(GetDlgItem (hwnd, IDC_MYBATTERY),
+				MSG_SET_STATUS,(WPARAM)power_state,0);
 	}
 	// 更新时间 
 	static struct tm *tm_old = NULL;
@@ -254,7 +261,6 @@ static void formMainTimerProc1s(HWND hwnd)
 		SendMessage(GetDlgItem (hwnd, IDC_MYSTATIC_DATE),
 				MSG_MYSTATIC_SET_TITLE,(WPARAM)buf,0);
 	}
-
 }
 
 static void buttonRecordPress(HWND hwnd, int id, int nc, DWORD add_data)
@@ -339,6 +345,12 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 	}
 	for (i=0; ctrls_status[i].idc != 0; i++) {
         createMyStatus(hDlg,&ctrls_status[i]);
+	}
+	for (i=0; ctrls_battery[i].idc != 0; i++) {
+        ctrls_battery[i].font = font22;
+        ctrls_battery[i].ele_quantity = halBatteryGetEle();
+        ctrls_battery[i].state = halBatteryGetState();
+        createMyBattery(hDlg,&ctrls_battery[i]);
 	}
 }
 

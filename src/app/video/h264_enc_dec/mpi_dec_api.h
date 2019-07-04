@@ -20,8 +20,15 @@
 #ifdef __cplusplus
 extern "C" {
 #endif  /* __cplusplus */
-
-
+	struct _H264DecodePriv;
+	typedef struct _H264Decode {
+		struct _H264DecodePriv *priv;
+		int (*decode)(struct _H264Decode *This,unsigned char *in_data,unsigned char **out_data);
+		void (*init)(struct _H264Decode *This,int w,int h);
+		void (*unInit)(struct _H264Decode *This);
+	}H264Decode;
+	H264Decode *my_h264enc;
+	void myH264DecInit(void);
 
 #ifdef __cplusplus
 }
