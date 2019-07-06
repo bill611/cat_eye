@@ -481,7 +481,9 @@ static void mixerInitPlay8K(TMixer *This,int *handle)
 /* ----------------------------------------------------------------*/
 static void mixerDeInitPlay(TMixer *This,int *handle)
 {
-	// rvMixerCaptureClose();
+	if (This->Priv->audiofp1 < 0)
+		return;
+	rvMixerCaptureClose();
 	This->Priv->audiofp1 = -1;
 	This->ClearPlayBuffer(This);
 	This->Close(This, handle);

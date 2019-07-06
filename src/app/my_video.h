@@ -30,11 +30,17 @@ extern "C" {
                 int w,int h,
                 char *id,char *nick_name,char *url);// 注册人脸
         void (*faceDelete)(char *id); // 删除人脸
+
 		void (*capture)(int count);
+
 		void (*recordStart)(int count);
 		void (*recordStop)(void);
-		void (*transVideoStart)(void);
-		void (*transVideoStop)(void);
+		
+		void (*videoCallOut)(char *user_id);
+		void (*videoCallOutAll)(void);
+		void (*videoCallIn)(char *user_id);
+		void (*videoAnswer)(int dir,int dev_type); // dir 0本机接听 1对方接听
+		void (*videoHangup)(void);
 	}MyVideo;
 	extern MyVideo *my_video;
 	void myVideoInit(void);

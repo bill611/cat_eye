@@ -119,6 +119,47 @@ void sqlGetUserInfos(
 	dbase.sql->Next(dbase.sql);
 }
 
+int sqlGetUserInfoUseScopeStart(int scope)
+{
+	char buf[128];
+	sprintf(buf,"select userId,nickName from UserInfo where scope = %d",scope );
+	pthread_mutex_lock(&mutex);
+	LocalQueryOpen(dbase.sql,buf);
+	return dbase.sql->RecordCount(dbase.sql);
+}
+
+void sqlGetUserInfosUseScope(
+		char *user_id,
+		char *nick_name)
+{
+	if (user_id)
+		LocalQueryOfChar(dbase.sql,"userId",user_id,32);
+	if (nick_name)
+		LocalQueryOfChar(dbase.sql,"nickName",nick_name,128);
+	dbase.sql->Next(dbase.sql);
+}
+
+void sqlGetUserInfosUseScopeIndex(
+		char *user_id,
+		char *nick_name,
+		int scope,
+		int index)
+{
+	char buf[128];
+	sprintf(buf,"select userId,nickName from UserInfo where scope = %d",scope );
+	pthread_mutex_lock(&mutex);
+	LocalQueryOpen(dbase.sql,buf);
+	while (index) {
+		dbase.sql->Next(dbase.sql);
+		index--;
+	}
+	if (user_id)
+		LocalQueryOfChar(dbase.sql,"userId",user_id,32);
+	if (nick_name)
+		LocalQueryOfChar(dbase.sql,"nickName",nick_name,128);
+	pthread_mutex_unlock(&mutex);
+}
+
 int sqlGetUserInfoUseType(
 		int type,
 		char *user_id,
@@ -163,6 +204,7 @@ int sqlGetUserInfoUseUserId(
 	pthread_mutex_unlock(&mutex);
 	return ret;
 }
+
 void sqlGetUserInfoEnd(void)
 {
 	dbase.sql->Close(dbase.sql);

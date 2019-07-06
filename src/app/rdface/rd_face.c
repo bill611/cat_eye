@@ -242,6 +242,9 @@ int rdfaceRegist(unsigned char *image_buff,int w,int h,float **out_feature,int *
 	int *face_count = (int *)dst_ion.buffer;
 	RSFT_FACE_RESULT *pFace = (RSFT_FACE_RESULT *)((int *)dst_ion.buffer+1);
 	int ret;
+	if (w < 0 || w > 1280 || h < 0 || h > 720) {
+		return -1;
+	}
 	fillFaceTrackBuf(image_buff,w,h);
 
 	//人脸追踪
@@ -258,9 +261,9 @@ int rdfaceRegist(unsigned char *image_buff,int w,int h,float **out_feature,int *
 		return -1;
 	}
 
-	// printf("\ntrackId: %d, blur: %f,front_prob:%f  ,position is: [%d, %d, %d, %d] \n",
-			// pFace->track_id, pFace->blur_prob, pFace->front_prob,
-			// pFace->left, pFace->top, pFace->right, pFace->bottom);
+	printf("\ntrackId: %d, blur: %f,front_prob:%f  ,position is: [%d, %d, %d, %d] \n",
+			pFace->track_id, pFace->blur_prob, pFace->front_prob,
+			pFace->left, pFace->top, pFace->right, pFace->bottom);
 
 	//提特征
 	*out_feature = (float*)malloc(FACE_RECOGNITION_FEATURE_DIMENSION*sizeof(float));

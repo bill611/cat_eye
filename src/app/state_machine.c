@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include "queue.h"
+#include "debug.h"
 #include "thread_helper.h"
 #include "state_machine.h"
 
@@ -29,7 +30,7 @@
  *                        macro define
  *----------------------------------------------------------------------------*/
 #if DBG_MACHINE > 0
-	#define DBG_P( ... ) printf( __VA_ARGS__ )
+	#define DBG_P( ... ) DPRINT( __VA_ARGS__ )
 #else
 	#define DBG_P(...)
 #endif
@@ -47,6 +48,7 @@ typedef struct _StMachinePriv {
 	Queue *queue;
     pthread_mutex_t mutex;
 	StateTable *funcentry;
+	StateTableDebug *st_debug;
 	int cur_state;
 	int status_run;	
 	int table_num;			
@@ -63,7 +65,6 @@ static int stmExecEntry(StMachine *This,int msg);
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
-
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief stmMsgPost 状态机发送事件消息
@@ -112,11 +113,13 @@ static int stmExecEntry(StMachine *This,int msg)
     for (; num > 0; num--,funcentry++) {
 		if (		(msg == funcentry->msg) 
 				&& 	(This->priv->cur_state == funcentry->cur_state)) {
-			DBG_P("[ST]msg:%d,cur:%d,next:%d,do:%d\n",
-					msg,
-					funcentry->cur_state,
-					funcentry->next_state,
-					funcentry->run);
+			if (This->priv->st_debug) {
+				DBG_P("[ST->msg:%s,cur:%s,next:%s,do:%s]\n",
+						This->priv->st_debug->ev[msg],
+						This->priv->st_debug->st[funcentry->cur_state],
+						This->priv->st_debug->st[funcentry->next_state],
+						This->priv->st_debug->todo[funcentry->run]);
+			}
 			This->priv->status_run = funcentry->run ;
 			This->priv->cur_state = funcentry->next_state;
 			return 1;
@@ -225,7 +228,8 @@ StMachine* stateMachineCreate(int init_state,
 		StateTable *state_table, 
 		int num,
 		int id,
-		int (*handle)(StMachine *This,int result,void *data))
+		int (*handle)(StMachine *This,int result,void *data),
+		StateTableDebug *st_debug)
 {
 
 	StMachine *This = (StMachine *)calloc(1,sizeof(StMachine));
@@ -233,7 +237,8 @@ StMachine* stateMachineCreate(int init_state,
 	This->priv->funcentry = (StateTable *)state_table;
 	This->priv->table_num = num;
 	This->priv->cur_state = init_state;
-	This->priv->queue = queueCreate("stm",QUEUE_BLOCK,1);
+	This->priv->queue = queueCreate("stm",QUEUE_BLOCK,sizeof(MsgData));
+	This->priv->st_debug = st_debug;
 
 	pthread_mutexattr_t mutexattr;
 	pthread_mutexattr_init(&mutexattr);

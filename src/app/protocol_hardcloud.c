@@ -182,6 +182,7 @@ static CjsonDec * judgeHead(char *data, char *state, int type)
 		dec->getValueChar(dec,state,&buff);
 		if (NULL == buff) {
 			printf("judgeHead getValueChar null!!\n");
+			dec->destroy(dec);
 			return NULL;
 		}
 	}
@@ -246,6 +247,7 @@ static void ceGetIntercoms(CjsonDec *dec)
 	dec->getValueChar(dec,"loginToken",&login_token);
 	dec->getValueChar(dec,"nickName",&nick_name);
 	scope = dec->getValueInt(dec,"scope");
+	sqlClearDevice();
 	sqlInsertUserInfo(user_id,login_token,nick_name,USER_TYPE_CATEYE,scope);
 	if (user_id)
 		free(user_id);
@@ -541,6 +543,7 @@ static void* initThread(void *arg)
 
 		CjsonDec *dec = NULL;
 		char *buff = NULL;
+		// printf("[%s]\n",mqtt_server_content );
 		dec = judgeHead(mqtt_server_content,"code", 0);
 		if (!dec) {
 			printf("[%s,%d] judge head fail!\n", __func__,__LINE__);
@@ -631,8 +634,12 @@ static void* initThread(void *arg)
 				mqttConnectFailure);
 		if (ret < 0)
 			goto retry;
+		if (dec)
+			dec->destroy(dec);
 		break;
 retry:
+		if (dec)
+			dec->destroy(dec);
 		sleep(5);
 	}
 	if (mqtt_server_content) {

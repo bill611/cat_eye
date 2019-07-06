@@ -44,10 +44,20 @@ extern "C" {
 			char *nick_name,
 			int *scope);
 	extern int sqlGetUserInfoStart(int type);
+	extern int sqlGetUserInfoUseScopeStart(int scope);
+	extern void sqlGetUserInfosUseScope(
+			char *user_id,
+			char *nick_name);
+	extern void sqlGetUserInfosUseScopeIndex(
+			char *user_id,
+			char *nick_name,
+			int scope,
+			int index);
 	extern void sqlGetUserInfos(
 			char *user_id,
 			char *nick_name,
 			int *scope);
+	extern void sqlClearDevice(void);
 	extern void sqlGetUserInfoEnd(void);
 	extern void sqlInsertFace(char *user_id,
 			char *nick_name,

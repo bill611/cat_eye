@@ -24,6 +24,7 @@
 #include "uart.h"
 #include "protocol.h"
 #include "sql_handle.h"
+#include "my_video.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
@@ -159,10 +160,10 @@ static void uartDeal(void)
 		case CMD_GET_CHECK_RESPONSE:
 		case CMD_REPORT_RESPONSE:
 			if (data[0] & (1<<2)) {
-				protocol_talk->dial(1,"Tc190612842ad46167d22f98",NULL);
+				my_video->videoCallOutAll();
 			}
 			if (data[0] & (1<<3)) {
-				protocol_talk->answer("");
+				// my_video->videoAnswer(0,DEV_TYPE_UNDEFINED);
 			}
 			cmdPacket(CMD_REPORT,0,NULL,0);
 			break;

@@ -69,3 +69,11 @@ void DisplayProcess::setVideoBlack()
 		printf("rk_fb_video_disp failed\n");
 	}
 }
+void DisplayProcess::showLocalVideo(void)
+{
+
+}
+void DisplayProcess::showPeerVideo(int w,int h)
+{
+
+}

@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include "sql_handle.h"
+#include "json_dec.h"
 #include "protocol.h"
 #include "my_video.h"
 #include "my_mixer.h"
@@ -40,13 +41,25 @@
 /* ---------------------------------------------------------------------------*
  *                        macro define
  *----------------------------------------------------------------------------*/
+enum {
+	MSG_TYPE_CALL = 1,
+	MSG_TYPE_UNLOCK,
+	MSG_TYPE_SLEEP,
+	MSG_TYPE_MIC_CLOSE,
+	MSG_TYPE_MIC_OPEN,
+	MSG_TYPE_CAPTURE,
+	MSG_TYPE_RECORD_START,
+	MSG_TYPE_RECORD_STOP,
+};
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
 ProtocolTalk *protocol_talk;
 static UserStruct local_user;
 static int has_connect = 0; // 判断是否有连接过，如果有，则重连调用disconnect
-static int audio_fp = 0;
+static int audio_fp = -1;
+static int mic_open = 0; // mic状态 0关闭 1开启
+static void (*dialCallBack)(int result);
 
 static void reloadLocalTalk(void)
 {
@@ -54,15 +67,12 @@ static void reloadLocalTalk(void)
 	sqlGetUserInfoUseType(USER_TYPE_CATEYE,local_user.id,local_user.token,local_user.nick_name,&local_user.scope);
 	printf("[%s]id:%s,token:%s\n",__func__,local_user.id,local_user.token );
 }
-static void dial(int type,char *user_id,char *ui_title)
+static void dial(char *user_id,void (*callBack)(int result))
 {
 #ifdef USE_UCPAAS
 	ucsDial(user_id);
 #endif
-	if (protocol_talk->uiShowFormVideo)
-		protocol_talk->uiShowFormVideo(type,ui_title);
-	if (my_video)
-		my_video->transVideoStart();
+	dialCallBack = callBack;
 }
 
 static void hangup(void)
@@ -72,13 +82,11 @@ static void hangup(void)
 #endif
 }
 
-static void answer(char *ui_title)
+static void answer(void)
 {
 #ifdef USE_UCPAAS
 	ucsAnswer();
 #endif
-	if (protocol_talk->uiAnswer)
-		protocol_talk->uiAnswer(ui_title);
 }
 
 static void sendCmd(char *cmd,char *user_id)
@@ -116,52 +124,33 @@ static void receiveVideo(void *data,int *size)
 }
 static void cbDialFail(void *arg)
 {
-
+	if (dialCallBack)
+		dialCallBack(0);
 }
 static void cbAnswer(void *arg)
 {
-
+	if (my_video)
+		my_video->videoAnswer(1,DEV_TYPE_ENTRANCEMACHINE);
 }
 static void cbHangup(void *arg)
 {
-	if (protocol_talk->uiHangup)
-		protocol_talk->uiHangup();
 	if (my_video)
-		my_video->transVideoStop();
+		my_video->videoHangup();
 	if (my_mixer) {
 		if (audio_fp > 0)
 			my_mixer->DeInitPlay(my_mixer,&audio_fp);	
 	}
+	dialCallBack = NULL;
 }
 static void cbDialRet(void *arg)
 {
-	my_video->transVideoStart();
+	if (dialCallBack)
+		dialCallBack(1);
 }
 static void cblIncomingCall(void *arg)
 {
-	char nick_name[128] = {0};
-	char ui_title[128] = {0};
-	int scope = 0;
-	// int ret = sqlGetUserInfoUseUserId((char *)arg,nick_name,&scope);
-	// if (ret == 0) {
-	//	printf("can't find usr_id:%s\n", (char *)arg); 
-	// return;
-	// }
-	
-	// test
-	sprintf(nick_name,"%s",(char *)arg);
-	scope = DEV_TYPE_ENTRANCEMACHINE;
-
-	sprintf(ui_title,"%s 正在呼叫",nick_name);
-	if (protocol_talk->uiShowFormVideo)
-		protocol_talk->uiShowFormVideo(scope,ui_title);
 	if (my_video)
-		my_video->transVideoStart();
-	if (scope == DEV_TYPE_HOUSEHOLDAPP) {
-		memset(ui_title,0,sizeof(ui_title));
-		sprintf(ui_title,"%s 正在监视猫眼",nick_name);
-		protocol_talk->answer(ui_title);
-	}
+		my_video->videoCallIn((char *)arg);
 }
 static void cbSendCmd(void *arg)
 {
@@ -169,11 +158,57 @@ static void cbSendCmd(void *arg)
 }
 static void cbReceivedCmd(const char *user_id,void *arg)
 {
-
+	printf("%s\n", (char *)arg);
+	char *data = (char *)arg;
+	char *j_data = (char *)calloc(1,strlen(data));
+	char *p = j_data;
+	while (*data != '\0') {
+		if (*data != '\\') {
+			*p = *data;
+			p++;
+		}
+		data++;
+	}
+	CjsonDec *dec = cjsonDecCreate(j_data);
+	if (!dec) {
+		printf("json dec create fail!\n");
+		if (j_data)
+			free(j_data);
+		return ;
+	}
+	dec->print(dec);
+	int message_type = dec->getValueInt(dec, "deviceType");
+	switch (message_type)
+	{
+		case MSG_TYPE_UNLOCK :
+			break;
+		case MSG_TYPE_MIC_OPEN :
+			mic_open = 1;
+			break;
+		case MSG_TYPE_MIC_CLOSE :
+			mic_open = 0;
+			break;
+		case MSG_TYPE_CAPTURE :
+			my_video->capture(0);
+			break;
+		case MSG_TYPE_RECORD_START:
+			my_video->recordStart(0);
+			break;
+		case MSG_TYPE_RECORD_STOP:
+			my_video->recordStop();
+			break;
+		default:
+			break;
+	}
+	if (j_data)
+		free(j_data);
+	if (dec)
+		dec->destroy(dec);
 }
 static void cbInitAudio(unsigned int rate,unsigned int bytes_per_sample,unsigned int channle)
 {
 	gpio->SetValue(gpio,ENUM_GPIO_MICKEY,IO_ACTIVE);
+	mic_open = 1;
 	if (my_mixer)
 		my_mixer->InitPlayAndRec(my_mixer,&audio_fp,rate,2);
 }
@@ -183,7 +218,8 @@ static void cbStartRecord(unsigned int rate,unsigned int bytes_per_sample,unsign
 }
 static void cbRecording(char *data,unsigned int size)
 {
-	if (my_mixer)
+	// printf("mic :%d\n", mic_open);
+	if (my_mixer && mic_open)
 		my_mixer->Read(my_mixer,data,size);
 }
 static void cbPlayAudio(const char *data,unsigned int size)

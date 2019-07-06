@@ -93,9 +93,9 @@ static MyCtrlStatus ctrls_status[] = {
 	{0},
 };
 static MyCtrlStatic ctrls_static[] = {
-    {IDC_MYSTATIC_TIME,   MYSTATIC_TYPE_TEXT,0,0,1024,40,"",0xffffff,0x00000060},
+    {IDC_MYSTATIC_TIME,   MYSTATIC_TYPE_TEXT,0,0,100,40,"",0xffffff,0x00000060},
     {IDC_MYSTATIC_BATTERY,MYSTATIC_TYPE_TEXT,910,0,45,34,"",0xffffff,0x00000000},
-    {IDC_MYSTATIC_TITLE,  MYSTATIC_TYPE_TEXT,400,0,200,40,"",0xffffff,0x00000000},
+    {IDC_MYSTATIC_TITLE,  MYSTATIC_TYPE_TEXT,0,0,1024,40,"",0xffffff,0x00000060},
 	{0},
 };
 
@@ -154,6 +154,7 @@ static void buttonHangupPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
+	printf("type:%d\n", form_type);
 	if (form_type == FORM_VIDEO_TYPE_RECORD) {
 		my_video->recordStop();
 	} else {
@@ -335,6 +336,7 @@ static void interfaceCreateFormVideoDirect(int type,char *name)
 {
 	switch (type) 
 	{
+		case DEV_TYPE_UNDEFINED:
 		case DEV_TYPE_HOUSEHOLDAPP:
 		case DEV_TYPE_SECURITYSTAFFAPP:
 		case DEV_TYPE_INNERDOORMACHINE:
@@ -344,7 +346,6 @@ static void interfaceCreateFormVideoDirect(int type,char *name)
 		case DEV_TYPE_HOUSEENTRANCEMACHINE:
 			createFormVideo(0,FORM_VIDEO_TYPE_TALK,NULL); 
 			break;
-		case DEV_TYPE_UNDEFINED:
 		default:
 			break;
 	}

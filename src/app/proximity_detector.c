@@ -1,12 +1,12 @@
 /*
  * =============================================================================
  *
- *       Filename:  main.c
+ *       Filename:  proximity_detector.c
  *
- *    Description:  智能猫眼 
+ *    Description:  接近传感器应用
  *
  *        Version:  1.0
- *        Created:  2019-04-19 16:47:01
+ *        Created:  2019-07-06 15:47:47
  *       Revision:  none
  *
  *         Author:  xubin
@@ -14,28 +14,13 @@
  *
  * =============================================================================
  */
-
 /* ---------------------------------------------------------------------------*
  *                      include head files
  *----------------------------------------------------------------------------*/
 #include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <unistd.h>
-
-#include "debug.h"
+#include "hal_sensor.h"
 #include "thread_helper.h"
-#include "my_gpio.h"
-#include "externfunc.h"
-#include "protocol.h"
-#include "sql_handle.h"
-#include "config.h"
 #include "my_video.h"
-#include "my_mixer.h"
-#include "proximity_detector.h"
-#include "form_videlayer.h"
-
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
@@ -52,28 +37,27 @@
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
-
-
-/* ---------------------------------------------------------------------------*/
-/**
- * @brief MiniGUIMain 主函数入口
- *
- * @param argc
- * @param argv[]
- *
- * @returns
- */
-/* ---------------------------------------------------------------------------*/
-int MiniGUIMain(int argc, const char* argv[])
+static void* proximityDetectorThread(void *arg)
 {
-	printf("stat--->%s,%s\n",DEVICE_SVERSION,DEVICE_KVERSION);
-	configLoad();
-    sqlInit();
-	gpioInit();
-	myMixerInit();
-	myVideoInit();
-	protocolInit();
-	proximityDetectorInit();
-	formVideoLayerCreate();
-    return 0;
+	int state = HAL_SENSER_ERR;
+	int state_old = HAL_SENSER_ERR;
+	halSensorInit();	
+	while (1) {
+		state = halSensorGetState();
+		if (state != state_old) {
+			if (state == HAL_SENSOR_INACTIVE) {
+				printf("out 50cm\n");
+			} else {
+				printf("in 50cm\n");
+			}
+		}
+		state_old = state;
+		usleep(200000);
+	};
+	return NULL;
+}
+
+void proximityDetectorInit(void)
+{
+	createThread(proximityDetectorThread,NULL);
 }

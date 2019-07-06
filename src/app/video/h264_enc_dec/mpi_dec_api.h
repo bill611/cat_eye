@@ -27,7 +27,7 @@ extern "C" {
 		void (*init)(struct _H264Decode *This,int w,int h);
 		void (*unInit)(struct _H264Decode *This);
 	}H264Decode;
-	H264Decode *my_h264enc;
+	H264Decode *my_h264dec;
 	void myH264DecInit(void);
 
 #ifdef __cplusplus

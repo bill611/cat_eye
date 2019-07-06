@@ -205,20 +205,23 @@ int jpegToYuv420sp(unsigned char* jpeg_buffer,
     int width, height, subsample, colorspace;
     int flags = 0;
     int padding = 1; // 1或4均可，但不能是0
-    int ret = 0;
+    int ret = -1;
 
 	if (!jpeg_buffer)
 		return -1;
     handle = tjInitDecompress();
     if (handle == NULL) {
         printf("%s():%s\n",__func__,tjGetErrorStr() );
-        return -1;
+        goto jpeg_to_yuv_end;
     }
     tjDecompressHeader3(handle, jpeg_buffer, jpeg_size, &width, &height, &subsample, &colorspace);
 
 	*out_width = width;
 	*out_height = height;
     DPRINT("w: %d h: %d subsample: %d color: %d\n", width, height, subsample, colorspace);
+	if (width < 0 || width > 1280 || height < 0 ||height > 720) {
+        goto jpeg_to_yuv_end;
+	}
 
     flags |= 0;
 
@@ -228,7 +231,7 @@ int jpegToYuv420sp(unsigned char* jpeg_buffer,
     unsigned char *yuv_buffer_420p =(unsigned char *)malloc(*yuv_size);
     if (yuv_buffer_420p == NULL) {
         printf("malloc buffer for rgb failed.\n");
-        return -1;
+        goto jpeg_to_yuv_end;
     }
 
     ret = tjDecompressToYUV2(handle, jpeg_buffer, jpeg_size, yuv_buffer_420p, width,
@@ -239,6 +242,8 @@ int jpegToYuv420sp(unsigned char* jpeg_buffer,
      *yuv_buffer =(unsigned char *)malloc(*yuv_size);
     yuv420pToYuv420sp(yuv_buffer_420p,*yuv_buffer,width,height);
     free(yuv_buffer_420p);
+
+jpeg_to_yuv_end:
     tjDestroy(handle);
 
     return ret;

@@ -53,8 +53,8 @@ extern "C" {
 	// 对讲协议
 	typedef struct _ProtocolTalk {
 		void (*reload)(void);
-		void (*dial)(int type,char *user_id,char *ui_title);
-		void (*answer)(char *ui_title);
+		void (*dial)(char *user_id,void (*callBack)(int result));
+		void (*answer)(void);
 		void (*hangup)(void);
 		void (*connect)(void);
 		void (*reconnect)(void);

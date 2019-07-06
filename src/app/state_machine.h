@@ -20,7 +20,14 @@
 #ifdef __cplusplus
 extern "C" {
 #endif  /* __cplusplus */
-// #define DBG_MACHINE 1
+#define DBG_MACHINE 1
+
+	typedef struct _StateTableDebug {
+		char **ev;
+		char **st;
+		char **todo;
+	}StateTableDebug;
+
 	typedef struct _StateTable {
 		int msg;			// 事件消息
 		int cur_state;		// 当前状态
@@ -66,7 +73,8 @@ extern "C" {
 			StateTable *state_table, 
 			int num,
 			int id,
-			int (*handle)(StMachine *,int result,void *data));
+			int (*handle)(StMachine *,int result,void *data),
+			StateTableDebug *st_debug);
 
 #ifdef __cplusplus
 }
