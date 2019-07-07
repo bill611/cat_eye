@@ -1,4 +1,6 @@
 #include "display_process.h"
+#include "thread_helper.h"
+#include "h264_enc_dec/mpi_dec_api.h"
 
 //#define TEST_WRITE_SP_TO_FILE
 
@@ -73,7 +75,38 @@ void DisplayProcess::showLocalVideo(void)
 {
 
 }
-void DisplayProcess::showPeerVideo(int w,int h)
+static void* threadH264Dec(void *arg)
 {
+	DisplayProcess *process = (DisplayProcess *)arg;
+    while (process->start_dec() == true) {
+        unsigned char *data_in = NULL;
+        unsigned char *data_out = NULL;
+        int size = 0;
+        if (process->decCallback())
+            process->decCallback()((void **)&data_in,&size);
 
+        if (my_h264dec)
+            my_h264dec->decode(my_h264dec,data_in,&data_out);
+
+        struct win* video_win = rk_fb_getvideowin();
+        if (size)
+            memcpy(video_win->video_ion.buffer,data_out,size);
+
+        if (rk_fb_video_disp(video_win) < -1){
+            printf("rk_fb_video_disp failed\n");
+        }
+    }
+	if (my_h264dec)
+		my_h264dec->unInit(my_h264dec);
+	printf("%s(),%d\n", __func__,__LINE__);
+	return NULL;
+}
+void DisplayProcess::showPeerVideo(int w,int h,DecCallbackFunc decCallback)
+{
+	width_ = w;
+	height_ = h;
+	decCallback_ = decCallback;
+	start_dec_ = true;
+	last_frame_ = false;
+	createThread(threadH264Dec,this);
 }
