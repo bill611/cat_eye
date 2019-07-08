@@ -50,6 +50,9 @@
  *                        macro define
  *----------------------------------------------------------------------------*/
 #define TOPIC_NUM 6
+// 正式地址
+// #define HARD_COULD_API "http://iot.taichuan.net/v1/Mqtt"
+#define HARD_COULD_API "http://84.internal.taichuan.net:8080/v1"
 enum {
 	Sys_TestData = 1,			//	Server	Send	测试数据指令 服务端发送测试内容到客户端 客户端必须立即将收到测试内容的data原封Return回来
 	Sys_UploadLog = 2,			//	Server	Post	上传日志指令 要求客户端将异常等日志到服务器
@@ -111,16 +114,10 @@ static struct DebugInfo dbg_info[] = {
 	{CE_Reset,"CE_Reset"},
 };
 
-// 正式地址
-// static char *hard_could_api = "https://iot.taichuan.net/v1/Mqtt/GetSevice?num=";
-
-// test地址
-static char *hard_could_api = "http://84.internal.taichuan.net:8080/v1/Mqtt/GetSevice?num=";
-static char *hard_could_hart = "84.internal.taichuan.net";
-
 struct OPTS opts;
 static char subTopic[TOPIC_NUM][100] = {{0,0}};
 static int g_id = 0;
+static char *qiniu_server_token = NULL;
 
 static void printProInfo(int cmd)
 {
@@ -216,9 +213,21 @@ static void mqttConnectFailure(void* context)
 	printf("[%s]\n", __func__);
 }
 
-static void sysTestData(char *data)
+static void sysTestData(int api,int id,CjsonDec *dec)
 {
-	mqtt->send(opts.pubTopic,strlen(data),data);
+	char *send_buff;
+	if(dec->changeCurrentObj(dec,"body")) {
+		printf("change body fail\n");
+		return;
+	}
+	cJSON *data = dec->getValueObject(dec,"data");
+	cJSON *root = packData(api,4,id);
+	cJSON_AddItemToObject(root,"body",data);
+	send_buff = cJSON_PrintUnformatted(root);
+	cJSON_Delete(root);
+	mqtt->send(opts.pubTopic,strlen(send_buff),send_buff);
+	free(send_buff);
+
 }
 
 /* ---------------------------------------------------------------------------*/
@@ -450,7 +459,7 @@ static int mqttConnectCallBack(void* context, char* topicName, int topicLen, voi
 	switch (api)
 	{
 		case Sys_TestData :
-			sysTestData((char *)payload);
+			sysTestData(api,id,dec);
 			break;
 		case Sys_UploadLog :
 			break;
@@ -533,7 +542,7 @@ static void* initThread(void *arg)
 {
 	char *mqtt_server_content = NULL;
 	char url[128] = {0};
-	sprintf(url,"%s%s",hard_could_api,g_config.imei);
+	sprintf(url,"%s/Mqtt/GetSevice?num=%s",HARD_COULD_API,g_config.imei);
 	while (1) {
 		if (mqtt_server_content) {
 			free(mqtt_server_content);
@@ -645,6 +654,44 @@ retry:
 	if (mqtt_server_content) {
 		free(mqtt_server_content);
 		mqtt_server_content = NULL;
+	}
+
+	while (1) {
+		char *qiniu_server= NULL;
+		char url[128] = {0};
+		CjsonDec *dec = NULL;
+		sprintf(url,"%s/Storage/GetUploadToken?num=%s&code=%s&bucketName=%s",
+				HARD_COULD_API,
+				g_config.imei,
+				g_config.hardcode,
+				"tc-cat_eye");
+		int ret = http->post(url,NULL,&qiniu_server);
+		printf("[%d]%s\n",ret,url );
+		if (ret == 0)
+			goto retry_qiniu;
+
+		dec = cjsonDecCreate(qiniu_server);
+		if (!dec) {
+			printf("[%s,%d] get data fail!\n", __func__,__LINE__);
+			goto retry_qiniu;
+		}
+		dec->getValueChar(dec,"data",&qiniu_server_token);
+		if (!qiniu_server_token) {
+			printf("get qiniu token null!!\n");
+			dec->destroy(dec);
+			goto retry_qiniu;
+		}
+		printf("qiniu token:%s\n", qiniu_server_token);
+		if (qiniu_server)
+			free(qiniu_server);
+		break;
+
+retry_qiniu:
+		if (dec)
+			dec->destroy(dec);
+		if (qiniu_server)
+			free(qiniu_server);
+		sleep(1);
 	}
 	sleep(1);
 	return NULL;

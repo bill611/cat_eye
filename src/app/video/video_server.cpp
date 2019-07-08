@@ -19,13 +19,15 @@ class RKVideo {
     void disconnect(std::shared_ptr<CamHwItf::PathBase> mpath, 
 		                 std::shared_ptr<StreamPUBase> next);
 
-    void displayOnOff(bool type);
+	void displayPeer(int w,int h,void* decCallback);
+	void displayLocal(void);
+	void displayOff(void);
     void faceOnOff(bool type);
 	void h264EncOnOff(bool type,int w,int h,EncCallbackFunc encCallback);
 
  private:
  	
-    bool display_state_;
+    int display_state_; // 0关闭 1本地视频 2远程视频
     bool face_state_;
     bool h264enc_state_;
     struct rk_cams_dev_info cam_info;
@@ -112,23 +114,37 @@ void RKVideo::disconnect(std::shared_ptr<CamHwItf::PathBase> mpath,
     next->releaseBuffers();
 }
 
-void RKVideo::displayOnOff(bool type)
+void RKVideo::displayLocal(void)
 {
 	if (cam_info.num_camers <= 0)
 		return;
-    if (type == true) {
-        if (display_state_ == false) {
-            display_state_ = true;
-            connect(cam_dev->mpath(), display_process, cam_dev->format(), 0, nullptr);
-        }
-    } else {
-        if (display_state_ == true) {
-            display_state_ = false;
-            disconnect(cam_dev->mpath(), display_process);
-            display_process->setVideoBlack();
-        }
+	if (display_state_ != 1) {
+		display_state_ = 1;
+		display_process->showLocalVideo();
+		connect(cam_dev->mpath(), display_process, cam_dev->format(), 0, nullptr);
 	}
 }
+void RKVideo::displayPeer(int w,int h,void* decCallback)
+{
+	if (cam_info.num_camers <= 0)
+		return;
+	if (display_state_ != 2) {
+		display_state_ = 2;
+		disconnect(cam_dev->mpath(), display_process);
+		display_process->showPeerVideo(w,h,(DecCallbackFunc)decCallback);
+	}
+} 
+
+void RKVideo::displayOff(void)
+{
+	if (cam_info.num_camers <= 0)
+		return;
+	if (display_state_ != 0) {
+		display_state_ = 0;
+		disconnect(cam_dev->mpath(), display_process);
+		display_process->setVideoBlack();
+	}
+} 
 void RKVideo::faceOnOff(bool type)
 {
 	if (cam_info.num_camers <= 0)
@@ -174,15 +190,21 @@ int rkVideoInit(void)
 }
 
 extern "C" 
-int rkVideoDisplayOnOff(int type)
+int rkVideoDisplayLocal(void)
 {
-	if (type)
-		rkvideo->displayOnOff(true);
-	else
-		rkvideo->displayOnOff(false);
-	return 0;
+	rkvideo->displayLocal();
 }
 
+extern "C" 
+int rkVideoDisplayPeer(int w,int h,void * decCallBack)
+{
+	rkvideo->displayPeer(w,h,decCallBack);
+}
+extern "C" 
+int rkVideoDisplayOff(void)
+{
+	rkvideo->displayOff();
+}
 extern "C" 
 int rkVideoFaceOnOff(int type)
 {

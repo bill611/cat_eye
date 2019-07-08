@@ -6,7 +6,7 @@
 #include <rk_fb/rk_fb.h>
 #include <rk_rga/rk_rga.h>
 
-typedef void (*DecCallbackFunc)(void **data,int *size);
+typedef void (*DecCallbackFunc)(void *data,int *size);
 
 class DisplayProcess : public StreamPUBase {
  public:
@@ -37,7 +37,6 @@ class DisplayProcess : public StreamPUBase {
  private:
     int rga_fd;
     bool start_dec_;
-    bool last_frame_;
 	int width_;
 	int height_;
 	DecCallbackFunc decCallback_;

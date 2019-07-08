@@ -192,6 +192,10 @@ static int cjsonGetValueInt(CjsonDec *This,char *name)
 	data = cJSON_GetObjectItem(This->current,name);
 	return cjsonJugdeTypeInt(data);
 }
+static cJSON* cjsonGetValueObject(CjsonDec *This,char *name)
+{
+	return cJSON_GetObjectItem(This->current,name);
+}
 
 /* ---------------------------------------------------------------------------*/
 /**
@@ -308,6 +312,7 @@ CjsonDec *cjsonDecCreate(char *data)
 	This->getArrayInt = cjsonGetArrayInt;
 	This->getArrayChar = cjsonGetArrayChar;
 	This->changeCurrentObj = cjsonChangeCurrentObj;
+	This->getValueObject = cjsonGetValueObject;
 	This->changeCurrentArrayObj = cjsonChangeCurrentArrayObj;
 	This->changeObjFront = cjsonChangeObjFront;
 	This->getArraySize = cjsonGetArraySize;

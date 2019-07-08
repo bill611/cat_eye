@@ -344,7 +344,7 @@ static int stmDoTalkCallin(void *data)
 	if (data_temp->type == DEV_TYPE_HOUSEHOLDAPP) {
 		my_video->videoAnswer(0,data_temp->type);
 	} else {
-		
+		my_video->showPeerVideo();	
 	}
 	return 0;
 }
@@ -383,7 +383,7 @@ static int stmDoTalkHangupAll(void *data)
 static int stmDoTalkHangup(void *data)
 {
 	stmDoTalkHangupAll(data);
-	stm->msgPost(stm,EV_FACE_ON,NULL);
+	my_video->showLocalVideo();
 }
 
 static int stmDoCapture(void *data)
@@ -505,17 +505,28 @@ static void videoAnswer(int dir,int dev_type)
 	st_data->type = dev_type;
 	stm->msgPost(stm,EV_TALK_ANSWER,st_data);
 }
-static void showVideo(void)
+static void showLocalVideo(void)
 {
 #ifdef USE_VIDEO
-	rkVideoDisplayOnOff(1);
+	rkVideoDisplayLocal();
 #endif
 	faceStart();
+}
+static void receiveVideo(void *data,int *size)
+{
+	protocol_talk->receiveVideo(data,size);	
+}
+
+static void showPeerVideo(void)
+{
+#ifdef USE_VIDEO
+	rkVideoDisplayPeer(1024,600,receiveVideo);
+#endif
 }
 static void hideVideo(void)
 {
 #ifdef USE_VIDEO
-	rkVideoDisplayOnOff(0);
+	rkVideoDisplayOff();
 #endif
 }
 
@@ -552,7 +563,8 @@ static void* videoTimerThread(void *arg)
 void myVideoInit(void)
 {
 	my_video = (MyVideo *) calloc(1,sizeof(MyVideo));
-	my_video->showVideo = showVideo;
+	my_video->showLocalVideo = showLocalVideo;
+	my_video->showPeerVideo = showPeerVideo;
 	my_video->hideVideo = hideVideo;
 	my_video->faceStart = faceStart;
 	my_video->faceStop = faceStop;

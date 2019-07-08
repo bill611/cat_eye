@@ -10,6 +10,7 @@ DisplayProcess::DisplayProcess()
     rga_fd = rk_rga_open();
     if (rga_fd < 0)
 		printf("rk_rga_open failed\n");
+	myH264DecInit();
 }
 
 DisplayProcess::~DisplayProcess()
@@ -73,28 +74,37 @@ void DisplayProcess::setVideoBlack()
 }
 void DisplayProcess::showLocalVideo(void)
 {
+	start_dec_ = false;
 
 }
 static void* threadH264Dec(void *arg)
 {
 	DisplayProcess *process = (DisplayProcess *)arg;
+	struct win* video_win = rk_fb_getvideowin();
+	unsigned char data_in[1024*600*3/2];
+	unsigned char data_out[1024*600*3/2];
+
+    int disp_width = 0, disp_height = 0;
+    int out_device = rk_fb_get_out_device(&disp_width, &disp_height);
+	int screen_size = disp_width*disp_height;
+
     while (process->start_dec() == true) {
-        unsigned char *data_in = NULL;
-        unsigned char *data_out = NULL;
         int size = 0;
+		memset(data_in,0,sizeof(data_in));
+		memset(data_out,0,sizeof(data_out));
         if (process->decCallback())
-            process->decCallback()((void **)&data_in,&size);
+            process->decCallback()(data_in,&size);
 
-        if (my_h264dec)
-            my_h264dec->decode(my_h264dec,data_in,&data_out);
-
-        struct win* video_win = rk_fb_getvideowin();
-        if (size)
-            memcpy(video_win->video_ion.buffer,data_out,size);
+		if (size > 0) {
+			if (my_h264dec)
+				my_h264dec->decode(my_h264dec,data_in,size,data_out);
+			memcpy(video_win->buffer,data_out,size);
+		}
 
         if (rk_fb_video_disp(video_win) < -1){
             printf("rk_fb_video_disp failed\n");
         }
+		usleep(100000);
     }
 	if (my_h264dec)
 		my_h264dec->unInit(my_h264dec);
@@ -107,6 +117,8 @@ void DisplayProcess::showPeerVideo(int w,int h,DecCallbackFunc decCallback)
 	height_ = h;
 	decCallback_ = decCallback;
 	start_dec_ = true;
-	last_frame_ = false;
+	setVideoBlack();
+	if (my_h264dec)
+		my_h264dec->init(my_h264dec,w,h);
 	createThread(threadH264Dec,this);
 }

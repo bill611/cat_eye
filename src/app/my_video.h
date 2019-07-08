@@ -22,7 +22,8 @@ extern "C" {
 #endif  /* __cplusplus */
 
 	typedef struct _MyVideo {
-		void (*showVideo)(void);  // 显示视频
+		void (*showLocalVideo)(void);  // 显示本地视频
+		void (*showPeerVideo)(void);  // 显示远程视频
 		void (*hideVideo)(void);  // 隐藏视频
         void (*faceStart)(void);  // 开启人脸识别功能
         void (*faceStop)(void);  // 关闭人脸识别功能

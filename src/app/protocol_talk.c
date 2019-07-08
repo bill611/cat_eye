@@ -120,7 +120,11 @@ static void sendVideo(void *data,int size)
 }
 static void receiveVideo(void *data,int *size)
 {
-	
+#ifdef USE_UCPAAS
+	long long timeStamp = 0;
+	int frameType = 0;
+	ucsReceiveVideo(data, size, &timeStamp, &frameType);
+#endif
 }
 static void cbDialFail(void *arg)
 {

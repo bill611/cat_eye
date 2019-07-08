@@ -33,6 +33,7 @@ extern "C" {
 		int (*getArrayInt)(struct _CjsonDec *,int item,char *name);
 		void (*getArrayChar)(struct _CjsonDec *,int item,char *name,char **value);
 		int (*changeCurrentObj)(struct _CjsonDec *,char *name);
+		cJSON* (*getValueObject)(struct _CjsonDec *This,char *name);
 		void (*changeCurrentArrayObj)(struct _CjsonDec *,int item);
 		void (*changeObjFront)(struct _CjsonDec *);
 		int (*getArraySize)(struct _CjsonDec *);

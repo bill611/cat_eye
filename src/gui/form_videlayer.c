@@ -155,7 +155,7 @@ static int formVideoLayerProc(HWND hWnd, int message, WPARAM wParam, LPARAM lPar
 				formVideoLoadBmp();
 				HWND form = createFormVideo(hWnd,FORM_VIDEO_TYPE_CAPTURE,NULL);
 				ShowWindow(form,SW_HIDE);
-				my_video->showVideo();
+				my_video->showLocalVideo();
 				formVideoInitInterface();
 				// screensaverStart(LCD_ON);
 			} break;
