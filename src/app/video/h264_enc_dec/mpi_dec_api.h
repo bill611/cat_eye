@@ -23,7 +23,7 @@ extern "C" {
 	struct _H264DecodePriv;
 	typedef struct _H264Decode {
 		struct _H264DecodePriv *priv;
-		int (*decode)(struct _H264Decode *This,unsigned char *in_data,int in_size,unsigned char *out_data);
+		int (*decode)(struct _H264Decode *This,unsigned char *in_data,int in_size,unsigned char *out_data,int *out_w,int *out_h);
 		int (*init)(struct _H264Decode *This,int w,int h);
 		int (*unInit)(struct _H264Decode *This);
 	}H264Decode;

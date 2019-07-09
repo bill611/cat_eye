@@ -69,7 +69,7 @@ do {                          \
  *----------------------------------------------------------------------------*/
 static H264Data h264_info;
 static pthread_mutex_t enc_mutex;
-static int NV12Scale(unsigned char *psrc_buf, int psrc_w, int psrc_h, unsigned char **pdst_buf, int pdst_w, int pdst_h)
+int NV12Scale(unsigned char *psrc_buf, int psrc_w, int psrc_h, unsigned char **pdst_buf, int pdst_w, int pdst_h)
 {
 	libyuv::FilterModeEnum pfmode = libyuv::kFilterNone;
     unsigned char *i420_buf1 = (unsigned char *)malloc((psrc_w * psrc_h * 3) >> 1);

@@ -1,9 +1,11 @@
 #include "display_process.h"
 #include "thread_helper.h"
 #include "h264_enc_dec/mpi_dec_api.h"
+#include "libyuv.h"
 
 //#define TEST_WRITE_SP_TO_FILE
 
+int NV12Scale(unsigned char *psrc_buf, int psrc_w, int psrc_h, unsigned char **pdst_buf, int pdst_w, int pdst_h);
 DisplayProcess::DisplayProcess()
      : StreamPUBase("DisplayProcess", true, true)
 {
@@ -83,28 +85,34 @@ static void* threadH264Dec(void *arg)
 	struct win* video_win = rk_fb_getvideowin();
 	unsigned char data_in[1024*600*3/2];
 	unsigned char data_out[1024*600*3/2];
-
+	int out_w = 0,out_h = 0;
     int disp_width = 0, disp_height = 0;
     int out_device = rk_fb_get_out_device(&disp_width, &disp_height);
-	int screen_size = disp_width*disp_height;
 
     while (process->start_dec() == true) {
-        int size = 0;
+        int size_in = 0;
+        int size_out = 0;
 		memset(data_in,0,sizeof(data_in));
 		memset(data_out,0,sizeof(data_out));
         if (process->decCallback())
-            process->decCallback()(data_in,&size);
+            process->decCallback()(data_in,&size_in );
 
-		if (size > 0) {
+		unsigned char *nv12_scale_data = NULL;
+		if (size_in > 0) {
 			if (my_h264dec)
-				my_h264dec->decode(my_h264dec,data_in,size,data_out);
-			memcpy(video_win->buffer,data_out,size);
+				size_out = my_h264dec->decode(my_h264dec,data_in,size_in,data_out,&out_w,&out_h);
+			if (out_w != 0 && out_h != 0 && size_out > 0) {
+				NV12Scale(data_out, out_w, out_h, &nv12_scale_data, disp_width, disp_height);
+				memcpy(video_win->buffer,nv12_scale_data,disp_width*disp_height*3/2);
+				if (rk_fb_video_disp(video_win) < -1){
+					printf("rk_fb_video_disp failed\n");
+				}
+			}
 		}
+		if (nv12_scale_data)
+			free(nv12_scale_data);
 
-        if (rk_fb_video_disp(video_win) < -1){
-            printf("rk_fb_video_disp failed\n");
-        }
-		usleep(100000);
+		usleep(10000);
     }
 	if (my_h264dec)
 		my_h264dec->unInit(my_h264dec);

@@ -121,6 +121,7 @@ static char *st_debug_ev[] = {
 	"EV_FACE_REGIST",       // 注册人脸
 	"EV_TALK_CALLOUT",      // 对讲呼出
 	"EV_TALK_CALLOUTALL",   // 遍历对讲呼出
+	"EV_TALK_CALLOUTOK",	// 对讲呼出成功
 	"EV_TALK_CALLIN",       // 对讲呼入
 	"EV_TALK_ANSWER",       // 对讲接听
 	"EV_TALK_HANGUP",       // 对讲挂机
@@ -390,15 +391,19 @@ static int stmDoCapture(void *data)
 {
 	// rkVideoStopCapture();
 }
-FILE *fp;
+FILE *fp,*fp1;
 static void recordEncCallbackFunc(void *data,int size)
 {
+	char buf[16];
 	fwrite(data,1,size,fp);
+	sprintf(buf,"%d\n",size);
+	fwrite(buf,1,strlen(buf),fp1);
 }
 static int stmDoRecordStart(void *data)
 {
 #ifdef USE_VIDEO
 	fp = fopen("test.h264","wb");
+	fp1 = fopen("test.txt","wb");
 	rkH264EncOn(320,240,recordEncCallbackFunc);
 #endif
 }
@@ -408,6 +413,8 @@ static int stmDoRecordStop(void *data)
 	rkH264EncOff();
 	fflush(fp);
 	fclose(fp);
+	fflush(fp1);
+	fclose(fp1);
 #endif
 	stm->msgPost(stm,EV_RECORD_STOP_FINISHED,NULL);
 }
