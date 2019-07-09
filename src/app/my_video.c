@@ -108,7 +108,7 @@ typedef struct _TalkPeerDev {
 
 typedef struct _StmDo {
 	int action;
-	int (*proc)(void *data);
+	int (*proc)(void *data,MyVideo *arg);
 }StmDo;
 /* ---------------------------------------------------------------------------*
  *                      variables define
@@ -217,7 +217,7 @@ static StateTable state_table[] =
 
 };
 
-static int stmDoFail(void *data)
+static int stmDoFail(void *data,MyVideo *arg)
 {
 	int msg = *(int *)data;
     switch (msg)
@@ -231,19 +231,19 @@ static int stmDoFail(void *data)
     }
 	printf("%s()%s\n",__func__,st_debug_ev[msg]);
 }
-static int stmDoNothing(void *data)
+static int stmDoNothing(void *data,MyVideo *arg)
 {
 	
 }
 
-static int stmDoFaceOn(void *data)
+static int stmDoFaceOn(void *data,MyVideo *arg)
 {
 #ifdef USE_VIDEO
     rkVideoFaceOnOff(1);
 #endif
 }
 
-static int stmDoFaceOff(void *data)
+static int stmDoFaceOff(void *data,MyVideo *arg)
 {
 #ifdef USE_VIDEO
     rkVideoFaceOnOff(0);
@@ -255,7 +255,7 @@ static int stmDoFaceOff(void *data)
 	stm->msgPost(stm,EV_FACE_OFF_FINISH,st_data);
 }
 
-static int stmDoFaceRegist(void *data)
+static int stmDoFaceRegist(void *data,MyVideo *arg)
 {
 	if (my_face)
 		return my_face->regist((MyFaceRegistData *)data);
@@ -283,7 +283,7 @@ static void dialCallBack(int result)
 		stm->msgPost(stm,EV_TALK_HANGUP,NULL);
 	}
 }
-static int stmDoTalkCallout(void *data)
+static int stmDoTalkCallout(void *data,MyVideo *arg)
 {
 	StmData *data_temp = (StmData *)data;
 	int ret = sqlGetUserInfoUseUserId(data_temp->usr_id,data_temp->nick_name,&data_temp->type);
@@ -321,12 +321,12 @@ static void *threadCallOutAll(void *arg)
 
 	return NULL;
 }
-static int stmDoTalkCalloutAll(void *data)
+static int stmDoTalkCalloutAll(void *data,MyVideo *arg)
 {
 	createThread(threadCallOutAll,NULL);
 }
 
-static int stmDoTalkCallin(void *data)
+static int stmDoTalkCallin(void *data,MyVideo *arg)
 {
 	char ui_title[128] = {0};
 	StmData *data_temp = (StmData *)data;
@@ -349,7 +349,7 @@ static int stmDoTalkCallin(void *data)
 	}
 	return 0;
 }
-static int stmDoTalkAnswer(void *data)
+static int stmDoTalkAnswer(void *data,MyVideo *arg)
 {
 	char ui_title[128] = {0};
 	if (		talk_peer_dev.type != DEV_TYPE_ENTRANCEMACHINE
@@ -371,7 +371,7 @@ static int stmDoTalkAnswer(void *data)
 	talk_peer_dev.call_time = TIME_TALKING;
 }
 
-static int stmDoTalkHangupAll(void *data)
+static int stmDoTalkHangupAll(void *data,MyVideo *arg)
 {
 #ifdef USE_VIDEO
 	rkH264EncOff();
@@ -381,13 +381,13 @@ static int stmDoTalkHangupAll(void *data)
 	memset(&talk_peer_dev,0,sizeof(talk_peer_dev));
 }
 
-static int stmDoTalkHangup(void *data)
+static int stmDoTalkHangup(void *data,MyVideo *arg)
 {
-	stmDoTalkHangupAll(data);
+	stmDoTalkHangupAll(data,arg);
 	my_video->showLocalVideo();
 }
 
-static int stmDoCapture(void *data)
+static int stmDoCapture(void *data,MyVideo *arg)
 {
 	// rkVideoStopCapture();
 }
@@ -399,7 +399,7 @@ static void recordEncCallbackFunc(void *data,int size)
 	sprintf(buf,"%d\n",size);
 	fwrite(buf,1,strlen(buf),fp1);
 }
-static int stmDoRecordStart(void *data)
+static int stmDoRecordStart(void *data,MyVideo *arg)
 {
 #ifdef USE_VIDEO
 	fp = fopen("test.h264","wb");
@@ -407,7 +407,7 @@ static int stmDoRecordStart(void *data)
 	rkH264EncOn(320,240,recordEncCallbackFunc);
 #endif
 }
-static int stmDoRecordStop(void *data)
+static int stmDoRecordStop(void *data,MyVideo *arg)
 {
 #ifdef USE_VIDEO
 	rkH264EncOff();
@@ -437,12 +437,12 @@ static StmDo stm_do[] =
 	{DO_RECORD_STOP,	stmDoRecordStop},
 };
 
-static int stmHandle(StMachine *This,int result,void *data)
+static int stmHandle(StMachine *This,int result,void *data,void *arg)
 {
 	if (result) {
-		return stm_do[This->getCurRun(This)].proc(data);
+		return stm_do[This->getCurRun(This)].proc(data,(MyVideo *)arg);
 	} else {
-		return stm_do[DO_FAIL].proc(data);
+		return stm_do[DO_FAIL].proc(data,(MyVideo *)arg);
 	}
 }
 
@@ -591,6 +591,7 @@ void myVideoInit(void)
 			sizeof (state_table) / sizeof ((state_table) [0]),
 			0,
 			stmHandle,
+			my_video,
 			&st_debug);
 	createThread(videoTimerThread,NULL);
 }

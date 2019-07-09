@@ -6,9 +6,7 @@ if [ $# == 1 ]; then
 	cmake \
 		-DCMAKE_BUILD_TYPE=Debug \
 		-DPLATFORM_RV1108=OFF \
-		-DMODE_FACE=OFF \
 		-DMODE_UART=OFF \
-		-DMODE_UCPAAS=OFF \
 		-DMODE_VIDEO=OFF \
 		..
 else
@@ -16,6 +14,8 @@ else
 	cd release
 	cmake \
 		-DCMAKE_BUILD_TYPE=Release \
+		-DMODE_FACE=OFF \
+		-DMODE_UCPAAS=OFF \
 		..
 fi
 make

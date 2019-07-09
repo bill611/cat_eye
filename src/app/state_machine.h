@@ -65,7 +65,7 @@ extern "C" {
          */
         /* ---------------------------------------------------------------------------*/
 		int  (*msgPostSync)(struct _StMachine *,int msg,void *data);
-		int  (*handle)(struct _StMachine *,int result,void *data);
+		int  (*handle)(struct _StMachine *,int result,void *data,void *arg);
 		void  (*destroy)(struct _StMachine **);
 	}StMachine;
 
@@ -73,7 +73,8 @@ extern "C" {
 			StateTable *state_table, 
 			int num,
 			int id,
-			int (*handle)(StMachine *,int result,void *data),
+			int (*handle)(StMachine *,int result,void *data,void *arg),
+			void *arg,
 			StateTableDebug *st_debug);
 
 #ifdef __cplusplus

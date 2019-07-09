@@ -29,6 +29,7 @@
 #include "my_mixer.h"
 #include "my_gpio.h"
 #include "ucpaas/ucpaas.h"
+#include "protocol_video.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare

@@ -49,6 +49,7 @@ typedef struct _StMachinePriv {
     pthread_mutex_t mutex;
 	StateTable *funcentry;
 	StateTableDebug *st_debug;
+	void *arg;
 	int cur_state;
 	int status_run;	
 	int table_num;			
@@ -88,7 +89,7 @@ static int stmMsgPostSync(StMachine* This,int msg,void *data)
 	pthread_mutex_lock(&This->priv->mutex);
     if (stmExecEntry(This,msg)) {
 		printf("%s\n",__func__ );
-        ret = This->handle(This,1,data);
+        ret = This->handle(This,1,data,This->priv->arg);
     }
 	pthread_mutex_unlock(&This->priv->mutex);
     return ret;
@@ -199,9 +200,9 @@ static void *stmThread(void *arg)
 		stm->priv->queue->get(stm->priv->queue,&msg_data);
         pthread_mutex_lock(&stm->priv->mutex);
 		if (stmExecEntry(stm,msg_data.msg))
-			stm->handle(stm,1,msg_data.data);
+			stm->handle(stm,1,msg_data.data,stm->priv->arg);
 		else
-			stm->handle(stm,0,&msg_data.msg);
+			stm->handle(stm,0,&msg_data.msg,stm->priv->arg);
 		if (msg_data.data)
 			free(msg_data.data);
         pthread_mutex_unlock(&stm->priv->mutex);
@@ -228,12 +229,14 @@ StMachine* stateMachineCreate(int init_state,
 		StateTable *state_table, 
 		int num,
 		int id,
-		int (*handle)(StMachine *This,int result,void *data),
+		int (*handle)(StMachine *This,int result,void *data,void *arg),
+		void *arg,
 		StateTableDebug *st_debug)
 {
 
 	StMachine *This = (StMachine *)calloc(1,sizeof(StMachine));
 	This->priv = (StMachinePriv *)calloc(1,sizeof(StMachinePriv));
+	This->priv->arg = arg;
 	This->priv->funcentry = (StateTable *)state_table;
 	This->priv->table_num = num;
 	This->priv->cur_state = init_state;
