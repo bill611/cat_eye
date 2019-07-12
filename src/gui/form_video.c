@@ -50,6 +50,7 @@ static void formVideoTimerProc1s(HWND hwnd);
 
 static void buttonHangupPress(HWND hwnd, int id, int nc, DWORD add_data);
 static void buttonUnlockPress(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonAnswerPress(HWND hwnd, int id, int nc, DWORD add_data);
 
 /* ---------------------------------------------------------------------------*
  *                        macro define
@@ -72,11 +73,13 @@ enum {
     IDC_MYSTATIC_TIME,
     IDC_MYSTATIC_BATTERY,
     IDC_MYSTATIC_TITLE,
+    IDC_MYSTATIC_TITLE_IMG,
 
     IDC_BUTTON_UNLOCK,
     IDC_BUTTON_HANGUP,
     IDC_BUTTON_CAPTURE,
     IDC_BUTTON_RECORD,
+    IDC_BUTTON_ANSWER,
 
     IDC_STATE_COM,
 
@@ -93,9 +96,10 @@ static MyCtrlStatus ctrls_status[] = {
 	{0},
 };
 static MyCtrlStatic ctrls_static[] = {
-    {IDC_MYSTATIC_TIME,   MYSTATIC_TYPE_TEXT,0,0,100,40,"",0xffffff,0x00000060},
+    {IDC_MYSTATIC_TITLE_IMG,MYSTATIC_TYPE_IMG_ONLY,0,0,1024,40,"",0xffffff,0x00000060},
+    {IDC_MYSTATIC_TIME,   MYSTATIC_TYPE_TEXT_ONLY,0,0,200,40,"",0xffffff,0x00000000},
     {IDC_MYSTATIC_BATTERY,MYSTATIC_TYPE_TEXT,910,0,45,34,"",0xffffff,0x00000000},
-    {IDC_MYSTATIC_TITLE,  MYSTATIC_TYPE_TEXT,0,0,1024,40,"",0xffffff,0x00000060},
+    {IDC_MYSTATIC_TITLE,  MYSTATIC_TYPE_TEXT_ONLY,312,0,400,40,"",0xffffff,0x00000000},
 	{0},
 };
 
@@ -104,6 +108,7 @@ static MyCtrlButton ctrls_button[] = {
 	{IDC_BUTTON_UNLOCK,MYBUTTON_TYPE_TWO_STATE,"开门",338,451,buttonUnlockPress},
 	{IDC_BUTTON_CAPTURE,MYBUTTON_TYPE_TWO_STATE,"抓拍",338,451,buttonUnlockPress},
 	{IDC_BUTTON_RECORD,MYBUTTON_TYPE_TWO_STATE,"录像",338,451,buttonUnlockPress},
+	{IDC_BUTTON_ANSWER,MYBUTTON_TYPE_TWO_STATE,"接听",338,451,buttonAnswerPress},
 	{0},
 };
 
@@ -146,19 +151,26 @@ static FormBase* form_base = NULL;
 /* ---------------------------------------------------------------------------*/
 static void formVideoTimerProc1s(HWND hwnd)
 {
+	static int call_time_old = 0;
 	// 更新时间
-
+	int call_time = my_video->videoGetCallTime();
+	if (call_time != call_time_old) {
+		char buf[16] = {0};
+		sprintf(buf,"剩余时间: %d s",call_time);
+		SendMessage(GetDlgItem (form_base->hDlg, IDC_MYSTATIC_TIME),
+				MSG_MYSTATIC_SET_TITLE,(WPARAM)buf,0);
+	}
+	call_time_old = call_time;
 }
 
 static void buttonHangupPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
-	printf("type:%d\n", form_type);
 	if (form_type == FORM_VIDEO_TYPE_RECORD) {
 		my_video->recordStop();
 	} else {
-		protocol_talk->hangup();
+		my_video->videoHangup();
 	}
 	ShowWindow(GetParent(hwnd),SW_HIDE);
 }
@@ -166,6 +178,16 @@ static void buttonUnlockPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
+	if (protocol_talk)
+		protocol_talk->unlock();
+}
+
+static void buttonAnswerPress(HWND hwnd, int id, int nc, DWORD add_data)
+{
+	if (nc != BN_CLICKED)
+		return;
+	if (my_video)
+		my_video->videoAnswer(0,DEV_TYPE_ENTRANCEMACHINE);
 }
 
 /* ---------------------------------------------------------------------------*/
@@ -199,7 +221,7 @@ static void updateTitle(char *name)
 
 static void updateDisplay(HWND hDlg)
 {
-	int button_status[] = {0,0,0,0};
+	int button_status[] = {0,0,0,0,0};
 	int button_num = IDC_BUTTON_UNLOCK;
 	switch(form_type) 
 	{
@@ -217,12 +239,21 @@ static void updateDisplay(HWND hDlg)
 			myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_HANGUP), 726,451);
 			break;
 		case FORM_VIDEO_TYPE_OUTDOOR:
-			button_status[IDC_BUTTON_CAPTURE - button_num] = 1;
-			button_status[IDC_BUTTON_RECORD - button_num] = 1;
-			button_status[IDC_BUTTON_HANGUP - button_num] = 1;
-			myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_CAPTURE), 208,451);
-			myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_HANGUP), 467,451);
-			myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_RECORD), 726,451);
+			if (protocol_talk->type == PROTOCOL_TALK_3000) {
+				button_status[IDC_BUTTON_UNLOCK - button_num] = 1;
+				button_status[IDC_BUTTON_ANSWER - button_num] = 1;
+				button_status[IDC_BUTTON_HANGUP - button_num] = 1;
+				myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_UNLOCK), 208,451);
+				myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_ANSWER), 467,451);
+				myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_HANGUP), 726,451);
+			} else {
+				button_status[IDC_BUTTON_CAPTURE - button_num] = 1;
+				button_status[IDC_BUTTON_RECORD - button_num] = 1;
+				button_status[IDC_BUTTON_HANGUP - button_num] = 1;
+				myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_CAPTURE), 208,451);
+				myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_HANGUP), 467,451);
+				myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_RECORD), 726,451);
+			}
 			break;
 		default:
 			break;
@@ -290,8 +321,12 @@ static int formVideoProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 
 		case MSG_SHOWWINDOW:
 			{
-				if (wParam == SW_SHOWNORMAL)
+				if (wParam == SW_SHOWNORMAL) {
 					updateDisplay(hDlg);
+					SendMessage(Screen.getCurrent(),MSG_DISABLE_WINDOW,0,0);	
+				} else if (wParam == SW_HIDE) {
+					SendMessage(Screen.getCurrent(),MSG_ENABLE_WINDOW,0,0);	
+				}
 			} break;
 		case MSG_LBUTTONDOWN:
 			{
@@ -316,6 +351,8 @@ int createFormVideo(HWND hMainWnd,int type,void (*callback)(void))
 {
 	HWND Form = Screen.Find(form_base_priv.name);
 	form_type = type;
+	screenAutoCloseStop();
+	screensaverStart(1);
 	if(Form) {
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
@@ -344,7 +381,10 @@ static void interfaceCreateFormVideoDirect(int type,char *name)
 			break;
 		case DEV_TYPE_ENTRANCEMACHINE:
 		case DEV_TYPE_HOUSEENTRANCEMACHINE:
-			createFormVideo(0,FORM_VIDEO_TYPE_TALK,NULL); 
+			if (protocol_talk->type == PROTOCOL_TALK_3000)
+				createFormVideo(0,FORM_VIDEO_TYPE_OUTDOOR,NULL); 
+			else
+				createFormVideo(0,FORM_VIDEO_TYPE_TALK,NULL); 
 			break;
 		default:
 			break;
@@ -358,6 +398,7 @@ static void interfaceHangup(void)
 static void interfaceAnswer(char *name)
 {
 	updateTitle(name);
+	ShowWindow(GetDlgItem(form_base->hDlg,IDC_BUTTON_ANSWER),SW_HIDE);
 }
 
 void formVideoInitInterface(void)

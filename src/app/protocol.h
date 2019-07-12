@@ -20,6 +20,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif  /* __cplusplus */
+	enum {
+		PROTOCOL_TALK_3000,
+		PROTOCOL_TALK_OTHER,
+	};
 
 	enum {
 		USER_TYPE_CATEYE,
@@ -52,12 +56,14 @@ extern "C" {
 
 	// 对讲协议
 	typedef struct _ProtocolTalk {
+		int type;			// 0,3000局域网对讲协议，非0其他对讲协议
 		void (*reload)(void);
 		void (*dial)(char *user_id,void (*callBack)(int result));
 		void (*answer)(void);
 		void (*hangup)(void);
 		void (*connect)(void);
 		void (*reconnect)(void);
+		void (*unlock)(void);
 
 		void (*uiShowFormVideo)(int type,char *name);
 		void (*uiHangup)(void);

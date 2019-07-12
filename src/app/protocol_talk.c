@@ -28,8 +28,11 @@
 #include "my_video.h"
 #include "my_mixer.h"
 #include "my_gpio.h"
+#include "my_audio.h"
 #include "ucpaas/ucpaas.h"
-#include "protocol_video.h"
+#include "udp_server.h"
+#include "udp_talk/udp_talk_protocol.h"
+#include "udp_talk/udp_talk_transport.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
@@ -74,6 +77,8 @@ static void dial(char *user_id,void (*callBack)(int result))
 	ucsDial(user_id);
 #endif
 	dialCallBack = callBack;
+	if (protocol_video)
+		protocol_video->call(protocol_video,user_id);
 }
 
 static void hangup(void)
@@ -81,6 +86,16 @@ static void hangup(void)
 #ifdef USE_UCPAAS
 	ucsHangup();
 #endif
+	myAudioStopPlay();
+	if (protocol_video)
+		protocol_video->hangup(protocol_video);
+	if (udp_talk_trans)
+		udp_talk_trans->close(udp_talk_trans);
+}
+static void unlock(void)
+{
+	if (protocol_video)
+		protocol_video->unlock(protocol_video);
 }
 
 static void answer(void)
@@ -88,6 +103,11 @@ static void answer(void)
 #ifdef USE_UCPAAS
 	ucsAnswer();
 #endif
+	myAudioStopPlay();
+	if (protocol_video)
+		protocol_video->answer(protocol_video);
+	if (udp_talk_trans)
+		udp_talk_trans->startAudio(udp_talk_trans);
 }
 
 static void sendCmd(char *cmd,char *user_id)
@@ -117,7 +137,7 @@ static void sendVideo(void *data,int size)
 {
 #ifdef USE_UCPAAS
 	ucsSendVideo(data,size);
-#endif    
+#endif
 }
 static void receiveVideo(void *data,int *size)
 {
@@ -126,6 +146,8 @@ static void receiveVideo(void *data,int *size)
 	int frameType = 0;
 	ucsReceiveVideo(data, size, &timeStamp, &frameType);
 #endif
+	if (udp_talk_trans)
+		*size = udp_talk_trans->getVideo(udp_talk_trans,data);
 }
 static void cbDialFail(void *arg)
 {
@@ -143,7 +165,7 @@ static void cbHangup(void *arg)
 		my_video->videoHangup();
 	if (my_mixer) {
 		if (audio_fp > 0)
-			my_mixer->DeInitPlay(my_mixer,&audio_fp);	
+			my_mixer->DeInitPlay(my_mixer,&audio_fp);
 	}
 	dialCallBack = NULL;
 }
@@ -215,7 +237,7 @@ static void cbInitAudio(unsigned int rate,unsigned int bytes_per_sample,unsigned
 	gpio->SetValue(gpio,ENUM_GPIO_MICKEY,IO_ACTIVE);
 	mic_open = 1;
 	if (my_mixer)
-		my_mixer->InitPlayAndRec(my_mixer,&audio_fp,rate,2);
+		my_mixer->InitPlayAndRec(my_mixer,&audio_fp,rate,channle);
 }
 static void cbStartRecord(unsigned int rate,unsigned int bytes_per_sample,unsigned int channle)
 {
@@ -247,6 +269,118 @@ static Callbacks interface = {
 	.playAudio = cbPlayAudio,
 };
 
+static void videoCallbackOvertime(int ret,void *CallBackData)
+{
+	if(ret != MSG_SENDTIMEOUT) {
+		return ;
+	}
+	VideoTrans * This = (VideoTrans *)CallBackData;
+	This->callBackOverTime(This);
+}
+static void videoUdpSend(VideoTrans *This,
+		char *ip,int port,void *data,int size,int enable_call_back)
+{
+	if (enable_call_back)
+		udp_server->AddTask(udp_server,
+				ip,port,data,
+				size,3,videoCallbackOvertime,This);
+	else
+		udp_server->AddTask(udp_server,
+				ip,port,data,
+				size,3,NULL,NULL);
+}
+
+static void videoSendMessageStatus(VideoTrans *This,VideoUiStatus status)
+{
+	switch(status)
+	{
+		case VIDEOTRANS_UI_NONE:				// 不做处理
+			break;
+		case VIDEOTRANS_UI_SHAKEHANDS:		// 3000握手命令
+			break;
+		case VIDEOTRANS_UI_CALLIP:			// 呼出
+			break;
+		case VIDEOTRANS_UI_RING:				// 呼入响铃
+			{
+				if (my_video)
+					my_video->videoCallIn("门口机");
+				if (udp_talk_trans) {
+					udp_talk_trans->init(udp_talk_trans,This->getPeerIP(This),8800);
+					udp_talk_trans->buildConnect(udp_talk_trans);
+				}
+				myAudioPlayRing();
+			}
+			break;
+		case VIDEOTRANS_UI_LEAVE_WORD:		// 留言
+			break;
+		case VIDEOTRANS_UI_RETCALL:			// 呼出到管理中心，室内机收到回应
+		case VIDEOTRANS_UI_RETCALL_MONITOR:	// 呼出到门口机，户门口机收到回应,显示开锁按钮
+			if (udp_talk_trans) {
+				udp_talk_trans->init(udp_talk_trans,This->getPeerIP(This),8800);
+				udp_talk_trans->buildConnect(udp_talk_trans);
+			}
+			break;
+		case VIDEOTRANS_UI_FAILCOMM:			// 通信异常
+			break;
+		case VIDEOTRANS_UI_FAILSHAKEHANDS:	// 握手异常
+			break;
+		case VIDEOTRANS_UI_FAILBUSY:			// 对方忙
+			break;
+		case VIDEOTRANS_UI_FAILABORT:		// 突然中断
+			break;
+		case VIDEOTRANS_UI_ANSWER:			// 本机接听
+			break;
+		case VIDEOTRANS_UI_ANSWER_EX: 		// 分机接听
+			break;
+		case VIDEOTRANS_UI_OVER:				// 挂机
+			if (my_video)
+				my_video->videoHangup();
+			break;
+		default:
+			break;
+	}	
+}
+
+static VideoInterface video_interface = {
+	.udpSend = videoUdpSend,
+	.sendMessageStatus = videoSendMessageStatus,
+};
+
+static int udpSendAudio(Rtp *This,void *data,int size)
+{
+	if (my_mixer)
+		return my_mixer->Read(my_mixer,data,size / 4);
+	else
+		return 0;
+}
+static void udpReceiveAudio(Rtp *This,void *data,int size)
+{
+	if (my_mixer)
+		my_mixer->Write(my_mixer,audio_fp,data,size);
+}
+static void udpStart(Rtp *This)
+{
+	gpio->SetValue(gpio,ENUM_GPIO_MICKEY,IO_ACTIVE);
+	printf("[%s]\n", __func__);
+	if (my_mixer)
+		my_mixer->InitPlayAndRec(my_mixer,&audio_fp,8000,1);
+
+}
+static void udpReceiveEnd(Rtp *This)
+{
+	printf("[%s]\n", __func__);
+	if (my_mixer) {
+		if (audio_fp > 0)
+			my_mixer->DeInitPlay(my_mixer,&audio_fp);
+	}
+}
+static UdpTalkTransInterface rtp_interface = {
+	.receiveAudio = udpReceiveAudio,
+	.receiveEnd = udpReceiveEnd,
+	.sendAudio = udpSendAudio,
+	.start = udpStart,
+};
+
 void registTalk(void)
 {
 	protocol_talk = (ProtocolTalk *) calloc(1,sizeof(ProtocolTalk));
@@ -259,8 +393,16 @@ void registTalk(void)
 	protocol_talk->sendVideo = sendVideo;
 	protocol_talk->receiveVideo = receiveVideo;
 #ifdef USE_UCPAAS
+	protocol_talk->type = PROTOCOL_TALK_OTHER;
 	registUcpaas(&interface);
-#endif
+#else
+	protocol_talk->unlock = unlock;
+	protocol_talk->type = PROTOCOL_TALK_3000;
 	protocol_talk->reload();
 	protocol_talk->connect();
+	protocol_video = videoTransCreate(&video_interface,
+			        7800,0,3,VIDEOTRANS_PROTOCOL_3000,"","123","0101");
+	protocol_video->enable(protocol_video);
+	udp_talk_trans = createRtp(&rtp_interface,protocol_video);
+#endif
 }

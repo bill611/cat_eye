@@ -23,8 +23,8 @@ extern "C" {
 
 #include <stdint.h>
 
-#define COMM_TIME		3 	// 呼叫超时时间S 
-#define SHAKE_TIME		6 	// 握手超时时间S
+#define COMM_TIME		10 	// 呼叫超时时间S 
+#define SHAKE_TIME		13 	// 握手超时时间S
 #define TALK_TIME		180 // 对讲时间
 #define RING_TIME		31  // 响铃时间
 #define LEAVE_WORD_TIME	11  // 留言时间
@@ -402,7 +402,7 @@ extern "C" {
 			char *room_name,
 			char *room_id);
 
-	extern VideoTrans *video;
+	extern VideoTrans *protocol_video;
 #ifdef __cplusplus
 }
 #endif  /* __cplusplus */

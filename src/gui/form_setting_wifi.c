@@ -201,6 +201,7 @@ static FormBase* form_base = NULL;
 
 static void enableAutoClose(void)
 {
+	Screen.setCurrent(form_base_priv.name);
 	flag_timer_stop = 0;
 }
 
@@ -588,7 +589,7 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 	SendMessage(GetDlgItem(hDlg,IDC_TITLE),
             MSG_MYTITLE_SET_SWICH, (WPARAM)g_config.net_config.enable, 0);
     showSwichOnOff(form_base->hDlg,g_config.net_config.enable);
-    SetTimer(form_base->hDlg,IDC_TIMER_100MS,10);
+    SetTimer(form_base->hDlg,IDC_TIMER_100MS,5);
 	SetTimer(form_base->hDlg,IDC_TIMER_1S,FORM_TIMER_1S);
 }
 
@@ -701,6 +702,12 @@ static int formSettingWifiProc(HWND hDlg, int message, WPARAM wParam, LPARAM lPa
 			EndPaint (hDlg, hdc);
 			return 0;
 
+		case MSG_ENABLE_WINDOW:
+			enableAutoClose();
+			break;
+		case MSG_DISABLE_WINDOW:
+			flag_timer_stop = 1;
+			break;
 		default:
             break;
     }
@@ -713,6 +720,7 @@ int createFormSettingWifi(HWND hMainWnd,void (*callback)(void))
 {
 	HWND Form = Screen.Find(form_base_priv.name);
 	if(Form) {
+		Screen.setCurrent(form_base_priv.name);
         showSwichOnOff(form_base->hDlg,g_config.net_config.enable);
         SetTimer(form_base->hDlg,IDC_TIMER_100MS,3);
         SetTimer(form_base->hDlg,IDC_TIMER_1S,FORM_TIMER_1S);

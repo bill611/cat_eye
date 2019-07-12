@@ -79,6 +79,7 @@ void DisplayProcess::showLocalVideo(void)
 	start_dec_ = false;
 
 }
+FILE *fp_1;
 static void* threadH264Dec(void *arg)
 {
 	DisplayProcess *process = (DisplayProcess *)arg;
@@ -89,16 +90,17 @@ static void* threadH264Dec(void *arg)
     int disp_width = 0, disp_height = 0;
     int out_device = rk_fb_get_out_device(&disp_width, &disp_height);
 
+	// fp_1 = fopen("test.h264","wb");
     while (process->start_dec() == true) {
         int size_in = 0;
         int size_out = 0;
 		memset(data_in,0,sizeof(data_in));
 		memset(data_out,0,sizeof(data_out));
         if (process->decCallback())
-            process->decCallback()(data_in,&size_in );
-
+            process->decCallback()(data_in,&size_in);
 		unsigned char *nv12_scale_data = NULL;
 		if (size_in > 0) {
+			// fwrite(data_in,1,size_in,fp_1);
 			if (my_h264dec)
 				size_out = my_h264dec->decode(my_h264dec,data_in,size_in,data_out,&out_w,&out_h);
 			if (out_w != 0 && out_h != 0 && size_out > 0) {
@@ -114,6 +116,8 @@ static void* threadH264Dec(void *arg)
 
 		usleep(10000);
     }
+	// fflush(fp_1);
+	// fclose(fp_1);
 	if (my_h264dec)
 		my_h264dec->unInit(my_h264dec);
 	printf("%s(),%d\n", __func__,__LINE__);

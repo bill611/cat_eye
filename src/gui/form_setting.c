@@ -140,6 +140,7 @@ static FormBase* form_base = NULL;
 
 static void enableAutoClose(void)
 {
+	Screen.setCurrent(form_base_priv.name);
 	flag_timer_stop = 0;	
 }
 /* ----------------------------------------------------------------*/
@@ -268,6 +269,12 @@ static int formSettingProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 					return 0;
 			} break;
 
+		case MSG_ENABLE_WINDOW:
+			enableAutoClose();
+			break;
+		case MSG_DISABLE_WINDOW:
+			flag_timer_stop = 1;
+			break;
         default:
             break;
     }
@@ -280,6 +287,7 @@ int createFormSetting(HWND hMainWnd,void (*callback)(void))
 {
 	HWND Form = Screen.Find(form_base_priv.name);
 	if(Form) {
+		Screen.setCurrent(form_base_priv.name);
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
         if (bmp_load_finished == 0) {

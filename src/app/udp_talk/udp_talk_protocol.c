@@ -29,7 +29,7 @@
 #include <arpa/inet.h>
 
 #include "state_machine.h"
-#include "protocol_video.h"
+#include "udp_talk_protocol.h"
 /* ---------------------------------------------------------------------------*
  *                        macro define
  *----------------------------------------------------------------------------*/
@@ -262,6 +262,7 @@ typedef struct _VideoPriv {
 	int PeerPort;				//对方端口
 	int leave_word_state;		//是否在留言状态
 	int master_trans;           //是否主机转发的呼叫指令 1主机转发 0非主机转发
+	int call_dir;               // 0 呼入 1呼出
 }VideoPriv;
 /*-----------------video trans end----------------*/
 
@@ -277,7 +278,7 @@ static void videoTransHandleCallTime(VideoTrans *This);
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
-VideoTrans *video = NULL;
+VideoTrans *protocol_video = NULL;
 
 static STMData *stm_data = NULL;
 static StMachine *video_st_machine_bz;
@@ -745,6 +746,7 @@ static int videoTransRetCall(VideoTrans *This,STMData *st_data)
 	This->interface->sendMessageStatus(This,VIDEOTRANS_UI_RETCALL);
 
 ret_call_end:
+	This->priv->call_dir = VIDEOTRANS_CALL_DIR_OUT;
 	This->interface->saveRecordAsync(This,VIDEOTRANS_CALL_DIR_OUT,
 			This->priv->cPeerRoom,This->priv->cPeerIP);
 	return CALL_OK;
@@ -791,11 +793,11 @@ static int videoTransRing(VideoTrans * This,STMData *st_data)
 	memset(This->priv->cPeerRoom,0,sizeof(This->priv->cPeerRoom));
 	if (st_data->device_type == EVENT_TYPE_DMK ) {
 		strncpy(This->priv->cPeerRoom,
-				This->interface->getDmkName(video,st_data->device_index),
+				This->interface->getDmkName(protocol_video,st_data->device_index),
 				sizeof(This->priv->cPeerRoom)-1);
 	} else if (st_data->device_type == EVENT_TYPE_HDMK ) {
 		strncpy(This->priv->cPeerRoom,
-				This->interface->getHDmkName(video,st_data->device_index),
+				This->interface->getHDmkName(protocol_video,st_data->device_index),
 				sizeof(This->priv->cPeerRoom)-1);
 	} else {
 		strncpy(This->priv->cPeerRoom,
@@ -828,6 +830,7 @@ static int videoTransRing(VideoTrans * This,STMData *st_data)
 
 	This->priv->time_call = RING_TIME;
 	This->interface->sendMessageStatus(This, VIDEOTRANS_UI_RING);
+	This->priv->call_dir = VIDEOTRANS_CALL_DIR_IN;
 	This->interface->saveRecordAsync(This,VIDEOTRANS_CALL_DIR_IN,
 			This->priv->cPeerRoom,This->priv->cPeerIP);
 	return CALL_OK;
@@ -1380,7 +1383,7 @@ static void udpCallShakeHandsAsw(VideoTrans * This,char *ip,int port,char *data)
 {
 	if (This->priv->pro_type != VIDEOTRANS_PROTOCOL_3000)
 		return;
-	DBG_P("CMD_SHAKEHANDS_ASW :CallIP()\n");
+	DBG_P("CMD_SHAKEHANDS_ASW :CallIP():%s\n",ip);
 	stm_data = (STMData *)This->priv->st_machine->initPara(This->priv->st_machine,
 			sizeof(STMData));
 	memcpy(stm_data->mCallIP,ip,sizeof(stm_data->mCallIP));

@@ -194,6 +194,7 @@ static FormBase* form_base = NULL;
 
 static void enableAutoClose(void)
 {
+	Screen.setCurrent(form_base_priv.name);
 	flag_timer_stop = 0;
 }
 
@@ -471,6 +472,12 @@ static int formPasswordProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam
 			paint(hDlg,hdc);
 			EndPaint (hDlg, hdc);
 			return 0;
+		case MSG_ENABLE_WINDOW:
+			enableAutoClose();
+			break;
+		case MSG_DISABLE_WINDOW:
+			flag_timer_stop = 1;
+			break;
         default:
             break;
     }
@@ -494,6 +501,7 @@ int createFormPassword(HWND hMainWnd,char *account,
 	if(Form) {
         updateTitle();
 		ShowWindow(Form,SW_SHOWNORMAL);
+		Screen.setCurrent(form_base_priv.name);
 	} else {
         if (bmp_load_finished == 0) {
             // topMessage(hMainWnd,TOPBOX_ICON_LOADING,NULL );

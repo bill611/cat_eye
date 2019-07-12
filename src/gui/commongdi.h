@@ -39,13 +39,6 @@ extern "C" {
 #define SCR_WIDTH 1024           /*LCD Width     */
 #define SCR_HEIGHT 600          /*LCD Height    */
 
-	enum {
-		MSG_UPDATEMSG = MSG_USER+1,
-		MSG_SERIALPORT,
-		MSG_UPDATESTATUS,
-		MSG_SOCKETREAD,
-	};
-
     typedef struct _BmpLocation {
         BITMAP 	*bmp;
         char 	*location;

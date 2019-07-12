@@ -33,6 +33,7 @@
 #include "qrenc.h"
 #include "config.h"
 #include "timer.h"
+#include "udp_talk/udp_talk_protocol.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
@@ -49,6 +50,7 @@ void registSingleChip(void);
  *                        macro define
  *----------------------------------------------------------------------------*/
 enum {
+	TP_CALL,            //呼叫对讲
 	TP_TESTROUTE=0x200, //路由环回测试命令，类似于PING命令的作用
 	TP_NATBURROW,       //NAT路由器穿透命令
 	TP_RTPBURROW,       //RTP音视频穿透命令
@@ -266,7 +268,7 @@ static void udpLocalgetMsg(SocketHandle *ABinding,SocketPacket *AData)
 	}
 }
 
-unsigned long long htonll(unsigned long long val)
+static unsigned long long htonll(unsigned long long val)
 {
 #if 1
     if (__BYTE_ORDER == __LITTLE_ENDIAN)
@@ -433,8 +435,16 @@ static int udpUdpProtocolFilter(SocketHandle *ABinding,SocketPacket *AData)
     packet_pos %= 10;
 	return 1;
 }
+static void udpLocalCall(SocketHandle *ABinding,SocketPacket *AData)
+{
+	if (protocol_video)
+		protocol_video->cmdHandle(protocol_video,
+				ABinding->IP,ABinding->Port,
+				AData->Data,AData->Size);
+}
 
 static UdpCmdRead udp_cmd_handle[] = {
+	{TP_CALL,			udpLocalCall},
 	{TP_DEVCHECK,		udpLocalgetMsg},
 	{TP_LOCALDEVID,     udpLocalGetIMEI},
 	{TP_LOCALHARDCODE,  udpLocalGetHardCode},
@@ -469,8 +479,8 @@ void protocolInit(void)
 	protocol->getImei = getImei;
 	protocol->isNeedToUpdate = isNeedToUpdate;
 
-	jpegIncDecInit();
-	registHardCloud();
+	// jpegIncDecInit();
+	// registHardCloud();
 	registTalk();
 	registSingleChip();
 }

@@ -168,7 +168,7 @@ static void * threadWav(void *file_name)
 		//读文件内容写入spi接口进行播放
 		read_size = wav_size > wavbuf_size_max ? wavbuf_size_max : wav_size;
 		read_size = fread(wav_buf,1,read_size,fp);
-		// printf("read_size :%d\n",read_size);
+		printf("read_size :%d\n",read_size);
 		if(read_size <= 0) {
 			printf("Read data size is less zero!\n");
 			break;
@@ -207,6 +207,9 @@ done2:
 /* ----------------------------------------------------------------*/
 int playwavfile(char * file_name)
 {
+	char buff[128] = {0};
+	excuteCmd("aplay",file_name,NULL);
+	return 0;
 	int result;
 	char *pName;
 	pthread_attr_t threadAttr1;				//线程属性

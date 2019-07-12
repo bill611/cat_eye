@@ -101,8 +101,12 @@ static void paint(HWND hWnd,HDC hdc)
 
 	if (pInfo->flag == MYSTATIC_TYPE_TEXT_AND_IMG)
 		FillBoxWithBitmap(hdc,FILL_BMP_STRUCT(rc_bmp,pInfo->image));
-	else
+	else if (pInfo->flag == MYSTATIC_TYPE_TEXT
+			|| pInfo->flag == MYSTATIC_TYPE_IMG_ONLY)
 		myFillBox(hdc,&rc_bmp,pInfo->bkg_color);
+
+	if (pInfo->flag == MYSTATIC_TYPE_IMG_ONLY)
+		return;
 
     SetTextColor(hdc,pInfo->font_color);
     SetBkMode(hdc,BM_TRANSPARENT);

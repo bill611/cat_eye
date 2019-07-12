@@ -35,6 +35,7 @@ extern "C" {
 #define AUDIO_PATH "/root/usr/res/wav/"
 #endif
 
+#define AUTO_CLOSE_LCD 30
 
 	typedef struct _EtcValueChar {
 		const char* section;	

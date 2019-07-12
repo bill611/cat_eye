@@ -283,8 +283,8 @@ try_again:
 				} else {
 					err_info = mpp_frame_get_errinfo(frame) | mpp_frame_get_discard(frame);
 					if (err_info) {
-						printf("decoder_get_frame get err info:%d discard:%d.\n",
-								mpp_frame_get_errinfo(frame), mpp_frame_get_discard(frame));
+						// printf("decoder_get_frame get err info:%d discard:%d.\n",
+								// mpp_frame_get_errinfo(frame), mpp_frame_get_discard(frame));
 					}
 					// buf_size = mpp_frame_get_buf_size(frame);
 					data->frame_count++;
@@ -350,6 +350,7 @@ try_again:
 
 static int mpiH264Decode(H264Decode *This,unsigned char *in_data,int in_size,unsigned char *out_data,int *out_w,int *out_h)
 {
+	memset(buf,0,MPI_DEC_STREAM_SIZE);
 	return decode_simple(&data,in_data,in_size,out_data,out_w,out_h);
 }
 

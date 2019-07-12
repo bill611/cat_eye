@@ -23,6 +23,9 @@ extern "C" {
 
 #include "commongdi.h"
 
+#define MSG_ENABLE_WINDOW MSG_USER + 100
+#define MSG_DISABLE_WINDOW MSG_USER + 101
+
 	typedef struct _Formclass {
 		HWND hWnd;
 		char Class[16];
@@ -35,10 +38,13 @@ extern "C" {
 		int Height;
 		int Count;													//合计数
 		FormClass * head,*tail;										//窗口链表头与尾
+		FormClass *current;											//窗口链表头与尾
 		BOOL (*Add)(HWND hWnd,const char *Class);					//添加窗口
 		BOOL (*Del)(HWND hWnd);										//删除窗口
 		HWND (*Find)(const char *Class);							//查找窗口
-		void (*ReturnMain)(void);										//返回主窗口
+		void (*setCurrent)(const char *Class);						//设置当前窗口
+		HWND (*getCurrent)(void);									//拿到当前窗口
+		void (*ReturnMain)(void);									//返回主窗口
 		void (*foreachForm)(int iMsg, WPARAM wParam, LPARAM lParam); //遍历所有窗口发送消息
 	} ScreenForm;
 

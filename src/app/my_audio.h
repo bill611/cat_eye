@@ -22,6 +22,8 @@ extern "C" {
 #endif  /* __cplusplus */
 
 	void myAudioPlayRecognizer(char *usr_name);
+	void myAudioPlayRing(void);
+	void myAudioStopPlay(void);
 
 #ifdef __cplusplus
 }

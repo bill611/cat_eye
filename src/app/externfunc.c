@@ -312,12 +312,6 @@ char * excuteCmd(char *Cmd,...)
 		perror("popen");
 		return NULL;
 	}
-#if 0
-	int fd = fileno(fp);
-	int flags = fcntl(fd, F_GETFL, 0);
-	flags |= O_NONBLOCK;
-	fcntl(fd, F_SETFL, flags);
-#endif
 	memset(cmd_buf,0,sizeof(cmd_buf));
 	ret = fread( cmd_buf, sizeof(cmd_buf), sizeof(char), fp ); //将刚刚FILE* stream的数据流读取到cmd_buf
 	// DPRINT("r:%d\n",ret );
@@ -647,4 +641,20 @@ void wifiDisConnect(void)
 #ifndef X86
 	excuteCmd("wifi/wifi_station.sh","stop",NULL);
 #endif
+}
+int screensaverStart(int state)
+{
+#ifndef X86
+	static int state_old = 0;
+	printf("state:%d,old:%d\n", state,state_old);
+	if (state == state_old)
+		return 0;
+	state_old = state;
+	if (state) {
+		excuteCmd("echo","0",">","/sys/class/backlight/rk28_bl/bl_power ",NULL);
+	} else {
+		excuteCmd("echo","1",">","/sys/class/backlight/rk28_bl/bl_power ",NULL);
+	}
+#endif
+	return 1;
 }

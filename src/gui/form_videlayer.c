@@ -19,7 +19,7 @@
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
-extern void createFormMain(HWND hMainWnd);
+extern void createFormMain(HWND hMainWnd,void (*callback)(void));
 extern void formMainLoadBmp(void);
 extern void formSettingLoadBmp(void);
 extern void formVideoLoadBmp(void);
@@ -54,7 +54,7 @@ typedef struct {
    MyControls ** controls;
 }MyCtrls;
 
-#define TIME_1S (10 * 5)
+#define TIME_1S (100)
 
 enum {
     IDC_TIMER_1S ,	// 1s定时器
@@ -101,10 +101,23 @@ static InitBmpFunc load_bmps_func[] = {
 };
 
 static HWND hwnd_videolayer = HWND_INVALID;
+static int flag_timer_stop = 0;
+static int auto_close_lcd = AUTO_CLOSE_LCD;
+static int screen_on = 0;
 static BmpLocation base_bmps[] = {
 	{NULL},
 };
 
+static void enableAutoClose(void)
+{
+	flag_timer_stop = 0;	
+	auto_close_lcd = AUTO_CLOSE_LCD;
+	my_video->showLocalVideo();
+}
+void screenAutoCloseStop(void)
+{
+	auto_close_lcd = 0;
+}
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief formVideoLayerTimerProc1s 窗口相关定时函数
@@ -114,6 +127,11 @@ static BmpLocation base_bmps[] = {
 /* ---------------------------------------------------------------------------*/
 static void formVideoLayerTimerProc1s(HWND hwnd)
 {
+	if (auto_close_lcd) {
+		printf("auto_close_ld:%d\n",auto_close_lcd );
+		if (--auto_close_lcd == 0)
+			screensaverStart(0);
+	}
 }
 
 
@@ -157,7 +175,7 @@ static int formVideoLayerProc(HWND hWnd, int message, WPARAM wParam, LPARAM lPar
 				ShowWindow(form,SW_HIDE);
 				my_video->showLocalVideo();
 				formVideoInitInterface();
-				// screensaverStart(LCD_ON);
+				screensaverStart(1);
 			} break;
 
 		case MSG_ERASEBKGND:
@@ -173,6 +191,8 @@ static int formVideoLayerProc(HWND hWnd, int message, WPARAM wParam, LPARAM lPar
 
 		case MSG_TIMER:
 			{
+				if (flag_timer_stop)
+					return 0;
 				if (wParam == IDC_TIMER_1S) {
                     formVideoLayerTimerProc1s(hWnd);
 				}
@@ -180,13 +200,27 @@ static int formVideoLayerProc(HWND hWnd, int message, WPARAM wParam, LPARAM lPar
 
 		case MSG_LBUTTONUP:
 			{
-                createFormMain(hWnd);
-                // if (Public.LCDLight == 0) {
-                    // screensaverStart(LCD_ON);
-                    // return;
-                // }
+				if (screen_on) {
+					screen_on = 0;
+					break;
+				}
+				flag_timer_stop = 1;
+				auto_close_lcd = 0;
+                createFormMain(hWnd,enableAutoClose);
 			} break;
+		case MSG_LBUTTONDOWN:
+			if (screensaverStart(1)) {
+				screen_on = 1;
+			}
+			auto_close_lcd = AUTO_CLOSE_LCD;
+			break;
 
+		case MSG_ENABLE_WINDOW:
+			enableAutoClose();
+			break;
+		case MSG_DISABLE_WINDOW:
+			flag_timer_stop = 1;
+			break;
 		case MSG_DESTROY:
 			{
 				Screen.Del(hWnd);

@@ -16,6 +16,8 @@ if (MODE_FACE)
 	set(SUB_DIRS_APP ${SUB_DIRS_APP} rdface )
 endif()
 
+set(SUB_DIRS_APP ${SUB_DIRS_APP} udp_talk )
+
 foreach(sub ${SUB_DIRS_APP})
 	add_subdirectory(${sub})
 endforeach()

@@ -273,7 +273,7 @@ static void dialCallBack(int result)
 		talk_peer_dev.call_out_result = 1;
 		stm->msgPost(stm,EV_TALK_CALLOUTOK,NULL);
 		if (		talk_peer_dev.type != DEV_TYPE_ENTRANCEMACHINE
-				|| 	talk_peer_dev.type != DEV_TYPE_HOUSEENTRANCEMACHINE) {
+				&& 	talk_peer_dev.type != DEV_TYPE_HOUSEENTRANCEMACHINE) {
 #ifdef USE_VIDEO
 			rkH264EncOn(320,240,sendVideoCallbackFunc);
 #endif
@@ -285,6 +285,7 @@ static void dialCallBack(int result)
 }
 static int stmDoTalkCallout(void *data,MyVideo *arg)
 {
+#if 0
 	StmData *data_temp = (StmData *)data;
 	int ret = sqlGetUserInfoUseUserId(data_temp->usr_id,data_temp->nick_name,&data_temp->type);
 	if (ret == 0) {
@@ -298,7 +299,20 @@ static int stmDoTalkCallout(void *data,MyVideo *arg)
 		protocol_talk->uiShowFormVideo(data_temp->type,ui_title);
 	talk_peer_dev.call_out_result = 0;
 	talk_peer_dev.type = data_temp->type;
+	talk_peer_dev.call_time = TIME_CALLING;
 	protocol_talk->dial(data_temp->usr_id,dialCallBack);
+#else
+	StmData *data_temp = (StmData *)data;
+	char ui_title[128] = {0};
+	sprintf(ui_title,"正在呼叫 门口机");
+	talk_peer_dev.call_out_result = 0;
+	talk_peer_dev.type = DEV_TYPE_ENTRANCEMACHINE;
+	talk_peer_dev.call_time = TIME_CALLING;
+	if (protocol_talk->uiShowFormVideo)
+		protocol_talk->uiShowFormVideo(DEV_TYPE_ENTRANCEMACHINE,ui_title);
+	protocol_talk->dial(data_temp->usr_id,dialCallBack);
+		my_video->showPeerVideo();	
+#endif
 }
 
 static void *threadCallOutAll(void *arg)
@@ -339,9 +353,15 @@ static int stmDoTalkCallin(void *data,MyVideo *arg)
 	strcpy(talk_peer_dev.peer_nick_name,data_temp->nick_name);
 
 	sprintf(ui_title,"%s 正在呼叫",talk_peer_dev.peer_nick_name);
+	// 3000局域网对讲默认为门口机
+	if (protocol_talk->type == PROTOCOL_TALK_3000) {
+		data_temp->type = DEV_TYPE_ENTRANCEMACHINE;
+	}
 	if (protocol_talk->uiShowFormVideo)
 		protocol_talk->uiShowFormVideo(data_temp->type,ui_title);
 
+	talk_peer_dev.type = data_temp->type;
+	talk_peer_dev.call_time = TIME_CALLING;
 	if (data_temp->type == DEV_TYPE_HOUSEHOLDAPP) {
 		my_video->videoAnswer(0,data_temp->type);
 	} else {
@@ -353,7 +373,7 @@ static int stmDoTalkAnswer(void *data,MyVideo *arg)
 {
 	char ui_title[128] = {0};
 	if (		talk_peer_dev.type != DEV_TYPE_ENTRANCEMACHINE
-			|| 	talk_peer_dev.type != DEV_TYPE_HOUSEENTRANCEMACHINE) {
+			&& 	talk_peer_dev.type != DEV_TYPE_HOUSEENTRANCEMACHINE) {
 #ifdef USE_VIDEO
 		rkH264EncOn(320,240,sendVideoCallbackFunc);
 #endif
@@ -376,6 +396,7 @@ static int stmDoTalkHangupAll(void *data,MyVideo *arg)
 #ifdef USE_VIDEO
 	rkH264EncOff();
 #endif
+	protocol_talk->hangup();
 	protocol_talk->uiHangup();
 	talk_peer_dev.call_time = 0;
 	memset(&talk_peer_dev,0,sizeof(talk_peer_dev));
@@ -384,37 +405,37 @@ static int stmDoTalkHangupAll(void *data,MyVideo *arg)
 static int stmDoTalkHangup(void *data,MyVideo *arg)
 {
 	stmDoTalkHangupAll(data,arg);
-	my_video->showLocalVideo();
+	my_video->hideVideo();
 }
 
 static int stmDoCapture(void *data,MyVideo *arg)
 {
 	// rkVideoStopCapture();
 }
-FILE *fp,*fp1;
+// FILE *fp,*fp1;
 static void recordEncCallbackFunc(void *data,int size)
 {
 	char buf[16];
-	fwrite(data,1,size,fp);
+	// fwrite(data,1,size,fp);
 	sprintf(buf,"%d\n",size);
-	fwrite(buf,1,strlen(buf),fp1);
+	// fwrite(buf,1,strlen(buf),fp1);
 }
 static int stmDoRecordStart(void *data,MyVideo *arg)
 {
 #ifdef USE_VIDEO
-	fp = fopen("test.h264","wb");
-	fp1 = fopen("test.txt","wb");
+	// fp = fopen("test.h264","wb");
+	// fp1 = fopen("test.txt","wb");
 	rkH264EncOn(320,240,recordEncCallbackFunc);
 #endif
 }
 static int stmDoRecordStop(void *data,MyVideo *arg)
 {
 #ifdef USE_VIDEO
-	rkH264EncOff();
-	fflush(fp);
-	fclose(fp);
-	fflush(fp1);
-	fclose(fp1);
+	// rkH264EncOff();
+	// fflush(fp);
+	// fclose(fp);
+	// fflush(fp1);
+	// fclose(fp1);
 #endif
 	stm->msgPost(stm,EV_RECORD_STOP_FINISHED,NULL);
 }
@@ -485,7 +506,10 @@ static void videoCallOut(char *user_id)
 			        sizeof(StmData));
 	strcpy(st_data->usr_id,user_id);
 	stm->msgPost(stm,EV_TALK_CALLOUT,st_data);
-	talk_peer_dev.call_time = TIME_CALLING;
+}
+static int videoGetCallTime(void)
+{
+	return talk_peer_dev.call_time;
 }
 
 static void videoCallOutAll(void)
@@ -585,6 +609,7 @@ void myVideoInit(void)
 	my_video->videoCallIn = videoCallIn;
 	my_video->videoHangup = videoHangup;
 	my_video->videoAnswer = videoAnswer;
+	my_video->videoGetCallTime = videoGetCallTime;
 	init();
 	stm = stateMachineCreate(ST_IDLE,
 			state_table,

@@ -40,6 +40,22 @@
 
 ScreenForm Screen;
 
+static void screenSetCurrent(const char *Class)
+{
+	FormClass * form = Screen.head;
+	if(Class==NULL)
+		return ;
+
+	while(form) {
+		if(strncmp(Class,form->Class,15)==0) {
+			Screen.current = form;
+			printf("[%s]%s\n", __FUNCTION__,Screen.current->Class);
+			break;
+		}
+		form = form->next;
+	}
+}
+
 static BOOL screenAddForm(HWND hWnd,const char *Class)
 {
 	FormClass * Form = (FormClass *)malloc(sizeof(FormClass));
@@ -53,6 +69,8 @@ static BOOL screenAddForm(HWND hWnd,const char *Class)
 		Screen.tail = Form;
 	}
 	Screen.Count++;
+	if(strcmp(Class,"Fvideo"))
+		screenSetCurrent(Class);
 	return TRUE;
 }
 //--------------------------------------------------------------------------
@@ -95,7 +113,7 @@ static void screenReturnMainForm(void)
 	Forms = (HWND *)calloc(sizeof(HWND),Screen.Count);
 	while(form && FormCnt<Screen.Count) {
 		//留下主窗口
-		if(strcmp(form->Class,"TFrmVL"))
+		if(strcmp(form->Class,"TFrmVL") && strcmp(form->Class,"Fvideo"))
 			Forms[FormCnt++] = form->hWnd;
 		form = form->next;
 	}
@@ -141,6 +159,12 @@ static void screenForeachForm(int iMsg, WPARAM wParam, LPARAM lParam)
 	}
 }
 
+static HWND screenGetCurrent(void)
+{
+	printf("[%s]%s\n", __FUNCTION__,Screen.current->Class);
+	return Screen.current->hWnd;
+}
+
 void screenInit(void)
 {
 	Screen.Add = screenAddForm;
@@ -148,5 +172,8 @@ void screenInit(void)
 	Screen.Find = screenFindForm;
 	Screen.ReturnMain = screenReturnMainForm;
 	Screen.foreachForm = screenForeachForm;
+	Screen.setCurrent = screenSetCurrent;
+	Screen.getCurrent = screenGetCurrent;
+	
 }
 

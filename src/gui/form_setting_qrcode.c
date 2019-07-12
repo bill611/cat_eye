@@ -192,6 +192,7 @@ static void buttonGetImei(HWND hwnd, int id, int nc, DWORD add_data)
 
 static void enableAutoClose(void)
 {
+	Screen.setCurrent(form_base_priv.name);
 	flag_timer_stop = 0;
 }
 
@@ -271,6 +272,12 @@ static int formSettingQrcodeProc(HWND hDlg, int message, WPARAM wParam, LPARAM l
 				}
 			} break;
 
+		case MSG_ENABLE_WINDOW:
+			enableAutoClose();
+			break;
+		case MSG_DISABLE_WINDOW:
+			flag_timer_stop = 1;
+			break;
 		default:
             break;
     }
@@ -295,6 +302,7 @@ int createFormSettingQrcode(HWND hMainWnd,void (*callback)(void))
 	}
 
 	if(Form) {
+		Screen.setCurrent(form_base_priv.name);
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
 		form_base_priv.callBack = callback;

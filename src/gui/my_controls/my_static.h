@@ -31,7 +31,9 @@ extern "C" {
 
 	enum {  // 控件类型
 		MYSTATIC_TYPE_TEXT,
+		MYSTATIC_TYPE_TEXT_ONLY,
 		MYSTATIC_TYPE_TEXT_AND_IMG,
+		MYSTATIC_TYPE_IMG_ONLY,
 	};
 
 

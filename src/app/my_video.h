@@ -42,6 +42,7 @@ extern "C" {
 		void (*videoCallIn)(char *user_id);
 		void (*videoAnswer)(int dir,int dev_type); // dir 0本机接听 1对方接听
 		void (*videoHangup)(void);
+		int (*videoGetCallTime)(void);
 	}MyVideo;
 	extern MyVideo *my_video;
 	void myVideoInit(void);

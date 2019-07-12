@@ -203,6 +203,7 @@ static int formMainTimerGetState(int idc_timer)
 
 static void enableAutoClose(void)
 {
+	Screen.setCurrent(form_base_priv.name);
 	flag_timer_stop = 0;	
 	my_video->showLocalVideo();
 	my_video->recordStop();
@@ -282,6 +283,7 @@ static void buttonAccessPress(HWND hwnd, int id, int nc, DWORD add_data)
 	if (nc != BN_CLICKED)
 		return;
 	flag_timer_stop = 1;
+	my_video->videoCallOut("192.168.1.10");
 	// createFormVideo(GetParent(hwnd),FORM_VIDEO_TYPE_TALK,enableAutoClose);
 }
 static void buttonVideoPress(HWND hwnd, int id, int nc, DWORD add_data)
@@ -384,6 +386,12 @@ static int formMainProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 				}
 			} break;
 
+		case MSG_ENABLE_WINDOW:
+			enableAutoClose();
+			break;
+		case MSG_DISABLE_WINDOW:
+			flag_timer_stop = 1;
+			break;
 		default:
 			break;
 	}
@@ -395,17 +403,19 @@ static int formMainProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 
 
 
-int createFormMain(HWND hMainWnd)
+int createFormMain(HWND hMainWnd,void (*callback)(void))
 {
 	HWND Form = Screen.Find(form_base_priv.name);
 	my_video->showLocalVideo();
 	if(Form) {
 		ShowWindow(Form,SW_SHOWNORMAL);
+		Screen.setCurrent(form_base_priv.name);
 	} else {
         if (bmp_load_finished == 0) {
             // topMessage(hMainWnd,TOPBOX_ICON_LOADING,NULL );
             return 0;
         }
+		form_base_priv.callBack = callback;
 		form_base = formBaseCreate(&form_base_priv);
 		return CreateMyWindowIndirectParam(form_base->priv->dlgInitParam,
 				hMainWnd, form_base->priv->dlgProc, 0);

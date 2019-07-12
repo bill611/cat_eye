@@ -49,6 +49,7 @@ int getWifiConfig(int *qual);
 void wifiConnectStart(void);
 void wifiConnect(void);
 void wifiDisConnect(void);
+int screensaverStart(int state);
 
 #endif
 
