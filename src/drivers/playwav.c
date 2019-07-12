@@ -208,6 +208,7 @@ done2:
 int playwavfile(char * file_name)
 {
 	char buff[128] = {0};
+	printf("play:%s\n", file_name);
 	excuteCmd("aplay",file_name,NULL);
 	return 0;
 	int result;

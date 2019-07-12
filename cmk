@@ -17,8 +17,7 @@ else
 	cd release
 	cmake \
 		-DCMAKE_BUILD_TYPE=Release \
-		-DMODE_UCPAAS=OFF \
-		-DMODE_FACE=OFF \
+		-DMODE_UDPTALK=OFF \
 		..
 fi
 make

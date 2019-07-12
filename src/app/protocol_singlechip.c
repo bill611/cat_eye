@@ -25,6 +25,7 @@
 #include "protocol.h"
 #include "sql_handle.h"
 #include "my_video.h"
+#include "my_audio.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
@@ -160,7 +161,13 @@ static void uartDeal(void)
 		case CMD_GET_CHECK_RESPONSE:
 		case CMD_REPORT_RESPONSE:
 			if (data[0] & (1<<2)) {
-				// my_video->videoCallOutAll();
+#ifdef USE_UDPTALK
+				formVideoLayerScreenOn();
+				myAudioPlayDingdong();
+#endif
+#ifdef USE_UCPAAS
+				my_video->videoCallOutAll();
+#endif
 			}
 			if (data[0] & (1<<3)) {
 				// my_video->videoAnswer(0,DEV_TYPE_UNDEFINED);

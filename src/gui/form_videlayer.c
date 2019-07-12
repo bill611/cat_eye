@@ -118,6 +118,11 @@ void screenAutoCloseStop(void)
 {
 	auto_close_lcd = 0;
 }
+void formVideoLayerScreenOn()
+{
+	screensaverStart(1);
+	auto_close_lcd = AUTO_CLOSE_LCD;
+}
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief formVideoLayerTimerProc1s 窗口相关定时函数

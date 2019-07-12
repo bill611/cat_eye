@@ -63,7 +63,6 @@ static void* loopPlay(void *arg)
 }
 void myAudioPlayRing(void)
 {
-	return;
 	if (loop_start == 1)
 		return;
 	while (loop_end == 0) {
@@ -76,7 +75,12 @@ void myAudioPlayRing(void)
 }
 void myAudioStopPlay(void)
 {
-	return;
 	loop_start = 0;
 	excuteCmd("busybox","killall","aplay",NULL);
+}
+void myAudioPlayDingdong(void)
+{
+	char *path = (char *) calloc(1,64);
+	sprintf(path,"%sdingdong.wav",AUDIO_PATH);	
+	playwavfile(path);		
 }
