@@ -91,7 +91,43 @@ static pthread_t RTP_pthread;
 static pthread_t Encode_pthread;
 static pthread_t SPI_pthread;
 static void *call_back_data;
+static int last_i_seq = 0;
+static int last_seq = 0;
 
+static int isIframe(unsigned char *sdata)
+{
+	if (       (sdata[0] == 0x00)
+			&& (sdata[1] == 0x00)
+			&& (sdata[2] == 0x00)
+			&& (sdata[3] == 0x01)
+			&& (   (sdata[4] == 0x65) || (sdata[4] == 0x67)
+				|| (sdata[4] == 0x25) || (sdata[4] == 0x27)) ) {
+			return 1;
+	} else if ((sdata[0] == 0x00)
+			&& (sdata[1] == 0x00)
+			&& (sdata[2] == 0x01)
+			&& (   (sdata[3] == 0x65) || (sdata[3] == 0x67)
+				|| (sdata[3] == 0x25) || (sdata[3] == 0x27)) ) {
+			return 1;
+	}
+	return 0;
+}
+
+int needDecode(int cur_seq,unsigned char *sdata)
+{
+    //关键帧，需要解码
+	if (isIframe(sdata)) {
+		last_i_seq = cur_seq;
+		last_seq = cur_seq;
+		return 1;
+	}
+	if(cur_seq == (last_seq + 1)) {
+		last_seq = cur_seq;
+		return 1;
+	}
+	printf("loss seq:%d last_seq:%d last_i_seq:%d\n",cur_seq,last_seq,last_i_seq);
+	return 0;
+}
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief decodeAudio 解码音频
@@ -140,6 +176,11 @@ static int rtpGetVideo(Rtp* This,void *data)
 	if (pbody->slen == 0) {
 		RtpDcMem->GetEnd(RtpDcMem);
 		return 0;
+	}
+	if(needDecode(pbody->seq,pbody->sdata) == 0) {
+		RtpDcMem->GetEnd(RtpDcMem);
+		return 0;
+
 	}
 	memcpy(data,pbody->sdata,pbody->slen);
 	// printf("[%s]%d\n", __func__,pbody->slen);
@@ -389,6 +430,8 @@ static void rtpBuildConnect(Rtp *This)
 		This->interface->start(This);
 	if(RtpDcMem==NULL)
 		RtpDcMem = CreateShareMemory(sizeof(rec_body),2,0);
+	last_i_seq = 0;
+	last_seq = 0;
 	rtpThreadCreate(This);
 	spiThreadCreate(This);
 }

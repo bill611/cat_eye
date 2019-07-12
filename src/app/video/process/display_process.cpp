@@ -79,7 +79,7 @@ void DisplayProcess::showLocalVideo(void)
 	start_dec_ = false;
 
 }
-FILE *fp_1;
+// static FILE *fp_1;
 static void* threadH264Dec(void *arg)
 {
 	DisplayProcess *process = (DisplayProcess *)arg;
