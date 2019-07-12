@@ -63,6 +63,7 @@ static void* loopPlay(void *arg)
 }
 void myAudioPlayRing(void)
 {
+	return;
 	if (loop_start == 1)
 		return;
 	while (loop_end == 0) {
@@ -75,6 +76,7 @@ void myAudioPlayRing(void)
 }
 void myAudioStopPlay(void)
 {
+	return;
 	loop_start = 0;
 	excuteCmd("busybox","killall","aplay",NULL);
 }

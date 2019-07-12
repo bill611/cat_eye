@@ -19,6 +19,7 @@ option(MODE_UCPAAS "This is a option for ucpass" ON)
 option(MODE_FACE "This is a option for face" ON)
 option(MODE_UART "This is a option for uart" ON)
 option(MODE_VIDEO "This is a option for video" ON)
+option(MODE_UDPTALK "This is a option for udptalk" ON)
 
 # 添加编译过程变量
 # set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -134,6 +135,9 @@ if (MODE_UART)
 endif()
 if (MODE_VIDEO)
     add_definitions(-DUSE_VIDEO)
+endif()
+if (MODE_UDPTALK)
+	add_definitions(-DUSE_UDPTALK)
 endif()
 
 # 添加宏定义

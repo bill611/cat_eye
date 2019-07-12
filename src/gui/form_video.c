@@ -172,7 +172,7 @@ static void buttonHangupPress(HWND hwnd, int id, int nc, DWORD add_data)
 	} else {
 		my_video->videoHangup();
 	}
-	ShowWindow(GetParent(hwnd),SW_HIDE);
+	// ShowWindow(GetParent(hwnd),SW_HIDE);
 }
 static void buttonUnlockPress(HWND hwnd, int id, int nc, DWORD add_data)
 {

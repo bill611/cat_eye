@@ -33,7 +33,6 @@
 #include "qrenc.h"
 #include "config.h"
 #include "timer.h"
-#include "udp_talk/udp_talk_protocol.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
@@ -437,9 +436,8 @@ static int udpUdpProtocolFilter(SocketHandle *ABinding,SocketPacket *AData)
 }
 static void udpLocalCall(SocketHandle *ABinding,SocketPacket *AData)
 {
-	if (protocol_video)
-		protocol_video->cmdHandle(protocol_video,
-				ABinding->IP,ABinding->Port,
+	if (protocol_talk)
+		protocol_talk->udpCmd( ABinding->IP,ABinding->Port,
 				AData->Data,AData->Size);
 }
 

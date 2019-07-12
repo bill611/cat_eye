@@ -78,6 +78,8 @@ extern "C" {
 		void (*startRecord)(void);
 		void (*recording)(char *data,unsigned int size);
 		void (*playVideo)(const unsigned char* frame_data, const unsigned int data_len);
+
+		void (*udpCmd)(char *ip,int port, char *data,int size);
 	}ProtocolTalk;
 	extern ProtocolTalk *protocol_talk;
 

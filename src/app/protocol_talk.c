@@ -77,8 +77,10 @@ static void dial(char *user_id,void (*callBack)(int result))
 	ucsDial(user_id);
 #endif
 	dialCallBack = callBack;
+#ifdef USE_UDPTALK
 	if (protocol_video)
 		protocol_video->call(protocol_video,user_id);
+#endif
 }
 
 static void hangup(void)
@@ -87,15 +89,19 @@ static void hangup(void)
 	ucsHangup();
 #endif
 	myAudioStopPlay();
+#ifdef USE_UDPTALK
 	if (protocol_video)
 		protocol_video->hangup(protocol_video);
 	if (udp_talk_trans)
 		udp_talk_trans->close(udp_talk_trans);
+#endif
 }
 static void unlock(void)
 {
+#ifdef USE_UDPTALK
 	if (protocol_video)
 		protocol_video->unlock(protocol_video);
+#endif
 }
 
 static void answer(void)
@@ -104,10 +110,12 @@ static void answer(void)
 	ucsAnswer();
 #endif
 	myAudioStopPlay();
+#ifdef USE_UDPTALK
 	if (protocol_video)
 		protocol_video->answer(protocol_video);
 	if (udp_talk_trans)
 		udp_talk_trans->startAudio(udp_talk_trans);
+#endif
 }
 
 static void sendCmd(char *cmd,char *user_id)
@@ -146,8 +154,10 @@ static void receiveVideo(void *data,int *size)
 	int frameType = 0;
 	ucsReceiveVideo(data, size, &timeStamp, &frameType);
 #endif
+#ifdef USE_UDPTALK
 	if (udp_talk_trans)
 		*size = udp_talk_trans->getVideo(udp_talk_trans,data);
+#endif
 }
 static void cbDialFail(void *arg)
 {
@@ -374,6 +384,13 @@ static void udpReceiveEnd(Rtp *This)
 			my_mixer->DeInitPlay(my_mixer,&audio_fp);
 	}
 }
+static void udpCmd(char *ip,int port, char *data,int size)
+{
+#ifdef USE_UDPTALK
+	if (protocol_video)
+		protocol_video->cmdHandle(protocol_video,ip,port,data,size);
+#endif
+}
 static UdpTalkTransInterface rtp_interface = {
 	.receiveAudio = udpReceiveAudio,
 	.receiveEnd = udpReceiveEnd,
@@ -392,11 +409,13 @@ void registTalk(void)
 	protocol_talk->reload = reloadLocalTalk;
 	protocol_talk->sendVideo = sendVideo;
 	protocol_talk->receiveVideo = receiveVideo;
+	protocol_talk->udpCmd = udpCmd;
+	protocol_talk->unlock = unlock;
 #ifdef USE_UCPAAS
 	protocol_talk->type = PROTOCOL_TALK_OTHER;
 	registUcpaas(&interface);
-#else
-	protocol_talk->unlock = unlock;
+#endif
+#ifdef USE_UDPTALK
 	protocol_talk->type = PROTOCOL_TALK_3000;
 	protocol_talk->reload();
 	protocol_talk->connect();

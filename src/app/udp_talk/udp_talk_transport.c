@@ -541,6 +541,7 @@ static void rtpClose(Rtp *This)
 		RTPObject->Destroy(RTPObject);  //bug maybe ---Jack
 		RTPObject = NULL;
 	}
+	printf("[%s]\n", __func__);
 
 }
 static void rtpDestroy(Rtp **This)
