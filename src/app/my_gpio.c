@@ -80,12 +80,12 @@ static MyGpioTable gpio_normal_tbl[]={
 	{ENUM_GPIO_SPKR,   "spkctr",0,IO_ACTIVE},
 	{ENUM_GPIO_KEYLED1,"keyled1",0,IO_ACTIVE},
 	{ENUM_GPIO_KEYLED2,"keyled2",0,IO_ACTIVE},
-	{ENUM_GPIO_IRLEDEN,"irleden",0,IO_ACTIVE},
+	{ENUM_GPIO_IRLEDEN,"irleden",1,IO_ACTIVE},
 	{ENUM_GPIO_ASNKEY, "asnkey",0,IO_ACTIVE},
 	{ENUM_GPIO_MICEN,  "micen", 0,IO_ACTIVE},
 	{ENUM_GPIO_SDCTRL, "sdctrl",0,IO_ACTIVE},
 	{ENUM_GPIO_ICRAIN, "icrain",0,IO_ACTIVE},
-	{ENUM_GPIO_ICBAIN, "icrbin",0,IO_ACTIVE},
+	{ENUM_GPIO_ICBAIN, "icrbin",1,IO_ACTIVE},
 };
 
 MyGpio *gpio = NULL;

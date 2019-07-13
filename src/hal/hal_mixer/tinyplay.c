@@ -31,7 +31,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#if 0
+#if 1
 #include <tinyalsa/asoundlib.h>
 struct cmd {
     unsigned int card;

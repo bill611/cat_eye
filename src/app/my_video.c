@@ -285,7 +285,7 @@ static void dialCallBack(int result)
 }
 static int stmDoTalkCallout(void *data,MyVideo *arg)
 {
-#if 0
+#ifdef USE_UCPAAS
 	StmData *data_temp = (StmData *)data;
 	int ret = sqlGetUserInfoUseUserId(data_temp->usr_id,data_temp->nick_name,&data_temp->type);
 	if (ret == 0) {
@@ -301,7 +301,8 @@ static int stmDoTalkCallout(void *data,MyVideo *arg)
 	talk_peer_dev.type = data_temp->type;
 	talk_peer_dev.call_time = TIME_CALLING;
 	protocol_talk->dial(data_temp->usr_id,dialCallBack);
-#else
+#endif
+#ifdef USE_UDPTALK
 	StmData *data_temp = (StmData *)data;
 	char ui_title[128] = {0};
 	sprintf(ui_title,"正在呼叫 门口机");

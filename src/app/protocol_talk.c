@@ -414,11 +414,11 @@ void registTalk(void)
 #ifdef USE_UCPAAS
 	protocol_talk->type = PROTOCOL_TALK_OTHER;
 	registUcpaas(&interface);
+	protocol_talk->reload();
+	protocol_talk->connect();
 #endif
 #ifdef USE_UDPTALK
 	protocol_talk->type = PROTOCOL_TALK_3000;
-	protocol_talk->reload();
-	protocol_talk->connect();
 	protocol_video = videoTransCreate(&video_interface,
 			        7800,0,3,VIDEOTRANS_PROTOCOL_3000,"","123","0101");
 	protocol_video->enable(protocol_video);

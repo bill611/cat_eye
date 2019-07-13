@@ -49,7 +49,7 @@ static void screenSetCurrent(const char *Class)
 	while(form) {
 		if(strncmp(Class,form->Class,15)==0) {
 			Screen.current = form;
-			printf("[%s]%s\n", __FUNCTION__,Screen.current->Class);
+			// printf("[%s]%s\n", __FUNCTION__,Screen.current->Class);
 			break;
 		}
 		form = form->next;
@@ -161,7 +161,7 @@ static void screenForeachForm(int iMsg, WPARAM wParam, LPARAM lParam)
 
 static HWND screenGetCurrent(void)
 {
-	printf("[%s]%s\n", __FUNCTION__,Screen.current->Class);
+	// printf("[%s]%s\n", __FUNCTION__,Screen.current->Class);
 	return Screen.current->hWnd;
 }
 

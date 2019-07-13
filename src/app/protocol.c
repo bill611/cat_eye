@@ -478,7 +478,7 @@ void protocolInit(void)
 	protocol->isNeedToUpdate = isNeedToUpdate;
 
 	// jpegIncDecInit();
-	// registHardCloud();
+	registHardCloud();
 	registTalk();
 	registSingleChip();
 }

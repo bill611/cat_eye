@@ -133,7 +133,7 @@ void formVideoLayerScreenOn()
 static void formVideoLayerTimerProc1s(HWND hwnd)
 {
 	if (auto_close_lcd) {
-		printf("auto_close_ld:%d\n",auto_close_lcd );
+		// printf("auto_close_ld:%d\n",auto_close_lcd );
 		if (--auto_close_lcd == 0)
 			screensaverStart(0);
 	}
