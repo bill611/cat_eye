@@ -219,15 +219,7 @@ static int mixerWrite(TMixer *This,int Handle,const void *pBuffer,int Size)
         ret = Size;
 		return Size;
 	}
-	// if (This->Priv->channle == 1) {
-		// char *pAllocStereo=NULL;	
-		// pAllocStereo = (char*)calloc(1,Size*2);      
-		// int new_size = MonoToStereo(pBuffer,Size,pAllocStereo);
-		// ret = rvMixerPlayWrite((void *)pAllocStereo,new_size);
-		// free(pAllocStereo);
-	// } else {
-		ret = rvMixerPlayWrite((void *)pBuffer,Size);
-	// }
+	ret = rvMixerPlayWrite((void *)pBuffer,Size);
 mixer_write_end:
 	return ret;
 }

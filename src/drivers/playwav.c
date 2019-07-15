@@ -137,7 +137,7 @@ static void * threadWav(void *file_name)
 		goto done1;
 	}
 	if(wav_msg.wav_formate_size != 16) {
-		printf("Only support 16bit standard wave format!\n");
+		printf("Only support 16bit standard wave format!:%d\n",wav_msg.wav_formate_size);
 		goto done1;
 	}
 	if(wav_msg.wav_format.format_tag != WAVE_FORMAT_PCM) {
@@ -168,7 +168,7 @@ static void * threadWav(void *file_name)
 		//读文件内容写入spi接口进行播放
 		read_size = wav_size > wavbuf_size_max ? wavbuf_size_max : wav_size;
 		read_size = fread(wav_buf,1,read_size,fp);
-		printf("read_size :%d\n",read_size);
+		// printf("read_size :%d\n",read_size);
 		if(read_size <= 0) {
 			printf("Read data size is less zero!\n");
 			break;
@@ -209,13 +209,12 @@ int playwavfile(char * file_name)
 {
 	char buff[128] = {0};
 	printf("play:%s\n", file_name);
-	excuteCmd("aplay",file_name,NULL);
-	return 0;
+	// excuteCmd("aplay",file_name,NULL);
+	// return 0;
 	int result;
 	char *pName;
 	pthread_attr_t threadAttr1;				//线程属性
 
-	printf("play:%s\n", file_name);
 	playWavStop();
 	thread_exit = 0; // 注意！判断结束后即线程开始创建，防止马上再次进入导致两次stop而创建2个线程
 	pthread_attr_init(&threadAttr1);

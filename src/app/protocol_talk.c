@@ -214,7 +214,7 @@ static void cbReceivedCmd(const char *user_id,void *arg)
 		return ;
 	}
 	dec->print(dec);
-	int message_type = dec->getValueInt(dec, "deviceType");
+	int message_type = dec->getValueInt(dec, "messageType");
 	switch (message_type)
 	{
 		case MSG_TYPE_UNLOCK :
@@ -256,8 +256,9 @@ static void cbStartRecord(unsigned int rate,unsigned int bytes_per_sample,unsign
 static void cbRecording(char *data,unsigned int size)
 {
 	// printf("mic :%d\n", mic_open);
-	if (my_mixer && mic_open)
+	if (my_mixer && mic_open) {
 		my_mixer->Read(my_mixer,data,size);
+	}
 }
 static void cbPlayAudio(const char *data,unsigned int size)
 {
@@ -279,6 +280,7 @@ static Callbacks interface = {
 	.playAudio = cbPlayAudio,
 };
 
+#ifdef USE_UDPTALK
 static void videoCallbackOvertime(int ret,void *CallBackData)
 {
 	if(ret != MSG_SENDTIMEOUT) {
@@ -386,10 +388,8 @@ static void udpReceiveEnd(Rtp *This)
 }
 static void udpCmd(char *ip,int port, char *data,int size)
 {
-#ifdef USE_UDPTALK
 	if (protocol_video)
 		protocol_video->cmdHandle(protocol_video,ip,port,data,size);
-#endif
 }
 static UdpTalkTransInterface rtp_interface = {
 	.receiveAudio = udpReceiveAudio,
@@ -397,6 +397,7 @@ static UdpTalkTransInterface rtp_interface = {
 	.sendAudio = udpSendAudio,
 	.start = udpStart,
 };
+#endif
 
 void registTalk(void)
 {
@@ -409,7 +410,6 @@ void registTalk(void)
 	protocol_talk->reload = reloadLocalTalk;
 	protocol_talk->sendVideo = sendVideo;
 	protocol_talk->receiveVideo = receiveVideo;
-	protocol_talk->udpCmd = udpCmd;
 	protocol_talk->unlock = unlock;
 #ifdef USE_UCPAAS
 	protocol_talk->type = PROTOCOL_TALK_OTHER;
@@ -417,7 +417,9 @@ void registTalk(void)
 	protocol_talk->reload();
 	protocol_talk->connect();
 #endif
+
 #ifdef USE_UDPTALK
+	protocol_talk->udpCmd = udpCmd;
 	protocol_talk->type = PROTOCOL_TALK_3000;
 	protocol_video = videoTransCreate(&video_interface,
 			        7800,0,3,VIDEOTRANS_PROTOCOL_3000,"","123","0101");

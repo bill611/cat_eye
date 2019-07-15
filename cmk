@@ -18,6 +18,7 @@ else
 	cmake \
 		-DCMAKE_BUILD_TYPE=Release \
 		-DMODE_UDPTALK=OFF \
+		\
 		..
 fi
 make

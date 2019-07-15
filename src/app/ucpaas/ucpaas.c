@@ -213,7 +213,7 @@ static void init_playout_cb(unsigned int sample_rate,
 			bytes_per_sample,
 			num_of_channels);
 	if (call_backs.initAudio)
-		call_backs.initAudio(sample_rate,16,num_of_channels);
+		call_backs.initAudio(8000,16,2);
 }
 
 // UCS init external recording device with given parameters
@@ -240,7 +240,7 @@ static int read_recording_data_cb(char * audio_data,
     unsigned int size)
 {
 	if (call_backs.recording)
-		call_backs.recording(audio_data,size/4);
+		call_backs.recording(audio_data,size);
 	return 0;
 }
 

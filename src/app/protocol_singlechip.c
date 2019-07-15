@@ -163,11 +163,11 @@ static void uartDeal(void)
 			if (data[0] & (1<<2)) {
 #ifdef USE_UDPTALK
 				formVideoLayerScreenOn();
-				myAudioPlayDingdong();
 #endif
 #ifdef USE_UCPAAS
 				my_video->videoCallOutAll();
 #endif
+				// myAudioPlayDingdong();
 			}
 			if (data[0] & (1<<3)) {
 				// my_video->videoAnswer(0,DEV_TYPE_UNDEFINED);
