@@ -798,7 +798,7 @@ void saveLog(char *fmt, ...)
 		log_fd = fopen("log.txt","ab+");
 	if (log_fd) {
 		char time_now[50]; 
-		GetDate(time_now,sizeof(time_now));
+		getDate(time_now,sizeof(time_now));
 		fprintf(log_fd,"[%s]",time_now);
 		vfprintf(log_fd,fmt,args);
 		fflush(log_fd); 

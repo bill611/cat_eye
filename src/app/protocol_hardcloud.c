@@ -693,6 +693,18 @@ retry_qiniu:
 			free(qiniu_server);
 		sleep(1);
 	}
+	// char *qiniu_upload= NULL;
+	// if (qiniu_server_token) {
+		// http->qiniuUpload("http://upload-z2.qiniup.com",
+				// NULL,qiniu_server_token,
+				// "./imei.png",
+				// "imei.png",
+				// &qiniu_upload);
+	// }
+	// if (qiniu_upload) {
+		// // printf("%s\n",qiniu_upload );
+		// free(qiniu_upload);
+	// }
 	sleep(1);
 	return NULL;
 }

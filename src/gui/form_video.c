@@ -40,6 +40,7 @@
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
 extern void formSettingLoadBmp(void);
+extern void screenAutoCloseStop(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare

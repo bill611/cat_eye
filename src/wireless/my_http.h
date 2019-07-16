@@ -24,6 +24,13 @@ extern "C" {
 	typedef struct _MyHttp {
 		int (*post)(char *url, char *para, char **out_data);
 		int (*download)(char *url, char *para, char *file_path);
+		int (*upload)(char *url, char *para, char **out_data);
+		int (*qiniuUpload)(char *url, 
+				char *para,
+				char *token,
+				char *file_path,
+				char *file_name,
+				char **out_data);
 	}MyHttp;
 
 	MyHttp * myHttpCreate(void);

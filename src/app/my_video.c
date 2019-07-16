@@ -73,7 +73,6 @@ enum {
 	ST_TALK_CALLIN,	// 对讲呼入状态
 	ST_TALK_TALKING,// 对讲中状态
 	ST_RECORDING, 	// 录像状态
-	ST_CAPTURE, 	// 抓拍状态
 };
 
 enum {
@@ -88,7 +87,7 @@ enum {
     DO_TALK_ANSWER, 	// 对讲接听
     DO_TALK_HANGUP, 	// 对讲挂机
     DO_TALK_HANGUPALL, 	// 遍历对讲挂机
-    DO_CAPTURE, 		// 抓拍
+    DO_CAPTURE, 	// 抓拍本地
     DO_RECORD_START, 	// 录像开始
     DO_RECORD_STOP, 	// 录像结束
 };
@@ -126,9 +125,9 @@ static char *st_debug_ev[] = {
 	"EV_TALK_ANSWER",       // 对讲接听
 	"EV_TALK_HANGUP",       // 对讲挂机
 	"EV_TALK_HANGUPALL",	// 遍历对讲挂机
-	"EV_CAPTURE",           // 遍历对讲挂机
-	"EV_RECORD_START",      // 截图
-	"EV_RECORD_STOP",       // 录像开始
+	"EV_CAPTURE",           // 截图
+	"EV_RECORD_START",      // 录像开始
+	"EV_RECORD_STOP",       // 录像结束
 	"EV_RECORD_STOP_FINISHED",// 录像结束后执行动作
 };
 static char *st_debug_st[] = {
@@ -139,7 +138,6 @@ static char *st_debug_st[] = {
 	"ST_TALK_CALLIN",
 	"ST_TALK_TALKING",
 	"ST_RECORDING",
-	"ST_CAPTURE",
 };
 static char *st_debug_do[] = {
 	"DO_FAIL",
@@ -215,6 +213,9 @@ static StateTable state_table[] =
 
 	{EV_RECORD_STOP_FINISHED,	ST_IDLE,	ST_FACE,			DO_FACE_ON},
 
+	{EV_CAPTURE,	ST_IDLE,			ST_IDLE,		DO_CAPTURE},
+	{EV_CAPTURE,	ST_FACE,			ST_FACE,		DO_CAPTURE},
+	{EV_CAPTURE,	ST_TALK_TALKING,	ST_TALK_TALKING,DO_CAPTURE},
 };
 
 static int stmDoFail(void *data,MyVideo *arg)

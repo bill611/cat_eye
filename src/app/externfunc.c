@@ -90,7 +90,7 @@ static int wifi_scan_end = 1;
  * @returns
  */
 /* ---------------------------------------------------------------------------*/
-char * GetDate(char *cBuf,int Size)
+char * getDate(char *cBuf,int Size)
 {
 	time_t timer;
     struct tm *tm1;
@@ -109,6 +109,24 @@ char * GetDate(char *cBuf,int Size)
 			tm1->tm_min,
 			tm1->tm_sec);
 	return cBuf;
+}
+
+void getFileName(char *file_name)
+{
+	if (!file_name)
+		return;
+	time_t timer;
+    struct tm *tm1;
+	timer = time(&timer);
+	tm1 = localtime(&timer);
+	sprintf(file_name,
+			"%04d%02d%02d%02d%02d%02d",
+			tm1->tm_year+1900,
+			tm1->tm_mon+1,
+			tm1->tm_mday,
+			tm1->tm_hour,
+			tm1->tm_min,
+			tm1->tm_sec);
 }
 struct tm * getTime(void)
 {
@@ -188,54 +206,6 @@ void DelayMs(int ms)
 #else
 	usleep(ms*1000);
 #endif
-}
-
-/* ---------------------------------------------------------------------------*/
-/**
- * @brief adjustdate 设置系统时间
- *
- * @param year
- * @param mon
- * @param mday
- * @param hour
- * @param min
- * @param sec
- *
- * @returns
- */
-/* ---------------------------------------------------------------------------*/
-int adjustdate(int year,int mon,int mday,int hour,int min,int sec)
-{
-	//设备系统时间
-	int rtc;
-	time_t t;
-	struct tm nowtime;
-	nowtime.tm_sec=sec;			/*   Seconds.[0-60]   (1   leap   second)*/
-	nowtime.tm_min=min;			/*   Minutes.[0-59]		*/
-	nowtime.tm_hour=hour;		/*   Hours. [0-23]		*/
-	nowtime.tm_mday=mday;		/*   Day.[1-31]			*/
-	nowtime.tm_mon=mon-1;		/*   Month. [0-11]		*/
-	nowtime.tm_year=year-1900;	/*   Year-   1900.		*/
-	nowtime.tm_isdst=-1;		/*   DST.[-1/0/1]		*/
-	t=mktime(&nowtime);
-	stime(&t);
-
-	//设置实时时钟
-	rtc = open("/dev/rtc0",O_WRONLY);
-	if(rtc<0) {
-		rtc = open("/dev/misc/rtc",O_WRONLY);
-		if(rtc<0) {
-			DPRINT("can't open /dev/misc/rtc\n");
-			return -1;
-		}
-	}
-	if (ioctl( rtc, RTC_SET_TIME, &nowtime) < 0 ) {
-		DPRINT("Could not set the RTC time\n");
-		close(rtc);
-		return -1;
-	}
-	close(rtc);
-	return 0;
 }
 
 /* ---------------------------------------------------------------------------*/
@@ -458,48 +428,6 @@ int GetFilesNum(char *pPathDir,void (*func)(void *))
 	// return i;
 }
 
-/* ----------------------------------------------------------------*/
-/**
- * @brief ClearFramebuffer 清除fb0
- */
-/* ----------------------------------------------------------------*/
-void ClearFramebuffer(void)
-{
-	int fd = -1;
-	unsigned int VpostWidth=0, VpostHeight=0,VpostBpp=0;
-	unsigned int g_fb_vaddress=0;
-	unsigned int g_u32VpostBufMapSize=0;
-	struct	fb_var_screeninfo g_fb_var;
-	fd = open("/dev/fb0", O_RDWR);
-	if (fd < 0) {
-		perror("/dev/fb0");
-		return;
-	}
-	if (ioctl(fd, FBIOGET_VSCREENINFO, &g_fb_var) < 0) {
-		perror("/dev/fb0");
-		close(fd);
-		return;
-	}
-	VpostWidth = g_fb_var.xres;
-	VpostHeight = g_fb_var.yres;
-	VpostBpp = g_fb_var.bits_per_pixel/8;
-
-	g_u32VpostBufMapSize = VpostWidth*VpostHeight*VpostBpp*2;
-
-	g_fb_vaddress = (unsigned int)mmap( NULL, g_u32VpostBufMapSize,
-			PROT_READ|PROT_WRITE,
-			MAP_SHARED,
-			fd,
-			0);
-
-	memset ((void*)g_fb_vaddress, 0x0, g_u32VpostBufMapSize );
-
-	if (g_fb_vaddress)
-		munmap((void *)g_fb_vaddress, g_u32VpostBufMapSize);
-
-	close(fd);
-
-}
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief JudgeMonth 判断当月多少天

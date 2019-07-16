@@ -18,6 +18,7 @@
  *                      include head files
  *----------------------------------------------------------------------------*/
 #include <stdio.h>
+#include <unistd.h>
 #include "hal_sensor.h"
 #include "thread_helper.h"
 #include "my_video.h"

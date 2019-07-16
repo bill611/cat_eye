@@ -43,6 +43,10 @@ extern "C" {
 	int ucsConnect(char *user_token);
     void ucsDisconnect(void);
 	void registUcpaas(Callbacks *interface);
+	void ucsReceiveVideo(unsigned char* frameData,
+			unsigned int *dataLen,
+			long long *timeStamp,
+			int *frameType);
 
 #ifdef __cplusplus
 }

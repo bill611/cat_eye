@@ -11,7 +11,7 @@ typedef struct _st_dir {
 	do { \
 		char RecDate[50]; \
 		FILE *log_fd; \
-		GetDate(RecDate,sizeof(RecDate)); \
+		getDate(RecDate,sizeof(RecDate)); \
 		log_fd = fopen("log.txt","a+"); \
 		fprintf(log_fd,"%s:[%s]",RecDate,__FUNCTION__); \
 		fprintf(log_fd,fmt,##arg); \
@@ -26,7 +26,7 @@ char *strupper(char *pdst,const char *pstr,int Size);
 void DelayMs(int ms);
 char * excuteCmd(char *Cmd,...);
 void ErrorLog(int ecode,const char *fmt,...);
-char * GetDate(char *cBuf,int Size);
+char * getDate(char *cBuf,int Size);
 const char * GetSendIP(const char *pSrcIP,const char *pDestIP,const char *pMask);
 int jugdeRecIP(const char *pSrcIP,const char *pDestIP,const char *pMask);
 unsigned int my_inet_addr(const char *IP);
@@ -50,6 +50,7 @@ void wifiConnectStart(void);
 void wifiConnect(void);
 void wifiDisConnect(void);
 int screensaverStart(int state);
+void getFileName(char *file_name);
 
 #endif
 

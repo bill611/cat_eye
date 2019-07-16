@@ -41,6 +41,10 @@ static int sqlCheck(TSqlite *sql);
 /* ---------------------------------------------------------------------------*
  *                        macro define
  *----------------------------------------------------------------------------*/
+struct DBTables {
+	char *name;
+	char **title;
+};
 
 /* ---------------------------------------------------------------------------*
  *                      variables define
@@ -54,6 +58,7 @@ loginToken char(128),\
 nickName char(128),\
 scope INTEGER\
 )";
+
 static char *table_face = "CREATE TABLE IF NOT EXISTS FaceInfo( \
 ID INTEGER PRIMARY KEY,\
 userId char(32) UNIQUE,\
@@ -61,6 +66,55 @@ nickName char(128),\
 fileURL char(256),\
 feature BLOB\
 )";
+
+static char *table_record_alarm = "CREATE TABLE IF NOT EXISTS RecordAlarm( \
+ID INTEGER PRIMARY KEY,\
+date char(64),\
+type INTEGER, \
+hasPeople INTEGER, \
+picture_id INTEGER,\
+)";
+
+static char *table_record_talk = "CREATE TABLE IF NOT EXISTS RecordTalk( \
+ID INTEGER PRIMARY KEY,\
+date char(64),\
+people char(64),\
+callDir INTEGER, \
+hasPeople INTEGER, \
+autoAnswer INTEGER,\
+talkTime INTEGER,\
+picture_id INTEGER,\
+)";
+static char *table_record_face = "CREATE TABLE IF NOT EXISTS RecordFace( \
+ID INTEGER PRIMARY KEY,\
+date char(64),\
+faceId char(64),\
+nickName char(128),\
+picture_id INTEGER,\
+)";
+
+static char *table_url_pic = "CREATE TABLE IF NOT EXISTS PicUrl( \
+ID INTEGER PRIMARY KEY,\
+picture_id INTEGER, \
+url char(128),\
+)";
+
+static char *table_url_rec = "CREATE TABLE IF NOT EXISTS RecordUrl( \
+ID INTEGER PRIMARY KEY,\
+record_id INTEGER, \
+url char(128),\
+)";
+
+static struct DBTables db_tables[] = {
+	{"UserInfo",	&table_user},
+	{"FaceInfo",	&table_face},
+	{"RecordAlarm",	&table_record_alarm},
+	{"RecordTalk",	&table_record_talk},
+	{"RecordFace",	&table_record_face},
+	{"PicUrl",		&table_url_pic},
+	{"RecordUrl",	&table_url_rec},
+	{NULL,NULL}
+};
 
 static TSqliteData dbase = {
 	.file_name = DATABSE_PATH"database.db",
@@ -72,13 +126,18 @@ static int sqlCheck(TSqlite *sql)
 {
     if (sql == NULL)
         goto sqlCheck_fail;
-
-    int ret = LocalQueryOpen(sql,"select ID from UserInfo limit 1");
-    sql->Close(sql);
-    int ret1 = LocalQueryOpen(sql,"select ID from FaceInfo limit 1");
-    sql->Close(sql);
-	if (ret == 1 
-			&& ret1 == 1) {
+	int ret = 1;
+	int i;
+	for (i=0; db_tables[i].name != NULL; i++) {
+		char buf[64];
+		sprintf(buf,"select ID from %s limit 1",db_tables[i].name);
+		int count = LocalQueryOpen(sql,buf);
+		sql->Close(sql);
+		if (count == 0) {
+			ret = 0;
+		}
+	}
+	if ( ret == 1 ) {
 		backData((char *)sql->file_name);
 		return TRUE;
 	}
@@ -86,9 +145,10 @@ static int sqlCheck(TSqlite *sql)
 sqlCheck_fail:
     DPRINT("sql locoal err\n");
 	if (recoverData(dbase.file_name) == 0) {
-		DPRINT("creat new db:%s\n%s\n",table_user,table_face);
-		LocalQueryExec(dbase.sql,table_user);
-		LocalQueryExec(dbase.sql,table_face);
+		for (i=0; db_tables[i].name != NULL; i++) {
+			DPRINT("creat new db:%s\n",db_tables[i].name);
+			LocalQueryExec(dbase.sql,*db_tables[i].title);
+		}
 	} else {
 		dbase.sql->Destroy(dbase.sql);
 		dbase.sql = CreateLocalQuery(dbase.sql->file_name);
@@ -375,6 +435,35 @@ void sqlDeleteFace(char *id)
 	pthread_mutex_unlock(&mutex);
 }
 
+void sqlInsertPicUrlNoBack(
+		int picture_id,
+		char *url)
+{
+	pthread_mutex_lock(&mutex);
+	if (url) {
+		char buf[256];
+		sprintf(buf, "INSERT INTO PicUrl(picture_id,url) VALUES('%d','%s')",
+				picture_id,url);
+		printf("%s\n", buf);
+		LocalQueryExec(dbase.sql,buf);
+	}
+	pthread_mutex_unlock(&mutex);
+}
+
+void sqlInsertRecordAlarmNoBack(
+		char *date,
+		int type,
+		int has_people,
+		int picture_id)
+{
+	char buf[256];
+	pthread_mutex_lock(&mutex);
+	sprintf(buf, "INSERT INTO RecordAlarm(date,type,hasPeople,picture_id) VALUES('%s','%d','%d','%d')",
+			date, type,has_people,picture_id);
+	printf("%s\n", buf);
+	LocalQueryExec(dbase.sql,buf);
+	pthread_mutex_unlock(&mutex);
+}
 
 void sqlCheckBack(void)
 {
