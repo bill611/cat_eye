@@ -72,7 +72,7 @@ ID INTEGER PRIMARY KEY,\
 date char(64),\
 type INTEGER, \
 hasPeople INTEGER, \
-picture_id INTEGER,\
+picture_id INTEGER\
 )";
 
 static char *table_record_talk = "CREATE TABLE IF NOT EXISTS RecordTalk( \
@@ -83,26 +83,26 @@ callDir INTEGER, \
 hasPeople INTEGER, \
 autoAnswer INTEGER,\
 talkTime INTEGER,\
-picture_id INTEGER,\
+picture_id INTEGER\
 )";
 static char *table_record_face = "CREATE TABLE IF NOT EXISTS RecordFace( \
 ID INTEGER PRIMARY KEY,\
 date char(64),\
 faceId char(64),\
 nickName char(128),\
-picture_id INTEGER,\
+picture_id INTEGER\
 )";
 
 static char *table_url_pic = "CREATE TABLE IF NOT EXISTS PicUrl( \
 ID INTEGER PRIMARY KEY,\
 picture_id INTEGER, \
-url char(128),\
+url char(128)\
 )";
 
 static char *table_url_rec = "CREATE TABLE IF NOT EXISTS RecordUrl( \
 ID INTEGER PRIMARY KEY,\
 record_id INTEGER, \
-url char(128),\
+url char(128)\
 )";
 
 static struct DBTables db_tables[] = {
@@ -404,7 +404,7 @@ void sqlGetFaceStart(void)
 	pthread_mutex_lock(&mutex);
 	sprintf(buf, "select userId,nickName,fileURL,feature From FaceInfo ");
 	dbase.sql->prepare(dbase.sql,buf);
-	
+
 }
 int sqlGetFace(char *user_id,char *nick_name,char *url,void *feature)
 {
@@ -440,13 +440,16 @@ void sqlInsertPicUrlNoBack(
 		char *url)
 {
 	pthread_mutex_lock(&mutex);
+    char buf[256];
 	if (url) {
-		char buf[256];
 		sprintf(buf, "INSERT INTO PicUrl(picture_id,url) VALUES('%d','%s')",
 				picture_id,url);
-		printf("%s\n", buf);
-		LocalQueryExec(dbase.sql,buf);
-	}
+    } else {
+		sprintf(buf, "INSERT INTO PicUrl(picture_id,url) VALUES('%d','0')",
+				picture_id);
+    }
+    printf("%s\n", buf);
+    LocalQueryExec(dbase.sql,buf);
 	pthread_mutex_unlock(&mutex);
 }
 
@@ -468,6 +471,11 @@ void sqlInsertRecordAlarmNoBack(
 void sqlCheckBack(void)
 {
 	dbase.checkFunc(dbase.sql);
+}
+
+static void* threadSqlUpload(void *arg)
+{
+    
 }
 
 void sqlInit(void)
