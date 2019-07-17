@@ -18,6 +18,7 @@ class DisplayProcess : public StreamPUBase {
 	void setVideoBlack(void);
 	void showLocalVideo(void);
 	void showPeerVideo(int w,int h,DecCallbackFunc decCallBack);
+	void capture(char *file_name);
     
 	bool start_dec(void) const {
 		return start_dec_;

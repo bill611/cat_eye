@@ -24,6 +24,7 @@ class RKVideo {
 	void displayOff(void);
     void faceOnOff(bool type);
 	void h264EncOnOff(bool type,int w,int h,EncCallbackFunc encCallback);
+	void capture(char *file_name);
 
  private:
  	
@@ -181,6 +182,12 @@ void RKVideo::h264EncOnOff(bool type,int w,int h,EncCallbackFunc encCallback)
 		}
 	}
 }
+void RKVideo::capture(char *file_name)
+{
+	if (display_state_ == 0)
+		return;	
+	display_process->capture(file_name);
+}
 
 extern "C" 
 int rkVideoInit(void)
@@ -226,3 +233,8 @@ int rkH264EncOff(void)
 	rkvideo->h264EncOnOff(false,0,0,NULL);
 }
 
+extern "C" 
+int rkVideoCapture(char *file_name)
+{
+	rkvideo->capture(file_name);
+}

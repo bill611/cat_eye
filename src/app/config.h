@@ -24,6 +24,11 @@ extern "C" {
 #define QRCODE_APP CFG_PRIVATE_DRIVE"app_url.png"
 #define SDCARD_PATH "./"
 #define AUDIO_PATH "./res/wav/"
+#define TEMP_PIC_PATH "cap/"
+#define CAP_PATH SDCARD_PATH"cap/"
+#define TALK_PATH SDCARD_PATH"talk/"
+#define ALARM_PATH SDCARD_PATH"alarm/"
+#define FACE_PATH SDCARD_PATH"face/"
 #else
 #define UPDATE_FILE	"/tmp/Update.cab"
 #define CFG_PUBLIC_DRIVE "./"
@@ -33,6 +38,11 @@ extern "C" {
 #define QRCODE_APP CFG_PRIVATE_DRIVE"app_url.png"
 #define SDCARD_PATH "/mnt/sdcard/"
 #define AUDIO_PATH "/root/usr/res/wav/"
+#define TEMP_PIC_PATH "cap/"
+#define CAP_PATH SDCARD_PATH"cap/"
+#define TALK_PATH SDCARD_PATH"talk/"
+#define ALARM_PATH SDCARD_PATH"alarm/"
+#define FACE_PATH SDCARD_PATH"face/"
 #endif
 
 #define AUTO_CLOSE_LCD 30

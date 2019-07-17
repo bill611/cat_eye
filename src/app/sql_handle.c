@@ -67,11 +67,19 @@ fileURL char(256),\
 feature BLOB\
 )";
 
+static char *table_record_cap = "CREATE TABLE IF NOT EXISTS RecordCapture( \
+ID INTEGER PRIMARY KEY,\
+date char(64),\
+pic_count INTEGER,\
+picture_id INTEGER\
+)";
+
 static char *table_record_alarm = "CREATE TABLE IF NOT EXISTS RecordAlarm( \
 ID INTEGER PRIMARY KEY,\
 date char(64),\
 type INTEGER, \
 hasPeople INTEGER, \
+pic_count INTEGER,\
 picture_id INTEGER\
 )";
 
@@ -83,6 +91,7 @@ callDir INTEGER, \
 hasPeople INTEGER, \
 autoAnswer INTEGER,\
 talkTime INTEGER,\
+pic_count INTEGER,\
 picture_id INTEGER\
 )";
 static char *table_record_face = "CREATE TABLE IF NOT EXISTS RecordFace( \
@@ -90,6 +99,7 @@ ID INTEGER PRIMARY KEY,\
 date char(64),\
 faceId char(64),\
 nickName char(128),\
+pic_count INTEGER,\
 picture_id INTEGER\
 )";
 
@@ -106,13 +116,14 @@ url char(128)\
 )";
 
 static struct DBTables db_tables[] = {
-	{"UserInfo",	&table_user},
-	{"FaceInfo",	&table_face},
-	{"RecordAlarm",	&table_record_alarm},
-	{"RecordTalk",	&table_record_talk},
-	{"RecordFace",	&table_record_face},
-	{"PicUrl",		&table_url_pic},
-	{"RecordUrl",	&table_url_rec},
+	{"UserInfo",		&table_user},
+	{"FaceInfo",		&table_face},
+	{"RecordCapture",	&table_record_cap},
+	{"RecordAlarm",		&table_record_alarm},
+	{"RecordTalk",		&table_record_talk},
+	{"RecordFace",		&table_record_face},
+	{"PicUrl",			&table_url_pic},
+	{"RecordUrl",		&table_url_rec},
 	{NULL,NULL}
 };
 
@@ -436,16 +447,16 @@ void sqlDeleteFace(char *id)
 }
 
 void sqlInsertPicUrlNoBack(
-		int picture_id,
+		uint64_t picture_id,
 		char *url)
 {
 	pthread_mutex_lock(&mutex);
     char buf[256];
 	if (url) {
-		sprintf(buf, "INSERT INTO PicUrl(picture_id,url) VALUES('%d','%s')",
+		sprintf(buf, "INSERT INTO PicUrl(picture_id,url) VALUES('%lld','%s')",
 				picture_id,url);
     } else {
-		sprintf(buf, "INSERT INTO PicUrl(picture_id,url) VALUES('%d','0')",
+		sprintf(buf, "INSERT INTO PicUrl(picture_id,url) VALUES('%lld','0')",
 				picture_id);
     }
     printf("%s\n", buf);
@@ -457,12 +468,27 @@ void sqlInsertRecordAlarmNoBack(
 		char *date,
 		int type,
 		int has_people,
-		int picture_id)
+		int pic_count,
+		uint64_t picture_id)
 {
 	char buf[256];
 	pthread_mutex_lock(&mutex);
-	sprintf(buf, "INSERT INTO RecordAlarm(date,type,hasPeople,picture_id) VALUES('%s','%d','%d','%d')",
-			date, type,has_people,picture_id);
+	sprintf(buf, "INSERT INTO RecordAlarm(date,type,hasPeople,pic_count,picture_id) VALUES('%s','%d','%d','%d','%lld')",
+			date, type,has_people,pic_count,picture_id);
+	printf("%s\n", buf);
+	LocalQueryExec(dbase.sql,buf);
+	pthread_mutex_unlock(&mutex);
+}
+
+void sqlInsertRecordCapNoBack(
+		char *date,
+		int pic_count,
+		uint64_t picture_id)
+{
+	char buf[256];
+	pthread_mutex_lock(&mutex);
+	sprintf(buf, "INSERT INTO RecordCapture(date,pic_count,picture_id) VALUES('%s','%d','%lld')",
+			date, pic_count,picture_id);
 	printf("%s\n", buf);
 	LocalQueryExec(dbase.sql,buf);
 	pthread_mutex_unlock(&mutex);

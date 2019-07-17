@@ -32,7 +32,7 @@ extern "C" {
                 char *id,char *nick_name,char *url);// 注册人脸
         void (*faceDelete)(char *id); // 删除人脸
 
-		void (*capture)(int count);
+		void (*capture)(int type,int count);
 
 		void (*recordStart)(int count);
 		void (*recordStop)(void);

@@ -21,6 +21,7 @@
 extern "C" {
 #endif  /* __cplusplus */
 
+#include <stdint.h>
 	extern void sqlInsertUserInfoNoBack(
 			char *user_id,
 			char *login_token,
@@ -73,6 +74,13 @@ extern "C" {
 	extern void sqlCheckBack(void);
 	extern void sqlInit(void);
 
+	extern void sqlInsertRecordCapNoBack(
+			char *date,
+			int pic_count,
+			uint64_t picture_id);
+	extern void sqlInsertPicUrlNoBack(
+			uint64_t picture_id,
+			char *url);
 #ifdef __cplusplus
 }
 #endif  /* __cplusplus */

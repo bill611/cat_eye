@@ -40,7 +40,7 @@
  *----------------------------------------------------------------------------*/
 extern void formSettingLoadBmp(void);
 int createFormSetting(HWND hMainWnd,void (*callback)(void));
-int createFormVideo(HWND hVideoWnd,int type,void (*callback)(void));
+int createFormVideo(HWND hVideoWnd,int type,void (*callback)(void),int count);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -275,14 +275,14 @@ static void buttonCapturePress(HWND hwnd, int id, int nc, DWORD add_data)
 	if (nc != BN_CLICKED)
 		return;
 	flag_timer_stop = 1;
-	createFormVideo(GetParent(hwnd),FORM_VIDEO_TYPE_CAPTURE,enableAutoClose);
-	my_video->capture(g_config.capture_count);
+	my_video->capture(CAP_TYPE_FORMMAIN,g_config.capture_count);
 }
 static void buttonAccessPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
 	flag_timer_stop = 1;
+	// TEST
 	my_video->videoCallOut("192.168.1.10");
 	// createFormVideo(GetParent(hwnd),FORM_VIDEO_TYPE_TALK,enableAutoClose);
 }
@@ -292,7 +292,7 @@ static void buttonVideoPress(HWND hwnd, int id, int nc, DWORD add_data)
 		return;
 	flag_timer_stop = 1;
 	my_video->recordStart(0);
-	createFormVideo(GetParent(hwnd),FORM_VIDEO_TYPE_RECORD,enableAutoClose);
+	createFormVideo(GetParent(hwnd),FORM_VIDEO_TYPE_RECORD,enableAutoClose,0);
 }
 static void buttonSettingPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
@@ -423,3 +423,8 @@ int createFormMain(HWND hMainWnd,void (*callback)(void))
 
 	return 0;
 }
+int formCreateCaputure(int count)
+{
+	createFormVideo(0,FORM_VIDEO_TYPE_CAPTURE,enableAutoClose,count);
+}
+

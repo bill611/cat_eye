@@ -111,16 +111,24 @@ char * getDate(char *cBuf,int Size)
 	return cBuf;
 }
 
-void getFileName(char *file_name)
+void getFileName(char *file_name,char *date)
 {
-	if (!file_name)
+	if (!file_name || !date)
 		return;
 	time_t timer;
     struct tm *tm1;
 	timer = time(&timer);
 	tm1 = localtime(&timer);
 	sprintf(file_name,
-			"%04d%02d%02d%02d%02d%02d",
+			"%02d%02d%02d%02d%02d%02d",
+			(tm1->tm_year+1900) % 100,
+			tm1->tm_mon+1,
+			tm1->tm_mday,
+			tm1->tm_hour,
+			tm1->tm_min,
+			tm1->tm_sec);
+	sprintf(date,
+			"%04d-%02d-%02d_%02d:%02d:%02d",
 			tm1->tm_year+1900,
 			tm1->tm_mon+1,
 			tm1->tm_mday,

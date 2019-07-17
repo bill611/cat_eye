@@ -22,6 +22,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <dirent.h>
+#include <errno.h>
 #include "cJSON.h"
 #include "tcp_client.h"
 #include "my_http.h"
@@ -36,6 +38,7 @@
 #include "my_video.h"
 #include "jpeg_enc_dec.h"
 #include "debug.h"
+#include "queue.h"
 #include "protocol.h"
 
 /* ---------------------------------------------------------------------------*
@@ -91,7 +94,7 @@ struct DebugInfo{
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
-Protocol*pro_hardcloud;
+ProtocolHardcloud *protocol_hardcloud;
 static MyHttp *http = NULL;
 static MyMqtt *mqtt = NULL;
 static int mqtt_connect_state,ntp_connect_state;
@@ -118,6 +121,7 @@ struct OPTS opts;
 static char subTopic[TOPIC_NUM][100] = {{0,0}};
 static int g_id = 0;
 static char *qiniu_server_token = NULL;
+static Queue *queue_upload;
 
 static void printProInfo(int cmd)
 {
@@ -693,18 +697,6 @@ retry_qiniu:
 			free(qiniu_server);
 		sleep(1);
 	}
-	// char *qiniu_upload= NULL;
-	// if (qiniu_server_token) {
-		// http->qiniuUpload("http://upload-z2.qiniup.com",
-				// NULL,qiniu_server_token,
-				// "./imei.png",
-				// "imei.png",
-				// &qiniu_upload);
-	// }
-	// if (qiniu_upload) {
-		// // printf("%s\n",qiniu_upload );
-		// free(qiniu_upload);
-	// }
 	sleep(1);
 	return NULL;
 }
@@ -737,9 +729,9 @@ static void* tcpHeartThread(void *arg)
 			} else  {
 				connect_flag = 1;
 			}
-		} 
-		tcp_client->SendBuffer(tcp_client,g_config.imei,strlen(g_config.imei));	
-		
+		}
+		tcp_client->SendBuffer(tcp_client,g_config.imei,strlen(g_config.imei));
+
 		sleep(30);
 	}
 	return NULL;
@@ -756,6 +748,57 @@ static void* getIntercomsThread(void *arg)
 	}
 	return NULL;
 }
+
+static void uploadPic(void)
+{
+	int data = 0;
+	if (queue_upload)
+		queue_upload->post(queue_upload,&data);
+}
+
+static void* threadUpload(void *arg)
+{
+	int data = 0;
+	char *qiniu_upload= NULL;
+	DIR *dir;
+	struct dirent *dirp;
+	queue_upload = queueCreate("upload",QUEUE_BLOCK,sizeof(int));
+	while (!qiniu_server_token) {
+		sleep(1);
+	}
+	while (1) {
+		queue_upload->get(queue_upload,&data);
+		if((dir=opendir(TEMP_PIC_PATH)) == NULL) {
+			printf("Open File %s Error %s\n",TEMP_PIC_PATH,strerror(errno));
+			return 0;
+		}
+		while((dirp=readdir(dir)) != NULL) {
+			if ((strcmp(".",dirp->d_name) == 0) || (strcmp("..",dirp->d_name) == 0)) {
+				continue;
+
+			}
+			char buf[64];
+			sprintf(buf,"%s/%s",TEMP_PIC_PATH,dirp->d_name);
+			http->qiniuUpload("http://upload-z2.qiniup.com",
+					NULL,qiniu_server_token,
+					buf,
+					dirp->d_name,
+					&qiniu_upload);
+			if (qiniu_upload) {
+				printf("%s\n",qiniu_upload);
+				free(qiniu_upload);
+			}
+			if (remove(buf) < 0) {
+				printf("remove error:%s\n",strerror(errno));
+			} else {
+				printf("remove:%s\n",buf);
+			}
+		}
+		sqlCheckBack();
+		closedir(dir);
+	}
+
+}
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief registHardCloud 注册硬件云
@@ -763,6 +806,9 @@ static void* getIntercomsThread(void *arg)
 /* ---------------------------------------------------------------------------*/
 void registHardCloud(void)
 {
+	protocol_hardcloud = (ProtocolHardcloud *) calloc(1,sizeof(ProtocolHardcloud));
+	protocol_hardcloud->uploadPic = uploadPic;
+
 	mqtt_connect_state = 0;
 	ntp_connect_state = 0;
 	tcpClientInit();
@@ -771,6 +817,7 @@ void registHardCloud(void)
 	createThread(initThread,NULL);
 	createThread(tcpHeartThread,NULL);
 	createThread(getIntercomsThread,NULL);
+	createThread(threadUpload,NULL);
 
 }
 

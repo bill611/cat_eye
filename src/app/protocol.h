@@ -38,6 +38,13 @@ extern "C" {
 		DEV_TYPE_HOUSEENTRANCEMACHINE = 5, //户门口机
 	};
 
+	enum {
+		CAP_TYPE_FORMMAIN = 0,
+		CAP_TYPE_TALK,
+		CAP_TYPE_ALARM,
+		CAP_TYPE_FACE,
+	};
+
 	typedef struct _UserStruct {
 		char id[32];
 		char nick_name[32];
@@ -83,6 +90,11 @@ extern "C" {
 	}ProtocolTalk;
 	extern ProtocolTalk *protocol_talk;
 
+	// 对讲协议
+	typedef struct _ProtocolHardcloud {
+		void (*uploadPic)(void);
+	}ProtocolHardcloud;
+	extern ProtocolHardcloud *protocol_hardcloud;
 	void protocolInit(void);
 
 #ifdef __cplusplus

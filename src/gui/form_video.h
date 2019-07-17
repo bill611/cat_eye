@@ -29,7 +29,7 @@ extern "C" {
 		FORM_VIDEO_TYPE_OUTDOOR,  	// 监视门口
 	};
 
-	int createFormVideo(HWND hVideoWnd,int type,void (*callback)(void));
+	int createFormVideo(HWND hVideoWnd,int type,void (*callback)(void),int count);
 
 #ifdef __cplusplus
 }

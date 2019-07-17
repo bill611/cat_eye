@@ -131,7 +131,8 @@ static void queuePost(Queue * This,void *data)
 			printf("[%s] can't calloc memory\n", __func__);
 			return;
 		}
-		memcpy(This->priv->buf[This->priv->index_post],data,This->priv->size);
+		if (This->priv->size)
+			memcpy(This->priv->buf[This->priv->index_post],data,This->priv->size);
 		This->priv->index_post++;
 		This->priv->current_length++;
 		QUEUE_UNLOCK();
@@ -154,7 +155,8 @@ static int queueGet(Queue *This,void *data)
 	if (This->priv->index_get >= MAX_COMMAND_QUEUE_SIZE) {
 		This->priv->index_get = 0;
 	}
-	memcpy(data,This->priv->buf[This->priv->index_get],This->priv->size);
+	if (This->priv->size)
+		memcpy(data,This->priv->buf[This->priv->index_get],This->priv->size);
 	free(This->priv->buf[This->priv->index_get]);
 	This->priv->buf[This->priv->index_get] = NULL;
 	This->priv->index_get++;

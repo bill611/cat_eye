@@ -50,7 +50,7 @@ void wifiConnectStart(void);
 void wifiConnect(void);
 void wifiDisConnect(void);
 int screensaverStart(int state);
-void getFileName(char *file_name);
+void getFileName(char *file_name,char *date);
 
 #endif
 

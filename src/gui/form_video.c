@@ -142,6 +142,7 @@ static FormBasePriv form_base_priv = {
 static int bmp_load_finished = 0;
 static int form_type = FORM_VIDEO_TYPE_CAPTURE;
 static FormBase* form_base = NULL;
+static int auto_close_time = 0;
 
 /* ---------------------------------------------------------------------------*/
 /**
@@ -162,6 +163,11 @@ static void formVideoTimerProc1s(HWND hwnd)
 				MSG_MYSTATIC_SET_TITLE,(WPARAM)buf,0);
 	}
 	call_time_old = call_time;
+	if (auto_close_time) {
+		if (--auto_close_time == 0) {
+			ShowWindow(form_base->hDlg,SW_HIDE);
+		}
+	}
 }
 
 static void buttonHangupPress(HWND hwnd, int id, int nc, DWORD add_data)
@@ -173,7 +179,6 @@ static void buttonHangupPress(HWND hwnd, int id, int nc, DWORD add_data)
 	} else {
 		my_video->videoHangup();
 	}
-	// ShowWindow(GetParent(hwnd),SW_HIDE);
 }
 static void buttonUnlockPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
@@ -227,6 +232,7 @@ static void updateDisplay(HWND hDlg)
 	switch(form_type) 
 	{
 		case FORM_VIDEO_TYPE_CAPTURE:
+			updateTitle("正在抓拍");
 			break;
 		case FORM_VIDEO_TYPE_MONITOR:
 		case FORM_VIDEO_TYPE_RECORD:
@@ -348,12 +354,13 @@ static int formVideoProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 
 
 
-int createFormVideo(HWND hMainWnd,int type,void (*callback)(void))
+int createFormVideo(HWND hMainWnd,int type,void (*callback)(void),int count)
 {
 	HWND Form = Screen.Find(form_base_priv.name);
 	form_type = type;
 	screenAutoCloseStop();
 	screensaverStart(1);
+	auto_close_time = count;
 	if(Form) {
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
@@ -378,14 +385,14 @@ static void interfaceCreateFormVideoDirect(int type,char *name)
 		case DEV_TYPE_HOUSEHOLDAPP:
 		case DEV_TYPE_SECURITYSTAFFAPP:
 		case DEV_TYPE_INNERDOORMACHINE:
-			createFormVideo(0,FORM_VIDEO_TYPE_MONITOR,NULL); 
+			createFormVideo(0,FORM_VIDEO_TYPE_MONITOR,NULL,0); 
 			break;
 		case DEV_TYPE_ENTRANCEMACHINE:
 		case DEV_TYPE_HOUSEENTRANCEMACHINE:
 			if (protocol_talk->type == PROTOCOL_TALK_3000)
-				createFormVideo(0,FORM_VIDEO_TYPE_OUTDOOR,NULL); 
+				createFormVideo(0,FORM_VIDEO_TYPE_OUTDOOR,NULL,0); 
 			else
-				createFormVideo(0,FORM_VIDEO_TYPE_TALK,NULL); 
+				createFormVideo(0,FORM_VIDEO_TYPE_TALK,NULL,0); 
 			break;
 		default:
 			break;

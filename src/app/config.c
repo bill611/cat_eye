@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <errno.h>
 #include "iniparser/iniparser.h"
 #include "externfunc.h"
 #include "thread_helper.h"
@@ -256,8 +259,13 @@ void configLoad(void)
 	printf("imei:%s,hard:%s\n", g_config.imei,g_config.hardcode);
 	// 判断是否APP地址图片
 	if (fileexists(QRCODE_APP) == 0) {
-		
+
 	}
+	mkdir(TEMP_PIC_PATH, 	S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+	mkdir(CAP_PATH, 		S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+	mkdir(TALK_PATH, 		S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+	mkdir(ALARM_PATH, 		S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+	mkdir(FACE_PATH, 		S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 }
 
 

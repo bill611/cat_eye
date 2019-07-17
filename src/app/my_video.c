@@ -30,13 +30,16 @@
 #include "ucpaas/ucpaas.h"
 #include "sql_handle.h"
 #include "protocol.h"
+#include "externfunc.h"
 #include "thread_helper.h"
 #include "timer.h"
+#include "config.h"
 #include "my_video.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
+extern int formCreateCaputure(int count);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -95,6 +98,8 @@ enum {
 typedef struct _StmData {
 	int type;
 	int call_dir; // 操作方向 0 本机，1对方
+	int cap_count; // 抓拍照片数量
+	int cap_type; // 抓拍类型
 	char nick_name[128];
 	char usr_id[128];
 }StmData;
@@ -109,6 +114,13 @@ typedef struct _StmDo {
 	int action;
 	int (*proc)(void *data,MyVideo *arg);
 }StmDo;
+
+typedef struct _CapData {
+	uint64_t pic_id;
+	int count;
+	char file_date[32];
+	char file_name[32];
+}CapData;
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
@@ -163,6 +175,7 @@ static StateTableDebug st_debug = {
 };
 static StmData *st_data = NULL;
 static StMachine* stm;
+static CapData cap_data;
 
 static TalkPeerDev talk_peer_dev;
 
@@ -410,8 +423,56 @@ static int stmDoTalkHangup(void *data,MyVideo *arg)
 	my_video->hideVideo();
 }
 
+static void* threadCapture(void *arg)
+{
+	CapData cap_data_temp;
+	memcpy(&cap_data_temp,arg,sizeof(CapData));
+	int i;
+	char file_path[64] = {0};
+	char url[256] = {0};
+	printf("thread count:%d,date:%s,name:%s\n",cap_data_temp.count,cap_data_temp.file_date,cap_data_temp.file_name);
+	for (i=0; i<cap_data_temp.count; i++) {
+		sprintf(file_path,"%s%s_%d.jpg",TEMP_PIC_PATH,cap_data_temp.file_name,i);
+		printf("wirte :%s\n",file_path);
+
+#ifdef USE_VIDEO
+		rkVideoCapture(file_path);
+#endif
+		sprintf(url,"http://img.cateye.taichuan.com/%s_%d.jpg",cap_data_temp.file_name,i);
+		sqlInsertPicUrlNoBack(cap_data_temp.pic_id,url);
+		usleep(500000);
+	}
+	protocol_hardcloud->uploadPic();
+	return NULL;
+}
 static int stmDoCapture(void *data,MyVideo *arg)
 {
+	StmData *data_temp = (StmData *)data;
+	int i;
+	memset(&cap_data,0,sizeof(CapData));
+	getFileName(cap_data.file_name,cap_data.file_date);
+	cap_data.pic_id = atoll(cap_data.file_name);
+	cap_data.count = data_temp->cap_count;
+	// printf("count:%d,date:%s,name:%s\n",cap_data.count,cap_data.file_date,cap_data.file_name);
+	switch(data_temp->cap_type)
+	{
+		case CAP_TYPE_FORMMAIN :
+			sqlInsertRecordCapNoBack(cap_data.file_date,cap_data.count,cap_data.pic_id);
+			formCreateCaputure(cap_data.count);
+			createThread(threadCapture,&cap_data);
+			break;
+		case CAP_TYPE_TALK :
+			break;
+		case CAP_TYPE_ALARM :
+			{
+				printf("file_name\n");
+			}
+			break;
+		case CAP_TYPE_FACE :
+			break;
+		default:
+			break;
+	}
 	// rkVideoStopCapture();
 }
 // FILE *fp,*fp1;
@@ -487,9 +548,13 @@ static void faceStop(void)
     stm->msgPost(stm,EV_FACE_OFF,NULL);
 }
 
-static void capture(int count)
+static void capture(int type,int count)
 {
-	stm->msgPost(stm,EV_CAPTURE,NULL);
+	st_data = (StmData *)stm->initPara(stm,
+			        sizeof(StmData));
+	st_data->cap_count = count;
+	st_data->cap_type = type;
+	stm->msgPost(stm,EV_CAPTURE,st_data);
 }
 
 static void recordStart(int count)
@@ -580,7 +645,7 @@ static void faceDelete(char *id)
         my_face->deleteOne(id);
 }
 
-static void* videoTimerThread(void *arg)
+static void* threadVideoTimer(void *arg)
 {
 	while (1) {
 		if (talk_peer_dev.call_time) {
@@ -620,5 +685,5 @@ void myVideoInit(void)
 			stmHandle,
 			my_video,
 			&st_debug);
-	createThread(videoTimerThread,NULL);
+	createThread(threadVideoTimer,NULL);
 }

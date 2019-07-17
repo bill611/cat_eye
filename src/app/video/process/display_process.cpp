@@ -1,11 +1,28 @@
 #include "display_process.h"
 #include "thread_helper.h"
 #include "h264_enc_dec/mpi_dec_api.h"
+#include "jpeg_enc_dec.h"
 #include "libyuv.h"
 
 //#define TEST_WRITE_SP_TO_FILE
 
+static FILE *fp = NULL;
 int NV12Scale(unsigned char *psrc_buf, int psrc_w, int psrc_h, unsigned char **pdst_buf, int pdst_w, int pdst_h);
+static void writePicture(unsigned char *data)
+{
+	if (fp == NULL)
+		return;
+	unsigned char *jpeg_buf = NULL;
+	int size = 0;
+	yuv420spToJpeg(data,1280,720,&jpeg_buf,&size);
+	if (jpeg_buf) {
+		fwrite(jpeg_buf,1,size,fp);
+		fflush(fp);
+		fclose(fp);
+		free(jpeg_buf);
+	}
+	fp = NULL;
+}
 DisplayProcess::DisplayProcess()
      : StreamPUBase("DisplayProcess", true, true)
 {
@@ -51,6 +68,7 @@ bool DisplayProcess::processFrame(std::shared_ptr<BufferBase> inBuf,
         printf("rk_rga_ionfd_to_ionfd_rotate failed\n");
         return false;
     }
+	writePicture((unsigned char *)inBuf->getVirtAddr());
 
     if (rk_fb_video_disp(video_win) < -1){
 		printf("rk_fb_video_disp failed\n");
@@ -79,7 +97,6 @@ void DisplayProcess::showLocalVideo(void)
 	start_dec_ = false;
 
 }
-// static FILE *fp_1;
 static void* threadH264Dec(void *arg)
 {
 	DisplayProcess *process = (DisplayProcess *)arg;
@@ -90,7 +107,6 @@ static void* threadH264Dec(void *arg)
     int disp_width = 0, disp_height = 0;
     int out_device = rk_fb_get_out_device(&disp_width, &disp_height);
 
-	// fp_1 = fopen("test.h264","wb");
     while (process->start_dec() == true) {
         int size_in = 0;
         int size_out = 0;
@@ -100,12 +116,12 @@ static void* threadH264Dec(void *arg)
             process->decCallback()(data_in,&size_in);
 		unsigned char *nv12_scale_data = NULL;
 		if (size_in > 0) {
-			// fwrite(data_in,1,size_in,fp_1);
 			if (my_h264dec)
 				size_out = my_h264dec->decode(my_h264dec,data_in,size_in,data_out,&out_w,&out_h);
 			if (out_w != 0 && out_h != 0 && size_out > 0) {
 				NV12Scale(data_out, out_w, out_h, &nv12_scale_data, disp_width, disp_height);
 				memcpy(video_win->buffer,nv12_scale_data,disp_width*disp_height*3/2);
+				writePicture(nv12_scale_data);
 				if (rk_fb_video_disp(video_win) < -1){
 					printf("rk_fb_video_disp failed\n");
 				}
@@ -116,8 +132,6 @@ static void* threadH264Dec(void *arg)
 
 		usleep(10000);
     }
-	// fflush(fp_1);
-	// fclose(fp_1);
 	if (my_h264dec)
 		my_h264dec->unInit(my_h264dec);
 	printf("%s(),%d\n", __func__,__LINE__);
@@ -133,4 +147,13 @@ void DisplayProcess::showPeerVideo(int w,int h,DecCallbackFunc decCallback)
 	if (my_h264dec)
 		my_h264dec->init(my_h264dec,w,h);
 	createThread(threadH264Dec,this);
+}
+
+void DisplayProcess::capture(char *file_name)
+{
+	while (fp != NULL) {
+		usleep(10000);	
+	}
+	if (fp == NULL)
+		fp = fopen(file_name,"wb");
 }

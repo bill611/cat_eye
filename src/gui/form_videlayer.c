@@ -176,7 +176,7 @@ static int formVideoLayerProc(HWND hWnd, int message, WPARAM wParam, LPARAM lPar
 				SetTimer(hWnd, IDC_TIMER_1S, TIME_1S);
 
 				formVideoLoadBmp();
-				HWND form = createFormVideo(hWnd,FORM_VIDEO_TYPE_CAPTURE,NULL);
+				HWND form = createFormVideo(hWnd,FORM_VIDEO_TYPE_CAPTURE,NULL,0);
 				ShowWindow(form,SW_HIDE);
 				my_video->showLocalVideo();
 				formVideoInitInterface();
