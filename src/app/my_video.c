@@ -457,11 +457,10 @@ static int stmDoCapture(void *data,MyVideo *arg)
 	switch(data_temp->cap_type)
 	{
 		case CAP_TYPE_FORMMAIN :
+		case CAP_TYPE_TALK :
 			sqlInsertRecordCapNoBack(cap_data.file_date,cap_data.count,cap_data.pic_id);
 			formCreateCaputure(cap_data.count);
 			createThread(threadCapture,&cap_data);
-			break;
-		case CAP_TYPE_TALK :
 			break;
 		case CAP_TYPE_ALARM :
 			{

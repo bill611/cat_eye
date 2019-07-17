@@ -494,6 +494,26 @@ void sqlInsertRecordCapNoBack(
 	pthread_mutex_unlock(&mutex);
 }
 
+void sqlInsertRecordTalkNoBack(
+		char *date,
+		char *people,
+		int call_dir,
+		int pic_count,
+		int auto_answer,
+		int talk_time,
+		int pic_count,
+		uint64_t picture_id)
+{
+	char buf[256];
+	pthread_mutex_lock(&mutex);
+	sprintf(buf, "INSERT INTO RecordTalk(date,people,callDir,hasPeople,autoAnswer,talkTime,pic_count,picture_id)\
+            VALUES('%s','%s','%d','%d','%d','%d','%d','%lld')",
+			date, type,has_people,auto_answer,talk_time,pic_count,picture_id);
+	printf("%s\n", buf);
+	LocalQueryExec(dbase.sql,buf);
+	pthread_mutex_unlock(&mutex);
+}
+
 void sqlCheckBack(void)
 {
 	dbase.checkFunc(dbase.sql);
