@@ -131,11 +131,11 @@ static void uartDeal(void)
 	if (len <= 0) {
 		return;
 	}
-	DPRINT("[uart-->reci,%d]",len );
-	for (i=0; i<len; i++) {
-		DPRINT("%02X " ,buff[i] );
-	}
-	DPRINT("\n" );
+	// DPRINT("[uart-->reci,%d]",len );
+	// for (i=0; i<len; i++) {
+		// DPRINT("%02X " ,buff[i] );
+	// }
+	// DPRINT("\n" );
 	for(index=0; index<len; index++){
 		if(buff[index] == PACK_HEAD){
 			leng = buff[index + 1];
@@ -167,7 +167,7 @@ static void uartDeal(void)
 #ifdef USE_UCPAAS
 				my_video->videoCallOutAll();
 #endif
-				// myAudioPlayDingdong();
+				myAudioPlayDingdong();
 			}
 			if (data[0] & (1<<3)) {
 				// my_video->videoAnswer(0,DEV_TYPE_UNDEFINED);

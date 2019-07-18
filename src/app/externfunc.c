@@ -128,7 +128,7 @@ void getFileName(char *file_name,char *date)
 			tm1->tm_min,
 			tm1->tm_sec);
 	sprintf(date,
-			"%04d-%02d-%02d_%02d:%02d:%02d",
+			"%04d-%02d-%02d %02d:%02d:%02d",
 			tm1->tm_year+1900,
 			tm1->tm_mon+1,
 			tm1->tm_mday,
@@ -593,4 +593,20 @@ int screensaverStart(int state)
 	}
 #endif
 	return 1;
+}
+void getCpuId(char *hardcode)
+{
+	// test
+	strcpy(hardcode,"6e906e76286dc4e0");
+	return;
+	FILE *fp = fopen("/proc/cpuinfo","rb");
+	if (fp == NULL)
+		return;
+	char data[64] = {0};
+	while(fgets(data,sizeof(data),fp) != NULL) {
+		if (strncmp(data,"Serial",strlen("Serial")) == 0) {
+			sscanf( data, "%*s %*s %s",hardcode);
+		}
+	}
+	fclose(fp);
 }

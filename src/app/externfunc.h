@@ -51,6 +51,7 @@ void wifiConnect(void);
 void wifiDisConnect(void);
 int screensaverStart(int state);
 void getFileName(char *file_name,char *date);
+void getCpuId(char *hardcode);
 
 #endif
 

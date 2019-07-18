@@ -88,7 +88,7 @@ static void hangup(void)
 #ifdef USE_UCPAAS
 	ucsHangup();
 #endif
-	myAudioStopPlay();
+	// myAudioStopPlay();
 #ifdef USE_UDPTALK
 	if (protocol_video)
 		protocol_video->hangup(protocol_video);

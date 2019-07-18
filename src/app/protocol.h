@@ -20,6 +20,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif  /* __cplusplus */
+#include <stdint.h>
 	enum {
 		PROTOCOL_TALK_3000,
 		PROTOCOL_TALK_OTHER,
@@ -43,6 +44,11 @@ extern "C" {
 		CAP_TYPE_TALK,
 		CAP_TYPE_ALARM,
 		CAP_TYPE_FACE,
+	};
+
+	enum {
+		ALARM_TYPE_LOWPOWER,
+		ALARM_TYPE_PEOPLES,
 	};
 
 	typedef struct _UserStruct {
@@ -93,6 +99,8 @@ extern "C" {
 	// 对讲协议
 	typedef struct _ProtocolHardcloud {
 		void (*uploadPic)(void);
+		void (*reportCapture)(uint64_t pic_id);
+		void (*reportLowPower)(char *date);
 	}ProtocolHardcloud;
 	extern ProtocolHardcloud *protocol_hardcloud;
 	void protocolInit(void);

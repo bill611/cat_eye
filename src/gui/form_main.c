@@ -23,7 +23,7 @@
 #include "screen.h"
 #include "config.h"
 #include "thread_helper.h"
-#include "hal_battery.h"
+#include "sensor_detector.h"
 
 #include "my_button.h"
 #include "my_status.h"
@@ -232,22 +232,6 @@ static void formMainTimerProc1s(HWND hwnd)
 		SendMessage(GetDlgItem (hwnd, IDC_MYSTATUS_WIFI),
 				MSG_MYSTATUS_SET_LEVEL,net_level,0);
 	}
-	// 更新电量
-	static int power_old = 0;
-	int power = halBatteryGetEle();
-	if (power_old == 0 || power_old != power) {
-		power_old = power;
-		SendMessage(GetDlgItem (hwnd, IDC_MYBATTERY),
-				MSG_SET_QUANTITY,(WPARAM)power,0);
-	}
-	// 更新充电状态
-	static int power_state_old = 0;
-	int power_state = halBatteryGetState();
-	if (power_state_old == 0 || power_state_old != power_state) {
-		power_state_old = power_state;
-		SendMessage(GetDlgItem (hwnd, IDC_MYBATTERY),
-				MSG_SET_STATUS,(WPARAM)power_state,0);
-	}
 	// 更新时间 
 	static struct tm *tm_old = NULL;
     char buf[16] = {0};
@@ -324,6 +308,18 @@ static void formMainReleaseBmp(void)
 	bmpsRelease(base_bmps);
 }
 
+static void interfaceUpdateElePower(int power)
+{
+	SendMessage(GetDlgItem (form_base->hDlg, IDC_MYBATTERY),
+			MSG_SET_QUANTITY,(WPARAM)power,0);
+}
+
+static void interfaceUpdateEleState(int state)
+{
+	SendMessage(GetDlgItem (form_base->hDlg, IDC_MYBATTERY),
+			MSG_SET_STATUS,(WPARAM)state,0);
+}
+
 /* ----------------------------------------------------------------*/
 /**
  * @brief initPara 初始化参数
@@ -350,9 +346,15 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 	}
 	for (i=0; ctrls_battery[i].idc != 0; i++) {
         ctrls_battery[i].font = font22;
-        ctrls_battery[i].ele_quantity = halBatteryGetEle();
-        ctrls_battery[i].state = halBatteryGetState();
+		if (sensor) {
+			ctrls_battery[i].ele_quantity = sensor->getElePower();
+			ctrls_battery[i].state = sensor->getEleState();
+		}
         createMyBattery(hDlg,&ctrls_battery[i]);
+	}
+	if (sensor) {
+		sensor->interface->uiUpadteElePower = interfaceUpdateElePower;
+		sensor->interface->uiUpadteEleState = interfaceUpdateEleState;
 	}
 }
 
@@ -400,8 +402,6 @@ static int formMainProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 
     return DefaultDialogProc(hDlg, message, wParam, lParam);
 }
-
-
 
 int createFormMain(HWND hMainWnd,void (*callback)(void))
 {

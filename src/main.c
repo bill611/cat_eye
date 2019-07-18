@@ -33,7 +33,7 @@
 #include "config.h"
 #include "my_video.h"
 #include "my_mixer.h"
-#include "proximity_detector.h"
+#include "sensor_detector.h"
 #include "form_videlayer.h"
 
 
@@ -73,7 +73,7 @@ int MiniGUIMain(int argc, const char* argv[])
 	myMixerInit();
 	myVideoInit();
 	protocolInit();
-	proximityDetectorInit();
+	sensorDetectorInit();
 	formVideoLayerCreate();
     return 0;
 }

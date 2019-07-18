@@ -69,37 +69,33 @@ feature BLOB\
 
 static char *table_record_cap = "CREATE TABLE IF NOT EXISTS RecordCapture( \
 ID INTEGER PRIMARY KEY,\
-date char(64),\
-pic_count INTEGER,\
+date_time char(64),\
 picture_id INTEGER\
 )";
 
 static char *table_record_alarm = "CREATE TABLE IF NOT EXISTS RecordAlarm( \
 ID INTEGER PRIMARY KEY,\
-date char(64),\
+date_time char(64),\
 type INTEGER, \
 hasPeople INTEGER, \
-pic_count INTEGER,\
 picture_id INTEGER\
 )";
 
 static char *table_record_talk = "CREATE TABLE IF NOT EXISTS RecordTalk( \
 ID INTEGER PRIMARY KEY,\
-date char(64),\
+date_time char(64),\
 people char(64),\
 callDir INTEGER, \
 hasPeople INTEGER, \
 autoAnswer INTEGER,\
 talkTime INTEGER,\
-pic_count INTEGER,\
 picture_id INTEGER\
 )";
 static char *table_record_face = "CREATE TABLE IF NOT EXISTS RecordFace( \
 ID INTEGER PRIMARY KEY,\
-date char(64),\
+date_time char(64),\
 faceId char(64),\
 nickName char(128),\
-pic_count INTEGER,\
 picture_id INTEGER\
 )";
 
@@ -464,59 +460,118 @@ void sqlInsertPicUrlNoBack(
 	pthread_mutex_unlock(&mutex);
 }
 
-void sqlInsertRecordAlarmNoBack(
-		char *date,
+void sqlInsertRecordAlarm(
+		char *date_time,
 		int type,
 		int has_people,
-		int pic_count,
 		uint64_t picture_id)
 {
 	char buf[256];
 	pthread_mutex_lock(&mutex);
-	sprintf(buf, "INSERT INTO RecordAlarm(date,type,hasPeople,pic_count,picture_id) VALUES('%s','%d','%d','%d','%lld')",
-			date, type,has_people,pic_count,picture_id);
+	sprintf(buf, "INSERT INTO RecordAlarm(date_time,type,hasPeople,picture_id) VALUES('%s','%d','%d','%d','%lld')",
+			date_time, type,has_people,picture_id);
 	printf("%s\n", buf);
 	LocalQueryExec(dbase.sql,buf);
+	dbase.checkFunc(dbase.sql);
 	pthread_mutex_unlock(&mutex);
 }
 
 void sqlInsertRecordCapNoBack(
-		char *date,
-		int pic_count,
+		char *date_time,
 		uint64_t picture_id)
 {
 	char buf[256];
 	pthread_mutex_lock(&mutex);
-	sprintf(buf, "INSERT INTO RecordCapture(date,pic_count,picture_id) VALUES('%s','%d','%lld')",
-			date, pic_count,picture_id);
+	sprintf(buf, "INSERT INTO RecordCapture(date_time,picture_id) VALUES('%s','%lld')",
+			date_time, picture_id);
 	printf("%s\n", buf);
 	LocalQueryExec(dbase.sql,buf);
 	pthread_mutex_unlock(&mutex);
 }
 
 void sqlInsertRecordTalkNoBack(
-		char *date,
+		char *date_time,
 		char *people,
 		int call_dir,
-		int pic_count,
+		int has_people,
 		int auto_answer,
 		int talk_time,
-		int pic_count,
 		uint64_t picture_id)
 {
 	char buf[256];
 	pthread_mutex_lock(&mutex);
-	sprintf(buf, "INSERT INTO RecordTalk(date,people,callDir,hasPeople,autoAnswer,talkTime,pic_count,picture_id)\
+	sprintf(buf, "INSERT INTO RecordTalk(date_time,people,callDir,hasPeople,autoAnswer,talkTime,picture_id)\
             VALUES('%s','%s','%d','%d','%d','%d','%d','%lld')",
-			date, type,has_people,auto_answer,talk_time,pic_count,picture_id);
+			date_time,people, call_dir,has_people,auto_answer,talk_time,picture_id);
 	printf("%s\n", buf);
 	LocalQueryExec(dbase.sql,buf);
 	pthread_mutex_unlock(&mutex);
 }
 
+int sqlGetCapInfo(
+		uint64_t picture_id,
+		char *date_time)
+{
+	char buf[128];
+	sprintf(buf,"select * from RecordCapture where picture_id = %lld",picture_id );
+	pthread_mutex_lock(&mutex);
+	LocalQueryOpen(dbase.sql,buf);
+	int ret = dbase.sql->RecordCount(dbase.sql);
+	printf("buf:%s,ret:%d\n", buf,ret);
+	if (ret) {
+		if (date_time)
+			LocalQueryOfChar(dbase.sql,"date_time",date_time,64);
+	}
+	dbase.sql->Close(dbase.sql);
+	pthread_mutex_unlock(&mutex);
+	return ret;
+}
 void sqlCheckBack(void)
 {
 	dbase.checkFunc(dbase.sql);
+}
+
+int sqlGetPicInfoStart(uint64_t picture_id)
+{
+	char buf[128];
+	sprintf(buf,"select url from PicUrl where picture_id = %lld",picture_id );
+	pthread_mutex_lock(&mutex);
+	LocalQueryOpen(dbase.sql,buf);
+	return dbase.sql->RecordCount(dbase.sql);
+}
+
+void sqlGetPicInfos(char *url)
+{
+	if (url)
+		LocalQueryOfChar(dbase.sql,"url",url,128);
+	dbase.sql->Next(dbase.sql);
+}
+void sqlGetPicInfoEnd(void)
+{
+	dbase.sql->Close(dbase.sql);
+	pthread_mutex_unlock(&mutex);
+}
+
+int sqlGetAlarmInfoUseDateType(
+		char *date_time,
+		int type,
+		int *has_people)
+{
+	char buf[128];
+	sprintf(buf,"select * from RecordAlarm where date_time = \"%s\" and type = %d",
+			date_time,type );
+	pthread_mutex_lock(&mutex);
+	LocalQueryOpen(dbase.sql,buf);
+	int ret = dbase.sql->RecordCount(dbase.sql);
+	printf("buf:%s,ret:%d\n", buf,ret);
+	if (ret) {
+		if (date_time)
+			LocalQueryOfChar(dbase.sql,"date_time",date_time,64);
+		*has_people = LocalQueryOfInt(dbase.sql,"hasPeople");
+	}
+	dbase.sql->Close(dbase.sql);
+	pthread_mutex_unlock(&mutex);
+	return ret;
 }
 
 static void* threadSqlUpload(void *arg)

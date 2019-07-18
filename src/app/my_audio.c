@@ -76,7 +76,7 @@ void myAudioPlayRing(void)
 void myAudioStopPlay(void)
 {
 	loop_start = 0;
-	// excuteCmd("busybox","killall","aplay",NULL);
+	excuteCmd("busybox","killall","aplay",NULL);
 }
 void myAudioPlayDingdong(void)
 {

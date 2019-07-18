@@ -141,7 +141,6 @@ static void* encoderProcessThread(void *arg)
 
 H264Encoder::H264Encoder()
 {
-	ENCODE_LOG("%s(),%d\n", __func__,__LINE__);
     fd_ = nullptr;
 
 	myH264EncInit();

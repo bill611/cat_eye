@@ -209,8 +209,8 @@ int playwavfile(char * file_name)
 {
 	char buff[128] = {0};
 	printf("play:%s\n", file_name);
-	// excuteCmd("aplay",file_name,NULL);
-	// return 0;
+	excuteCmd("aplay",file_name,NULL);
+	return 0;
 	int result;
 	char *pName;
 	pthread_attr_t threadAttr1;				//œﬂ≥Ã Ù–‘

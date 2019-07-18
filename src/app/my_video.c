@@ -90,7 +90,8 @@ enum {
     DO_TALK_ANSWER, 	// 对讲接听
     DO_TALK_HANGUP, 	// 对讲挂机
     DO_TALK_HANGUPALL, 	// 遍历对讲挂机
-    DO_CAPTURE, 	// 抓拍本地
+    DO_CAPTURE, 		// 抓拍本地
+    DO_CAPTURE_NO_UI, 	// 抓拍本地,不进入抓拍界面
     DO_RECORD_START, 	// 录像开始
     DO_RECORD_STOP, 	// 录像结束
 };
@@ -164,6 +165,7 @@ static char *st_debug_do[] = {
     "DO_TALK_HANGUP",
     "DO_TALK_HANGUPALL", 	// 遍历对讲挂机
     "DO_CAPTURE",
+	"DO_CAPTURE_NO_UI",
     "DO_RECORD_START",
     "DO_RECORD_STOP",
 };
@@ -228,7 +230,7 @@ static StateTable state_table[] =
 
 	{EV_CAPTURE,	ST_IDLE,			ST_IDLE,		DO_CAPTURE},
 	{EV_CAPTURE,	ST_FACE,			ST_FACE,		DO_CAPTURE},
-	{EV_CAPTURE,	ST_TALK_TALKING,	ST_TALK_TALKING,DO_CAPTURE},
+	{EV_CAPTURE,	ST_TALK_TALKING,	ST_TALK_TALKING,DO_CAPTURE_NO_UI},
 };
 
 static int stmDoFail(void *data,MyVideo *arg)
@@ -311,7 +313,6 @@ static int stmDoTalkCallout(void *data,MyVideo *arg)
 	sprintf(ui_title,"正在呼叫 %s",data_temp->nick_name);
 	if (protocol_talk->uiShowFormVideo)
 		protocol_talk->uiShowFormVideo(data_temp->type,ui_title);
-	talk_peer_dev.call_out_result = 0;
 	talk_peer_dev.type = data_temp->type;
 	talk_peer_dev.call_time = TIME_CALLING;
 	protocol_talk->dial(data_temp->usr_id,dialCallBack);
@@ -320,13 +321,12 @@ static int stmDoTalkCallout(void *data,MyVideo *arg)
 	StmData *data_temp = (StmData *)data;
 	char ui_title[128] = {0};
 	sprintf(ui_title,"正在呼叫 门口机");
-	talk_peer_dev.call_out_result = 0;
 	talk_peer_dev.type = DEV_TYPE_ENTRANCEMACHINE;
 	talk_peer_dev.call_time = TIME_CALLING;
 	if (protocol_talk->uiShowFormVideo)
 		protocol_talk->uiShowFormVideo(DEV_TYPE_ENTRANCEMACHINE,ui_title);
 	protocol_talk->dial(data_temp->usr_id,dialCallBack);
-		my_video->showPeerVideo();	
+	my_video->showPeerVideo();	
 #endif
 }
 
@@ -340,9 +340,22 @@ static void *threadCallOutAll(void *arg)
 		sqlGetUserInfosUseScopeIndex(user_id,talk_peer_dev.peer_nick_name,DEV_TYPE_HOUSEHOLDAPP,index++);
 		my_video->videoCallOut(user_id);
 		printf("[%s]id:%s,name:%s\n", __func__,user_id,talk_peer_dev.peer_nick_name);
-		sleep(2);
-		if (talk_peer_dev.call_out_result == 1)
-			break;
+		int wait_times = 300;
+		while (wait_times) {
+			if (talk_peer_dev.call_out_result == -1) {
+				usleep(10000);
+				wait_times--;
+				continue;
+			}
+			if (talk_peer_dev.call_out_result == 1) {
+				talk_peer_dev.call_out_result = -1;
+				return NULL;
+			}
+			if (talk_peer_dev.call_out_result == 0) {
+				talk_peer_dev.call_out_result = -1;
+				break;
+			}
+		}
 		user_num--;
 	}
 	if (user_num == 0)
@@ -412,9 +425,11 @@ static int stmDoTalkHangupAll(void *data,MyVideo *arg)
 	rkH264EncOff();
 #endif
 	protocol_talk->hangup();
-	protocol_talk->uiHangup();
+	if (protocol_talk->uiHangup)
+		protocol_talk->uiHangup();
 	talk_peer_dev.call_time = 0;
 	memset(&talk_peer_dev,0,sizeof(talk_peer_dev));
+	talk_peer_dev.call_out_result = -1;
 }
 
 static int stmDoTalkHangup(void *data,MyVideo *arg)
@@ -430,10 +445,10 @@ static void* threadCapture(void *arg)
 	int i;
 	char file_path[64] = {0};
 	char url[256] = {0};
-	printf("thread count:%d,date:%s,name:%s\n",cap_data_temp.count,cap_data_temp.file_date,cap_data_temp.file_name);
+	// printf("thread count:%d,date:%s,name:%s\n",cap_data_temp.count,cap_data_temp.file_date,cap_data_temp.file_name);
 	for (i=0; i<cap_data_temp.count; i++) {
 		sprintf(file_path,"%s%s_%d.jpg",TEMP_PIC_PATH,cap_data_temp.file_name,i);
-		printf("wirte :%s\n",file_path);
+		// printf("wirte :%s\n",file_path);
 
 #ifdef USE_VIDEO
 		rkVideoCapture(file_path);
@@ -443,9 +458,10 @@ static void* threadCapture(void *arg)
 		usleep(500000);
 	}
 	protocol_hardcloud->uploadPic();
+	protocol_hardcloud->reportCapture(cap_data_temp.pic_id);
 	return NULL;
 }
-static int stmDoCapture(void *data,MyVideo *arg)
+static int stmDoCaptureNoUi(void *data,MyVideo *arg)
 {
 	StmData *data_temp = (StmData *)data;
 	int i;
@@ -458,8 +474,7 @@ static int stmDoCapture(void *data,MyVideo *arg)
 	{
 		case CAP_TYPE_FORMMAIN :
 		case CAP_TYPE_TALK :
-			sqlInsertRecordCapNoBack(cap_data.file_date,cap_data.count,cap_data.pic_id);
-			formCreateCaputure(cap_data.count);
+			sqlInsertRecordCapNoBack(cap_data.file_date,cap_data.pic_id);
 			createThread(threadCapture,&cap_data);
 			break;
 		case CAP_TYPE_ALARM :
@@ -472,7 +487,12 @@ static int stmDoCapture(void *data,MyVideo *arg)
 		default:
 			break;
 	}
-	// rkVideoStopCapture();
+}
+static int stmDoCapture(void *data,MyVideo *arg)
+{
+	StmData *data_temp = (StmData *)data;
+	stmDoCaptureNoUi(data,arg);
+	formCreateCaputure(cap_data.count);
 }
 // FILE *fp,*fp1;
 static void recordEncCallbackFunc(void *data,int size)
@@ -516,6 +536,7 @@ static StmDo stm_do[] =
 	{DO_TALK_HANGUP,	stmDoTalkHangup},
 	{DO_TALK_HANGUPALL,	stmDoTalkHangupAll},
 	{DO_CAPTURE,		stmDoCapture},
+	{DO_CAPTURE_NO_UI,	stmDoCaptureNoUi},
 	{DO_RECORD_START,	stmDoRecordStart},
 	{DO_RECORD_STOP,	stmDoRecordStop},
 };
@@ -572,6 +593,7 @@ static void videoCallOut(char *user_id)
 			        sizeof(StmData));
 	strcpy(st_data->usr_id,user_id);
 	stm->msgPost(stm,EV_TALK_CALLOUT,st_data);
+	talk_peer_dev.call_out_result = -1;
 }
 static int videoGetCallTime(void)
 {

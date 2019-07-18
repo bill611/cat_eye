@@ -111,7 +111,7 @@ static int uartOpen(UartServer *This,int com,int baudrate)
  * @returns
  */
 /* ---------------------------------------------------------------------------*/
-#if 1
+#if 0
 static void printfbuf(void *pbuf,int size)
 {
 	int i;

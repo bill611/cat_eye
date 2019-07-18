@@ -76,11 +76,26 @@ extern "C" {
 
 	extern void sqlInsertRecordCapNoBack(
 			char *date,
-			int pic_count,
 			uint64_t picture_id);
 	extern void sqlInsertPicUrlNoBack(
 			uint64_t picture_id,
 			char *url);
+	extern int sqlGetCapInfo(
+			uint64_t picture_id,
+			char *date);
+	extern int sqlGetPicInfoStart(uint64_t picture_id);
+	extern void sqlGetPicInfos(char *url);
+	extern void sqlGetPicInfoEnd(void);
+	extern void sqlInsertRecordAlarm(
+			char *date_time,
+			int type,
+			int has_people,
+			uint64_t picture_id);
+	extern int sqlGetAlarmInfoUseDateType(
+			char *date_time,
+			int type,
+			int *has_people);
+
 #ifdef __cplusplus
 }
 #endif  /* __cplusplus */

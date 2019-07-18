@@ -44,7 +44,6 @@ static EtcValueInt etc_private_int[]={
 
 static EtcValueChar etc_private_char[]={
 {"device",		"imei",	    SIZE_CONFIG(g_config.imei),		"0"},
-{"device",		"hardcode",	SIZE_CONFIG(g_config.hardcode),	"0"},
 {"device",		"version",	SIZE_CONFIG(g_config.version),	DEVICE_SVERSION},
 {"cloud",		"app_url",	SIZE_CONFIG(g_config.app_url),	"123"},
 
@@ -256,6 +255,7 @@ void configLoad(void)
 		strcpy(g_config.version,DEVICE_SVERSION);
 		SavePrivate();
 	}
+	getCpuId(g_config.hardcode);
 	printf("imei:%s,hard:%s\n", g_config.imei,g_config.hardcode);
 	// 判断是否APP地址图片
 	if (fileexists(QRCODE_APP) == 0) {

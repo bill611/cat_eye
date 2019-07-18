@@ -24,7 +24,6 @@
 #include <time.h>
 #include <pthread.h>
 
-#include "debug.h"
 #include "ucpaas.h"
 #include "sql_handle.h"
 #include "ucpaas/UCSService.h"
@@ -39,6 +38,14 @@
 /* ---------------------------------------------------------------------------*
  *                        macro define
  *----------------------------------------------------------------------------*/
+#define DPRINT(...)           \
+do {                          \
+    printf("\033[1;33m");  \
+    printf("[UCPASS->%s,%d]",__func__,__LINE__);   \
+    printf(__VA_ARGS__);      \
+    printf("\033[0m");        \
+} while (0)
+
 typedef struct _DebugInfo {
 	int opt;
 	const char *content;
@@ -49,12 +56,9 @@ typedef struct _DebugInfo {
  *----------------------------------------------------------------------------*/
 
 static Callbacks call_backs;
-
-static int g_isVideoCall = 0;
-
-static int g_isAutoAnswer = 0;
-static int g_previewEn = 1;
 static int g_externalAVEn = 1;
+static int connect_state = 0;
+static int call_status = 0;
 
 
 static const char * ucDebugInfo(int ev_reason)
@@ -112,24 +116,25 @@ static const char * ucDebugInfo(int ev_reason)
 // UCS connect status callback
 static void connect_event_cb(int ev_reason)
 {
-    DPRINT("%s: ev_reason[%s]\n", __FUNCTION__, ucDebugInfo(ev_reason));
+    DPRINT("ev_reason[%s]\n", ucDebugInfo(ev_reason));
 }
 
 // UCS dailing out failed
 static void dial_failed_cb(const char* callid, int reason)
 {
-    int result = 0; 
+    DPRINT("callid[%s] reason[%s]\n", callid, ucDebugInfo(reason));
+    int result = 0;
     if (call_backs.dialFail)
         call_backs.dialFail(&result);
-    DPRINT("[%s] callid[%s] reason[%s]\n", __FUNCTION__, callid, ucDebugInfo(reason));
+	call_status = 0;
 }
 
 // call alerting
 static void on_alerting_cb(const char* callid)
 {
+    DPRINT("callid[%s]\n", callid);
 	if (call_backs.dialRet)
 		call_backs.dialRet((void *)callid);
-    DPRINT("[%s] callid[%s]\n", __FUNCTION__, callid);
 }
 
 // new call incoming
@@ -137,16 +142,17 @@ static void on_incomingcall_cb(const char* callid, int calltype,
     const char* caller_uid, const char* caller_name,
     const char* userdata)
 {
-    DPRINT("[%s] callid[%s] calltype[%d], caller_uid[%s] caller_name[%s] userdata[%s]\n", 
-        __FUNCTION__, callid, calltype, caller_uid, caller_name, userdata);
+    DPRINT("callid[%s] calltype[%d], caller_uid[%s] caller_name[%s] userdata[%s]\n",
+         callid, calltype, caller_uid, caller_name, userdata);
 	if (call_backs.incomingCall)
 		call_backs.incomingCall((void *)caller_uid);
+	call_status = 1;
 }
 
 // call answer
 static void on_answer_cb(const char* callid)
 {
-    DPRINT("[%s] callid[%s]\n", __FUNCTION__, callid);
+    DPRINT("callid[%s]\n",  callid);
     if (call_backs.answer)
         call_backs.answer((void *)callid);
 }
@@ -154,7 +160,8 @@ static void on_answer_cb(const char* callid)
 // call hangup
 static void on_hangup_cb(const char* callid, int reason)
 {
-    DPRINT("[%s] callid[%s] reason[%s]\n", __FUNCTION__, callid,ucDebugInfo(reason));
+    DPRINT("callid[%s] reason[%s]\n", callid,ucDebugInfo(reason));
+	call_status = 0;
 	if (call_backs.hangup)
 		call_backs.hangup((void *)callid);
 }
@@ -162,13 +169,13 @@ static void on_hangup_cb(const char* callid, int reason)
 // received dtmf
 static void received_dtmf_cb(int dtmf_code)
 {
-    DPRINT("[%s] dtmf_code[%d]\n", __FUNCTION__, dtmf_code);
+    DPRINT("dtmf_code[%d]\n", dtmf_code);
 }
 
 // network quality report between call session
 static void network_state_report_cb(int reason, const char* netstate)
 {
-    DPRINT("[%s] reason[%s] netstate[%s]\n", __FUNCTION__, ucDebugInfo(reason), netstate);
+    DPRINT("reason[%s] netstate[%s]\n", ucDebugInfo(reason), netstate);
 }
 
 // UCS through data received callback
@@ -186,9 +193,9 @@ static void transdata_received_cb(const char* from_userId,
 
 static void transdata_send_result_cb(int err_code)
 {
+    DPRINT("transdata_send_result_cb: err_code[%d]\n", err_code);
 	if (call_backs.sendCmd)
 		call_backs.sendCmd(&err_code);
-    DPRINT("transdata_send_result_cb: err_code[%d]\n", err_code);
 }
 
 // UCS invoke it to change video stream
@@ -207,8 +214,7 @@ static void init_playout_cb(unsigned int sample_rate,
     unsigned int bytes_per_sample,
     unsigned int num_of_channels)
 {
-    DPRINT("[%s]rate:%d,sample:%d,channle:%d \n", 
-			__func__,
+    DPRINT("rate:%d,sample:%d,channle:%d \n",
 			sample_rate,
 			bytes_per_sample,
 			num_of_channels);
@@ -224,8 +230,7 @@ static void init_recording_cb(unsigned int sample_rate,
     unsigned int bytes_per_sample,
     unsigned int num_of_channels)
 {
-    DPRINT("[%s]rate:%d,sample:%d,channle:%d \n", 
-			__func__,
+    DPRINT("rate:%d,sample:%d,channle:%d \n",
 			sample_rate,
 			bytes_per_sample,
 			num_of_channels);
@@ -233,7 +238,7 @@ static void init_recording_cb(unsigned int sample_rate,
 		call_backs.startRecord(sample_rate,bytes_per_sample,num_of_channels);
 }
 
-// UCS read recording 10ms pcm data from external audio device 
+// UCS read recording 10ms pcm data from external audio device
 // audio_data -- recording pcm data
 // size -- want to read data len
 static int read_recording_data_cb(char * audio_data,
@@ -301,26 +306,39 @@ static int TUCS_Destory()
 
 void ucsDial(char *user_id)
 {
+	if (connect_state == 0)
+		return;
     UCS_Dial(user_id, eUCS_CALL_TYPE_VIDEO_CALL);
+	call_status = 1;
 }
 
 void ucsAnswer(void)
 {
+	if (connect_state == 0)
+		return;
 	UCS_CallAnswer();
 }
 
 void ucsHangup(void)
 {
+	if (connect_state == 0)
+		return;
+	if (call_status == 0)
+		return;
 	UCS_CallHangUp();
 }
 
 void ucsSendCmd(char *cmd,char *user_id)
 {
+	if (connect_state == 0)
+		return;
 	UCS_SendTransData(0, user_id, cmd, strlen(cmd));
 }
 
 void ucsSendVideo(const unsigned char* frameData, const unsigned int dataLen)
 {
+	if (connect_state == 0)
+		return;
 	// DPRINT("send:%d\n", dataLen);
 	UCS_PushExternalVideoStream(frameData,dataLen);
 }
@@ -330,13 +348,18 @@ void ucsReceiveVideo(unsigned char* frameData,
 		long long *timeStamp,
 		int *frameType)
 {
+	if (connect_state == 0)
+		return;
 	UCS_get_video_frame(frameData, dataLen,timeStamp,frameType);
 }
 
 int ucsConnect(char *user_token)
 {
+	if (connect_state == 1)
+		return 0;
     if (user_token[0] != 0) {
 		UCS_Connect(user_token);
+		connect_state = 1;
 		// test 门口机
 		// UCS_Connect("eyJBbGciOiJIUzI1NiIsIkFjY2lkIjoiY2I3MzhjZmNkNmFlYTkxMDZiZTk5OTc2NzZlNzJhMDIiLCJBcHBpZCI6ImFjNTdhMDc3ZGIwYjRjY2JhNzEwNTU5Yzk4NzlkYmQ1IiwiVXNlcmlkIjoiVGNjMTkwNDFiZDI1YjQ0ZWY0YmJjZDgifQ==.Du+oG8HxUJBfaLDfaCcVanWRNCSvLSxVnQOHFRDzMAA=");
         return 1;
@@ -345,6 +368,9 @@ int ucsConnect(char *user_token)
 }
 void ucsDisconnect(void)
 {
+	if (connect_state == 0)
+		return;
+	connect_state = 0;
     UCS_DisConnect();
 }
 
@@ -365,7 +391,7 @@ void registUcpaas(Callbacks *interface)
 	if (TUCS_Init() == 0) {
 		UCS_SetExtAudioTransEnable(g_externalAVEn);
 		UCS_SetExtVideoStreamEnable(g_externalAVEn);
-		UCS_ViERingPreviewEnable(1);            
+		UCS_ViERingPreviewEnable(1);
 		UCS_vqecfg_t vqecfg;
 		vqecfg.aec_enable = 0;
 		vqecfg.agc_enable = 0;
