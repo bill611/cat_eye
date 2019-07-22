@@ -229,7 +229,7 @@ static void cbReceivedCmd(const char *user_id,void *arg)
 			my_video->capture(CAP_TYPE_TALK,1);
 			break;
 		case MSG_TYPE_RECORD_START:
-			my_video->recordStart(0);
+			my_video->recordStart(CAP_TYPE_TALK);
 			break;
 		case MSG_TYPE_RECORD_STOP:
 			my_video->recordStop();
@@ -255,9 +255,13 @@ static void cbStartRecord(unsigned int rate,unsigned int bytes_per_sample,unsign
 }
 static void cbRecording(char *data,unsigned int size)
 {
-	// printf("mic :%d\n", mic_open);
-	if (my_mixer && mic_open) {
-		my_mixer->Read(my_mixer,data,size);
+    char audio_buff[1024] = {0};
+	if (my_mixer ) {
+		int real_size = my_mixer->Read(my_mixer,audio_buff,size);
+        if (mic_open)
+            memcpy(data,audio_buff,real_size); 
+        if (my_video)
+            my_video->recordWriteCallback(audio_buff,real_size);
 	}
 }
 static void cbPlayAudio(const char *data,unsigned int size)

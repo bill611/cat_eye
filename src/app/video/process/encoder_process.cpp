@@ -119,12 +119,15 @@ static void* encoderProcessThread(void *arg)
 		}
 		unsigned char *out_data = NULL;
 		int size = 0;
+        int frame_type = 0;
 		unsigned char *nv12_scale_data = NULL;
 		NV12Scale(h264_info.data, 1280, 720, &nv12_scale_data, process->getWidth(), process->getHeight());
 		if (my_h264enc)
-			size = my_h264enc->encode(my_h264enc,nv12_scale_data, &out_data);
+			size = my_h264enc->encode(my_h264enc,nv12_scale_data, &out_data,&frame_type);
 		if (process->encCallback())
-			process->encCallback()(out_data,size);
+			process->encCallback()(out_data,size,frame_type);
+		if (process->start_record() && process->recordCallback())
+			process->recordCallback()(out_data,size,frame_type);
 		if (out_data)
 			free(out_data);
 		if (nv12_scale_data)
@@ -159,6 +162,8 @@ H264Encoder::~H264Encoder()
 
 int H264Encoder::startEnc(int width,int height,EncCallbackFunc encCallback)
 {
+    if (start_enc_ == true)
+        return 0;
 	width_ = width;
 	height_ = height;
 	if (my_h264enc)
@@ -174,7 +179,34 @@ int H264Encoder::startEnc(int width,int height,EncCallbackFunc encCallback)
 
 int H264Encoder::stopEnc(void)
 {
+    if (start_enc_ == false)
+        return 0;
 	start_enc_ = false;
+    recordStop();
+}
+
+void H264Encoder::recordStart(EncCallbackFunc recordCallback)
+{
+    if (start_record_ == true)
+        return;
+    recordCallback_ = recordCallback;
+    recordStopCallback_ = NULL;
+    startEnc(320,240,NULL);
+    start_record_ = true;
+}
+void H264Encoder::recordSetStopFunc(RecordStopCallbackFunc recordStopCallback)
+{
+    recordStopCallback_ = recordStopCallback;
+}
+void H264Encoder::recordStop(void)
+{
+    if (start_record_ == false)
+        return;
+    start_record_ = false;
+    if (recordStopCallback_)
+        recordStopCallback();
+    recordStopCallback_ = NULL;
+    recordCallback_ = NULL;
 }
 
 bool H264Encoder::processFrame(std::shared_ptr<BufferBase> inBuf,

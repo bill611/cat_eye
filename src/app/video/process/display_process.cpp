@@ -4,8 +4,6 @@
 #include "jpeg_enc_dec.h"
 #include "libyuv.h"
 
-//#define TEST_WRITE_SP_TO_FILE
-
 static FILE *fp = NULL;
 int NV12Scale(unsigned char *psrc_buf, int psrc_w, int psrc_h, unsigned char **pdst_buf, int pdst_w, int pdst_h);
 static void writePicture(unsigned char *data)
@@ -101,7 +99,7 @@ static void* threadH264Dec(void *arg)
 {
 	DisplayProcess *process = (DisplayProcess *)arg;
 	struct win* video_win = rk_fb_getvideowin();
-	unsigned char data_in[1024*600*3/2];
+	unsigned char data_in[1024*300];
 	unsigned char data_out[1024*600*3/2];
 	int out_w = 0,out_h = 0;
     int disp_width = 0, disp_height = 0;

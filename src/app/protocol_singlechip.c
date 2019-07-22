@@ -26,6 +26,7 @@
 #include "sql_handle.h"
 #include "my_video.h"
 #include "my_audio.h"
+#include "form_videlayer.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
@@ -41,6 +42,12 @@
 #define PACK_HEAD 0x5A
 #define PACK_TAIL 0x5B
 
+enum {
+    CHECK_POWER = (1 << 0),
+    CHECK_KEY_HOM = (1 << 1),
+    CHECK_KEY_DOORBELL = (1 << 2),
+    CHECK_KEY_PIR = (1 << 3),
+};
 enum{
 	CMD_RESERVE = 0X01, // 备用
 	CMD_POWER = 0X02, 				// ARM→单片机	0X02	1BYTE	0 关机 1进入低功耗模式 2 复位WIFI
@@ -131,11 +138,7 @@ static void uartDeal(void)
 	if (len <= 0) {
 		return;
 	}
-	// DPRINT("[uart-->reci,%d]",len );
-	// for (i=0; i<len; i++) {
-		// DPRINT("%02X " ,buff[i] );
-	// }
-	// DPRINT("\n" );
+    DEBUG_UART("reci",buff,len);
 	for(index=0; index<len; index++){
 		if(buff[index] == PACK_HEAD){
 			leng = buff[index + 1];
@@ -160,7 +163,10 @@ static void uartDeal(void)
 			break;
 		case CMD_GET_CHECK_RESPONSE:
 		case CMD_REPORT_RESPONSE:
-			if (data[0] & (1<<2)) {
+			if (data[0] & CHECK_POWER) {
+            } else if (data[0] & CHECK_KEY_HOM) {
+				formVideoLayerScreenOn();
+            } else if (data[0] & CHECK_KEY_DOORBELL) {
 #ifdef USE_UDPTALK
 				formVideoLayerScreenOn();
 #endif
@@ -168,8 +174,7 @@ static void uartDeal(void)
 				my_video->videoCallOutAll();
 #endif
 				myAudioPlayDingdong();
-			}
-			if (data[0] & (1<<3)) {
+			} else if (data[0] & CHECK_KEY_PIR) {
 				// my_video->videoAnswer(0,DEV_TYPE_UNDEFINED);
 			}
 			cmdPacket(CMD_REPORT,0,NULL,0);

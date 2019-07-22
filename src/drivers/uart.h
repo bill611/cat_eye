@@ -24,6 +24,18 @@ extern "C" {
 #include <stdint.h>
 #define MAX_SEND_BUFF 128
 
+#define DEBUG_UART(dir,pbuf,size) \
+do {         \
+	int i;\
+	unsigned char *pData = (unsigned char *)pbuf;\
+	DPRINT("[uart-->%s,%d]",dir,size);\
+	for(i=0;i<size;i++) {\
+		DPRINT("%02X ",pData[i]);\
+	}\
+	DPRINT("\n");\
+} while (0)
+
+// #define DEBUG_UART(dir,pbuf,size)
 	struct _UartServerPriv;
 	typedef  struct _UartServer{
 		struct _UartServerPriv *priv;

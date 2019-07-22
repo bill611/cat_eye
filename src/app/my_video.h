@@ -34,7 +34,8 @@ extern "C" {
 
 		void (*capture)(int type,int count);
 
-		void (*recordStart)(int count);
+		void (*recordStart)(int type);
+		void (*recordWriteCallback)(char *data,int size);
 		void (*recordStop)(void);
 		
 		void (*videoCallOut)(char *user_id);

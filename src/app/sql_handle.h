@@ -80,6 +80,9 @@ extern "C" {
 	extern void sqlInsertPicUrlNoBack(
 			uint64_t picture_id,
 			char *url);
+    extern void sqlInsertRecordUrlNoBack(
+            uint64_t picture_id,
+            char *url);
 	extern int sqlGetCapInfo(
 			uint64_t picture_id,
 			char *date);

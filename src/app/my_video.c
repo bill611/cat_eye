@@ -24,6 +24,7 @@
 #include "debug.h"
 #include "h264_enc_dec/mpi_enc_api.h"
 #include "jpeg_enc_dec.h"
+#include "avi_encode.h"
 #include "video_server.h"
 #include "my_face.h"
 #include "state_machine.h"
@@ -35,6 +36,7 @@
 #include "timer.h"
 #include "config.h"
 #include "my_video.h"
+#include "my_mixer.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
@@ -178,8 +180,10 @@ static StateTableDebug st_debug = {
 static StmData *st_data = NULL;
 static StMachine* stm;
 static CapData cap_data;
+static MPEG4Head* avi = NULL;
 
 static TalkPeerDev talk_peer_dev;
+static pthread_mutex_t mutex;
 
 static StateTable state_table[] =
 {
@@ -279,7 +283,7 @@ static int stmDoFaceRegist(void *data,MyVideo *arg)
 		return -1;
 }
 
-static void sendVideoCallbackFunc(void *data,int size)
+static void sendVideoCallbackFunc(void *data,int size,int fram_type)
 {
     protocol_talk->sendVideo(data,size);
 }
@@ -464,7 +468,6 @@ static void* threadCapture(void *arg)
 static int stmDoCaptureNoUi(void *data,MyVideo *arg)
 {
 	StmData *data_temp = (StmData *)data;
-	int i;
 	memset(&cap_data,0,sizeof(CapData));
 	getFileName(cap_data.file_name,cap_data.file_date);
 	cap_data.pic_id = atoll(cap_data.file_name);
@@ -494,30 +497,92 @@ static int stmDoCapture(void *data,MyVideo *arg)
 	stmDoCaptureNoUi(data,arg);
 	formCreateCaputure(cap_data.count);
 }
-// FILE *fp,*fp1;
-static void recordEncCallbackFunc(void *data,int size)
+
+static void recordVideoCallbackFunc(void *data,int size,int fram_type)
 {
-	char buf[16];
-	// fwrite(data,1,size,fp);
-	sprintf(buf,"%d\n",size);
-	// fwrite(buf,1,strlen(buf),fp1);
+    if (avi == NULL)
+        return ;
+    // 从关键帧开始写视频
+    if (avi->FirstFrame) {
+        if (fram_type == 1) {
+            avi->FirstFrame = 0;
+            avi->WriteVideo(avi,data,size);
+        }
+    } else {
+        avi->WriteVideo(avi,data,size);
+    }
+}
+
+static void recordStopCallbackFunc(void)
+{
+    pthread_mutex_lock(&mutex);
+    if (avi) 
+        avi->DestoryMPEG4(&avi);
+    pthread_mutex_unlock(&mutex);
+}
+
+static void* threadAviReadAudio(void *arg)
+{
+    int audio_fp = -1;
+    avi->InitAudio(avi,2,8000,1024);
+	if (my_mixer)
+		my_mixer->InitPlayAndRec(my_mixer,&audio_fp,8000,2);
+    while (avi) {
+        char audio_buff[1024] = {0};
+		int real_size = my_mixer->Read(my_mixer,audio_buff,sizeof(audio_buff));
+        pthread_mutex_lock(&mutex);
+        if (avi)
+            avi->WriteAudio(avi,audio_buff,real_size);
+        pthread_mutex_unlock(&mutex);
+        usleep(10000);
+    }
+	if (my_mixer) {
+		if (audio_fp > 0)
+			my_mixer->DeInitPlay(my_mixer,&audio_fp);
+	}
+    return NULL; 
 }
 static int stmDoRecordStart(void *data,MyVideo *arg)
 {
+	StmData *data_temp = (StmData *)data;
+	memset(&cap_data,0,sizeof(CapData));
+	getFileName(cap_data.file_name,cap_data.file_date);
+	cap_data.pic_id = atoll(cap_data.file_name);
+	switch(data_temp->cap_type)
+	{
+		case CAP_TYPE_FORMMAIN :
+		case CAP_TYPE_TALK :
+            {
+                char file_path[64] = {0};
+                char url[256] = {0};
+                sqlInsertRecordCapNoBack(cap_data.file_date,cap_data.pic_id);
+                sprintf(file_path,"%s%s.avi",TEMP_PIC_PATH,cap_data.file_name);
+                if (avi == NULL) {
+                    avi = Mpeg4_Create(320,240,file_path,WRITE_READ,0);
+                    if (data_temp->cap_type == CAP_TYPE_FORMMAIN)
+                        createThread(threadAviReadAudio,NULL);
+                }
 #ifdef USE_VIDEO
-	// fp = fopen("test.h264","wb");
-	// fp1 = fopen("test.txt","wb");
-	rkH264EncOn(320,240,recordEncCallbackFunc);
+                rkVideoRecordStart(recordVideoCallbackFunc);
+                rkVideoRecordSetStopFunc(recordStopCallbackFunc);
 #endif
+                sprintf(url,"http://img.cateye.taichuan.com/%s.avi",cap_data.file_name);
+                sqlInsertRecordUrlNoBack(cap_data.pic_id,url);
+            }
+			break;
+		case CAP_TYPE_ALARM :
+			{
+				printf("file_name\n");
+			}
+			break;
+		default:
+			break;
+	}
 }
 static int stmDoRecordStop(void *data,MyVideo *arg)
 {
 #ifdef USE_VIDEO
-	// rkH264EncOff();
-	// fflush(fp);
-	// fclose(fp);
-	// fflush(fp1);
-	// fclose(fp1);
+    rkVideoRecordStop();
 #endif
 	stm->msgPost(stm,EV_RECORD_STOP_FINISHED,NULL);
 }
@@ -577,14 +642,23 @@ static void capture(int type,int count)
 	stm->msgPost(stm,EV_CAPTURE,st_data);
 }
 
-static void recordStart(int count)
+static void recordStart(int type)
 {
-    stm->msgPost(stm,EV_RECORD_START,NULL);
+	st_data = (StmData *)stm->initPara(stm,
+			        sizeof(StmData));
+	st_data->cap_type = type;
+    stm->msgPost(stm,EV_RECORD_START,st_data);
 }
 
 static void recordStop(void)
 {
     stm->msgPost(stm,EV_RECORD_STOP,NULL);
+}
+static void recordWriteCallback(char *data,int size)
+{
+    avi->InitAudio(avi,2,8000,size);
+    if (avi)
+        avi->WriteAudio(avi,data,size);
 }
 
 static void videoCallOut(char *user_id)
@@ -698,6 +772,11 @@ void myVideoInit(void)
 	my_video->videoHangup = videoHangup;
 	my_video->videoAnswer = videoAnswer;
 	my_video->videoGetCallTime = videoGetCallTime;
+    my_video->recordWriteCallback = recordWriteCallback;
+    pthread_mutexattr_t mutexattr;
+    pthread_mutexattr_init(&mutexattr);
+    pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE_NP);
+    pthread_mutex_init(&mutex, &mutexattr);
 	init();
 	stm = stateMachineCreate(ST_IDLE,
 			state_table,

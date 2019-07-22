@@ -24,6 +24,7 @@ extern "C" {
 #include "commongdi.h"
 
 	void formVideoLayerCreate(void);
+    void formVideoLayerScreenOn(void);
 
 #ifdef __cplusplus
 }

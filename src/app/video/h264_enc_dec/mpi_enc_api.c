@@ -306,92 +306,6 @@ RET:
     return ret;
 }
 
-static int test_mpp_run(H264Encode *This,unsigned char *in_data,unsigned char **out_data)
-{
-    MPP_RET ret;
-    MppApi *mpi;
-    MppCtx ctx;
-	MpiEncTestData *p = This->priv->p;
-	if (NULL == p) {
-		printf("%s()%d\n", __func__,__LINE__);
-        return 0;
-	}
-
-    mpi = p->mpi;
-    ctx = p->ctx;
-
-
-	MppFrame frame = NULL;
-	MppPacket packet = NULL;
-	void *buf = mpp_buffer_get_ptr(p->frm_buf);
-
-	memcpy(buf,in_data,p->frame_size);
-
-	ret = mpp_frame_init(&frame);
-	if (ret) {
-		mpp_err_f("mpp_frame_init failed\n");
-		goto RET;
-	}
-
-	mpp_frame_set_width(frame, p->width);
-	mpp_frame_set_height(frame, p->height);
-	mpp_frame_set_hor_stride(frame, p->hor_stride);
-	mpp_frame_set_ver_stride(frame, p->ver_stride);
-	mpp_frame_set_fmt(frame, p->fmt);
-	mpp_frame_set_buffer(frame, p->frm_buf);
-	mpp_frame_set_eos(frame, p->frm_eos);
-
-	ret = mpi->encode_put_frame(ctx, frame);
-	if (ret) {
-		mpp_err("mpp encode put frame failed\n");
-		goto RET;
-	}
-
-	ret = mpi->encode_get_packet(ctx, &packet);
-	if (ret) {
-		mpp_err("mpp encode get packet failed\n");
-		goto RET;
-	}
-	size_t len = 0;
-	if (packet) {
-		// write packet to file here
-		void *ptr   = mpp_packet_get_pos(packet);
-		int len  = mpp_packet_get_length(packet);
-		ret = len;
-
-		p->pkt_eos = mpp_packet_get_eos(packet);
-
-		unsigned char *head = ptr;
-		int I_Frame = 0;
-		if (head[0] == 0 && head[1] == 0 && head[2] == 1) {
-			if (head[3] == 0x65) {
-				I_Frame = 1;
-			}
-		}
-		if (I_Frame) {
-			*out_data = (unsigned char*) malloc(This->priv->sps_pps_head_size + len);
-			memcpy(*out_data,This->priv->sps_pps_head,This->priv->sps_pps_head_size);
-			memcpy(&((*out_data)[This->priv->sps_pps_head_size]),ptr,len);
-		} else {
-			*out_data = (unsigned char*) malloc(len);
-			memcpy(*out_data,ptr,len);
-		}
-
-		mpp_packet_deinit(&packet);
-
-		// mpp_log_f("encoded %s frame %d size %d\n", I_Frame ? "I":"P",p->frame_count, len);
-		p->stream_size += len;
-		p->frame_count++;
-
-		if (p->pkt_eos) {
-			mpp_log("found last packet\n");
-			mpp_assert(p->frm_eos);
-		}
-	}
-
-RET:
-    return ret;
-}
 
 static int mpi_enc_test(H264Encode *This,MpiEncTestCmd *cmd)
 {
@@ -462,13 +376,97 @@ MPP_TEST_OUT:
 }
 
 
-static int mpiH264EncEncode(H264Encode *This,unsigned char *in_data,unsigned char **out_data)
+static int mpiH264EncEncode(H264Encode *This,
+        unsigned char *in_data,
+        unsigned char **out_data,
+        int *frame_type)
 {
-    int leng = test_mpp_run(This,in_data,out_data);
-    if (leng == 0) {
-        mpp_err_f("test mpp run failed ret %d\n", leng);
-    }
-	return leng;
+    MPP_RET ret;
+    MppApi *mpi;
+    MppCtx ctx;
+	MpiEncTestData *p = This->priv->p;
+    *frame_type = 0;
+	if (NULL == p) {
+		printf("%s()%d\n", __func__,__LINE__);
+        return 0;
+	}
+
+    mpi = p->mpi;
+    ctx = p->ctx;
+
+
+	MppFrame frame = NULL;
+	MppPacket packet = NULL;
+	void *buf = mpp_buffer_get_ptr(p->frm_buf);
+
+	memcpy(buf,in_data,p->frame_size);
+
+	ret = mpp_frame_init(&frame);
+	if (ret) {
+		mpp_err_f("mpp_frame_init failed\n");
+		goto RET;
+	}
+
+	mpp_frame_set_width(frame, p->width);
+	mpp_frame_set_height(frame, p->height);
+	mpp_frame_set_hor_stride(frame, p->hor_stride);
+	mpp_frame_set_ver_stride(frame, p->ver_stride);
+	mpp_frame_set_fmt(frame, p->fmt);
+	mpp_frame_set_buffer(frame, p->frm_buf);
+	mpp_frame_set_eos(frame, p->frm_eos);
+
+	ret = mpi->encode_put_frame(ctx, frame);
+	if (ret) {
+		mpp_err("mpp encode put frame failed\n");
+		goto RET;
+	}
+
+	ret = mpi->encode_get_packet(ctx, &packet);
+	if (ret) {
+		mpp_err("mpp encode get packet failed\n");
+		goto RET;
+	}
+	size_t len = 0;
+	if (packet) {
+		// write packet to file here
+		void *ptr   = mpp_packet_get_pos(packet);
+		int len  = mpp_packet_get_length(packet);
+		ret = len;
+
+		p->pkt_eos = mpp_packet_get_eos(packet);
+
+		unsigned char *head = ptr;
+		int I_Frame = 0;
+		if (head[0] == 0 && head[1] == 0 && head[2] == 1) {
+			if (head[3] == 0x65) {
+				I_Frame = 1;
+			}
+		}
+		if (I_Frame) {
+			*out_data = (unsigned char*) malloc(This->priv->sps_pps_head_size + len);
+			memcpy(*out_data,This->priv->sps_pps_head,This->priv->sps_pps_head_size);
+			memcpy(&((*out_data)[This->priv->sps_pps_head_size]),ptr,len);
+            *frame_type = 1;
+		} else {
+			*out_data = (unsigned char*) malloc(len);
+			memcpy(*out_data,ptr,len);
+            *frame_type = 0;
+		}
+
+		mpp_packet_deinit(&packet);
+
+		// mpp_log_f("encoded %s frame %d size %d\n", I_Frame ? "I":"P",p->frame_count, len);
+		p->stream_size += len;
+		p->frame_count++;
+
+		if (p->pkt_eos) {
+			mpp_log("found last packet\n");
+			mpp_assert(p->frm_eos);
+		}
+	}
+
+RET:
+    return ret;
 }
 
 static void mpiH264EncInit(H264Encode *This,int width,int height)

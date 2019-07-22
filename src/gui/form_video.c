@@ -176,6 +176,7 @@ static void buttonHangupPress(HWND hwnd, int id, int nc, DWORD add_data)
 		return;
 	if (form_type == FORM_VIDEO_TYPE_RECORD) {
 		my_video->recordStop();
+        ShowWindow(form_base->hDlg,SW_HIDE);
 	} else {
 		my_video->videoHangup();
 	}
@@ -235,7 +236,11 @@ static void updateDisplay(HWND hDlg)
 			updateTitle("正在抓拍");
 			break;
 		case FORM_VIDEO_TYPE_MONITOR:
+			button_status[IDC_BUTTON_HANGUP - button_num] = 1;
+			myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_HANGUP), 467,451);
+			break;
 		case FORM_VIDEO_TYPE_RECORD:
+			updateTitle("正在录像");
 			button_status[IDC_BUTTON_HANGUP - button_num] = 1;
 			myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_HANGUP), 467,451);
 			break;

@@ -118,7 +118,7 @@ void screenAutoCloseStop(void)
 {
 	auto_close_lcd = 0;
 }
-void formVideoLayerScreenOn()
+void formVideoLayerScreenOn(void)
 {
 	screensaverStart(1);
 	auto_close_lcd = AUTO_CLOSE_LCD;

@@ -113,7 +113,7 @@ static int isIframe(unsigned char *sdata)
 	return 0;
 }
 
-int needDecode(int cur_seq,unsigned char *sdata)
+static int needDecode(int cur_seq,unsigned char *sdata)
 {
     //关键帧，需要解码
 	if (isIframe(sdata)) {

@@ -101,30 +101,6 @@ static int uartOpen(UartServer *This,int com,int baudrate)
 	return This->priv->fd > 0;
 }
 
-/* ---------------------------------------------------------------------------*/
-/**
- * @brief printfbuf 调试输出发送串口字节
- *
- * @param pbuf
- * @param size
- *
- * @returns
- */
-/* ---------------------------------------------------------------------------*/
-#if 0
-static void printfbuf(void *pbuf,int size)
-{
-	int i;
-	unsigned char *pData = (unsigned char *)pbuf;
-	DPRINT("[uart-->send,%d]",size);
-	for(i=0;i<size;i++) {
-		DPRINT("%02X ",pData[i]);
-	}
-	DPRINT("\n");
-}
-#else
-#define printfbuf(pbuf,size)
-#endif
 
 /* ---------------------------------------------------------------------------*/
 /**
@@ -216,7 +192,7 @@ static void * uartSendThead(UartServer *This)
 	while(!This->priv->terminated){
 		This->priv->queue->get(This->priv->queue, &send_buf);
 		halUartWrite(This->priv->fd, send_buf.data, send_buf.len);
-		printfbuf(send_buf.data,send_buf.len);
+		DEBUG_UART("send",send_buf.data,send_buf.len);
 		usleep(500000);
 	}
 	pthread_exit(NULL);

@@ -596,9 +596,6 @@ int screensaverStart(int state)
 }
 void getCpuId(char *hardcode)
 {
-	// test
-	strcpy(hardcode,"6e906e76286dc4e0");
-	return;
 	FILE *fp = fopen("/proc/cpuinfo","rb");
 	if (fp == NULL)
 		return;

@@ -582,7 +582,7 @@ static void* initThread(void *arg)
 		if(0 != dec->changeCurrentObj(dec,"data"))
 			goto retry;
 
-		dec->print(dec);
+		// dec->print(dec);
 		dec->getValueChar(dec,"ip",&buff);
 
 		if (!buff) {

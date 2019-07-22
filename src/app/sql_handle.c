@@ -67,6 +67,7 @@ fileURL char(256),\
 feature BLOB\
 )";
 
+// 视频和抓图都用此接口
 static char *table_record_cap = "CREATE TABLE IF NOT EXISTS RecordCapture( \
 ID INTEGER PRIMARY KEY,\
 date_time char(64),\
@@ -453,6 +454,23 @@ void sqlInsertPicUrlNoBack(
 				picture_id,url);
     } else {
 		sprintf(buf, "INSERT INTO PicUrl(picture_id,url) VALUES('%lld','0')",
+				picture_id);
+    }
+    printf("%s\n", buf);
+    LocalQueryExec(dbase.sql,buf);
+	pthread_mutex_unlock(&mutex);
+}
+void sqlInsertRecordUrlNoBack(
+		uint64_t picture_id,
+		char *url)
+{
+	pthread_mutex_lock(&mutex);
+    char buf[256];
+	if (url) {
+		sprintf(buf, "INSERT INTO RecordUrl(record_id,url) VALUES('%lld','%s')",
+				picture_id,url);
+    } else {
+		sprintf(buf, "INSERT INTO RecordUrl(record_id,url) VALUES('%lld','0')",
 				picture_id);
     }
     printf("%s\n", buf);

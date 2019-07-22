@@ -267,7 +267,7 @@ static void buttonAccessPress(HWND hwnd, int id, int nc, DWORD add_data)
 		return;
 	flag_timer_stop = 1;
 	// TEST
-	my_video->videoCallOut("192.168.1.10");
+	// my_video->videoCallOut("192.168.1.10");
 	// createFormVideo(GetParent(hwnd),FORM_VIDEO_TYPE_TALK,enableAutoClose);
 }
 static void buttonVideoPress(HWND hwnd, int id, int nc, DWORD add_data)
@@ -275,7 +275,7 @@ static void buttonVideoPress(HWND hwnd, int id, int nc, DWORD add_data)
 	if (nc != BN_CLICKED)
 		return;
 	flag_timer_stop = 1;
-	my_video->recordStart(0);
+	my_video->recordStart(CAP_TYPE_FORMMAIN);
 	createFormVideo(GetParent(hwnd),FORM_VIDEO_TYPE_RECORD,enableAutoClose,0);
 }
 static void buttonSettingPress(HWND hwnd, int id, int nc, DWORD add_data)
