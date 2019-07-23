@@ -143,6 +143,7 @@ static int bmp_load_finished = 0;
 static int form_type = FORM_VIDEO_TYPE_CAPTURE;
 static FormBase* form_base = NULL;
 static int auto_close_time = 0;
+static int window_show_status = 0;
 
 /* ---------------------------------------------------------------------------*/
 /**
@@ -334,9 +335,15 @@ static int formVideoProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 		case MSG_SHOWWINDOW:
 			{
 				if (wParam == SW_SHOWNORMAL) {
+					if (window_show_status == 1)
+						return 0;
+					window_show_status = 1;
 					updateDisplay(hDlg);
 					SendMessage(Screen.getCurrent(),MSG_DISABLE_WINDOW,0,0);	
 				} else if (wParam == SW_HIDE) {
+					if (window_show_status == 0)
+						return 0;
+					window_show_status = 0;
 					SendMessage(Screen.getCurrent(),MSG_ENABLE_WINDOW,0,0);	
 				}
 			} break;

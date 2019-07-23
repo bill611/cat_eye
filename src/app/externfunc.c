@@ -596,6 +596,7 @@ int screensaverStart(int state)
 }
 void getCpuId(char *hardcode)
 {
+#ifndef X86
 	FILE *fp = fopen("/proc/cpuinfo","rb");
 	if (fp == NULL)
 		return;
@@ -606,4 +607,7 @@ void getCpuId(char *hardcode)
 		}
 	}
 	fclose(fp);
+#else
+	strcpy(hardcode,"f07440307d514cc7");
+#endif
 }

@@ -146,6 +146,9 @@ H264Encoder::H264Encoder()
 {
     fd_ = nullptr;
 
+	start_enc_ = false;
+    start_record_ = false;
+
 	myH264EncInit();
 
 	pthread_mutexattr_t mutexattr;

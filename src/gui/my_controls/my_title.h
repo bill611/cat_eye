@@ -32,6 +32,7 @@ extern "C" {
 
 	enum {  // 左边类型
 		MYTITLE_LEFT_EXIT, // 退出按键
+		MYTITLE_LEFT_NULL, // 空
 	};
 	enum {  // 右边类型
 		MYTITLE_RIGHT_NULL,  // 空

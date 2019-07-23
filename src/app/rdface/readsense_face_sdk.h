@@ -23,7 +23,7 @@ int readsense_initial_face_sdk(void * model_virt,
 				const char * fle_light_weights_path, const char * fle_infrared_weights_path, 
 				const char * fgs_weights_path, const char * fr_weights_path, 
 				const char * fr_lite_weights_path, const char * fq_weights_path, 
-				const char * fla_weights_path, 
+				const char * fla_weights_path, const char * fgas_weights_path, 
 				const char * app_id, const char * signature);
 
 
@@ -48,6 +48,9 @@ typedef struct tag_RSFT_FACE_RESULT
 	float front_prob;
 
 	float face_landmark[FACE_LANDMARK_NUM*2];
+
+	int gender;//0: female, 1: male, -1: invalid value
+	int age;//>=0, -1: invalid value
 } RSFT_FACE_RESULT;
 
 int readsense_face_tracking(void * model_virt, void * model_phys, void * raw_virt, void * raw_phys, 

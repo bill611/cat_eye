@@ -515,6 +515,7 @@ static void recordVideoCallbackFunc(void *data,int size,int fram_type)
 
 static void recordStopCallbackFunc(void)
 {
+	printf("1111111111111111111111111111111\n");
     pthread_mutex_lock(&mutex);
     if (avi) 
         avi->DestoryMPEG4(&avi);
@@ -656,9 +657,10 @@ static void recordStop(void)
 }
 static void recordWriteCallback(char *data,int size)
 {
-    avi->InitAudio(avi,2,8000,size);
-    if (avi)
+	if (avi) {
+		avi->InitAudio(avi,2,8000,size);
         avi->WriteAudio(avi,data,size);
+	}
 }
 
 static void videoCallOut(char *user_id)

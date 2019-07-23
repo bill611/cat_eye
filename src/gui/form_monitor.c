@@ -17,12 +17,17 @@
 /* ---------------------------------------------------------------------------*
  *                      include head files
  *----------------------------------------------------------------------------*/
+#include <string.h>
 #include "externfunc.h"
 #include "screen.h"
 
 #include "my_button.h"
 #include "my_title.h"
 
+#include "sql_handle.h"
+#include "protocol.h"
+#include "my_video.h"
+#include "form_video.h"
 #include "form_base.h"
 
 /* ---------------------------------------------------------------------------*
@@ -36,14 +41,6 @@ static int formMonitorProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 
 static void buttonExitPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonWifiPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonScreenPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonDoorBellPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonTimerPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonMutePress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonAlarmPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonFactoryPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonLocalPress(HWND hwnd, int id, int nc, DWORD add_data);
 
 /* ---------------------------------------------------------------------------*
  *                        macro define
@@ -54,37 +51,38 @@ static void buttonLocalPress(HWND hwnd, int id, int nc, DWORD add_data);
 	#define DBG_P( x... )
 #endif
 
-#define BMP_LOCAL_PATH "setting/"
+#define BMP_LOCAL_PATH "main/"
 enum {
 	IDC_TIMER_1S = IDC_FORM_MONITOR_STATR,
 	IDC_BUTTON_EXIT,
-	IDC_BUTTON_WIFI,
-	IDC_BUTTON_SCREEN,
-	IDC_BUTTON_DOORBELL,
-	IDC_BUTTON_TIMER,
-	IDC_BUTTON_MUTE,
-	IDC_BUTTON_ALARM,
-	IDC_BUTTON_FACTORY,
-	IDC_BUTTON_LOCAL,
+	IDC_ICONVIEW,
 
 	IDC_TITLE,
 };
 
-
+struct IconviewItem {
+	char user_id[32];
+	char nick_name[128];
+};
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
-static BITMAP bmp_bkg_setting; // 背景
+static HWND hIconView;
+static BITMAP bmp_access_nor; // 背景
+static BITMAP bmp_access_pre; // 背景
 
 static int bmp_load_finished = 0;
 static int flag_timer_stop = 0;
+static struct IconviewItem item_data[16];
 
 static BmpLocation bmp_load[] = {
-    // {&bmp_bkg_setting,BMP_LOCAL_PATH"bkg_setting.png"},
+	{&bmp_access_pre,BMP_LOCAL_PATH"ico_监视门口机_pre.png"},
+	{&bmp_access_nor,BMP_LOCAL_PATH"ico_监视门口机_nor.png"},
     {NULL},
 };
 
 static MY_CTRLDATA ChildCtrls [] = {
+    ICONVIEW(192,200,640,252,IDC_ICONVIEW),
 };
 
 
@@ -110,27 +108,10 @@ static FormBasePriv form_base_priv= {
 };
 
 static MyCtrlButton ctrls_button[] = {
-	{IDC_BUTTON_WIFI,	 MYBUTTON_TYPE_TWO_STATE,"wifi设置",99,	129,buttonWifiPress},
-	{IDC_BUTTON_SCREEN,	 MYBUTTON_TYPE_TWO_STATE,"屏幕设置",338,129,buttonScreenPress},
-	{IDC_BUTTON_DOORBELL,MYBUTTON_TYPE_TWO_STATE,"门铃设置",577,129,buttonDoorBellPress},
-	{IDC_BUTTON_TIMER,	 MYBUTTON_TYPE_TWO_STATE,"时间设置",817,129,buttonTimerPress},
-	{IDC_BUTTON_MUTE,	 MYBUTTON_TYPE_TWO_STATE,"免扰设置",99,	366,buttonMutePress},
-	{IDC_BUTTON_ALARM,	 MYBUTTON_TYPE_TWO_STATE,"报警设置",338,366,buttonAlarmPress},
-	{IDC_BUTTON_FACTORY, MYBUTTON_TYPE_TWO_STATE,"恢复出厂",577,366,buttonFactoryPress},
-	{IDC_BUTTON_LOCAL,	 MYBUTTON_TYPE_TWO_STATE,"本机设置",817,366,buttonLocalPress},
+	{IDC_BUTTON_EXIT,MYBUTTON_TYPE_ONE_STATE|MYBUTTON_TYPE_TEXT_NULL,"关闭",974,20,buttonExitPress},
 	{0},
 };
 static MyCtrlTitle ctrls_title[] = {
-	{
-        IDC_TITLE, 
-        MYTITLE_LEFT_EXIT,
-        MYTITLE_RIGHT_NULL,
-        0,0,1024,40,
-        "设置",
-        "",
-        0xffffff, 0x333333FF,
-        buttonExitPress,
-    },
 	{0},
 };
 
@@ -139,59 +120,7 @@ static FormBase* form_base = NULL;
 static void enableAutoClose(void)
 {
 	Screen.setCurrent(form_base_priv.name);
-	flag_timer_stop = 0;	
-}
-/* ----------------------------------------------------------------*/
-/**
- * @brief buttonWifiPress wifi设置
- *
- * @param hwnd
- * @param id
- * @param nc
- * @param add_data
- */
-/* ----------------------------------------------------------------*/
-static void buttonWifiPress(HWND hwnd, int id, int nc, DWORD add_data)
-{
-	if (nc != BN_CLICKED)
-		return;
-	flag_timer_stop = 1;
-}
-static void buttonScreenPress(HWND hwnd, int id, int nc, DWORD add_data)
-{
-	if (nc != BN_CLICKED)
-		return;
-}
-static void buttonDoorBellPress(HWND hwnd, int id, int nc, DWORD add_data)
-{
-	if (nc != BN_CLICKED)
-		return;
-}
-static void buttonTimerPress(HWND hwnd, int id, int nc, DWORD add_data)
-{
-	if (nc != BN_CLICKED)
-		return;
-}
-static void buttonMutePress(HWND hwnd, int id, int nc, DWORD add_data)
-{
-	if (nc != BN_CLICKED)
-		return;
-}
-static void buttonAlarmPress(HWND hwnd, int id, int nc, DWORD add_data)
-{
-	if (nc != BN_CLICKED)
-		return;
-}
-static void buttonFactoryPress(HWND hwnd, int id, int nc, DWORD add_data)
-{
-	if (nc != BN_CLICKED)
-		return;
-}
-static void buttonLocalPress(HWND hwnd, int id, int nc, DWORD add_data)
-{
-	if (nc != BN_CLICKED)
-		return;
-	flag_timer_stop = 1;
+	flag_timer_stop = 0;
 }
 
 /* ----------------------------------------------------------------*/
@@ -209,6 +138,112 @@ static void buttonExitPress(HWND hwnd, int id, int nc, DWORD add_data)
 	ShowWindow(GetParent(hwnd),SW_HIDE);
 }
 
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief paint 固定表头绘制函数
+ *
+ * @param hWnd
+ * @param hdc
+ */
+/* ---------------------------------------------------------------------------*/
+static void paint (HWND hWnd, HDC hdc)
+{
+	RECT rc_text;
+	SetBrushColor (hdc,PIXEL_lightwhite);
+	rc_text.left = 192;
+	rc_text.right = 832;
+	rc_text.top = 148;
+	rc_text.bottom = 200;
+	FillBox (hdc, rc_text.left,rc_text.top,RECTW(rc_text),RECTH(rc_text));
+
+	RECT rcDraw;
+	SetBkMode (hdc, BM_TRANSPARENT);
+	SetTextColor (hdc, 0x10B7F5);
+	SelectFont (hdc, font20);
+	rcDraw.left = 206;
+	rcDraw.top = 159;
+	TextOut (hdc, rcDraw.left, rcDraw.top, "监视门口机");
+
+	SetPenColor (hdc, 0xDDDDDD);
+	MoveTo (hdc, 192,199); LineTo (hdc, 832,199);
+	// MoveTo (hdc, 192,325); LineTo (hdc, 832,325);
+
+	// MoveTo (hdc, 318,199); LineTo (hdc, 318,492);
+	// MoveTo (hdc, 447,199); LineTo (hdc, 447,492);
+	// MoveTo (hdc, 576,199); LineTo (hdc, 576,492);
+	// MoveTo (hdc, 705,199); LineTo (hdc, 705,492);
+}
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief myDrawItem 列表自定义绘图函数
+ *
+ * @param hWnd
+ * @param hsvi
+ * @param hdc
+ * @param rcDraw
+ */
+/* ---------------------------------------------------------------------------*/
+static void myDrawItem (HWND hWnd, GHANDLE hsvi, HDC hdc, RECT *rcDraw)
+{
+#define FILL_BMP_STRUCT(left,top,img)  \
+	FillBoxWithBitmap(hdc,left, top,img.bmWidth,img.bmHeight,&img)
+
+	const char *label = (const char*)iconview_get_item_label (hsvi);
+
+	SetBkMode (hdc, BM_TRANSPARENT);
+	SelectFont (hdc, font20);
+
+	int bmp_x = rcDraw->left + (rcDraw->right - rcDraw->left - bmp_access_pre.bmWidth) / 2;
+	int bmp_y = rcDraw->top + (rcDraw->bottom - rcDraw->top - bmp_access_pre.bmHeight) / 2;
+	if (iconview_is_item_hilight(hWnd, hsvi)) {
+		SetTextColor (hdc, 0x10B7F5);
+		FILL_BMP_STRUCT(bmp_x,bmp_y,bmp_access_pre);
+	} else {
+		SetTextColor (hdc, 0x999999);
+		FILL_BMP_STRUCT(bmp_x,bmp_y,bmp_access_nor);
+	}
+
+	if (label) {
+		RECT rcTxt = *rcDraw;
+		rcTxt.top = rcTxt.bottom - GetWindowFont (hWnd)->size * 2;
+		// rcTxt.left = rcTxt.left - (GetWindowFont (hWnd)->size) + 2;
+
+		DrawText (hdc, label, -1, &rcTxt,  DT_CENTER | DT_VCENTER);
+	}
+	// SetPenColor (hdc, 0xCCCCCC);
+	// MoveTo (hdc, rcDraw->left ,rcDraw->top);
+	// LineTo (hdc, rcDraw->right,rcDraw->top);
+	// MoveTo (hdc, rcDraw->left ,rcDraw->top);
+	// LineTo (hdc, rcDraw->left,rcDraw->bottom);
+
+	// MoveTo (hdc, rcDraw->left ,rcDraw->bottom);
+	// LineTo (hdc, rcDraw->right,rcDraw->bottom);
+	// MoveTo (hdc, rcDraw->right ,rcDraw->top);
+	// LineTo (hdc, rcDraw->bottom,rcDraw->top);
+}
+
+static void iconviewNotify(HWND hwnd, int id, int nc, DWORD add_data)
+{
+    int idx = SendMessage (hIconView, SVM_GETCURSEL, 0, 0);
+    char *user_id;
+    user_id = (char *)SendMessage (hIconView, SVM_GETITEMADDDATA, idx, 0);
+
+    if (user_id) {
+		ShowWindow(hwnd,SW_HIDE);
+		createFormVideo(0,FORM_VIDEO_TYPE_MONITOR,NULL,0); 
+		my_video->videoCallOut(user_id);
+    }
+}
+static void iconviewAddItem(int count,char *name,char *user_id)
+{
+	IVITEMINFO ivii;
+	memset (&ivii, 0, sizeof(IVITEMINFO));
+	ivii.bmp = &bmp_access_nor;
+	ivii.nItem = count;
+	ivii.label = name;
+	ivii.addData = (DWORD)user_id;
+	SendMessage (hIconView, IVM_ADDITEM, 0, (LPARAM)&ivii);
+}
 void formMonitorLoadBmp(void)
 {
     if (bmp_load_finished == 1)
@@ -216,10 +251,22 @@ void formMonitorLoadBmp(void)
 
 	printf("[%s]\n", __FUNCTION__);
     bmpsLoad(bmp_load);
-    my_button->bmpsLoad(ctrls_button,BMP_LOCAL_PATH);	
+    my_button->bmpsLoad(ctrls_button,BMP_LOCAL_PATH);
     bmp_load_finished = 1;
 }
 
+static void loadIconviewData(void)
+{
+	int i;
+	memset(item_data,0,sizeof(struct IconviewItem));
+	int user_num = sqlGetUserInfoUseScopeStart(DEV_TYPE_HOUSEHOLDAPP);
+	SendMessage (hIconView, IVM_RESETCONTENT, 0, 0);
+	for (i=0; i<user_num && i<16; i++) {
+		sqlGetUserInfosUseScope(item_data[i].user_id,item_data[i].nick_name);
+		iconviewAddItem(i,item_data[i].nick_name,item_data[i].user_id);
+	}
+	sqlGetUserInfoEnd();
+}
 /* ----------------------------------------------------------------*/
 /**
  * @brief initPara 初始化参数
@@ -241,6 +288,14 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
         ctrls_button[i].font = font22;
         createMyButton(hDlg,&ctrls_button[i]);
     }
+	hIconView = GetDlgItem (hDlg, IDC_ICONVIEW);
+	SetWindowBkColor (hIconView, PIXEL_lightwhite);
+	SendMessage (hIconView, IVM_SETITEMDRAW, 0, (LPARAM)myDrawItem);
+	SendMessage (hIconView, IVM_SETITEMSIZE, 123, 126);
+	RECT rcMargin;
+	memset(&rcMargin,0,sizeof(RECT));
+	SendMessage (hIconView, IVM_SETMARGINS, 0, (LPARAM)&rcMargin);
+	loadIconviewData();
 }
 
 /* ----------------------------------------------------------------*/
@@ -257,6 +312,7 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 /* ----------------------------------------------------------------*/
 static int formMonitorProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 {
+    HDC         hdc;
     switch(message) // 自定义消息
     {
 		case MSG_TIMER:
@@ -264,6 +320,28 @@ static int formMonitorProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 				if (flag_timer_stop)
 					return 0;
 			} break;
+
+		case MSG_PAINT:
+			hdc = BeginPaint (hDlg);
+			paint(hDlg,hdc);
+			EndPaint (hDlg, hdc);
+			return 0;
+
+		case MSG_COMMAND:
+			{
+				int id = LOWORD (wParam);
+				int code = HIWORD (wParam);
+				if (code == SVN_CLICKED)
+					iconviewNotify(hDlg,id,code,0);
+				break;
+			}
+		case MSG_ERASEBKGND:
+			{
+				drawBackground(hDlg,
+						(HDC)wParam,
+						(const RECT*)lParam, NULL,0x0);
+			} return 0;
+
 
 		case MSG_ENABLE_WINDOW:
 			enableAutoClose();
@@ -284,6 +362,7 @@ int createFormMonitor(HWND hMainWnd,void (*callback)(void))
 	HWND Form = Screen.Find(form_base_priv.name);
 	if(Form) {
 		Screen.setCurrent(form_base_priv.name);
+		loadIconviewData();
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
         if (bmp_load_finished == 0) {

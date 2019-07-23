@@ -23,6 +23,7 @@ extern void createFormMain(HWND hMainWnd,void (*callback)(void));
 extern void formMainLoadBmp(void);
 extern void formSettingLoadBmp(void);
 extern void formVideoLoadBmp(void);
+extern void formMonitorLoadBmp(void);
 extern void formSettingWifiLoadBmp(void);
 extern void formPasswordLoadBmp(void);
 extern void formSettingLocoalLoadBmp(void);
@@ -91,6 +92,7 @@ static FontLocation font_load[] = {
 static InitBmpFunc load_bmps_func[] = {
     formMainLoadBmp,
     formSettingLoadBmp,
+	formMonitorLoadBmp,
     formSettingWifiLoadBmp,
 	formPasswordLoadBmp,
 	formSettingLocoalLoadBmp,

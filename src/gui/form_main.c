@@ -38,9 +38,9 @@
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
-extern void formSettingLoadBmp(void);
-int createFormSetting(HWND hMainWnd,void (*callback)(void));
-int createFormVideo(HWND hVideoWnd,int type,void (*callback)(void),int count);
+extern int createFormSetting(HWND hMainWnd,void (*callback)(void));
+extern int createFormVideo(HWND hVideoWnd,int type,void (*callback)(void),int count);
+extern int createFormMonitor(HWND hMainWnd,void (*callback)(void));
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -268,7 +268,7 @@ static void buttonAccessPress(HWND hwnd, int id, int nc, DWORD add_data)
 	flag_timer_stop = 1;
 	// TEST
 	// my_video->videoCallOut("192.168.1.10");
-	// createFormVideo(GetParent(hwnd),FORM_VIDEO_TYPE_TALK,enableAutoClose);
+	createFormMonitor(GetParent(hwnd),enableAutoClose);
 }
 static void buttonVideoPress(HWND hwnd, int id, int nc, DWORD add_data)
 {

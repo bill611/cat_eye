@@ -57,6 +57,7 @@ static const char* g_fgs_weights_path 			= FACE_MODEL_PATH"fgs.weights.bin";
 static const char* g_fr_lite_weights_path 		= FACE_MODEL_PATH"fr_lite.weights.bin";
 static const char* g_fq_weights_path 			= FACE_MODEL_PATH"fq.weights.bin";
 static const char* g_fla_weights_path 			= FACE_MODEL_PATH"fla.weights.bin";
+static const char* g_fags_weights_path 			= FACE_MODEL_PATH"fgas.weights.bin";
 
 static struct video_ion model_ion;
 static struct video_ion raw_ion;
@@ -126,7 +127,7 @@ int rdfaceInit(void)
 				g_fle_light_weights_path, g_fle_infrared_weights_path,
 				g_fgs_weights_path, 0,
 				g_fr_lite_weights_path, g_fq_weights_path,
-				0,
+				0,g_fags_weights_path, 
 				APP_ID,
 				// 2dfe86e156957ca1
 				// "ea15e2876d514524c873b6159b86f2f5d715819598ee3b116e51cb2338b8ffbe5556ef1d9e7ee21739588fd631923ffd80df7158e7e6fb561eac7faa8252f67e"
@@ -323,9 +324,10 @@ int rdfaceRecognizer(unsigned char *image_buff,int w,int h,
 	int i=0;
 
 	for(i=0; i<faceCount ; i++) {
-		// printf("face_count:%d , facenum:%d: ,trackId: %d, blur: %f,front_prob:%f  ,position is: [%d, %d, %d, %d] \n",
-				// faceCount,i,pFaceALL[i].track_id, pFaceALL[i].blur_prob, pFaceALL[i].front_prob,
-				// pFaceALL[i].left, pFaceALL[i].top, pFaceALL[i].right, pFaceALL[i].bottom);
+		printf("face_count:%d , facenum:%d: ,trackId: %d, blur: %f,front_prob:%f  ,, gender:%d,  age:%d,position is: [%d, %d, %d, %d] \n",
+				faceCount,i,pFaceALL[i].track_id, pFaceALL[i].blur_prob, pFaceALL[i].front_prob,
+				pFaceALL[i].gender , pFaceALL[i].age,
+				pFaceALL[i].left, pFaceALL[i].top, pFaceALL[i].right, pFaceALL[i].bottom);
 
 		float face_landmark[FACE_LANDMARK_NUM*2];
 		memcpy(face_landmark, pFaceALL[i].face_landmark, sizeof(face_landmark));

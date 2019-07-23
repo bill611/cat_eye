@@ -286,7 +286,7 @@ static void myButtonBmpsLoad(void *ctrls,char *path)
     char image_path[128] = {0};
 	MyCtrlButton *controls = (MyCtrlButton *)ctrls;
     for (i=0; controls->idc != 0; i++) {
-		if (controls->flag == MYBUTTON_TYPE_ONE_STATE) {
+		if (controls->flag & MYBUTTON_TYPE_ONE_STATE) {
 			sprintf(image_path,"%s%s.png",path,controls->img_name);
 			bmpLoad(&controls->image_normal, image_path);
 		} else {
