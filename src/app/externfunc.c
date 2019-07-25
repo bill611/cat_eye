@@ -333,6 +333,33 @@ const char * GetSendIP(const char *pSrcIP,const char *pDestIP,const char *pMask)
 	return cIP;
 }
 
+int getLocalIP(char *ip,char *gateway)
+{
+	struct ifreq ifr;
+	int sock;
+	if((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+		return 0;
+	}
+	strcpy(ifr.ifr_name, "wlan0");
+	if(ioctl(sock, SIOCGIFADDR, &ifr) < 0)
+		goto error;
+
+	strcpy(ip,(char*)inet_ntoa(((struct sockaddr_in *)(&ifr.ifr_addr))->sin_addr));
+
+	char *ret = excuteCmd("route","|","grep","default",NULL);
+	sscanf(ret, "%*s %s",gateway);
+	close(sock);
+	return 1;
+error:
+	close(sock);
+	return 0;
+}
+int getGateWayMac(char *gateway,char *mac)
+{
+	char *ret = excuteCmd("arp","-a",gateway,NULL);
+	sscanf(ret, "%*s %*s %*s %s",mac);
+	return 0;
+}
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief jugdeRecIP 判断目标IP和本机IP是否在同一网段
@@ -372,7 +399,7 @@ int GetFileSize(char *file)
 	return stat_buf.st_size;
 }
 
-time_t MyGetTickCount(void)
+uint64_t MyGetTickCount(void)
 {
 	return time(NULL)*1000;
 }
@@ -582,7 +609,6 @@ int screensaverStart(int state)
 {
 #ifndef X86
 	static int state_old = 0;
-	printf("state:%d,old:%d\n", state,state_old);
 	if (state == state_old)
 		return 0;
 	state_old = state;
@@ -610,4 +636,9 @@ void getCpuId(char *hardcode)
 #else
 	strcpy(hardcode,"f07440307d514cc7");
 #endif
+}
+void enableSleepMpde(void)
+{
+	excuteCmd("dhd_priv","setsuspendmode","1",NULL);
+	
 }

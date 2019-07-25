@@ -24,6 +24,7 @@ extern "C" {
 #include <stdint.h>
 #define MAX_SEND_BUFF 128
 
+#if 1
 #define DEBUG_UART(dir,pbuf,size) \
 do {         \
 	int i;\
@@ -34,8 +35,9 @@ do {         \
 	}\
 	DPRINT("\n");\
 } while (0)
-
-// #define DEBUG_UART(dir,pbuf,size)
+#else
+#define DEBUG_UART(dir,pbuf,size)
+#endif
 	struct _UartServerPriv;
 	typedef  struct _UartServer{
 		struct _UartServerPriv *priv;

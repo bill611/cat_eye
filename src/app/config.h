@@ -46,6 +46,7 @@ extern "C" {
 #endif
 
 #define AUTO_CLOSE_LCD 30
+#define SLEEP_TIMER 30
 
 	typedef struct _EtcValueChar {
 		const char* section;	

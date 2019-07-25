@@ -363,7 +363,7 @@ static int isNeedToUpdate(char *version,char *content)
 	strcpy(content,"更新内容：\n\
 			1.修复了XX问题 \n\
 			2.增加XX功能");
-	return 1;
+	return 0;
 }
 /* ---------------------------------------------------------------------------*/
 /**

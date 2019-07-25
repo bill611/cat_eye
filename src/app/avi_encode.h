@@ -129,9 +129,8 @@ typedef struct _avioldindex {
 
 typedef struct _CMPEG4Head
 {
-//private:
 	FILE *hFile;
-	const char *filename;				//文件名，含路径
+	char filename[64];				//文件名，含路径
     pthread_mutex_t mutex;
 	uint64_t dwFrameCnt;			//视频流帧数
 	uint64_t dwAudioFrame;			//音频流帧数
@@ -152,11 +151,8 @@ typedef struct _CMPEG4Head
 	uint8_t (*WriteAviHead)(struct _CMPEG4Head *This);
 	uint8_t m_ReadWrite; // 读写标志, =0写文件  =1读文件
 	int  m_VideoType;  // 视频类型 =0H264 =1divx
-//public:
-//	void (*CMPEG4Head)(struct _CMPEG4Head *This,int Width,int Height,const char *FileName,uint64_t dwCreationDisposition, int ReadWrite);
+
 	void (*InitAudio)(struct _CMPEG4Head *This, uint32_t Channels,uint64_t Sample,uint64_t dwBlockSize);		//通道数，位率，块大小
-//	void (*StartTimer)(struct _CMPEG4Head *This);		//开始计时，在开始录像时使用
-//	void (*StopTimer)(struct _CMPEG4Head *This);		//停止计时，在结束录像时调用
 	uint8_t (*WriteVideo)(struct _CMPEG4Head *This, const void *pData,uint64_t dwSize);
 	uint8_t (*WriteAudio)(struct _CMPEG4Head *This, const void *pData,uint64_t dwSize);
 	int (*GetAviTotalTime)(struct _CMPEG4Head *This);

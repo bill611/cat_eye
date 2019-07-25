@@ -6,6 +6,7 @@
 #include "debug.h"
 #include "screen.h"
 #include "config.h"
+#include "protocol.h"
 #include "thread_helper.h"
 
 #include "my_button.h"
@@ -105,6 +106,7 @@ static InitBmpFunc load_bmps_func[] = {
 static HWND hwnd_videolayer = HWND_INVALID;
 static int flag_timer_stop = 0;
 static int auto_close_lcd = AUTO_CLOSE_LCD;
+static int sleep_timer = 0; // 进入睡眠倒计时
 static int screen_on = 0;
 static BmpLocation base_bmps[] = {
 	{NULL},
@@ -124,6 +126,7 @@ void formVideoLayerScreenOn(void)
 {
 	screensaverStart(1);
 	auto_close_lcd = AUTO_CLOSE_LCD;
+	sleep_timer = 0;
 }
 /* ---------------------------------------------------------------------------*/
 /**
@@ -136,8 +139,16 @@ static void formVideoLayerTimerProc1s(HWND hwnd)
 {
 	if (auto_close_lcd) {
 		// printf("auto_close_ld:%d\n",auto_close_lcd );
-		if (--auto_close_lcd == 0)
+		if (--auto_close_lcd == 0) {
 			screensaverStart(0);
+			sleep_timer = SLEEP_TIMER;
+		}
+	}
+	if (sleep_timer) {
+		if (--sleep_timer == 0) {
+			protocol_singlechip->cmdSleep();
+			enableSleepMpde();
+		}
 	}
 }
 

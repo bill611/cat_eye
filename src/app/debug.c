@@ -169,11 +169,6 @@ static uint32_t getDiffSysTick(uint64_t new,uint64_t old)
     return diff;
 }
 
-static char * getLocalIP(void)
-{
-	// return theConfig.ip;	
-}
-
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief udpServerGetTickCount 返回系统tick

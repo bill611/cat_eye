@@ -196,6 +196,7 @@ void RKVideo::recordStart(EncCallbackFunc recordCallback)
 {
     if (display_state_ != 1)
         return ;
+	h264EncOnOff(true,320,240,NULL);
     encode_process->recordStart(recordCallback);
 }
 
@@ -207,6 +208,7 @@ void RKVideo::recordSetStopFunc(RecordStopCallbackFunc recordStopCallback)
 void RKVideo::recordStop(void)
 {
     encode_process->recordStop();
+	rkvideo->h264EncOnOff(false,0,0,NULL);
 }
 
 extern "C" 

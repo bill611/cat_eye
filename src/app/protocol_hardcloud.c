@@ -716,6 +716,21 @@ retry_qiniu:
 	return NULL;
 }
 
+static void writeSleepScript(char *dst_ip,int dst_port)
+{
+	char port[16];
+	char local_ip[16],gateway[16];
+	char mac[20];
+	sprintf(port,"%d",dst_port);	
+	getLocalIP(local_ip,gateway);
+	getGateWayMac(gateway,mac);
+	excuteCmd("dhd_priv","wl","tcpka_conn_add","1",
+			mac,local_ip,dst_ip,
+			"0","1223",port,"1","0","1024","1062046","2130463","1","10", g_config.imei,
+			NULL);
+	excuteCmd("dhd_priv","wl","tcpka_conn_enable","1","1","10","10","10",NULL);
+}
+
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief tcpHeartThread 硬件云心跳包
@@ -734,6 +749,7 @@ static void* tcpHeartThread(void *arg)
 		waitConnectService();
 		dnsGetIp(opts.service_host,ip);
 		if (connect_flag == 0) {
+			writeSleepScript(ip,opts.service_port);
 			if (tcp_client->Connect(tcp_client,ip,opts.service_port,5000) < 0){
 				printf("connect fail,:%s,%d\n",ip,opts.service_port);
 				sleep(1);

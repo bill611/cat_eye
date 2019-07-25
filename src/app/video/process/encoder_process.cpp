@@ -194,7 +194,6 @@ void H264Encoder::recordStart(EncCallbackFunc recordCallback)
         return;
     recordCallback_ = recordCallback;
     recordStopCallback_ = NULL;
-    startEnc(320,240,NULL);
     start_record_ = true;
 }
 void H264Encoder::recordSetStopFunc(RecordStopCallbackFunc recordStopCallback)
@@ -207,7 +206,7 @@ void H264Encoder::recordStop(void)
         return;
     start_record_ = false;
     if (recordStopCallback_)
-        recordStopCallback();
+        recordStopCallback_();
     recordStopCallback_ = NULL;
     recordCallback_ = NULL;
 }

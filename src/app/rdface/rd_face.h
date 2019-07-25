@@ -27,7 +27,7 @@ extern "C" {
     float rdfaceGetFeatureSimilarity(float *feature1, float *feature2);
 	int rdfaceRegist(unsigned char *image_buff,int w,int h,float **out_feature,int *out_feature_size);
     int rdfaceRecognizer(unsigned char *image_buff,int w,int h,
-            int (*featureCompare)(float *feature,void *face_data_out),void *face_data_out);
+			int (*featureCompare)(float *feature,void *face_data_out,int gender,int age),void *face_data_out);
 
 #ifdef __cplusplus
 }

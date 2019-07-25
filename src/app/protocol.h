@@ -103,6 +103,12 @@ extern "C" {
 		void (*reportLowPower)(char *date);
 	}ProtocolHardcloud;
 	extern ProtocolHardcloud *protocol_hardcloud;
+
+	// 单片机协议
+	typedef struct _ProtocolSinglechip {
+		void (*cmdSleep)(void);
+	}ProtocolSinglechip;
+	extern ProtocolSinglechip *protocol_singlechip;
 	void protocolInit(void);
 
 #ifdef __cplusplus

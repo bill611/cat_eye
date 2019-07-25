@@ -74,20 +74,20 @@ static uint8_t WriteAviHead(struct _CMPEG4Head *This)
 	if(This->hFile!=INVALID_HANDLE_VALUE && This->dwFrameCnt>0)
 	{
         pthread_mutex_lock(&This->mutex);
-//		if(This->dwEndTick == 0)
-//			This->dwEndTick = MyGetTickCount();
 		StopTimer(This);
 
 		uint64_t WriteSize;
 		LISTAREASTRUCT ListHead;
-		uint64_t dwFileSize = GetFileSize(This->hFile,NULL);
-		// uint64_t dwFrameRate = This->dwFrameCnt * 1000 / (This->dwEndTick - This->dwStartTick+1);
-		float dwFrameRate = This->dwFrameCnt * 1000.0 / (This->dwEndTick - This->dwStartTick+1.0);
-		printf("[%s] cnt:%d, time:%d, FrameRate :%f\n",
-				__FUNCTION__,
-				This->dwFrameCnt,
-				This->dwEndTick - This->dwStartTick+1,
-				dwFrameRate);
+		fflush(This->hFile);
+		uint64_t dwFileSize = GetFileSize(This->filename);
+		uint64_t diff_time = This->dwEndTick - This->dwStartTick;
+		float dwFrameRate = This->dwFrameCnt * 1000.0 / (float)diff_time;
+		// printf("[%s] cnt:%ld, time:%lld, FrameRate :%f,size:%lld\n",
+				// __func__,
+				// This->dwFrameCnt,
+				// diff_time,
+				// dwFrameRate,
+				// dwFileSize);
 		SetFilePointer(This->hFile,0,NULL,0);
 		ListHead.fcc = 0x46464952;		//文件头RIFF
 		ListHead.cb = dwFileSize-8;		//文件大小
@@ -104,7 +104,7 @@ static uint8_t WriteAviHead(struct _CMPEG4Head *This)
 		AVIMAINHEADER AviMainHead;
 		AviMainHead.fcc = 0x68697661;			//'avih'
 		AviMainHead.cb = 56;
-		AviMainHead.dwMicroSecPerFrame = ((This->dwEndTick - This->dwStartTick) * 1000) / This->dwFrameCnt;
+		AviMainHead.dwMicroSecPerFrame = (diff_time * 1000) / This->dwFrameCnt;
 		AviMainHead.dwMaxBytesPerSec = 0;
 		AviMainHead.dwPaddingGranularity = 0;
 		AviMainHead.dwFlags = 0;
@@ -510,7 +510,7 @@ MPEG4Head* Mpeg4_Create(int Width,int Height,const char *FileName, int ReadWrite
 		printf("error %s\n",strerror(errno));
 		return NULL;
 	} else {
-		This->filename = FileName;
+		strcpy(This->filename,FileName);
 		This->dwStreamSize = 0;
 		This->dwFrameCnt = 0;
 		SetFilePointer(This->hFile,20+2048*2+256+1024+12,NULL,0);
@@ -533,8 +533,6 @@ MPEG4Head* Mpeg4_Create(int Width,int Height,const char *FileName, int ReadWrite
 	}
 
 	This->InitAudio = InitAudioMpeg4;
-//	This->StartTimer = StartTimer;
-//	This->StopTimer = StopTimer;
 	This->WriteVideo = WriteVideo;
 	This->WriteAudio = WriteAudio;
 	This->GetAviTotalTime = GetAviTotalTime;

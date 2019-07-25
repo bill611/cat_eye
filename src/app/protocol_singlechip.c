@@ -26,11 +26,14 @@
 #include "sql_handle.h"
 #include "my_video.h"
 #include "my_audio.h"
+#include "externfunc.h"
+#include "gui/screen.h"
 #include "form_videlayer.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
+extern void screenAutoCloseStop(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -98,6 +101,7 @@ typedef struct _ProtocolComm{
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
+ProtocolSinglechip *protocol_singlechip;
 static uint8_t id = 0;
 static void cmdPacket(uint8_t cmd,uint8_t id,uint8_t *data,int data_len)
 {
@@ -124,6 +128,12 @@ static void cmdPacket(uint8_t cmd,uint8_t id,uint8_t *data,int data_len)
 static void cmdCheckStatus(void)
 {
 	cmdPacket(CMD_GET_CHECK,id++,NULL,0);
+}
+
+static void cmdSleep(void)
+{
+	uint8_t data = 1;
+	cmdPacket(CMD_POWER,id++,&data,1);
 }
 
 static void uartDeal(void)
@@ -164,6 +174,9 @@ static void uartDeal(void)
 		case CMD_GET_CHECK_RESPONSE:
 		case CMD_REPORT_RESPONSE:
 			if (data[0] & CHECK_POWER) {
+				screensaverStart(0);
+				screenAutoCloseStop();
+				Screen.ReturnMain();
             } else if (data[0] & CHECK_KEY_HOM) {
 				formVideoLayerScreenOn();
             } else if (data[0] & CHECK_KEY_DOORBELL) {
@@ -192,4 +205,6 @@ void registSingleChip(void)
 	uartInit(uartDeal);
 #endif
 	cmdCheckStatus();
+	protocol_singlechip = (ProtocolSinglechip *) calloc(1,sizeof(ProtocolSinglechip));
+	protocol_singlechip->cmdSleep = cmdSleep;
 }

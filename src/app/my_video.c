@@ -78,6 +78,7 @@ enum {
 	ST_TALK_CALLIN,	// 对讲呼入状态
 	ST_TALK_TALKING,// 对讲中状态
 	ST_RECORDING, 	// 录像状态
+	ST_RECORD_STOPPING,// 录像停止状态
 };
 
 enum {
@@ -153,6 +154,7 @@ static char *st_debug_st[] = {
 	"ST_TALK_CALLIN",
 	"ST_TALK_TALKING",
 	"ST_RECORDING",
+	"ST_RECORD_STOPPING",
 };
 static char *st_debug_do[] = {
 	"DO_FAIL",
@@ -225,12 +227,12 @@ static StateTable state_table[] =
 	{EV_RECORD_START,	ST_TALK_CALLOUT,	ST_TALK_CALLOUT,	DO_RECORD_START},
 	{EV_RECORD_START,	ST_TALK_TALKING,	ST_TALK_TALKING,	DO_RECORD_START},
 
-	{EV_RECORD_STOP,	ST_RECORDING,		ST_IDLE,			DO_RECORD_STOP},
+	{EV_RECORD_STOP,	ST_RECORDING,		ST_RECORD_STOPPING,	DO_RECORD_STOP},
 	{EV_RECORD_STOP,	ST_TALK_CALLIN,		ST_TALK_CALLIN,		DO_RECORD_STOP},
 	{EV_RECORD_STOP,	ST_TALK_CALLOUT,	ST_TALK_CALLOUT,	DO_RECORD_STOP},
 	{EV_RECORD_STOP,	ST_TALK_TALKING,	ST_TALK_TALKING,	DO_RECORD_STOP},
 
-	{EV_RECORD_STOP_FINISHED,	ST_IDLE,	ST_FACE,			DO_FACE_ON},
+	{EV_RECORD_STOP_FINISHED,	ST_RECORD_STOPPING,	ST_FACE,	DO_FACE_ON},
 
 	{EV_CAPTURE,	ST_IDLE,			ST_IDLE,		DO_CAPTURE},
 	{EV_CAPTURE,	ST_FACE,			ST_FACE,		DO_CAPTURE},
@@ -509,19 +511,36 @@ static void recordVideoCallbackFunc(void *data,int size,int fram_type)
             avi->WriteVideo(avi,data,size);
         }
     } else {
+		return;
         avi->WriteVideo(avi,data,size);
     }
 }
 
 static void recordStopCallbackFunc(void)
 {
-	printf("1111111111111111111111111111111\n");
     pthread_mutex_lock(&mutex);
     if (avi) 
         avi->DestoryMPEG4(&avi);
     pthread_mutex_unlock(&mutex);
 }
 
+#if (defined X86)
+static void* threadAviReadVideo(void *arg)
+{
+	int i;
+	for (i=0; i<50; i++) {
+		char buf[100];
+		sprintf(buf,"%02d",i);
+		if (i == 0)
+			recordVideoCallbackFunc(buf,2,1);
+		else
+			recordVideoCallbackFunc(buf,2,0);
+		usleep(100000);
+	}
+	recordStopCallbackFunc();
+	stm->msgPost(stm,EV_RECORD_STOP_FINISHED,NULL);
+}
+#endif
 static void* threadAviReadAudio(void *arg)
 {
     int audio_fp = -1;
@@ -560,12 +579,15 @@ static int stmDoRecordStart(void *data,MyVideo *arg)
                 sprintf(file_path,"%s%s.avi",TEMP_PIC_PATH,cap_data.file_name);
                 if (avi == NULL) {
                     avi = Mpeg4_Create(320,240,file_path,WRITE_READ,0);
-                    if (data_temp->cap_type == CAP_TYPE_FORMMAIN)
-                        createThread(threadAviReadAudio,NULL);
+					if (data_temp->cap_type == CAP_TYPE_FORMMAIN)
+						createThread(threadAviReadAudio,NULL);
                 }
 #ifdef USE_VIDEO
                 rkVideoRecordStart(recordVideoCallbackFunc);
                 rkVideoRecordSetStopFunc(recordStopCallbackFunc);
+#endif
+#ifdef X86
+				createThread(threadAviReadVideo,NULL);
 #endif
                 sprintf(url,"http://img.cateye.taichuan.com/%s.avi",cap_data.file_name);
                 sqlInsertRecordUrlNoBack(cap_data.pic_id,url);

@@ -123,7 +123,10 @@ static int deleteOne(char *id)
 	return 0;
 }
 
-static int featureCompareCallback(float *feature,void *face_data_out)
+static int featureCompareCallback(float *feature,
+		void *face_data_out,
+		int sex,
+		int age)
 {
 #ifdef USE_FACE
     MyFaceData data;
@@ -137,8 +140,8 @@ static int featureCompareCallback(float *feature,void *face_data_out)
             break;
         float ret1 = rdfaceGetFeatureSimilarity(feature_src,feature);
         if (ret1 > SIMILAYRITY) {
-			printf("similyrity:%f,:%s,name:%s,url:%s\n", 
-					ret1,data.user_id,data.nick_name,data.url);
+			printf("similyrity:%f,:%s,name:%s,url:%s,sex:%d,age:%d\n", 
+					ret1,data.user_id,data.nick_name,data.url,sex,age);
             result = 0;
             if (face_data_out)
                 memcpy(face_data_out,&data,sizeof(MyFaceData));

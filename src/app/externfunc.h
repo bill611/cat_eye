@@ -52,6 +52,10 @@ void wifiDisConnect(void);
 int screensaverStart(int state);
 void getFileName(char *file_name,char *date);
 void getCpuId(char *hardcode);
-
+uint64_t MyGetTickCount(void);
+int GetFileSize(char *file);
+int getLocalIP(char *IP,char *gateway);
+int getGateWayMac(char *gateway,char *mac);
+void enableSleepMpde(void);
 #endif
 
