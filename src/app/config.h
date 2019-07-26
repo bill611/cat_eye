@@ -45,6 +45,10 @@ extern "C" {
 #define FACE_PATH SDCARD_PATH"face/"
 #endif
 
+#define IPC_MAIN "/tmp/ipc_main"
+#define IPC_CAMMER "/tmp/ipc_cammer"
+#define IPC_UART "/tmp/ipc_uart"
+
 #define AUTO_CLOSE_LCD 30
 #define SLEEP_TIMER 30
 
@@ -149,6 +153,7 @@ extern "C" {
 	void configSync(void);
 
 	void tcSetNetwork(int type);
+	void createSdcardDirs(void);
 	extern Config g_config;
 
 #ifdef __cplusplus

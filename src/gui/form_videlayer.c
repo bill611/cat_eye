@@ -147,7 +147,6 @@ static void formVideoLayerTimerProc1s(HWND hwnd)
 	if (sleep_timer) {
 		if (--sleep_timer == 0) {
 			protocol_singlechip->cmdSleep();
-			enableSleepMpde();
 		}
 	}
 }

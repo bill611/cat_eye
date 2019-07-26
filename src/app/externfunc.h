@@ -57,5 +57,7 @@ int GetFileSize(char *file);
 int getLocalIP(char *IP,char *gateway);
 int getGateWayMac(char *gateway,char *mac);
 void enableSleepMpde(void);
+void powerOff(void);
+int checkSD(void);
 #endif
 

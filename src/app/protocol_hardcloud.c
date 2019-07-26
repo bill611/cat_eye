@@ -721,12 +721,16 @@ static void writeSleepScript(char *dst_ip,int dst_port)
 	char port[16];
 	char local_ip[16],gateway[16];
 	char mac[20];
+	char imei[32];
+	char imei_len[8];
 	sprintf(port,"%d",dst_port);	
 	getLocalIP(local_ip,gateway);
 	getGateWayMac(gateway,mac);
+	sprintf(imei,"\"%s\"",g_config.imei);	
+	sprintf(imei_len,"%d",strlen(g_config.imei));	
 	excuteCmd("dhd_priv","wl","tcpka_conn_add","1",
 			mac,local_ip,dst_ip,
-			"0","1223",port,"1","0","1024","1062046","2130463","1","10", g_config.imei,
+			"0","1223",port,"1","0","1024","1062046","2130463","1",imei_len, imei,
 			NULL);
 	excuteCmd("dhd_priv","wl","tcpka_conn_enable","1","1","10","10","10",NULL);
 }

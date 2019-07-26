@@ -724,6 +724,10 @@ static void videoAnswer(int dir,int dev_type)
 }
 static void showLocalVideo(void)
 {
+	IpcData ipc_data;
+	ipc_data.cmd = IPC_VIDEO_ON;
+	if (ipc_server)
+		ipc_server->sendData(ipc_server,IPC_DEV_TYPE_MAIN,&ipc_data,sizeof(ipc_data));
 #ifdef USE_VIDEO
 	rkVideoDisplayLocal();
 #endif
@@ -742,6 +746,10 @@ static void showPeerVideo(void)
 }
 static void hideVideo(void)
 {
+	IpcData ipc_data;
+	ipc_data.cmd = IPC_VIDEO_OFF;
+	if (ipc_server)
+		ipc_server->sendData(ipc_server,IPC_DEV_TYPE_MAIN,&ipc_data,sizeof(ipc_data));
 #ifdef USE_VIDEO
 	rkVideoDisplayOff();
 #endif

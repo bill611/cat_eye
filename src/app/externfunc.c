@@ -640,5 +640,17 @@ void getCpuId(char *hardcode)
 void enableSleepMpde(void)
 {
 	excuteCmd("dhd_priv","setsuspendmode","1",NULL);
-	
+}
+void powerOff(void)
+{
+	excuteCmd("poweroff",NULL);
+}
+int checkSD(void)
+{
+	int file = -1;
+#ifndef X86
+	file = open( "/dev/mmcblk0", O_RDONLY );
+	close(file);
+#endif
+	return file;
 }

@@ -19,6 +19,7 @@ else
 		-DCMAKE_BUILD_TYPE=Release \
 		-DMODE_UDPTALK=OFF \
 		\
+		-DMODE_VIDEO=OFF \
 		..
 fi
 make
@@ -27,6 +28,7 @@ if [ $? == 0 ]; then
 	if [ $# == 0 ]; then
 		$RV1108_CROOS_PATH/bin/arm-linux-strip release/cat_eye
 		cp release/cat_eye ~/arm_share/cat_eye/v
+		cp release/cammer_video ~/arm_share/cat_eye/
 	fi
 fi
 

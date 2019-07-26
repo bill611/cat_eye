@@ -243,6 +243,15 @@ static int loadIniFile(dictionary **d,char *file_path,char *sec[])
 	return ret;
 }
 
+void createSdcardDirs(void)
+{
+	if (checkSD() == -1)
+		return;
+	mkdir(CAP_PATH, 		S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+	mkdir(TALK_PATH, 		S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+	mkdir(ALARM_PATH, 		S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+	mkdir(FACE_PATH, 		S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+}
 void configLoad(void)
 {
 	char *sec_private[] = {"device","wireless","cloud",NULL};
@@ -262,10 +271,7 @@ void configLoad(void)
 
 	}
 	mkdir(TEMP_PIC_PATH, 	S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-	mkdir(CAP_PATH, 		S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-	mkdir(TALK_PATH, 		S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-	mkdir(ALARM_PATH, 		S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-	mkdir(FACE_PATH, 		S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+	createSdcardDirs();
 }
 
 

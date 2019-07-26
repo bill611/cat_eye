@@ -23,7 +23,6 @@
 #include <unistd.h>
 #include "debug.h"
 #include "uart.h"
-#include "config.h"
 #include "protocol.h"
 #include "sql_handle.h"
 #include "my_video.h"
@@ -31,7 +30,6 @@
 #include "externfunc.h"
 #include "gui/screen.h"
 #include "form_videlayer.h"
-#include "ipc_server.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
@@ -136,44 +134,85 @@ static void cmdCheckStatus(void)
 static void cmdSleep(void)
 {
 	return;
-	IpcData ipc_data;
+	uint8_t data = 1;
 	enableSleepMpde();
-	ipc_data.dev_type = IPC_DEV_TYPE_UART;
-	ipc_data.cmd = IPC_UART_SLEEP;
-	if (ipc_server)
-		ipc_server->sendData(ipc_server,IPC_UART,&ipc_data,sizeof(ipc_data));
+	sleep(1);
+	cmdPacket(CMD_POWER,id++,&data,1);
 	sleep(1);
 	powerOff();
 }
 
-static void deal(int cmd,char *data,int size)
+static void uartDeal(void)
 {
+	uint8_t buff[512]={0};
+	uint8_t checksum = 0;
+	int index;
+	int i;
+	int leng = 0;
+
+	int len = uart->recvBuffer(uart,buff,sizeof(buff));
+	if (len <= 0) {
+		return;
+	}
+    DEBUG_UART("reci",buff,len);
+	for(index=0; index<len; index++){
+		if(buff[index] == PACK_HEAD){
+			leng = buff[index + 1];
+			if (index + leng > 512)
+				return;
+			if(buff[index + leng - 1] == PACK_TAIL){
+				break;
+			}
+		}
+	}
+
+	for (i=index+1; i<leng - 2; i++) {
+		checksum += buff[i];
+	}
+	if (checksum != buff[index + leng - 2])
+		return;
+	uint8_t cmd = buff[index + 3];
+	uint8_t *data = &buff[index + 4];
 	switch(cmd)
 	{
-		case IPC_UART_POWER:
-			screensaverStart(0);
-			screenAutoCloseStop();
-			Screen.ReturnMain();
+		case CMD_SET_PIR_RESPONSE:
 			break;
-		case IPC_UART_KEYHOME:
-			formVideoLayerScreenOn();
-			break;
-		case IPC_UART_DOORBELL:
+		case CMD_GET_CHECK_RESPONSE:
+		case CMD_REPORT_RESPONSE:
+			if (data[0] & CHECK_POWER) {
+				screensaverStart(0);
+				screenAutoCloseStop();
+				Screen.ReturnMain();
+            } else if (data[0] & CHECK_KEY_HOM) {
+				formVideoLayerScreenOn();
+            } else if (data[0] & CHECK_KEY_DOORBELL) {
 #ifdef USE_UDPTALK
-			formVideoLayerScreenOn();
+				formVideoLayerScreenOn();
 #endif
 #ifdef USE_UCPAAS
-			my_video->videoCallOutAll();
+				my_video->videoCallOutAll();
 #endif
-			myAudioPlayDingdong();
+				myAudioPlayDingdong();
+			} else if (data[0] & CHECK_KEY_PIR) {
+				// my_video->videoAnswer(0,DEV_TYPE_UNDEFINED);
+			}
+			cmdPacket(CMD_REPORT,0,NULL,0);
+			break;
+		case CMD_ERR_RESPONSE:
+			break;
 		default:
 			break;
 	}
 }
 
-void registSingleChip(void)
+static void registSingleChip(void)
 {
+	cmdCheckStatus();
 	protocol_singlechip = (ProtocolSinglechip *) calloc(1,sizeof(ProtocolSinglechip));
 	protocol_singlechip->cmdSleep = cmdSleep;
-	protocol_singlechip->deal = deal;
+}
+int main(int argc, char *argv[])
+{
+	registSingleChip();
+	return 0;
 }

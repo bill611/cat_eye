@@ -18,6 +18,7 @@
  *                      include head files
  *----------------------------------------------------------------------------*/
 #include <time.h>
+#include <string.h>
 #include "externfunc.h"
 #include "debug.h"
 #include "screen.h"
@@ -210,12 +211,47 @@ static void enableAutoClose(void)
 }
 /* ---------------------------------------------------------------------------*/
 /**
- * @brief formMainTimerProc1s 窗口相关定时函数
- *
- * @returns 1按键超时退出 0未超时退出
+ * @brief updateTime 更新显示时间
  */
 /* ---------------------------------------------------------------------------*/
-static void formMainTimerProc1s(HWND hwnd)
+static void updateTime(void)
+{
+	// 更新时间 
+	static struct tm *tm_old = NULL;
+    char buf[16] = {0};
+	struct tm *tm = getTime();
+	if ((tm_old == NULL) || (tm_old->tm_hour != tm->tm_hour) || (tm_old->tm_min != tm->tm_min)) {
+		tm_old = tm; 
+		if (tm->tm_hour > 12) {
+			sprintf(buf,"%d:%02d PM",tm->tm_hour-12,tm->tm_min);
+		} else {
+			sprintf(buf,"%d:%02d AM",tm->tm_hour,tm->tm_min);
+		}
+		SendMessage(GetDlgItem (form_base->hDlg, IDC_MYSTATIC_DATE),
+				MSG_MYSTATIC_SET_TITLE,(WPARAM)buf,0);
+	}
+}
+
+static void updateSdcard(void)
+{
+	// 更新SD卡状态
+	static int sdcartd_state_old = -1;
+	int sdcartd_state = checkSD();
+	if (sdcartd_state != sdcartd_state_old) {
+		sdcartd_state_old = sdcartd_state;
+		if (sdcartd_state != -1) {
+			createSdcardDirs();
+			ShowWindow(GetDlgItem (form_base->hDlg, IDC_MYSTATUS_SDCARD),SW_HIDE);
+		} else
+			ShowWindow(GetDlgItem (form_base->hDlg, IDC_MYSTATUS_SDCARD),SW_SHOWNORMAL);
+	}
+}
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief updateNetwork 更新网络图标
+ */
+/* ---------------------------------------------------------------------------*/
+static void updateNetwork(void)
 {
 	// 更新网络状态
 	static int net_level_old = 0;
@@ -229,23 +265,23 @@ static void formMainTimerProc1s(HWND hwnd)
 		net_level = 4;
 	if (net_level != net_level_old) {
 		net_level_old = net_level;
-		SendMessage(GetDlgItem (hwnd, IDC_MYSTATUS_WIFI),
+		SendMessage(GetDlgItem (form_base->hDlg, IDC_MYSTATUS_WIFI),
 				MSG_MYSTATUS_SET_LEVEL,net_level,0);
 	}
-	// 更新时间 
-	static struct tm *tm_old = NULL;
-    char buf[16] = {0};
-	struct tm *tm = getTime();
-	if ((tm_old == NULL) || (tm_old->tm_hour != tm->tm_hour) || (tm_old->tm_min != tm->tm_min)) {
-		tm_old = tm; 
-		if (tm->tm_hour > 12) {
-			sprintf(buf,"%d:%02d PM",tm->tm_hour-12,tm->tm_min);
-		} else {
-			sprintf(buf,"%d:%02d AM",tm->tm_hour,tm->tm_min);
-		}
-		SendMessage(GetDlgItem (hwnd, IDC_MYSTATIC_DATE),
-				MSG_MYSTATIC_SET_TITLE,(WPARAM)buf,0);
-	}
+}
+
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief formMainTimerProc1s 窗口相关定时函数
+ *
+ * @returns 1按键超时退出 0未超时退出
+ */
+/* ---------------------------------------------------------------------------*/
+static void formMainTimerProc1s(HWND hwnd)
+{
+	updateNetwork();
+	updateTime();
+	updateSdcard();
 }
 
 static void buttonRecordPress(HWND hwnd, int id, int nc, DWORD add_data)
@@ -254,6 +290,7 @@ static void buttonRecordPress(HWND hwnd, int id, int nc, DWORD add_data)
 		return;
 	flag_timer_stop = 1;
 }
+
 static void buttonCapturePress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
@@ -356,6 +393,9 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 		sensor->interface->uiUpadteElePower = interfaceUpdateElePower;
 		sensor->interface->uiUpadteEleState = interfaceUpdateEleState;
 	}
+	updateNetwork();
+	updateTime();
+	updateSdcard();
 }
 
 /* ---------------------------------------------------------------------------*/

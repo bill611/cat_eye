@@ -21,6 +21,21 @@
 extern "C" {
 #endif  /* __cplusplus */
 #include <stdint.h>
+#include "ipc_server.h"
+	enum {
+		IPC_DEV_TYPE_MAIN,
+		IPC_DEV_TYPE_UART,
+		IPC_DEV_TYPE_VIDEO,
+	};
+	enum {
+		IPC_VIDEO_ON,
+		IPC_VIDEO_OFF,
+		IPC_UART_SLEEP,
+		IPC_UART_POWER,
+		IPC_UART_KEYHOME,
+		IPC_UART_DOORBELL,
+		IPC_UART_PIR,
+	};
 	enum {
 		PROTOCOL_TALK_3000,
 		PROTOCOL_TALK_OTHER,
@@ -50,6 +65,13 @@ extern "C" {
 		ALARM_TYPE_LOWPOWER,
 		ALARM_TYPE_PEOPLES,
 	};
+
+	typedef struct _IpcData {
+		int cmd;
+		int dev_type;
+		int leng;
+		char data[64];
+	}IpcData;
 
 	typedef struct _UserStruct {
 		char id[32];
@@ -106,9 +128,12 @@ extern "C" {
 
 	// 单片机协议
 	typedef struct _ProtocolSinglechip {
+		void (*deal)(int cmd,char *data,int size);
 		void (*cmdSleep)(void);
 	}ProtocolSinglechip;
 	extern ProtocolSinglechip *protocol_singlechip;
+
+	extern IpcServer* ipc_server;
 	void protocolInit(void);
 
 #ifdef __cplusplus

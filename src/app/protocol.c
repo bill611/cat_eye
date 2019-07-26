@@ -183,6 +183,7 @@ static int get_imie_end = 1;
 static Timer *timer_protocol_1s = NULL; // 协议1s定时器
 static Timer *timer_getimei_5s = NULL; // 获取机身码5s定时器
 static void (*getImeiCallback)(int result); // 机身码获取回调函数
+IpcServer* ipc_server = NULL;
 
 static void udpLocalGetIMEI(SocketHandle *ABinding,SocketPacket *AData)
 {
@@ -467,6 +468,17 @@ static void udpSocketRead(SocketHandle *ABinding,SocketPacket *AData)
 }
 
 
+static void ipcCallback(char *data,int size )
+{
+	IpcData ipc_data;
+	memcpy(&ipc_data,data,sizeof(IpcData));
+	if (ipc_data.dev_type == IPC_DEV_TYPE_UART) {
+
+	} else if (ipc_data.dev_type == IPC_DEV_TYPE_VIDEO) {
+
+	}
+}
+
 void protocolInit(void)
 {
 	packet_id = (unsigned)time(NULL);
@@ -477,9 +489,9 @@ void protocolInit(void)
 	protocol->getImei = getImei;
 	protocol->isNeedToUpdate = isNeedToUpdate;
 
-	// jpegIncDecInit();
 	registHardCloud();
 	registTalk();
 	registSingleChip();
+	ipc_server = ipcCreate(IPC_MAIN,ipcCallback);
 }
 

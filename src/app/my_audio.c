@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include "playwav.h"
 #include "config.h"
+#include "externfunc.h"
 #include "thread_helper.h"
 
 /* ---------------------------------------------------------------------------*

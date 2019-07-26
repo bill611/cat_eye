@@ -114,15 +114,6 @@ else()
 endif()
 
 # 添加库文件名称
-link_libraries (
-	sqlite3 qrencode paho-mqtt3a ssl curl cjson crypto
-	minigui_ths png12 png jpeg freetype turbojpeg 
-	z m pthread dl rt asound
-	)
-
-if (PLATFORM_RV1108)
-	link_libraries (ts rkrga rkfb ion yuv stdc++)
-endif()
 
 if (MODE_UCPAAS)
 	add_definitions(-DUSE_UCPAAS)
@@ -151,4 +142,5 @@ set(EXE cat_eye)
 
 # 增加子目录,可以传递参数
 add_subdirectory(src)
+add_subdirectory(module)
 
