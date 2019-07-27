@@ -108,12 +108,15 @@ else()
 		${PROJECT_SOURCE_DIR}/lib/x86
 		/usr/local/lib
 		/usr/lib/x86_64-linux-gnu
-		/usr/local/include
+		/usr/lib
 		)
 
 endif()
 
 # 添加库文件名称
+link_libraries (
+	pthread asound 
+	)
 
 if (MODE_UCPAAS)
 	add_definitions(-DUSE_UCPAAS)

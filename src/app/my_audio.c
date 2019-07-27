@@ -81,7 +81,7 @@ void myAudioStopPlay(void)
 }
 void myAudioPlayDingdong(void)
 {
-	char *path = (char *) calloc(1,64);
+	char path[64];
 	sprintf(path,"%sdingdong.wav",AUDIO_PATH);	
 	playwavfile(path);		
 }

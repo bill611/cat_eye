@@ -152,8 +152,6 @@ static void decodeVideo(Rtp* This,rec_body *pbody,int size)
 {
 	char *pBuf = NULL;
 	if(RtpDcMem)
-		RtpDcMem->WriteCnt(RtpDcMem);
-	if(RtpDcMem)
 		pBuf = RtpDcMem->SaveStart(RtpDcMem);//取缓冲区用于储存
 	if(pBuf)
 		memcpy(pBuf,pbody,size);

@@ -7,7 +7,6 @@ if [ $# == 1 ]; then
 		-DCMAKE_BUILD_TYPE=Debug \
 		-DPLATFORM_RV1108=OFF \
 		-DMODE_UDPTALK=OFF \
-		-DMODE_UART=OFF \
 		-DMODE_VIDEO=OFF \
 		-DMODE_FACE=OFF \
 		-DMODE_UCPAAS=OFF \
@@ -20,6 +19,7 @@ else
 		-DMODE_UDPTALK=OFF \
 		\
 		-DMODE_VIDEO=OFF \
+		-DMODE_UART=OFF \
 		..
 fi
 make
@@ -27,8 +27,9 @@ if [ $? == 0 ]; then
 	cd ..
 	if [ $# == 0 ]; then
 		$RV1108_CROOS_PATH/bin/arm-linux-strip release/cat_eye
-		cp release/cat_eye ~/arm_share/cat_eye/v
+		cp release/cat_eye ~/arm_share/cat_eye/
 		cp release/cammer_video ~/arm_share/cat_eye/
+		cp release/singlechip ~/arm_share/cat_eye/
 	fi
 fi
 

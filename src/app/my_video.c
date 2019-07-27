@@ -37,11 +37,13 @@
 #include "config.h"
 #include "my_video.h"
 #include "my_mixer.h"
+#include "share_memory.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
 extern int formCreateCaputure(int count);
+extern IpcServer* ipc_main;
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -186,6 +188,8 @@ static MPEG4Head* avi = NULL;
 
 static TalkPeerDev talk_peer_dev;
 static pthread_mutex_t mutex;
+static ShareMemory *share_mem;  //共享内存
+static int send_video_start = 0;
 
 static StateTable state_table[] =
 {
@@ -285,10 +289,32 @@ static int stmDoFaceRegist(void *data,MyVideo *arg)
 		return -1;
 }
 
+#ifdef USE_VIDEO
 static void sendVideoCallbackFunc(void *data,int size,int fram_type)
 {
     protocol_talk->sendVideo(data,size);
 }
+#else
+static void* sendVideoCallbackFunc(void *arg)
+{
+	send_video_start = 1;
+	while (send_video_start) {
+		int mem_len = 0;
+		char *mem_data = (char *)share_mem->GetStart(share_mem,&mem_len);
+		if (!mem_data || mem_len == 0) {
+			printf("mem_len:%d\n", mem_len);
+			share_mem->GetEnd(share_mem);
+			goto send_sleep;
+		}
+		protocol_talk->sendVideo(mem_data,mem_len);
+		printf("size:%d\n", mem_len);
+		share_mem->GetEnd(share_mem);
+send_sleep:
+		usleep(10000);
+	}
+	return NULL;
+}
+#endif
 static void dialCallBack(int result)
 {
 	if (result) {
@@ -298,6 +324,13 @@ static void dialCallBack(int result)
 				&& 	talk_peer_dev.type != DEV_TYPE_HOUSEENTRANCEMACHINE) {
 #ifdef USE_VIDEO
 			rkH264EncOn(320,240,sendVideoCallbackFunc);
+#else
+			IpcData ipc_data;
+			ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
+			ipc_data.cmd = IPC_VIDEO_ENCODE_ON;
+			if (ipc_main)
+				ipc_main->sendData(ipc_main,IPC_CAMMER,&ipc_data,sizeof(ipc_data));
+			createThread(sendVideoCallbackFunc,NULL);
 #endif
 		}
 	} else {
@@ -410,6 +443,13 @@ static int stmDoTalkAnswer(void *data,MyVideo *arg)
 			&& 	talk_peer_dev.type != DEV_TYPE_HOUSEENTRANCEMACHINE) {
 #ifdef USE_VIDEO
 		rkH264EncOn(320,240,sendVideoCallbackFunc);
+#else
+		IpcData ipc_data;
+		ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
+		ipc_data.cmd = IPC_VIDEO_ENCODE_ON;
+		if (ipc_main)
+			ipc_main->sendData(ipc_main,IPC_CAMMER,&ipc_data,sizeof(ipc_data));
+		createThread(sendVideoCallbackFunc,NULL);
 #endif
 	}
 	memset(ui_title,0,sizeof(ui_title));
@@ -429,6 +469,13 @@ static int stmDoTalkHangupAll(void *data,MyVideo *arg)
 {
 #ifdef USE_VIDEO
 	rkH264EncOff();
+#else
+	IpcData ipc_data;
+	ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
+	ipc_data.cmd = IPC_VIDEO_ENCODE_OFF;
+	if (ipc_main)
+		ipc_main->sendData(ipc_main,IPC_CAMMER,&ipc_data,sizeof(ipc_data));
+	send_video_start = 0;
 #endif
 	protocol_talk->hangup();
 	if (protocol_talk->uiHangup)
@@ -642,6 +689,7 @@ static void init(void)
 {
 	jpegIncDecInit();
 	myFaceInit();
+	share_mem = CreateShareMemory(1024*200,2,1);
 #ifdef USE_VIDEO
 	rkVideoInit();
 #endif
@@ -725,9 +773,10 @@ static void videoAnswer(int dir,int dev_type)
 static void showLocalVideo(void)
 {
 	IpcData ipc_data;
+	ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
 	ipc_data.cmd = IPC_VIDEO_ON;
-	if (ipc_server)
-		ipc_server->sendData(ipc_server,IPC_DEV_TYPE_MAIN,&ipc_data,sizeof(ipc_data));
+	if (ipc_main)
+		ipc_main->sendData(ipc_main,IPC_CAMMER,&ipc_data,sizeof(ipc_data));
 #ifdef USE_VIDEO
 	rkVideoDisplayLocal();
 #endif
@@ -747,9 +796,10 @@ static void showPeerVideo(void)
 static void hideVideo(void)
 {
 	IpcData ipc_data;
+	ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
 	ipc_data.cmd = IPC_VIDEO_OFF;
-	if (ipc_server)
-		ipc_server->sendData(ipc_server,IPC_DEV_TYPE_MAIN,&ipc_data,sizeof(ipc_data));
+	if (ipc_main)
+		ipc_main->sendData(ipc_main,IPC_CAMMER,&ipc_data,sizeof(ipc_data));
 #ifdef USE_VIDEO
 	rkVideoDisplayOff();
 #endif

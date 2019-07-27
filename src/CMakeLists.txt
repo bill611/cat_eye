@@ -23,9 +23,11 @@ target_link_libraries (${EXE}
 	-Wl,--start-group
 	${SUB_DIRS}
 	sqlite3 qrencode paho-mqtt3a ssl curl cjson crypto
-	minigui_ths png12 png jpeg freetype turbojpeg yuv 
-	z m pthread dl rt asound
-	ts rkrga rkfb ion stdc++
+	minigui_ths png12 png jpeg freetype turbojpeg 
+	z m  dl rt 
 	-Wl,--end-group
 	)
+if (PLATFORM_RV1108)
+	target_link_libraries (${EXE} ts rkrga rkfb ion yuv stdc++)
+endif()
 

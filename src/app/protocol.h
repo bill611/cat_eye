@@ -30,6 +30,13 @@ extern "C" {
 	enum {
 		IPC_VIDEO_ON,
 		IPC_VIDEO_OFF,
+		IPC_VIDEO_ENCODE_ON,
+		IPC_VIDEO_ENCODE_OFF,
+		IPC_VIDEO_DECODE_ON,
+		IPC_VIDEO_DECODE_OFF,
+		IPC_VIDEO_CAPTURE,
+		IPC_VIDEO_RECORD_START,
+		IPC_VIDEO_RECORD_STOP,
 		IPC_UART_SLEEP,
 		IPC_UART_POWER,
 		IPC_UART_KEYHOME,
@@ -133,7 +140,6 @@ extern "C" {
 	}ProtocolSinglechip;
 	extern ProtocolSinglechip *protocol_singlechip;
 
-	extern IpcServer* ipc_server;
 	void protocolInit(void);
 
 #ifdef __cplusplus

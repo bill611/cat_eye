@@ -1,9 +1,8 @@
+aux_source_directory(. SRCS)
 
-add_executable(singlechip 
-	singlechip.c
-	)
+add_executable(singlechip ${SRCS})
 
 target_link_libraries(singlechip
-    pthread drivers
+    pthread rt drivers hal
 )
 

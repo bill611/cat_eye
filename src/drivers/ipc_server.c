@@ -95,10 +95,25 @@ static int ipcInit(IpcServer *This)
 IpcServer* ipcCreate(const char *path,IpcCallback func)
 {
 	IpcServer* This = (IpcServer*) calloc(1,sizeof(IpcServer));
+	if (This == NULL) {
+		perror("err to create ipc this\n");
+		return NULL;
+	}
 	This->priv = (IpcServerPriv*) calloc(1,sizeof(IpcServerPriv));
+	if (This->priv == NULL) {
+		perror("err to create ipc priv\n");
+		free(This);
+		return NULL;
+	}
 	strcpy(This->priv->ipc_path,path);
 	This->priv->callbackFunc = func;
 	This->sendData = sendData;
-	ipcInit(This);
+	int ret = ipcInit(This);
+	if (ret == -1) {
+		printf("ipc[%s] init fail\n",path);
+		free(This->priv);
+		free(This);
+		return NULL;
+	}
 	return This;
 }
