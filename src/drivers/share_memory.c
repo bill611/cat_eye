@@ -63,8 +63,6 @@ typedef struct _ShareMemoryPrivate
 	int GetIndex;										//读索引，用户只读
 	int SaveIndex;										//写索引，用户只读
 	unsigned int WriteCnt;										//写入的缓冲区数量
-	pthread_mutex_t mutex;		//队列控制互斥信号
-	pthread_mutexattr_t mutexattr2;
 }ShareMemoryPrivate,*PShareMemoryPrivate;
 
 union semun
@@ -171,39 +169,37 @@ static void thread_sem_wait_save(PShareMemory This)
 static void process_sem_post_get(PShareMemory This)
 {
 	semaphore_v(This->Private->GetSemId);
-	// sem_post(This->Private->GetSem);
 }
 static void process_sem_post_save(PShareMemory This)
 {
 	semaphore_v(This->Private->SaveSemId);
-	// sem_post(This->Private->SaveSem);
 }
 static void process_sem_wait_get(PShareMemory This)
 {
 	semaphore_p(This->Private->GetSemId);
-	// sem_wait(This->Private->GetSem);
 }
 static void process_sem_wait_save(PShareMemory This)
 {
 	semaphore_p(This->Private->SaveSemId);
-	// sem_wait(This->Private->SaveSem);
 }
 
 //----------------------------------------------------------------------------
 static void ShareMemory_CloseMemory(PShareMemory This)
 {
 	unsigned int i;
-	pthread_mutex_lock (&This->Private->mutex);		//加锁
-	if(This) {
-		This->Private->Terminate = 1;
-		for(i=0;i<This->Private->MallocCnt;i++)    {//Jack : no need to loop
-			This->My_sem_post_get(This);
-			This->My_sem_post_save(This);
-			// sem_post(This->Private->GetSem);			//解除阻塞
-			// sem_post(This->Private->SaveSem);
-		}
-	}
-	pthread_mutex_unlock (&This->Private->mutex);		//解锁
+    This->Private->Terminate = 1;
+    if (This->Private->Type == 0) {
+        for(i=0;i<This->Private->MallocCnt;i++) {
+            This->My_sem_post_get(This);
+            This->My_sem_post_save(This);
+        }
+    } else {
+        for (i=0; i<This->Private->MallocCnt; i++) {
+            memset(This->Private->Buf[i],0,This->Private->MallocSize); 
+        }
+		set_semvalue(This->Private->GetSemId,0);
+		set_semvalue(This->Private->SaveSemId,This->Private->MallocCnt);
+    }
 }
 //----------------------------------------------------------------------------
 // static void ShareMemory_InitSem(PShareMemory This)
@@ -231,13 +227,8 @@ static void ShareMemory_Destroy(PShareMemory This)
 	} else {
 		del_semvalue(This->Private->GetSemId);
 		del_semvalue(This->Private->SaveSemId);
-		// sem_close(This->Private->GetSem);
-		// sem_unlink(SEM_PRG_GET);
-		// sem_close(This->Private->SaveSem);
-		// sem_unlink(SEM_PRG_SAVE);
 		shmctl(This->Private->shmid, IPC_RMID,0);
 	}
-	pthread_mutex_destroy (&This->Private->mutex);
 	free(This->Private);
 	This->Private = NULL;
 	free(This);
@@ -252,74 +243,48 @@ static unsigned int ShareMemory_WriteCnt(PShareMemory This)
 static char * ShareMemory_SaveStart(PShareMemory This)
 {
 
-	//sem_wait (&This->Private->SaveSem);
 	if(This->Private == NULL || This->Private->Terminate)
 		return NULL;
 	else {
-		//pthread_mutex_lock (&This->Private->mutex);		//加锁
 		This->My_sem_wait_save(This);
-		// sem_wait (This->Private->SaveSem);//add By Jack
 		return This->Private->Buf[This->Private->SaveIndex];
 	}
 }
 //----------------------------------------------------------------------------
 static void ShareMemory_SaveEnd(PShareMemory This,int Size)
 {
-    // printf("%s(),cnt:%d\n",__FUNCTION__,This->Private->WriteCnt);
-	if(This->Private) {
-		if(This->Private->WriteCnt<This->Private->MallocCnt)
-			This->Private->WriteCnt++;
-		if(Size>This->Private->MallocSize)
-			Size = This->Private->MallocSize;
-		This->Private->BufSize[This->Private->SaveIndex]=Size;
+    if(This->Private->WriteCnt<This->Private->MallocCnt)
+        This->Private->WriteCnt++;
 
-		This->My_sem_post_get(This);
-		// sem_post (This->Private->GetSem);  //GetSem -->  SaveSem
+    if(Size>This->Private->MallocSize)
+        Size = This->Private->MallocSize;
 
-		This->Private->SaveIndex = (This->Private->SaveIndex+1) % This->Private->MallocCnt;
-		// printf("F:[%s]saveindex:%d,size:%d\n",
-				// __FUNCTION__,
-				// This->Private->SaveIndex,
-				// This->Private->BufSize[This->Private->SaveIndex]);
-		//pthread_mutex_unlock (&This->Private->mutex);
-	}
+    This->Private->BufSize[This->Private->SaveIndex]=Size;
+
+    This->My_sem_post_get(This);
+
+    This->Private->SaveIndex = (This->Private->SaveIndex+1) % This->Private->MallocCnt;
 }
 //----------------------------------------------------------------------------
 static char * ShareMemory_GetStart(PShareMemory This,int *Size)
 {
-	/*if(This->Private->Terminate)
-	{
-		*Size = 0;
-		return NULL;
-	}*/
-	//sem_wait (&This->Private->GetSem);
 	if(This->Private->Terminate || This->Private==NULL) {
 		*Size = 0;
 		return NULL;
 	} else {
-		//pthread_mutex_lock (&This->Private->mutex);		//加锁
 		This->My_sem_wait_get(This);
-		// sem_wait (This->Private->GetSem);  //modified by Jack
 
 		*Size = This->Private->BufSize[This->Private->GetIndex];
-		//printf("Jack: %s getindex = %d\n",__FUNCTION__,This->Private->GetIndex);
 		return This->Private->Buf[This->Private->GetIndex];
 	}
 }
 //----------------------------------------------------------------------------
 static void ShareMemory_GetEnd(PShareMemory This)
 {
-    // printf("%s(),cnt:%d\n",__FUNCTION__,This->Private->WriteCnt);
-	if(This->Private) {
-		if(This->Private->WriteCnt)
-			This->Private->WriteCnt--;
-		This->My_sem_post_save(This);
-		// sem_post (This->Private->SaveSem);   //SaveSem  ---> GetSem
-
-		This->Private->GetIndex = (This->Private->GetIndex+1) % This->Private->MallocCnt;
-		//printf("Jack: %s getindex = %d\n",__FUNCTION__,This->Private->GetIndex);
-		//pthread_mutex_unlock (&This->Private->mutex);		//
-	}
+    if(This->Private->WriteCnt)
+        This->Private->WriteCnt--;
+    This->My_sem_post_save(This);
+    This->Private->GetIndex = (This->Private->GetIndex+1) % This->Private->MallocCnt;
 }
 //----------------------------------------------------------------------------
 /* ----------------------------------------------------------------*/
@@ -336,7 +301,6 @@ static void ShareMemory_GetEnd(PShareMemory This)
 ShareMemory *CreateShareMemory(unsigned int Size,unsigned int BufCnt,int type)
 {
 	int i;
-//	pthread_mutexattr_t mutexattr2;
 
 	PShareMemory This = (PShareMemory)calloc(sizeof(ShareMemory),1);
 	if(This == NULL) {
@@ -368,27 +332,20 @@ ShareMemory *CreateShareMemory(unsigned int Size,unsigned int BufCnt,int type)
 			}
 		}
 	} else {
-		BufCnt = 1;
-		This->Private->shmid = shmget((key_t)1111,Size,IPC_CREAT | 0666);
+		This->Private->shmid = shmget((key_t)1111,Size * BufCnt,IPC_CREAT | 0666);
 		if (This->Private->shmid < 0) {
 			fprintf(stderr, "F:Shmget:%s\n", strerror(errno));
 			goto creat_err;
 		}
-		This->Private->Buf[0] = (char *)shmat(This->Private->shmid,NULL,0);
-		if (This->Private->Buf[0] < 0) {
+        char *sharemem = (char *)shmat(This->Private->shmid,NULL,0);
+		if (sharemem < 0) {
 			fprintf(stderr, "F:shmat:%s\n", strerror(errno));
 			goto creat_err;
 		}
+        for (i=0; i<(int)BufCnt; i++) {
+            This->Private->Buf[i] = sharemem + i*Size;
+        }
 	}
-
-	//设置互斥锁属性
-	pthread_mutexattr_init(&This->Private->mutexattr2);
-	/* Set the mutex as a recursive mutex */
-	pthread_mutexattr_settype(&This->Private->mutexattr2, PTHREAD_MUTEX_RECURSIVE_NP);
-	/* create the mutex with the attributes set */
-	pthread_mutex_init(&This->Private->mutex, &This->Private->mutexattr2);
-	/* destroy the attribute */
-	pthread_mutexattr_destroy(&This->Private->mutexattr2);
 
 	if (This->Private->Type == 0) {
 		This->Private->GetSem = (sem_t *) malloc(sizeof(sem_t));
