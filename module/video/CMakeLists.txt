@@ -7,6 +7,7 @@ set(MODULE_VIDEO
 	buffer/camerabuf.cpp
 	process/display_process.cpp
 	process/encoder_process.cpp
+	process/face_process.cpp
 )
 
 add_definitions(

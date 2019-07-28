@@ -24,6 +24,10 @@ extern "C" {
 #include <pthread.h>
 #include <semaphore.h>
 
+    typedef struct _ShareMemoryData {
+        int size;
+        char data[1];
+    }ShareMemoryData;
 	struct _ShareMemoryPrivate;
 
 	typedef struct _ShareMemory
@@ -37,10 +41,10 @@ extern "C" {
 		//	void (* InitSem)(struct _ShareMemory *This);				//初始化信号
 		void (* CloseMemory)(struct _ShareMemory *This);			//结束
 		void (* Destroy)(struct _ShareMemory *This);				//销毁该ShareMemory
-		void (* My_sem_post_get)(struct _ShareMemory *This);
-		void (* My_sem_post_save)(struct _ShareMemory *This);
-		void (* My_sem_wait_get)(struct _ShareMemory *This);
-		void (* My_sem_wait_save)(struct _ShareMemory *This);
+		int (* My_sem_post_get)(struct _ShareMemory *This);
+		int (* My_sem_post_save)(struct _ShareMemory *This);
+		int (* My_sem_wait_get)(struct _ShareMemory *This);
+		int (* My_sem_wait_save)(struct _ShareMemory *This);
 	}ShareMemory,*PShareMemory;
 
 	ShareMemory* CreateShareMemory(unsigned int Size,unsigned int BufCnt,int type);

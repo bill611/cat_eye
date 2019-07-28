@@ -46,6 +46,15 @@
 #define SEM_PRG_GET   "Prg_sem_get"
 #define SEM_PRG_SAVE  "Prg_sem_save"
 
+struct ProcessData {
+    int size;
+    char data[1];
+};
+
+union ShareMemoryProcessData {
+    char *p;   
+    struct ProcessData *process_buf;
+};
 
 typedef struct _ShareMemoryPrivate
 {
@@ -57,6 +66,7 @@ typedef struct _ShareMemoryPrivate
 	int MallocSize;										//每段内存申请的大小
 	unsigned int MallocCnt;								//分配多少段内存
 	char * Buf[MAXBUFCNT];								//内存指针
+    struct ProcessData *process_buf[MAXBUFCNT];         // 进程通信用该指针
 	int BufSize[MAXBUFCNT];								//内存的数据量
 	sem_t *GetSem;										//读信号量
 	sem_t *SaveSem;										//写信号量
@@ -108,9 +118,9 @@ static int semaphore_p(int sem_id)
 
 	if(semop(sem_id, &sem_b, 1) == -1)  {
 		fprintf(stderr, "F:semaphore_p failed:%s\n",strerror(errno));
-		return 0;
+		return -1;
 	}
-	return 1;
+	return 0;
 }
 
 static int semaphore_v(int sem_id)
@@ -122,9 +132,9 @@ static int semaphore_v(int sem_id)
 	sem_b.sem_flg = SEM_UNDO;
 	if(semop(sem_id, &sem_b, 1) == -1)  {
 		fprintf(stderr, "F:semaphore_v failed:%s\n",strerror(errno));
-		return 0;
+		return -1;
 	}
-	return 1;
+	return 0;
 }
 
 /* ----------------------------------------------------------------*/
@@ -138,21 +148,21 @@ static int semaphore_v(int sem_id)
  * @param This
  */
 /* ----------------------------------------------------------------*/
-static void thread_sem_post_get(PShareMemory This)
+static int thread_sem_post_get(PShareMemory This)
 {
-	sem_post(This->Private->GetSem);
+	return sem_post(This->Private->GetSem);
 }
-static void thread_sem_post_save(PShareMemory This)
+static int thread_sem_post_save(PShareMemory This)
 {
-	sem_post(This->Private->SaveSem);
+	return sem_post(This->Private->SaveSem);
 }
-static void thread_sem_wait_get(PShareMemory This)
+static int thread_sem_wait_get(PShareMemory This)
 {
-	sem_wait(This->Private->GetSem);
+	return sem_wait(This->Private->GetSem);
 }
-static void thread_sem_wait_save(PShareMemory This)
+static int thread_sem_wait_save(PShareMemory This)
 {
-	sem_wait(This->Private->SaveSem);
+	return sem_wait(This->Private->SaveSem);
 }
 
 /* ----------------------------------------------------------------*/
@@ -166,21 +176,21 @@ static void thread_sem_wait_save(PShareMemory This)
  * @param This
  */
 /* ----------------------------------------------------------------*/
-static void process_sem_post_get(PShareMemory This)
+static int process_sem_post_get(PShareMemory This)
 {
-	semaphore_v(This->Private->GetSemId);
+	return semaphore_v(This->Private->GetSemId);
 }
-static void process_sem_post_save(PShareMemory This)
+static int process_sem_post_save(PShareMemory This)
 {
-	semaphore_v(This->Private->SaveSemId);
+	return semaphore_v(This->Private->SaveSemId);
 }
-static void process_sem_wait_get(PShareMemory This)
+static int process_sem_wait_get(PShareMemory This)
 {
-	semaphore_p(This->Private->GetSemId);
+	return semaphore_p(This->Private->GetSemId);
 }
-static void process_sem_wait_save(PShareMemory This)
+static int process_sem_wait_save(PShareMemory This)
 {
-	semaphore_p(This->Private->SaveSemId);
+	return semaphore_p(This->Private->SaveSemId);
 }
 
 //----------------------------------------------------------------------------
@@ -195,7 +205,7 @@ static void ShareMemory_CloseMemory(PShareMemory This)
         }
     } else {
         for (i=0; i<This->Private->MallocCnt; i++) {
-            memset(This->Private->Buf[i],0,This->Private->MallocSize); 
+            memset(This->Private->process_buf[i],0,This->Private->MallocSize); 
         }
 		set_semvalue(This->Private->GetSemId,0);
 		set_semvalue(This->Private->SaveSemId,This->Private->MallocCnt);
@@ -230,9 +240,7 @@ static void ShareMemory_Destroy(PShareMemory This)
 		shmctl(This->Private->shmid, IPC_RMID,0);
 	}
 	free(This->Private);
-	This->Private = NULL;
 	free(This);
-	This = NULL;
 }
 //----------------------------------------------------------------------------
 static unsigned int ShareMemory_WriteCnt(PShareMemory This)
@@ -247,7 +255,10 @@ static char * ShareMemory_SaveStart(PShareMemory This)
 		return NULL;
 	else {
 		This->My_sem_wait_save(This);
-		return This->Private->Buf[This->Private->SaveIndex];
+        if (This->Private->Type == 0)
+            return This->Private->Buf[This->Private->SaveIndex];
+        else
+            return This->Private->process_buf[This->Private->SaveIndex]->data;
 	}
 }
 //----------------------------------------------------------------------------
@@ -259,7 +270,10 @@ static void ShareMemory_SaveEnd(PShareMemory This,int Size)
     if(Size>This->Private->MallocSize)
         Size = This->Private->MallocSize;
 
-    This->Private->BufSize[This->Private->SaveIndex]=Size;
+    if (This->Private->Type == 0)
+        This->Private->BufSize[This->Private->SaveIndex]=Size;
+    else
+        This->Private->process_buf[This->Private->SaveIndex]->size=Size;
 
     This->My_sem_post_get(This);
 
@@ -272,11 +286,19 @@ static char * ShareMemory_GetStart(PShareMemory This,int *Size)
 		*Size = 0;
 		return NULL;
 	} else {
-		This->My_sem_wait_get(This);
+        if (This->My_sem_wait_get(This) == -1) {
+            *Size = 0;
+            return NULL;
+        }
 
-		*Size = This->Private->BufSize[This->Private->GetIndex];
-		return This->Private->Buf[This->Private->GetIndex];
-	}
+        if (This->Private->Type == 0) {
+            *Size = This->Private->BufSize[This->Private->GetIndex];
+            return This->Private->Buf[This->Private->GetIndex];
+        } else {
+            *Size = This->Private->process_buf[This->Private->GetIndex]->size;
+            return This->Private->process_buf[This->Private->GetIndex]->data;
+        }
+    }
 }
 //----------------------------------------------------------------------------
 static void ShareMemory_GetEnd(PShareMemory This)
@@ -343,7 +365,8 @@ ShareMemory *CreateShareMemory(unsigned int Size,unsigned int BufCnt,int type)
 			goto creat_err;
 		}
         for (i=0; i<(int)BufCnt; i++) {
-            This->Private->Buf[i] = sharemem + i*Size;
+            This->Private->process_buf[i] = (struct ProcessData*)(sharemem + i*Size);
+            This->Private->process_buf[i]->size = 0;
         }
 	}
 

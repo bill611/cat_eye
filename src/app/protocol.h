@@ -30,6 +30,8 @@ extern "C" {
 	enum {
 		IPC_VIDEO_ON,
 		IPC_VIDEO_OFF,
+		IPC_VIDEO_FACE_ON,
+		IPC_VIDEO_FACE_OFF,
 		IPC_VIDEO_ENCODE_ON,
 		IPC_VIDEO_ENCODE_OFF,
 		IPC_VIDEO_DECODE_ON,
@@ -77,7 +79,10 @@ extern "C" {
 		int cmd;
 		int dev_type;
 		int leng;
-		char data[64];
+        union {
+            char array_buf[64];
+            char cap_path[64];
+        }data;
 	}IpcData;
 
 	typedef struct _UserStruct {

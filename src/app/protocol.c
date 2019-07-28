@@ -474,7 +474,7 @@ static void ipcCallback(char *data,int size )
 	memcpy(&ipc_data,data,sizeof(IpcData));
 	if (ipc_data.dev_type == IPC_DEV_TYPE_UART) {
 		if (protocol_singlechip)
-			protocol_singlechip->deal(ipc_data.cmd,ipc_data.data,ipc_data.leng);
+			protocol_singlechip->deal(ipc_data.cmd,ipc_data.data.array_buf,ipc_data.leng);
 	} else if (ipc_data.dev_type == IPC_DEV_TYPE_VIDEO) {
 
 	}

@@ -4,6 +4,7 @@
 #include "camerabuf.h"
 #include "thread_helper.h"
 #include "process/display_process.h"
+#include "process/face_process.h"
 #include "process/encoder_process.h"
 #include "protocol.h"
 #include "config.h"
@@ -14,7 +15,7 @@
 #define COLOR_KEY_G 0x0
 #define COLOR_KEY_B 0x1
 
-static ShareMemory *share_mem;  //共享内存
+static ShareMemory *share_mem = NULL;  //共享内存
 
 static IpcServer* ipc_video = NULL;
 
@@ -33,6 +34,7 @@ class RKVideo {
 	void displayPeer(int w,int h,void* decCallback);
 	void displayLocal(void);
 	void displayOff(void);
+    void faceOnOff(bool type,FaceCallbackFunc faceCallback);
 	void h264EncOnOff(bool type,int w,int h,EncCallbackFunc encCallback);
 	void capture(char *file_name);
 	void recordStart(EncCallbackFunc recordCallback);
@@ -42,6 +44,7 @@ class RKVideo {
  private:
 
     int display_state_; // 0关闭 1本地视频 2远程视频
+    bool face_state_;
     bool h264enc_state_;
     struct rk_cams_dev_info cam_info;
     std::shared_ptr<RKCameraBufferAllocator> ptr_allocator;
@@ -49,6 +52,7 @@ class RKVideo {
     std::shared_ptr<RKCameraHal> cam_dev;
 
     std::shared_ptr<DisplayProcess> display_process;
+    std::shared_ptr<FaceProcess> face_process;
     std::shared_ptr<H264Encoder> encode_process;
 };
 
@@ -58,6 +62,7 @@ static int init_ok = 0;
 RKVideo::RKVideo()
 {
     display_state_ = false;
+	face_state_ = false;
 	h264enc_state_ = false;
 
     memset(&cam_info, 0, sizeof(cam_info));
@@ -77,6 +82,10 @@ RKVideo::RKVideo()
     display_process = std::make_shared<DisplayProcess>();
 	if (display_process.get() == nullptr)
 		std::cout << "[rv_video]DisplayProcess make_shared error" << std::endl;
+
+    face_process = std::make_shared<FaceProcess>();
+	if (face_process.get() == nullptr)
+		std::cout << "[rv_video]FaceProcess make_shared error" << std::endl;
 
 	encode_process = std::make_shared<H264Encoder>();
 	if (encode_process.get() == nullptr)
@@ -153,6 +162,24 @@ void RKVideo::displayOff(void)
 		disconnect(cam_dev->mpath(), display_process);
 		display_process->setVideoBlack();
 	}
+} 
+void RKVideo::faceOnOff(bool type,FaceCallbackFunc faceCallback)
+{
+	if (cam_info.num_camers <= 0)
+		return;
+    if (type == true) {
+        if (face_state_ == false) {
+            face_state_ = true;
+            face_process->faceInit(faceCallback);
+            connect(cam_dev->mpath(), face_process, cam_dev->format(), 0, nullptr);
+        }
+    } else {
+        if (face_state_ == true) {
+            face_state_ = false;
+            disconnect(cam_dev->mpath(), face_process);
+            face_process->faceUnInit();
+        }
+	}
 }
 void RKVideo::h264EncOnOff(bool type,int w,int h,EncCallbackFunc encCallback)
 {
@@ -209,8 +236,6 @@ static void* threadVideoInit(void *arg)
 		} else {
 			printf("[%s,%d]\n", __func__,__LINE__);
 			rkvideo = p_video;
-
-			rkvideo->displayLocal();
 			break;
 		}
 		sleep(1);
@@ -230,20 +255,32 @@ int rkVideoDisplayLocal(void)
 		rkvideo->displayLocal();
 }
 
-static void decCallBack(void *data,int *size)
+static void callbackDecode(void *data,int *size)
 {
 
 }
 
-int rkVideoDisplayPeer(int w,int h,void * decCallBack)
+int rkVideoDisplayPeer(int w,int h,void * callbackDecode)
 {
 	if (rkvideo)
-		rkvideo->displayPeer(w,h,decCallBack);
+		rkvideo->displayPeer(w,h,callbackDecode);
 }
 int rkVideoDisplayOff(void)
 {
 	if (rkvideo)
 		rkvideo->displayOff();
+}
+int rkVideoFaceOn(FaceCallbackFunc faceCallback )
+{
+	if (rkvideo == NULL)
+		return 0;
+    rkvideo->faceOnOff(true,faceCallback);
+}
+int rkVideoFaceOff(void)
+{
+	if (rkvideo == NULL)
+		return 0;
+    rkvideo->faceOnOff(false,NULL);
 }
 
 int rkH264EncOn(int w,int h,EncCallbackFunc encCallback)
@@ -306,8 +343,10 @@ void display_clean_uiwin(void)
 	}
 }
 
-static void sendVideoCallbackFunc(void *data,int size,int fram_type)
+static void callbackEncode(void *data,int size,int fram_type)
 {
+    if (share_mem == NULL)
+        return;
 	char * mem_data = (char *)share_mem->SaveStart(share_mem);
 	if (mem_data)
 		memcpy(mem_data,data,size);
@@ -315,7 +354,17 @@ static void sendVideoCallbackFunc(void *data,int size,int fram_type)
 	printf("[%s,%d]size:%d\n", __func__,__LINE__,size);
 }
 
-static void ipcCallback(char *data,int size )
+static void callbackFace(void *data,int size)
+{
+    if (share_mem == NULL)
+        return;
+	char * mem_data = (char *)share_mem->SaveStart(share_mem);
+	if (mem_data)
+		memcpy(mem_data,data,size);
+	share_mem->SaveEnd(share_mem,size);
+	printf("[%s,%d]size:%d\n", __func__,__LINE__,size);
+}
+static void callbackIpc(char *data,int size )
 {
 	IpcData ipc_data;
 	memcpy(&ipc_data,data,sizeof(IpcData));
@@ -327,17 +376,40 @@ static void ipcCallback(char *data,int size )
 		case IPC_VIDEO_OFF:
 			rkVideoDisplayOff();
 			break;
+		case IPC_VIDEO_FACE_ON:
+            if (share_mem == NULL)
+                share_mem = CreateShareMemory(1024*100,4,1);
+            rkVideoFaceOn(callbackFace);
+			break;
+		case IPC_VIDEO_FACE_OFF:
+            rkVideoFaceOff();
+            if (share_mem) {
+                share_mem->CloseMemory(share_mem);
+                share_mem->Destroy(share_mem);
+                share_mem = NULL;
+            }
+			break;
 		case IPC_VIDEO_ENCODE_ON:
-			rkH264EncOn(320,240,sendVideoCallbackFunc);
+            if (share_mem == NULL)
+                share_mem = CreateShareMemory(1024*100,4,1);
+			rkH264EncOn(320,240,callbackEncode);
 			break;
 		case IPC_VIDEO_ENCODE_OFF:
 			rkH264EncOff();
+            if (share_mem) {
+                share_mem->CloseMemory(share_mem);
+                share_mem->Destroy(share_mem);
+                share_mem = NULL;
+            }
 			break;
 		case IPC_VIDEO_DECODE_ON:
 			break;
 		case IPC_VIDEO_DECODE_OFF:
 			break;
 		case IPC_VIDEO_CAPTURE:
+            if (ipc_data.dev_type == IPC_DEV_TYPE_MAIN) {
+                rkVideoCapture(ipc_data.data.cap_path);
+            }
 			break;
 		case IPC_VIDEO_RECORD_START:
 			break;
@@ -352,8 +424,7 @@ int main(int argc, char *argv[])
 	rk_fb_init(FB_FORMAT_BGRA_8888);
 	rk_fb_set_yuv_range(CSC_BT601F);
 	display_clean_uiwin();
-	share_mem = CreateShareMemory(1024*200,2,1);
-	ipc_video = ipcCreate(IPC_CAMMER,ipcCallback);
+	ipc_video = ipcCreate(IPC_CAMMER,callbackIpc);
 	rkVideoInit();
 	pause();
 	return 0;

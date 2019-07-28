@@ -266,6 +266,12 @@ static int stmDoFaceOn(void *data,MyVideo *arg)
 {
 #ifdef USE_VIDEO
     rkVideoFaceOnOff(1);
+#else
+    IpcData ipc_data;
+    ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
+    ipc_data.cmd = IPC_VIDEO_FACE_ON;
+    if (ipc_main)
+        ipc_main->sendData(ipc_main,IPC_CAMMER,&ipc_data,sizeof(ipc_data));
 #endif
 }
 
@@ -273,6 +279,12 @@ static int stmDoFaceOff(void *data,MyVideo *arg)
 {
 #ifdef USE_VIDEO
     rkVideoFaceOnOff(0);
+#else
+    IpcData ipc_data;
+    ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
+    ipc_data.cmd = IPC_VIDEO_FACE_OFF;
+    if (ipc_main)
+        ipc_main->sendData(ipc_main,IPC_CAMMER,&ipc_data,sizeof(ipc_data));
 #endif
 	st_data = (StmData *)stm->initPara(stm,
 			        sizeof(StmData));
@@ -505,6 +517,13 @@ static void* threadCapture(void *arg)
 
 #ifdef USE_VIDEO
 		rkVideoCapture(file_path);
+#else
+        IpcData ipc_data;
+        ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
+        ipc_data.cmd = IPC_VIDEO_CAPTURE;
+        strcpy(ipc_data.data.cap_path,file_path);
+        if (ipc_main)
+            ipc_main->sendData(ipc_main,IPC_CAMMER,&ipc_data,sizeof(ipc_data));
 #endif
 		sprintf(url,"http://img.cateye.taichuan.com/%s_%d.jpg",cap_data_temp.file_name,i);
 		sqlInsertPicUrlNoBack(cap_data_temp.pic_id,url);
@@ -772,13 +791,14 @@ static void videoAnswer(int dir,int dev_type)
 }
 static void showLocalVideo(void)
 {
+#ifdef USE_VIDEO
+	rkVideoDisplayLocal();
+#else
 	IpcData ipc_data;
 	ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
 	ipc_data.cmd = IPC_VIDEO_ON;
 	if (ipc_main)
 		ipc_main->sendData(ipc_main,IPC_CAMMER,&ipc_data,sizeof(ipc_data));
-#ifdef USE_VIDEO
-	rkVideoDisplayLocal();
 #endif
 	faceStart();
 }
@@ -795,13 +815,14 @@ static void showPeerVideo(void)
 }
 static void hideVideo(void)
 {
+#ifdef USE_VIDEO
+	rkVideoDisplayOff();
+#else
 	IpcData ipc_data;
 	ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
 	ipc_data.cmd = IPC_VIDEO_OFF;
 	if (ipc_main)
 		ipc_main->sendData(ipc_main,IPC_CAMMER,&ipc_data,sizeof(ipc_data));
-#ifdef USE_VIDEO
-	rkVideoDisplayOff();
 #endif
 }
 
