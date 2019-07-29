@@ -52,6 +52,11 @@ extern IpcServer* ipc_main;
 /* ---------------------------------------------------------------------------*
  *                        macro define
  *----------------------------------------------------------------------------*/
+#define IAMGE_MAX_W 1280
+#define IAMGE_MAX_H 720
+#define IMAGE_MAX_DATA (IAMGE_MAX_W * IAMGE_MAX_H * 3 / 2 )
+
+
 #define TIME_TALKING 180
 #define TIME_CALLING 30
 enum {
@@ -127,6 +132,14 @@ typedef struct _CapData {
 	char file_date[32];
 	char file_name[32];
 }CapData;
+
+typedef struct _CammerData {
+	int get_data_end;
+	int type;
+	int w,h;
+	char data[IMAGE_MAX_DATA];
+}CammerData;
+
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
@@ -188,7 +201,7 @@ static MPEG4Head* avi = NULL;
 
 static TalkPeerDev talk_peer_dev;
 static pthread_mutex_t mutex;
-static ShareMemory *share_mem;  //共享内存
+static ShareMemory *share_mem = NULL;  //共享内存
 static int send_video_start = 0;
 
 static StateTable state_table[] =
@@ -262,11 +275,43 @@ static int stmDoNothing(void *data,MyVideo *arg)
 	
 }
 
+static void* threadFace(void *arg)
+{
+	if (share_mem == NULL)
+		share_mem = shareMemoryCreateSlave(IMAGE_MAX_DATA,1);
+	while (1) {
+		int mem_len = 0;
+		if (share_mem == NULL) {
+			printf("main:share mem create fail\n");
+			return NULL;
+		}
+		CammerData *mem_data = (CammerData *)share_mem->GetStart(share_mem,&mem_len);
+		if (mem_data == NULL)
+			break;
+		if (mem_len == 0) {
+			printf("mem_len:%d\n", mem_len);
+			share_mem->GetEnd(share_mem);
+			goto send_sleep;
+		}
+		if (my_face)    
+			my_face->recognizer(mem_data->data,mem_data->w,mem_data->h);
+		share_mem->GetEnd(share_mem);
+send_sleep:
+		usleep(10000);
+	}
+	share_mem->CloseMemory(share_mem);
+	share_mem->Destroy(share_mem);
+	share_mem = NULL;
+	return NULL;
+}
 static int stmDoFaceOn(void *data,MyVideo *arg)
 {
 #ifdef USE_VIDEO
     rkVideoFaceOnOff(1);
 #else
+	if (my_face)    
+		my_face->init();
+	createThread(threadFace,NULL);
     IpcData ipc_data;
     ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
     ipc_data.cmd = IPC_VIDEO_FACE_ON;
@@ -280,6 +325,8 @@ static int stmDoFaceOff(void *data,MyVideo *arg)
 #ifdef USE_VIDEO
     rkVideoFaceOnOff(0);
 #else
+	if (my_face)    
+		my_face->uninit();
     IpcData ipc_data;
     ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
     ipc_data.cmd = IPC_VIDEO_FACE_OFF;
@@ -310,8 +357,14 @@ static void sendVideoCallbackFunc(void *data,int size,int fram_type)
 static void* sendVideoCallbackFunc(void *arg)
 {
 	send_video_start = 1;
+	if (share_mem == NULL)
+		share_mem = shareMemoryCreateSlave(1024*50,4);
 	while (send_video_start) {
 		int mem_len = 0;
+		if (share_mem == NULL) {
+			printf("main:share mem create fail\n");
+			return NULL;
+		}
 		char *mem_data = (char *)share_mem->GetStart(share_mem,&mem_len);
 		if (!mem_data || mem_len == 0) {
 			printf("mem_len:%d\n", mem_len);
@@ -319,11 +372,13 @@ static void* sendVideoCallbackFunc(void *arg)
 			goto send_sleep;
 		}
 		protocol_talk->sendVideo(mem_data,mem_len);
-		printf("size:%d\n", mem_len);
 		share_mem->GetEnd(share_mem);
 send_sleep:
 		usleep(10000);
 	}
+	share_mem->CloseMemory(share_mem);
+	share_mem->Destroy(share_mem);
+	share_mem = NULL;
 	return NULL;
 }
 #endif
@@ -708,7 +763,6 @@ static void init(void)
 {
 	jpegIncDecInit();
 	myFaceInit();
-	share_mem = CreateShareMemory(1024*200,2,1);
 #ifdef USE_VIDEO
 	rkVideoInit();
 #endif

@@ -46,6 +46,19 @@
 #define APP_ID "dfe52c64a6a368bf181c76b512d2b3fe"
 
 #define RECOGNITION_TIME 0
+
+#define DPRINT(...)           \
+do {                          \
+    printf("\033[1;32m");  \
+    printf("[FACE->%s,%d]",__func__,__LINE__);   \
+    printf(__VA_ARGS__);      \
+    printf("\033[0m");        \
+} while (0)
+
+typedef struct _DebugInfo {
+	int opt;
+	const char *content;
+}DebugInfo;
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
@@ -78,48 +91,50 @@ int rdfaceInit(void)
 	model_ion.client = -1;
 
 
-	printf("=====into rdfaceInit()====\n");
+	DPRINT("=====into rdfaceInit()====\n");
 
 
 	if (video_ion_alloc_rational(&model_ion, 32 * 1024, 1024, 1, 1)) {
-		printf("%s: %d -----> model_ion alloc failed.\n", __func__, __LINE__);
+		DPRINT("-----> model_ion alloc failed(32MB)\n");
 		goto exit;
 	}
 
-	printf("==>>alloc model_ion.size:%d !!\n",model_ion.size);
+	DPRINT("==>>alloc model_ion.size:%d,(%dK) !!\n",model_ion.size,model_ion.size/1024);
 
 	raw_ion.fd = -1;
 	raw_ion.client = -1;
 	if (video_ion_alloc(&raw_ion, WIDTH_MAX, HEIGHT_MAX)) {
-		printf("%s: %d -----> raw_ion alloc failed.\n", __func__, __LINE__);
+		DPRINT("-----> raw_ion alloc failed(%dK)\n",WIDTH_MAX*HEIGHT_MAX/1024);
 		goto exit_model;
 	}
-	printf("==>>alloc raw_ion.size:%d !!\n",raw_ion.size);
+	DPRINT("==>>alloc raw_ion.size:%d,(%dK)\n",raw_ion.size,raw_ion.size/1024);
 
 
 	dst_ion.fd = -1;
 	dst_ion.client = -1;
 	if (video_ion_alloc_rational(&dst_ion, 1024, 1024, 1, 1)) {
-		printf("%s: %d -----> dst_ion alloc failed.\n", __func__, __LINE__);
+		DPRINT("-----> dst_ion alloc failed(1MB)\n");
 		goto exit_raw;
 	}
+	DPRINT("==>>alloc dst_ion.size:%d,(%dK)\n",dst_ion.size,dst_ion.size/1024);
 
 
 	internal_ion.fd = -1;
 	internal_ion.client = -1;
 	if (video_ion_alloc_rational(&internal_ion, 1024, 1024, 1, 1)) {
-		printf("%s: %d -----> internal_ion alloc failed.\n", __func__, __LINE__);
+		DPRINT("-----> internal_ion alloc failed(1M)\n");
 		goto exit_dst;
 	}
+	DPRINT("==>>alloc internal_ion.size:%d,(%dK)\n",internal_ion.size,internal_ion.size/1024);
 
 	dsp_fd = open("/dev/dsp", O_RDWR);
 	if (dsp_fd < 0) {
-		printf("------> opend dsp dev failed.\n");
+		DPRINT("------> opend dsp dev failed.\n");
 		goto exit_internal;
 	}
 
-	printf("dsp face version_number: %s\n", readsense_face_sdk_get_version_number());
-	printf("dsp face device_key: %s\n", readsense_face_sdk_get_device_key());
+	DPRINT("dsp face version_number: %s\n", readsense_face_sdk_get_version_number());
+	DPRINT("dsp face device_key: %s\n", readsense_face_sdk_get_device_key());
 
 	//初始化接口
 	if(readsense_initial_face_sdk(model_ion.buffer, 20, 5,
@@ -135,11 +150,11 @@ int rdfaceInit(void)
 				"424b15c4f0f7f373f7a893544bd758a95bda33c689ab124c66efdb9d93533afc5024f5c8abb68150991e642f54c8e13b34b8ed968aedd024d7d0bc72622ffedb"
 				)) {
 
-		printf("%s:------> readsense_initial_face_sdk failed.\n", __func__);
+		DPRINT("%s:------> readsense_initial_face_sdk failed.\n", __func__);
 		goto exit_dsp;
 	}
 
-	printf("exit rdfaceInit()\n");
+	DPRINT("=====exit rdfaceInit()====\n");
 	return 0;
 
 exit_dsp:
@@ -181,7 +196,7 @@ void rdfaceUninit(void)
 /* ---------------------------------------------------------------------------*/
 static void fillFaceTrackBuf(unsigned char *image, int width, int height)
 {
-	// printf("face->width:%d height:%d\n",width,height);
+	// DPRINT("face->width:%d height:%d\n",width,height);
 	raw_ion.width = width;
 	raw_ion.height = height;
 	raw_ion.size = width * height * 3 / 2;
@@ -213,14 +228,14 @@ static int getFaceFeature(struct video_ion* image,  rs_point landmarks21[] , flo
 	if(readsense_face_recognition_lite(model_ion.buffer, (void*)model_ion.phys, image->buffer, (void*)image->phys,
 				dst_ion.buffer, (void*)dst_ion.phys, internal_ion.buffer, (void*)internal_ion.phys,
 				 dsp_fd,image->width, image->height, (float *)landmarks21)){
-        printf("%s:------> readsense_face_recognition_lite failed.\n", __func__);
+        DPRINT("%s:------> readsense_face_recognition_lite failed.\n", __func__);
 		return -1;
 	}
 
 #if RECOGNITION_TIME
 	gettimeofday(&end_time,NULL);
 	cost_time = (1000000*end_time.tv_sec) + end_time.tv_usec - (1000000*start_time.tv_sec) - start_time.tv_usec;
-	printf("recognition cost time: %f ms\n", cost_time / 1000);
+	DPRINT("recognition cost time: %f ms\n", cost_time / 1000);
 #endif
 
 	memcpy(outFRFeature,pFRFeature,FACE_RECOGNITION_FEATURE_DIMENSION*sizeof(float));
@@ -241,7 +256,7 @@ static int getFaceFeature(struct video_ion* image,  rs_point landmarks21[] , flo
 /* ---------------------------------------------------------------------------*/
 int rdfaceRegist(unsigned char *image_buff,int w,int h,float **out_feature,int *out_feature_size)
 {
-	printf("in rdfaceRegist\n");
+	DPRINT("in rdfaceRegist\n");
 	int *face_count = (int *)dst_ion.buffer;
 	RSFT_FACE_RESULT *pFace = (RSFT_FACE_RESULT *)((int *)dst_ion.buffer+1);
 	int ret;
@@ -255,16 +270,16 @@ int rdfaceRegist(unsigned char *image_buff,int w,int h,float **out_feature,int *
 			raw_ion.buffer, (void*)raw_ion.phys, dst_ion.buffer, (void*)dst_ion.phys,
 			internal_ion.buffer, (void*)internal_ion.phys, dsp_fd, raw_ion.width, raw_ion.height);
 	if ( ret !=0 ) {
-		printf("%s:------> readsense_face_detection_and_landmark LICENCE_VALIDATE_FAIL.\n", __func__);
+		DPRINT("%s:------> readsense_face_detection_and_landmark LICENCE_VALIDATE_FAIL.\n", __func__);
 		return -1;
 	}
 
 	if (*face_count !=1 ) {
-		printf("error : face num=%d\n",*face_count);
+		DPRINT("error : face num=%d\n",*face_count);
 		return -1;
 	}
 
-	printf("\ntrackId: %d, blur: %f,front_prob:%f  ,position is: [%d, %d, %d, %d] \n",
+	DPRINT("\ntrackId: %d, blur: %f,front_prob:%f  ,position is: [%d, %d, %d, %d] \n",
 			pFace->track_id, pFace->blur_prob, pFace->front_prob,
 			pFace->left, pFace->top, pFace->right, pFace->bottom);
 
@@ -301,22 +316,22 @@ int rdfaceRecognizer(unsigned char *image_buff,int w,int h,
 		raw_ion.buffer, (void*)raw_ion.phys, dst_ion.buffer, (void*)dst_ion.phys,
 		internal_ion.buffer, (void*)internal_ion.phys, dsp_fd, raw_ion.width, raw_ion.height);
 
-	// printf("\nreadsense_face_tracking  return %d \n",result);
+	// DPRINT("\nreadsense_face_tracking  return %d \n",result);
 	if ( result == RSFT_LICENCE_VALIDATE_FAIL ) {
-		printf("%s:------> readsense_face_tracking LICENCE_VALIDATE_FAIL.\n", __func__);
+		DPRINT("%s:------> readsense_face_tracking LICENCE_VALIDATE_FAIL.\n", __func__);
 		goto exit;
 	}
 
-	// printf("===>face num=%d\n",*face_count);
+	// DPRINT("===>face num=%d\n",*face_count);
 	if (*face_count == 0) {
-		// printf("error : face num=0\n");
+		// DPRINT("error : face num=0\n");
 		goto exit;
 	}
 	int faceCount = *face_count;
 
 	pFaceALL = (RSFT_FACE_RESULT *)malloc(faceCount*sizeof(RSFT_FACE_RESULT));
 	if(pFaceALL==NULL) {
-		printf("pFaceALL  malloc error!\n");
+		DPRINT("pFaceALL  malloc error!\n");
 		goto exit;
 	}
 	memcpy(pFaceALL,pFace,faceCount*sizeof(RSFT_FACE_RESULT));
@@ -324,7 +339,7 @@ int rdfaceRecognizer(unsigned char *image_buff,int w,int h,
 	int i=0;
 
 	for(i=0; i<faceCount ; i++) {
-		// printf("face_count:%d , facenum:%d: ,trackId: %d, blur: %f,front_prob:%f, gender:%d,age:%d,position is: [%d, %d, %d, %d] \n",
+		// DPRINT("face_count:%d , facenum:%d: ,trackId: %d, blur: %f,front_prob:%f, gender:%d,age:%d,position is: [%d, %d, %d, %d] \n",
 				// faceCount,i,pFaceALL[i].track_id, pFaceALL[i].blur_prob, pFaceALL[i].front_prob,
 				// pFaceALL[i].gender , pFaceALL[i].age,
 				// pFaceALL[i].left, pFaceALL[i].top, pFaceALL[i].right, pFaceALL[i].bottom);
@@ -338,12 +353,12 @@ int rdfaceRecognizer(unsigned char *image_buff,int w,int h,
 						raw_ion.buffer, (void*)raw_ion.phys,dst_ion.buffer, (void*)dst_ion.phys,
 						internal_ion.buffer, (void*)internal_ion.phys, dsp_fd, raw_ion.width, raw_ion.height,
 						face_landmark)) {
-			printf("%s:------> readsense_face_quality failed.\n", __func__);
+			DPRINT("%s:------> readsense_face_quality failed.\n", __func__);
 			goto exit;
 		}
-		// printf("==>quality_value:%f\n",*quality_value);
+		// DPRINT("==>quality_value:%f\n",*quality_value);
 		if(*quality_value < 0.25) {
-			// printf("Low quality=%f\n",*quality_value);
+			// DPRINT("Low quality=%f\n",*quality_value);
 			continue;
 		}
         if (featureCompare) {

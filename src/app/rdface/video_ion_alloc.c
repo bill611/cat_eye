@@ -10,6 +10,14 @@
 #include "ion/ion.h"
 #include "rk_fb/rk_fb.h"
 
+#define DPRINT(...)           \
+do {                          \
+    printf("\033[1;32m");  \
+    printf("[FACE->%s,%d]",__func__,__LINE__);   \
+    printf(__VA_ARGS__);      \
+    printf("\033[0m");        \
+} while (0)
+
 int video_ion_free(struct video_ion* video_ion);
 
 static int video_ion_alloc_buf(struct video_ion* video_ion)
@@ -18,13 +26,13 @@ static int video_ion_alloc_buf(struct video_ion* video_ion)
                         ION_HEAP_TYPE_DMA_MASK, 0, &video_ion->handle);
     if (ret < 0) {
         video_ion_free(video_ion);
-        printf("ion_alloc failed!\n");
+        DPRINT("ion_alloc failed!\n");
         return -1;
     }
     ret = ion_share(video_ion->client, video_ion->handle, &video_ion->fd);
     if (ret < 0) {
         video_ion_free(video_ion);
-        printf("ion_share failed!\n");
+        DPRINT("ion_share failed!\n");
         return -1;
     }
     ion_get_phys(video_ion->client, video_ion->handle, &video_ion->phys);
@@ -32,10 +40,10 @@ static int video_ion_alloc_buf(struct video_ion* video_ion)
                              MAP_SHARED | MAP_LOCKED, video_ion->fd, 0);
     if (!video_ion->buffer) {
         video_ion_free(video_ion);
-        printf("%s mmap failed!\n", __func__);
+        DPRINT("%s mmap failed!\n", __func__);
         return -1;
     }
-    printf("--- ion alloc, get fd: %d\n", video_ion->fd);
+    // DPRINT("--- ion alloc, get fd: %d\n", video_ion->fd);
     return 0;
 }
 
@@ -46,19 +54,19 @@ int video_ion_alloc_rational(struct video_ion* video_ion,
                              int den)
 {
     if (video_ion->client >= 0) {
-        printf("warning: video_ion client has been already opened\n");
+        DPRINT("warning: video_ion client has been already opened\n");
         return -1;
     }
     video_ion->client = ion_open();
     if (video_ion->client < 0) {
-        printf("%s:open /dev/ion failed!\n", __func__);
+        DPRINT("%s:open /dev/ion failed!\n", __func__);
         return -1;
     }
 
     video_ion->width = width;
     video_ion->height = height;
     video_ion->size = ((width + 15) & ~15) * ((height + 15) & ~15) * num / den;
-		printf("video_ion->size:%d \n",video_ion->size);
+	// DPRINT("video_ion->size:%d \n",video_ion->size);
     return video_ion_alloc_buf(video_ion);
 }
 
@@ -77,7 +85,7 @@ int video_ion_free(struct video_ion* video_ion)
     }
 
     if (video_ion->fd >= 0) {
-        printf("--- ion free, release fd: %d\n", video_ion->fd);
+        DPRINT("--- ion free, release fd: %d\n", video_ion->fd);
         close(video_ion->fd);
         video_ion->fd = -1;
     }
@@ -86,7 +94,7 @@ int video_ion_free(struct video_ion* video_ion)
         if (video_ion->handle) {
             ret = ion_free(video_ion->client, video_ion->handle);
             if (ret)
-                printf("ion_free failed!\n");
+                DPRINT("ion_free failed!\n");
             video_ion->handle = 0;
         }
 

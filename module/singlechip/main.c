@@ -142,7 +142,6 @@ static void cmdCheckStatus(void)
 
 static void cmdSleep(void)
 {
-	return;
 	uint8_t data = 1;
 	cmdPacket(CMD_POWER,id++,&data,1);
 }
@@ -197,7 +196,7 @@ static void uartDeal(void)
 				ipc_data.cmd = IPC_UART_DOORBELL;
 				main_queue->post(main_queue,&ipc_data);
 				char path[64];
-				sprintf(path,"%sdingdong.wav",AUDIO_PATH);	
+				sprintf(path,"/data/dingdong.wav");	
 				playVoice(path);
 			} else if (data[0] & CHECK_KEY_PIR) {
 				IpcData ipc_data;

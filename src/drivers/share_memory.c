@@ -3,7 +3,7 @@
  *
  *       Filename:  share_memory.c
  *
- *    Description:  ¹²ÏíÄÚ´æ¹ÜÀí
+ *    Description:  å…±äº«å†…å­˜ç®¡ç†
  *
  *        Version:  1.0
  *        Created:  2019-07-27 16:21:13
@@ -58,21 +58,21 @@ union ShareMemoryProcessData {
 
 typedef struct _ShareMemoryPrivate
 {
-	int Type;											// 0Ïß³Ì¹²ÏíÄÚ´æ ·Ç0½ø³Ì¹²ÏíÄÚ´æ
-	int shmid;											// ¹²ÏíÄÚ´æid
-	int GetSemId;										//¶ÁĞÅºÅÁ¿
-	int SaveSemId;										//Ğ´ĞÅºÅÁ¿
-	int Terminate;										//½áÊø
-	int MallocSize;										//Ã¿¶ÎÄÚ´æÉêÇëµÄ´óĞ¡
-	unsigned int MallocCnt;								//·ÖÅä¶àÉÙ¶ÎÄÚ´æ
-	char * Buf[MAXBUFCNT];								//ÄÚ´æÖ¸Õë
-    struct ProcessData *process_buf[MAXBUFCNT];         // ½ø³ÌÍ¨ĞÅÓÃ¸ÃÖ¸Õë
-	int BufSize[MAXBUFCNT];								//ÄÚ´æµÄÊı¾İÁ¿
-	sem_t *GetSem;										//¶ÁĞÅºÅÁ¿
-	sem_t *SaveSem;										//Ğ´ĞÅºÅÁ¿
-	int GetIndex;										//¶ÁË÷Òı£¬ÓÃ»§Ö»¶Á
-	int SaveIndex;										//Ğ´Ë÷Òı£¬ÓÃ»§Ö»¶Á
-	unsigned int WriteCnt;										//Ğ´ÈëµÄ»º³åÇøÊıÁ¿
+	int Type;											// 0çº¿ç¨‹å…±äº«å†…å­˜ é0è¿›ç¨‹å…±äº«å†…å­˜
+	int shmid;											// å…±äº«å†…å­˜id
+	int GetSemId;										//è¯»ä¿¡å·é‡
+	int SaveSemId;										//å†™ä¿¡å·é‡
+	int Terminate;										//ç»“æŸ
+	int MallocSize;										//æ¯æ®µå†…å­˜ç”³è¯·çš„å¤§å°
+	unsigned int MallocCnt;								//åˆ†é…å¤šå°‘æ®µå†…å­˜
+	char * Buf[MAXBUFCNT];								//å†…å­˜æŒ‡é’ˆ
+    struct ProcessData *process_buf[MAXBUFCNT];         // è¿›ç¨‹é€šä¿¡ç”¨è¯¥æŒ‡é’ˆ
+	int BufSize[MAXBUFCNT];								//å†…å­˜çš„æ•°æ®é‡
+	sem_t *GetSem;										//è¯»ä¿¡å·é‡
+	sem_t *SaveSem;										//å†™ä¿¡å·é‡
+	int GetIndex;										//è¯»ç´¢å¼•ï¼Œç”¨æˆ·åªè¯»
+	int SaveIndex;										//å†™ç´¢å¼•ï¼Œç”¨æˆ·åªè¯»
+	unsigned int WriteCnt;										//å†™å…¥çš„ç¼“å†²åŒºæ•°é‡
 }ShareMemoryPrivate,*PShareMemoryPrivate;
 
 union semun
@@ -90,7 +90,7 @@ union semun
 
 static int set_semvalue(int sem_id,int val)
 {
-	//ÓÃÓÚ³õÊ¼»¯ĞÅºÅÁ¿£¬ÔÚÊ¹ÓÃĞÅºÅÁ¿Ç°±ØĞëÕâÑù×ö
+	//ç”¨äºåˆå§‹åŒ–ä¿¡å·é‡ï¼Œåœ¨ä½¿ç”¨ä¿¡å·é‡å‰å¿…é¡»è¿™æ ·åš
 	union semun sem_union;
 
 	sem_union.val = val;
@@ -101,7 +101,7 @@ static int set_semvalue(int sem_id,int val)
 
 static void del_semvalue(int sem_id)
 {
-    //É¾³ıĞÅºÅÁ¿
+    //åˆ é™¤ä¿¡å·é‡
 	union semun sem_union;
 
 	if(semctl(sem_id, 0, IPC_RMID, sem_union) == -1)
@@ -110,7 +110,7 @@ static void del_semvalue(int sem_id)
 
 static int semaphore_p(int sem_id)
 {
-	// ¶ÔĞÅºÅÁ¿×ö¼õ1²Ù×÷£¬¼´µÈ´ıP£¨sv£©
+	// å¯¹ä¿¡å·é‡åšå‡1æ“ä½œï¼Œå³ç­‰å¾…Pï¼ˆsvï¼‰
 	struct sembuf sem_b;
 	sem_b.sem_num = 0;
 	sem_b.sem_op = -1;//P()
@@ -125,7 +125,7 @@ static int semaphore_p(int sem_id)
 
 static int semaphore_v(int sem_id)
 {
-    //ÕâÊÇÒ»¸öÊÍ·Å²Ù×÷£¬ËüÊ¹ĞÅºÅÁ¿±äÎª¿ÉÓÃ£¬¼´·¢ËÍĞÅºÅV£¨sv£©
+    //è¿™æ˜¯ä¸€ä¸ªé‡Šæ”¾æ“ä½œï¼Œå®ƒä½¿ä¿¡å·é‡å˜ä¸ºå¯ç”¨ï¼Œå³å‘é€ä¿¡å·Vï¼ˆsvï¼‰
 	struct sembuf sem_b;
 	sem_b.sem_num = 0;
 	sem_b.sem_op = 1;//V()
@@ -139,7 +139,7 @@ static int semaphore_v(int sem_id)
 
 /* ----------------------------------------------------------------*/
 /**
- * Ïß³Ì²Ù×÷Ê±ĞÅºÅÁ¿´¦Àí  
+ * çº¿ç¨‹æ“ä½œæ—¶ä¿¡å·é‡å¤„ç†  
  * @brief my_sem_post_get  
  * @brief my_sem_post_save 
  * @brief my_sem_wait_get 
@@ -167,7 +167,7 @@ static int thread_sem_wait_save(PShareMemory This)
 
 /* ----------------------------------------------------------------*/
 /**
- * ½ø³Ì²Ù×÷Ê±ĞÅºÅÁ¿´¦Àí  
+ * è¿›ç¨‹æ“ä½œæ—¶ä¿¡å·é‡å¤„ç†  
  * @brief my_sem_post_get  
  * @brief my_sem_post_save 
  * @brief my_sem_wait_get 
@@ -216,7 +216,7 @@ static void ShareMemory_CloseMemory(PShareMemory This)
 // {
 	// unsigned int i;
 	// for(i=0;i<This->Private->MallocCnt;i++) {
-		// sem_post(This->Private->GetSem);			//½â³ı×èÈû
+		// sem_post(This->Private->GetSem);			//è§£é™¤é˜»å¡
 		// sem_post(This->Private->SaveSem);
 	// }
 // }
@@ -311,11 +311,11 @@ static void ShareMemory_GetEnd(PShareMemory This)
 //----------------------------------------------------------------------------
 /* ----------------------------------------------------------------*/
 /**
- * @brief CreateShareMemory ´´½¨¹²ÏíÄÚ´æ
+ * @brief CreateShareMemory åˆ›å»ºå…±äº«å†…å­˜
  *
- * @param Size ÄÚ´æ´óĞ¡
- * @param BufCnt ÄÚ´æ¿éÊı
- * @param ... 0ÎªÏß³Ì¹²Ïí£¬·Ç0Îª½ø³Ì¹²Ïí
+ * @param Size å†…å­˜å¤§å°
+ * @param BufCnt å†…å­˜å—æ•°
+ * @param ... 0ä¸ºçº¿ç¨‹å…±äº«ï¼Œé0ä¸ºè¿›ç¨‹å…±äº«
  *
  * @returns
  */
@@ -373,8 +373,8 @@ ShareMemory *CreateShareMemory(unsigned int Size,unsigned int BufCnt,int type)
 	if (This->Private->Type == 0) {
 		This->Private->GetSem = (sem_t *) malloc(sizeof(sem_t));
 		This->Private->SaveSem = (sem_t *) malloc(sizeof(sem_t));
-		sem_init (This->Private->GetSem, 0,0);					//¶ÁĞÅºÅÁ¿³õÊ¼»¯Îª0
-		sem_init (This->Private->SaveSem, 0,BufCnt);			//Ğ´ĞÅºÅÁ¿³õÊ¼»¯Îª»º³åÇøÊıÁ¿
+		sem_init (This->Private->GetSem, 0,0);					//è¯»ä¿¡å·é‡åˆå§‹åŒ–ä¸º0
+		sem_init (This->Private->SaveSem, 0,BufCnt);			//å†™ä¿¡å·é‡åˆå§‹åŒ–ä¸ºç¼“å†²åŒºæ•°é‡
 		This->My_sem_post_get = thread_sem_post_get;
 		This->My_sem_post_save = thread_sem_post_save;
 		This->My_sem_wait_get = thread_sem_wait_get;
@@ -390,8 +390,6 @@ ShareMemory *CreateShareMemory(unsigned int Size,unsigned int BufCnt,int type)
 			fprintf(stderr, "F:sem_open save:%s\n", strerror(errno));
 			goto creat_err;
 		}
-		set_semvalue(This->Private->GetSemId,0);
-		set_semvalue(This->Private->SaveSemId,BufCnt);
 		This->My_sem_post_get = process_sem_post_get;
 		This->My_sem_post_save = process_sem_post_save;
 		This->My_sem_wait_get = process_sem_wait_get;
@@ -421,4 +419,16 @@ creat_err:
 	return NULL;
 
 }
-//----------------------------------------------------------------------------
+ShareMemory * shareMemoryCreateMaster(unsigned int Size,unsigned int BufCnt)
+{
+	PShareMemory This = CreateShareMemory(Size,BufCnt,1);
+	if (This) {
+		set_semvalue(This->Private->GetSemId,0);
+		set_semvalue(This->Private->SaveSemId,BufCnt);
+	}
+	return This;
+}
+ShareMemory * shareMemoryCreateSlave(unsigned int Size,unsigned int BufCnt)
+{
+	return CreateShareMemory(Size,BufCnt,1);
+}

@@ -231,10 +231,8 @@ static void* threadVideoInit(void *arg)
 	while (1) {
 		p_video = new RKVideo();
 		if (init_ok == 0) {
-			printf("[%s,%d]\n", __func__,__LINE__);
 			delete p_video;
 		} else {
-			printf("[%s,%d]\n", __func__,__LINE__);
 			rkvideo = p_video;
 			break;
 		}
@@ -351,7 +349,6 @@ static void callbackEncode(void *data,int size,int fram_type)
 	if (mem_data)
 		memcpy(mem_data,data,size);
 	share_mem->SaveEnd(share_mem,size);
-	printf("[%s,%d]size:%d\n", __func__,__LINE__,size);
 }
 
 static void callbackFace(void *data,int size)
@@ -362,7 +359,6 @@ static void callbackFace(void *data,int size)
 	if (mem_data)
 		memcpy(mem_data,data,size);
 	share_mem->SaveEnd(share_mem,size);
-	printf("[%s,%d]size:%d\n", __func__,__LINE__,size);
 }
 static void callbackIpc(char *data,int size )
 {
@@ -378,7 +374,7 @@ static void callbackIpc(char *data,int size )
 			break;
 		case IPC_VIDEO_FACE_ON:
             if (share_mem == NULL)
-                share_mem = CreateShareMemory(1024*100,4,1);
+                share_mem = shareMemoryCreateMaster(IMAGE_MAX_DATA,1);
             rkVideoFaceOn(callbackFace);
 			break;
 		case IPC_VIDEO_FACE_OFF:
@@ -391,7 +387,7 @@ static void callbackIpc(char *data,int size )
 			break;
 		case IPC_VIDEO_ENCODE_ON:
             if (share_mem == NULL)
-                share_mem = CreateShareMemory(1024*100,4,1);
+                share_mem = shareMemoryCreateMaster(1024*50,4);
 			rkH264EncOn(320,240,callbackEncode);
 			break;
 		case IPC_VIDEO_ENCODE_OFF:

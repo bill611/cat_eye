@@ -50,7 +50,7 @@ extern "C" {
 #define IPC_UART "/tmp/ipc_uart"
 
 #define AUTO_CLOSE_LCD 30
-#define SLEEP_TIMER 30
+#define SLEEP_TIMER 10
 
 	typedef struct _EtcValueChar {
 		const char* section;	

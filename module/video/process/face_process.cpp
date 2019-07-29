@@ -51,9 +51,6 @@ static void* faceProcessThread(void *arg)
 		}
         if (process->faceCallback())
             process->faceCallback()(&camm_info,sizeof(camm_info));
-		// if (my_face){
-			// my_face->recognizer(camm_info.data,camm_info.w,camm_info.h);
-		// }
 		pthread_mutex_lock(&mutex);
 		camm_info.get_data_end = 0;
 		pthread_mutex_unlock(&mutex);
@@ -93,8 +90,6 @@ bool FaceProcess::processFrame(std::shared_ptr<BufferBase> inBuf,
 
 void FaceProcess::faceInit(FaceCallbackFunc faceCallback)
 {
-    // if (my_face)    
-        // my_face->init();
     faceCallback_ = faceCallback;
 	camm_info.get_data_end = 0;
 	start_enc_ = true;
@@ -103,8 +98,6 @@ void FaceProcess::faceInit(FaceCallbackFunc faceCallback)
 
 void FaceProcess::faceUnInit(void)
 {
-    // if (my_face)    
-        // my_face->uninit();
 	camm_info.get_data_end = 0;
 	start_enc_ = false;
 }

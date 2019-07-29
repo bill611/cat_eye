@@ -3,7 +3,7 @@
  *
  *       Filename:  share_memory.h
  *
- *    Description:  ¹²ÏíÄÚ´æ¹ÜÀí
+ *    Description:  å…±äº«å†…å­˜ç®¡ç†
  *
  *        Version:  1.0
  *        Created:  2019-07-27 16:20:04 
@@ -33,14 +33,14 @@ extern "C" {
 	typedef struct _ShareMemory
 	{
 		struct _ShareMemoryPrivate *Private;
-		unsigned int (*WriteCnt)(struct _ShareMemory *This);		//·µ»ØĞ´ÈëµÄ»º³åÇøÊıÁ¿
-		char* (*SaveStart)(struct _ShareMemory *This);				//»ñµÃĞ´¾ä±ú
-		void (*SaveEnd)(struct _ShareMemory *This,int Size);		//ÊÍ·ÅĞ´¾ä±ú£¬SizeÎªĞ´Èë×Ö½ÚÊı
-		char* (*GetStart)(struct _ShareMemory *This,int *Size);	//»ñµÃ¶Á¾ä±ú£¬SizeÎª»º³åÇø×Ö½ÚÊı
-		void (*GetEnd)(struct _ShareMemory *This);					//ÊÍ·Å¶Á¾ä±ú
-		//	void (* InitSem)(struct _ShareMemory *This);				//³õÊ¼»¯ĞÅºÅ
-		void (* CloseMemory)(struct _ShareMemory *This);			//½áÊø
-		void (* Destroy)(struct _ShareMemory *This);				//Ïú»Ù¸ÃShareMemory
+		unsigned int (*WriteCnt)(struct _ShareMemory *This);		//è¿”å›å†™å…¥çš„ç¼“å†²åŒºæ•°é‡
+		char* (*SaveStart)(struct _ShareMemory *This);				//è·å¾—å†™å¥æŸ„
+		void (*SaveEnd)(struct _ShareMemory *This,int Size);		//é‡Šæ”¾å†™å¥æŸ„ï¼ŒSizeä¸ºå†™å…¥å­—èŠ‚æ•°
+		char* (*GetStart)(struct _ShareMemory *This,int *Size);	//è·å¾—è¯»å¥æŸ„ï¼ŒSizeä¸ºç¼“å†²åŒºå­—èŠ‚æ•°
+		void (*GetEnd)(struct _ShareMemory *This);					//é‡Šæ”¾è¯»å¥æŸ„
+		//	void (* InitSem)(struct _ShareMemory *This);				//åˆå§‹åŒ–ä¿¡å·
+		void (* CloseMemory)(struct _ShareMemory *This);			//ç»“æŸ
+		void (* Destroy)(struct _ShareMemory *This);				//é”€æ¯è¯¥ShareMemory
 		int (* My_sem_post_get)(struct _ShareMemory *This);
 		int (* My_sem_post_save)(struct _ShareMemory *This);
 		int (* My_sem_wait_get)(struct _ShareMemory *This);
@@ -48,6 +48,8 @@ extern "C" {
 	}ShareMemory,*PShareMemory;
 
 	ShareMemory* CreateShareMemory(unsigned int Size,unsigned int BufCnt,int type);
+	ShareMemory * shareMemoryCreateMaster(unsigned int Size,unsigned int BufCnt);
+	ShareMemory * shareMemoryCreateSlave(unsigned int Size,unsigned int BufCnt);
 
 #ifdef __cplusplus
 }

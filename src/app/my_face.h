@@ -21,6 +21,10 @@
 extern "C" {
 #endif  /* __cplusplus */
 
+#define IAMGE_MAX_W 1280
+#define IAMGE_MAX_H 720
+#define IMAGE_MAX_DATA (IAMGE_MAX_W * IAMGE_MAX_H * 3 / 2 )
+
     typedef struct _MyFaceData {
         char user_id[32];
         char nick_name[128];

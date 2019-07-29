@@ -62,7 +62,6 @@ static void cmdSleep(void)
 	if (ipc_main)
 		ipc_main->sendData(ipc_main,IPC_UART,&ipc_data,sizeof(ipc_data));
 	sleep(1);
-	powerOff();
 }
 
 static void deal(int cmd,char *data,int size)
