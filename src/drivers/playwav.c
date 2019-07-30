@@ -24,6 +24,7 @@
 #include <unistd.h>
 #include "pthread.h"
 #include "playwav.h"
+#include "externfunc.h"
 #include "my_mixer.h"
 
 /* ----------------------------------------------------------------*

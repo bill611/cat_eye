@@ -61,14 +61,13 @@ static void cmdSleep(void)
 	ipc_data.cmd = IPC_UART_SLEEP;
 	if (ipc_main)
 		ipc_main->sendData(ipc_main,IPC_UART,&ipc_data,sizeof(ipc_data));
-	sleep(1);
 }
 
 static void deal(int cmd,char *data,int size)
 {
 	switch(cmd)
 	{
-		case IPC_UART_POWER:
+		case IPC_UART_KEY_POWER:
 			screensaverStart(0);
 			screenAutoCloseStop();
 			Screen.ReturnMain();
@@ -84,7 +83,8 @@ static void deal(int cmd,char *data,int size)
 			printf("[%s,%d]cmd:%d\n", __func__,__LINE__,cmd);
 			my_video->videoCallOutAll();
 #endif
-			// myAudioPlayDingdong();
+			break;
+		case IPC_UART_POWEROFF:
 			break;
 		default:
 			break;

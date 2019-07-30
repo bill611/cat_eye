@@ -59,5 +59,7 @@ int getGateWayMac(char *gateway,char *mac);
 void enableSleepMpde(void);
 void powerOff(void);
 int checkSD(void);
+int getSdMem(char *total,char *residue,char *used);
+int adjustdate(int year,int mon,int mday,int hour,int min,int sec);
 #endif
 

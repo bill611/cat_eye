@@ -34,6 +34,7 @@
 #include <fcntl.h>
 #include <sys/time.h>
 #include "my_ntp.h"
+#include "externfunc.h"
 #include "thread_helper.h"
 
 /* ---------------------------------------------------------------------------*
@@ -190,16 +191,18 @@ static int ntpGetServerTime(int sock, struct timeval *newtime)
 static int ntpModLocalTime(struct timeval newtime)
 {
 	struct tm *tm_p;
-    char time_buff[100];
-    memset(time_buff, 0, 100);
 	time_t time_sec = newtime.tv_sec + 28800;
 	//time_t time_sec = newtime.tv_sec;
     tm_p = gmtime(&time_sec);
 
-    sprintf(time_buff, "date -s \"%d-%d-%d %d:%d:%d\"", tm_p->tm_year + 1900, tm_p->tm_mon + 1, tm_p->tm_mday, tm_p->tm_hour, tm_p->tm_min, tm_p->tm_sec);
-	printf("[cmd] time_buff:%s\n", time_buff);
 #ifndef X86
-    system(time_buff);
+	adjustdate(tm_p->tm_year + 1900,
+			tm_p->tm_mon + 1,
+		   	tm_p->tm_mday,
+		   	tm_p->tm_hour,
+		   	tm_p->tm_min,
+		   	tm_p->tm_sec);
+    // system(time_buff);
 #endif
 	if (getTimeCallBcak)
 		getTimeCallBcak();

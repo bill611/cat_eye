@@ -63,17 +63,24 @@ struct ScrollviewItem {
 	int index;  // 元素位置
 };
 
+struct MemData {
+	char total[32];
+	char residue[32];
+	char used[32];
+};
+
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
 static HWND hScrollView;
 static int flag_timer_stop = 0;
+struct MemData mem_data;
 // static struct ScrollviewItem *locoal_list;
 // TEST
 static struct ScrollviewItem locoal_list[] = {
-	{"总空间",  DEVICE_TYPE,NULL},
-	{"剩余空间",DEVICE_SVERSION,NULL},
-	{"已用比例",DEVICE_KVERSION,NULL},
+	{"总空间",  "",NULL},
+	{"剩余空间","",NULL},
+	{"已用比例","",NULL},
 	{0},
 };
 static BITMAP bmp_warning; // 警告
@@ -192,11 +199,21 @@ static void loadStoreData(void)
 	int i;
 	SVITEMINFO svii;
 	struct ScrollviewItem *plist = locoal_list;
-	for (i=0; plist->text[0] != 0; i++) {
+    SendMessage (hScrollView, SVM_RESETCONTENT, 0, 0);
+	memset(&mem_data,0,sizeof(mem_data));
+	getSdMem(mem_data.total,mem_data.residue,mem_data.used);
+	for (i=0; plist->title[0] != 0; i++) {
 		plist->index = i;
 		svii.nItemHeight = 60;
 		svii.addData = (DWORD)plist;
 		svii.nItem = i;
+		if (strcmp("总空间",plist->title) == 0) {
+			sprintf(plist->text,"%s",mem_data.total);
+		} else if (strcmp("剩余空间",plist->title) == 0) {
+			sprintf(plist->text,"%s",mem_data.residue);
+		} else if (strcmp("已用比例",plist->title) == 0) {
+			sprintf(plist->text,"%s",mem_data.used);
+		}
 		SendMessage (hScrollView, SVM_ADDITEM, 0, (LPARAM)&svii);
 		SendMessage (hScrollView, SVM_SETITEMADDDATA, i, (DWORD)plist);
 		plist++;
@@ -266,6 +283,7 @@ int createFormSettingStore(HWND hMainWnd,void (*callback)(void))
 	HWND Form = Screen.Find(form_base_priv.name);
 	if(Form) {
 		Screen.setCurrent(form_base_priv.name);
+		loadStoreData();
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
 		form_base_priv.callBack = callback;

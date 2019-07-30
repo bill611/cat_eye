@@ -620,5 +620,6 @@ void udpServerInit(void (*udpSocketRead)(SocketHandle *ABinding,SocketPacket *AD
         int port)
 {
 	udp_server = udpServerCreate(port,"udp_server");
-	udp_server->udpSocketRead = udpSocketRead;
+	if (udp_server)
+		udp_server->udpSocketRead = udpSocketRead;
 }

@@ -29,7 +29,7 @@ typedef enum
 Config g_config;
 static dictionary* cfg_public_ini;
 static dictionary* cfg_private_ini;
-static pthread_mutex_t cfg_mutex  = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t cfg_mutex ;
 
 static EtcValueInt etc_public_int[]={
 };
@@ -193,6 +193,7 @@ static void SavePublic(void)
 
 static void SavePrivate(void)
 {
+	DPRINT("[%s]start\n", __FUNCTION__);
 	configSaveEtcInt(cfg_private_ini,etc_private_int,NELEMENTS(etc_private_int));
 	configSaveEtcChar(cfg_private_ini,etc_private_char,NELEMENTS(etc_private_char));
 	dumpIniFile(cfg_private_ini,CFG_PRIVATE_DRIVE  INI_PRIVATE_FILENAME);
@@ -260,6 +261,12 @@ void configLoad(void)
 	configLoadEtcInt(cfg_private_ini,etc_private_int,NELEMENTS(etc_private_int));
 	configLoadEtcChar(cfg_private_ini,etc_private_char,NELEMENTS(etc_private_char));
 	etcFileCheck();
+
+	pthread_mutexattr_t mutexattr;
+	pthread_mutexattr_init(&mutexattr);
+    pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE_NP);
+    pthread_mutex_init(&cfg_mutex, &mutexattr);
+
 	if (ret || strcmp(g_config.version,DEVICE_SVERSION) != 0) {
 		strcpy(g_config.version,DEVICE_SVERSION);
 		SavePrivate();
@@ -291,11 +298,6 @@ static void* ConfigSaveTask(void* arg)
 		SavePrivate();
 	}
 
-#ifdef CFG_CHECK_FILES_CRC_ON_BOOTING
-    char* filepath = (char*) args[1];
-    if (action != CONFIG_SAVE_PRIVATE)
-        UpgradeSetFileCrc(filepath);
-#endif
 	configSync();
 	if(func) {
 		configCallback p = (configCallback)func;
@@ -305,21 +307,6 @@ static void* ConfigSaveTask(void* arg)
     pthread_mutex_unlock(&cfg_mutex);
 
     return NULL;
-}
-
-void ConfigUpdateCrc(char* filepath)
-{
-#ifdef CFG_CHECK_FILES_CRC_ON_BOOTING
-    static int args[2];
-    static char path[256];
-
-    strcpy(path, filepath);
-
-    args[0] = CONFIG_CRC;
-    args[1] = (int)path;
-
-    createThread(ConfigSaveTask, args);
-#endif // CFG_CHECK_FILES_CRC_ON_BOOTING
 }
 
 void ConfigSave(configCallback func)

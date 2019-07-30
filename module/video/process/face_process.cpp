@@ -54,6 +54,7 @@ static void* faceProcessThread(void *arg)
 		pthread_mutex_lock(&mutex);
 		camm_info.get_data_end = 0;
 		pthread_mutex_unlock(&mutex);
+		usleep(100000);
 	}
 	return NULL;	
 }
@@ -65,6 +66,7 @@ FaceProcess::FaceProcess()
 	pthread_mutexattr_init(&mutexattr);
     pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE_NP);
     pthread_mutex_init(&mutex, &mutexattr);
+	pthread_mutexattr_destroy(&mutexattr);
 
 }
 

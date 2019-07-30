@@ -655,7 +655,7 @@ static void *udpSocketReadThread(void *arg)
 	// 阻塞状态 不需要延时
 	while (1) {
 		udp_debug_queue->get(udp_debug_queue,&socket_data);
-        if (udp_debug->udpSocketRead)
+        if (udp_debug && udp_debug->udpSocketRead)
             udp_debug->udpSocketRead(socket_data.ABinding,socket_data.AData);
 		free(socket_data.ABinding);
 		free(socket_data.AData);
@@ -771,7 +771,8 @@ static void udpDebugHandle(SocketHandle *ABinding,SocketPacket *AData)
 void udpDebugInit(void)
 {
 	udp_debug = udpServerCreate(0,UDP_DEBUG_PORT);
-	udp_debug->udpSocketRead = udpDebugHandle;
+	if (udp_debug)
+		udp_debug->udpSocketRead = udpDebugHandle;
 	udp_debug_queue = queueCreate("udp_debug",QUEUE_BLOCK,sizeof(UdpSocket));
 
 	createThread(udpSocketReadThread,NULL);

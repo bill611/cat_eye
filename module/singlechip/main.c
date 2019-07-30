@@ -59,7 +59,7 @@ enum {
     CHECK_KEY_PIR = (1 << 3),
 };
 enum{
-	CMD_RESERVE = 0X01, // 备用
+	CMD_HEART = 0X01, 				// ARM→单片机	0X01	NBYTE	关机或休眠时，发送心跳到单片机
 	CMD_POWER = 0X02, 				// ARM→单片机	0X02	1BYTE	0 关机 1进入低功耗模式 2 复位WIFI
 	CMD_WIFI_PWD = 0X03,			// ARM→单片机	0X03	32BYTE	设置WIFI连接，数据格式： SSID：[0~15]BYTE； PASSWORD：[16~31]BYTE；
 	CMD_WIFI_RESPONSE = 0X04, 		// 单片机→ARM	0X04	1BYTE	WIFI连接响应，参数说明： 0X00 WIFI连接成功； 0X01 WIFI连接失败；
@@ -93,6 +93,7 @@ enum{
 	   保留字节[1~2]BYTE，恒为0X00;
 	   */
 	CMD_REPORT = 0XC9, 						// ARM→单片机	0XC9	0BYTE	ARM设备发出
+	CMD_POWEROFF = 0XCA, 					// 单片机→ARM	0XCA	1BYTE	单片机长按通知关机
 	CMD_ERR_RESPONSE = 0xFF,				// 单片机→ARM	0XFF	1BYTE	0X00 数据接收成功； 0X01 数据校验失败； 0X02 参数错误；
 
 };
@@ -140,10 +141,14 @@ static void cmdCheckStatus(void)
 	cmdPacket(CMD_GET_CHECK,id++,NULL,0);
 }
 
-static void cmdSleep(void)
+static void* threadCmdSleep(void *arg)
 {
 	uint8_t data = 1;
-	cmdPacket(CMD_POWER,id++,&data,1);
+	while (1) {
+		cmdPacket(CMD_HEART,id++,&data,0);
+		sleep(1);
+	}
+	return NULL;
 }
 
 static void uartDeal(void)
@@ -185,7 +190,7 @@ static void uartDeal(void)
 		case CMD_REPORT_RESPONSE:
 			if (data[0] & CHECK_POWER) {
 				IpcData ipc_data;
-				ipc_data.cmd = IPC_UART_POWER;
+				ipc_data.cmd = IPC_UART_KEY_POWER;
 				main_queue->post(main_queue,&ipc_data);
             } else if (data[0] & CHECK_KEY_HOM) {
 				IpcData ipc_data;
@@ -205,6 +210,14 @@ static void uartDeal(void)
 			}
 			cmdPacket(CMD_REPORT,0,NULL,0);
 			break;
+		case CMD_POWEROFF:
+			{
+				IpcData ipc_data;
+				ipc_data.cmd = IPC_UART_POWEROFF;
+				main_queue->post(main_queue,&ipc_data);
+				createThread(threadCmdSleep,NULL);
+			}
+			break;
 		case CMD_ERR_RESPONSE:
 			break;
 		default:
@@ -217,6 +230,7 @@ static void registSingleChip(void)
 	uartInit(uartDeal);
 	cmdCheckStatus();
 }
+
 static void ipcCallback(char *data,int size )
 {
 	IpcData ipc_data;
@@ -224,7 +238,11 @@ static void ipcCallback(char *data,int size )
 	switch(ipc_data.cmd)
 	{
 		case IPC_UART_SLEEP:
-			cmdSleep();
+			{
+				uint8_t data = 1;
+				cmdPacket(CMD_POWER,id++,&data,0);
+				createThread(threadCmdSleep,NULL);
+			}
 			break;
 		default:
 			break;

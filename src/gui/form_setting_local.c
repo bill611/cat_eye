@@ -74,11 +74,17 @@ struct ScrollviewItem {
 	int index;  // 元素位置
 };
 
+struct MemData {
+	char total[32];
+	char residue[32];
+	char used[32];
+};
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
 static HWND hScrollView;
 static int flag_timer_stop = 0;
+struct MemData mem_data;
 // static struct ScrollviewItem *locoal_list;
 // TEST
 static struct ScrollviewItem locoal_list[] = {
@@ -86,7 +92,7 @@ static struct ScrollviewItem locoal_list[] = {
 	{"软件版本",DEVICE_SVERSION,createFormSettingUpdate},
 	{"固件版本",DEVICE_KVERSION,createFormSettingUpdate},
 	{"二维码",  "扫描添加设备",createFormSettingQrcode},
-	{"本地存储","剩余1024MB",createFormSettingStore},
+	{"本地存储","",NULL},
 	{0},
 };
 static BITMAP bmp_warning; // 警告
@@ -235,11 +241,23 @@ static void loadLocoalData(void)
 	int i;
 	SVITEMINFO svii;
 	struct ScrollviewItem *plist = locoal_list;
-	for (i=0; plist->text[0] != 0; i++) {
+    SendMessage (hScrollView, SVM_RESETCONTENT, 0, 0);
+	for (i=0; plist->title[0] != 0; i++) {
 		plist->index = i;
 		svii.nItemHeight = 60;
 		svii.addData = (DWORD)plist;
 		svii.nItem = i;
+		if (strcmp("本地存储",plist->title) == 0) {
+			if (checkSD() == -1) {
+				strcpy(plist->text,"未检测到SD卡");
+				plist->callback = NULL;
+			} else {
+				memset(&mem_data,0,sizeof(mem_data));
+				getSdMem(mem_data.total,mem_data.residue,mem_data.used);
+				sprintf(plist->text,"剩余:%s",mem_data.residue);
+				plist->callback = createFormSettingStore;
+			}
+		}
 		SendMessage (hScrollView, SVM_ADDITEM, 0, (LPARAM)&svii);
 		SendMessage (hScrollView, SVM_SETITEMADDDATA, i, (DWORD)plist);
 		plist++;
@@ -319,6 +337,7 @@ int createFormSettingLocoal(HWND hMainWnd,void (*callback)(void))
 	HWND Form = Screen.Find(form_base_priv.name);
 	if(Form) {
 		Screen.setCurrent(form_base_priv.name);
+		loadLocoalData();
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
 		form_base_priv.callBack = callback;

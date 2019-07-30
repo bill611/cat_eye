@@ -125,6 +125,7 @@ static FormBasePriv form_base_priv= {
 	.dlgProc = formPasswordProc,
 	.dlgInitParam = &DlgInitParam,
 	.initPara =  initPara,
+	.auto_close_time_set = 30,
 };
 
 static struct Keyboards keys[] = {

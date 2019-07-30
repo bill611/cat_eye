@@ -530,6 +530,7 @@ MPEG4Head* Mpeg4_Create(int Width,int Height,const char *FileName, int ReadWrite
         pthread_mutexattr_init(&mutexattr);
         pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE_NP);
         pthread_mutex_init(&This->mutex, &mutexattr);
+		pthread_mutexattr_destroy(&mutexattr);
 	}
 
 	This->InitAudio = InitAudioMpeg4;

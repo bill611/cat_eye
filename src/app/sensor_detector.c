@@ -73,7 +73,7 @@ static void* theadEle(void *arg)
 	while (1) {
 		// 更新充电状态
 		int power_state = halBatteryGetState();
-		if (power_state_old == 0 || power_state_old != power_state) {
+		if (power_state_old != power_state) {
 			power_state_old = power_state;
 			if (sensor->interface->uiUpadteEleState)
 				sensor->interface->uiUpadteEleState(power_state);

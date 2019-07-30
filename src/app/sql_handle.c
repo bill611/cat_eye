@@ -603,6 +603,7 @@ void sqlInit(void)
 	pthread_mutexattr_init(&mutexattr);
     pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE_NP);
     pthread_mutex_init(&mutex, &mutexattr);
+	pthread_mutexattr_destroy(&mutexattr);
 
 	LocalQueryLoad(&dbase);
 	dbase.checkFunc(dbase.sql);

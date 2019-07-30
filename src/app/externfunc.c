@@ -143,6 +143,39 @@ struct tm * getTime(void)
 	return localtime(&timer);
 }
 
+int adjustdate(int year,int mon,int mday,int hour,int min,int sec)
+{
+	//设备系统时间
+	int rtc;
+	time_t t;
+	struct tm nowtime;
+	nowtime.tm_sec=sec;         /*   Seconds.[0-60]   (1   leap   second)*/
+	nowtime.tm_min=min;         /*   Minutes.[0-59]     */
+	nowtime.tm_hour=hour;       /*   Hours. [0-23]      */
+	nowtime.tm_mday=mday;       /*   Day.[1-31]         */
+	nowtime.tm_mon=mon-1;       /*   Month. [0-11]      */
+	nowtime.tm_year=year-1900;  /*   Year-   1900.      */
+	nowtime.tm_isdst=-1;        /*   DST.[-1/0/1]       */
+	t=mktime(&nowtime);
+	stime(&t);
+
+	//设置实时时钟
+	rtc = open("/dev/rtc0",O_WRONLY);
+	if(rtc<0) {
+		rtc = open("/dev/misc/rtc",O_WRONLY);
+		if(rtc<0) {
+			printf("can't open /dev/misc/rtc\n");
+			return -1;
+		}
+	}
+	if (ioctl( rtc, RTC_SET_TIME, &nowtime ) < 0 ) {
+		printf("Could not set the RTC time\n");
+		close(rtc);
+		return -1;
+	}
+	close(rtc);
+	return 0;
+}
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief getMs 获得当前系统毫秒数
@@ -218,46 +251,6 @@ void DelayMs(int ms)
 
 /* ---------------------------------------------------------------------------*/
 /**
- * @brief recoverData 恢复数据
- *
- * @param file 文件名称
- * @param reboot 1需要重启 0不需要重启
- */
-/* ---------------------------------------------------------------------------*/
-int recoverData(const char *file)
-{
-	int size = strlen(file);
-	char *backfile = (char *) malloc (sizeof(char) * size + 5);
-	sprintf(backfile,"%s_bak",file);
-	if (fileexists(backfile)) {
-		excuteCmd("cp",backfile,file,NULL);
-		sync();
-		free(backfile);
-		return 1;
-	}
-	free(backfile);
-	return 0;
-}
-
-/* ---------------------------------------------------------------------------*/
-/**
- * @brief backData   备份数据
- *
- * @param file
- */
-/* ---------------------------------------------------------------------------*/
-void backData(char *file)
-{
-	int size = strlen(file);
-	char *backfile = (char *) malloc (sizeof(char) * size + 5);
-	sprintf(backfile,"%s_bak",file);
-	excuteCmd("cp",file,backfile,NULL);
-	sync();
-	free(backfile);
-}
-
-/* ---------------------------------------------------------------------------*/
-/**
  * @brief excuteCmd 执行shell命令,以NULL结尾
  *
  * @param Cmd
@@ -301,6 +294,46 @@ char * excuteCmd(char *Cmd,...)
 	// 用此函数导致产生僵尸进程
 	// system(commond);
 	// return 0;
+}
+
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief recoverData 恢复数据
+ *
+ * @param file 文件名称
+ * @param reboot 1需要重启 0不需要重启
+ */
+/* ---------------------------------------------------------------------------*/
+int recoverData(const char *file)
+{
+	int size = strlen(file);
+	char *backfile = (char *) malloc (sizeof(char) * size + 5);
+	sprintf(backfile,"%s_bak",file);
+	if (fileexists(backfile)) {
+		excuteCmd("cp",backfile,file,NULL);
+		sync();
+		free(backfile);
+		return 1;
+	}
+	free(backfile);
+	return 0;
+}
+
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief backData   备份数据
+ *
+ * @param file
+ */
+/* ---------------------------------------------------------------------------*/
+void backData(char *file)
+{
+	int size = strlen(file);
+	char *backfile = (char *) malloc (sizeof(char) * size + 5);
+	sprintf(backfile,"%s_bak",file);
+	excuteCmd("cp",file,backfile,NULL);
+	sync();
+	free(backfile);
 }
 
 /* ---------------------------------------------------------------------------*/
@@ -596,7 +629,8 @@ void wifiConnectStart(void)
 void wifiConnect(void)
 {
 #ifndef X86
-	excuteCmd("./wifi/wifi_start.sh","&",NULL);
+	// 用 excuteCmd 会阻塞
+	system("./wifi/wifi_start.sh &");
 #endif
 }
 void wifiDisConnect(void)
@@ -651,6 +685,17 @@ int checkSD(void)
 #ifndef X86
 	file = open( "/dev/mmcblk0", O_RDONLY );
 	close(file);
+#else
+	return 0;
 #endif
 	return file;
+}
+int getSdMem(char *total,char *residue,char *used)
+{
+#ifndef X86
+	char *ret = excuteCmd("df","-h","|","grep","mmcblk0",NULL);
+#else
+	char *ret = excuteCmd("df","-h","|","grep","sda1",NULL);
+#endif
+	sscanf(ret, "%*s %s %*s %s %s",total,residue,used);
 }

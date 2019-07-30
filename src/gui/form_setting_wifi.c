@@ -25,6 +25,7 @@
 #include "my_title.h"
 #include "config.h"
 #include "externfunc.h"
+#include "thread_helper.h"
 
 #include "form_base.h"
 
@@ -59,7 +60,6 @@ static void buttonAdd(HWND hwnd, int id, int nc, DWORD add_data);
 #define BMP_LOCAL_PATH "setting/"
 enum {
 	IDC_TIMER_1S = IDC_FORM_SETTING_WIFI_STATR,
-    IDC_TIMER_100MS,
 	IDC_STATIC_IMG_WARNING,
 	IDC_STATIC_TEXT_WARNING,
 
@@ -120,6 +120,8 @@ static struct ScrollviewItem wifi_list_title;
 static struct ScrollviewItem wifi_list[100];
 static TcWifiScan ap_info[100];
 static TcWifiScan select_ap;
+
+static int thread_move_start = 0;
 
 static BmpLocation bmp_load[] = {
     {&bmp_warning,	BMP_LOCAL_PATH"ico_警告.png"},
@@ -228,6 +230,11 @@ static void updateConnectWifi(void)
 /* ---------------------------------------------------------------------------*/
 static void saveConfigConnectCallback(void)
 {
+	int net_level = 0;
+	if (getWifiConfig(&net_level) != 0)
+		wifi_list_title.enable = 0;
+	else
+		wifi_list_title.enable = net_level;
     updateConnectWifi();
     wifiConnect();
 }
@@ -269,12 +276,14 @@ static void showSwichOnOff(HWND hwnd,int on_off)
         ShowWindow(GetDlgItem(hwnd,IDC_BUTTON_TITLE),SW_SHOWNORMAL);
 		strcpy(wifi_list_title.text,g_config.net_config.ssid);
 		wifiConnectStart();
+		updateConnectWifi();
 #ifndef X86
         getWifiList(ap_info,wifiLoadData);
 #else
         int i;
         for (i=0; i<10; i++) {
             sprintf(ap_info[i].ssid,"TEST-->%d",i);
+			ap_info[i].encry = AWSS_ENC_TYPE_AES;
         }
         wifiLoadData(ap_info,10);
 #endif
@@ -295,7 +304,6 @@ static void showSwichOnOff(HWND hwnd,int on_off)
 static void saveConfigCallback(void)
 {
 	showSwichOnOff(form_base->hDlg,g_config.net_config.enable);
-	updateConnectWifi();
 }
 
 /* ---------------------------------------------------------------------------*/
@@ -362,6 +370,24 @@ static void buttonAdd(HWND hwnd, int id, int nc, DWORD add_data)
     flag_timer_stop = 1;
     createFormPassword(form_base->hDlg,NULL,enableAutoClose,getPassword);
 }
+
+static void* threadMoveInterval(void *arg)
+{
+	thread_move_start = 1;
+	while (thread_move_start) {
+		int div_pos = scro_opt.timer_cur_pos - scro_opt.timer_old_pos;
+		if (div_pos > 0)
+			scro_opt.step = div_pos;
+		else if (div_pos < 0)
+			scro_opt.step = -div_pos;
+		else
+			scro_opt.step = 1;
+
+		scro_opt.timer_old_pos = scro_opt.timer_cur_pos;
+		usleep(20000);
+	}
+	return NULL;
+}
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief scrollviewInit 重新刷新wifi列表
@@ -402,7 +428,6 @@ static void scrollviewNotify(HWND hwnd, int id, int nc, DWORD add_data)
 			strcpy(select_ap.ssid,ap_info[idx].ssid);
 			strcpy(g_config.net_config.ssid,ap_info[idx].ssid);
 			strcpy(g_config.net_config.security,"NONE");
-            updateConnectWifi();
 			ConfigSavePrivateCallback(saveConfigConnectCallback);
 		}
         // printf("idx:%d,name:%s\n", idx,plist->text);
@@ -428,9 +453,8 @@ static void formSettingWifiTimerProc1s(HWND hwnd)
 		net_level = 0;
 	wifi_list_title.enable = net_level; 
 	if (net_level != net_level_old) {
+		updateConnectWifi();
 		net_level_old = net_level;
-		if (net_level)
-            updateConnectWifi();
 	}
 	if (connect_wifi_interval)
 		connect_wifi_interval--;
@@ -544,13 +568,17 @@ static void wifiLoadData(void *aps,int ap_cnt)
 		strcpy(wifi_list[i].text,ap_data[i].ssid);
 		wifi_list[i].index = i;
 		wifi_list[i].security = (ap_data[i].encry == AWSS_ENC_TYPE_NONE) ? 0 : 1;
-		printf("%d,ssi:%s,rssi:%d,security:%d,\n",i,ap_data[i].ssid,ap_data[i].rssi,ap_data[i].encry );
+		// printf("%d,ssi:%s,rssi:%d,security:%d,\n",i,ap_data[i].ssid,ap_data[i].rssi,ap_data[i].encry );
         if (ap_data[i].rssi < 2)
             wifi_list[i].strength = 0;
         else if (ap_data[i].rssi < 4)
             wifi_list[i].strength = 1;
         else if (ap_data[i].rssi < 6)
             wifi_list[i].strength = 2;
+		if (strcmp(wifi_list_title.text,wifi_list[i].text) == 0) {
+			wifi_list_title.strength = wifi_list[i].strength;
+			wifi_list_title.security = wifi_list[i].security;
+		}
 
 		svii.nItemHeight = 60;
 		svii.addData = (DWORD)&wifi_list[i];
@@ -589,7 +617,7 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 	SendMessage(GetDlgItem(hDlg,IDC_TITLE),
             MSG_MYTITLE_SET_SWICH, (WPARAM)g_config.net_config.enable, 0);
     showSwichOnOff(form_base->hDlg,g_config.net_config.enable);
-    SetTimer(form_base->hDlg,IDC_TIMER_100MS,5);
+	createThread(threadMoveInterval,NULL);
 	SetTimer(form_base->hDlg,IDC_TIMER_1S,FORM_TIMER_1S);
 }
 
@@ -614,18 +642,6 @@ static int formSettingWifiProc(HWND hDlg, int message, WPARAM wParam, LPARAM lPa
 			{
 				if (flag_timer_stop)
 					return 0;
-                if (wParam == IDC_TIMER_100MS) {
-                    int div_pos = scro_opt.timer_cur_pos - scro_opt.timer_old_pos;
-                    if (div_pos > 0)
-                        scro_opt.step = div_pos;
-                    else if (div_pos < 0)
-                        scro_opt.step = -div_pos;
-                    else
-                        scro_opt.step = 1;
-
-                    scro_opt.timer_old_pos = scro_opt.timer_cur_pos;
-                    return 0;
-                } 
 				if (wParam == IDC_TIMER_1S)
 					formSettingWifiTimerProc1s(hDlg);
 			} break;
@@ -633,8 +649,7 @@ static int formSettingWifiProc(HWND hDlg, int message, WPARAM wParam, LPARAM lPa
 		case MSG_SHOWWINDOW:
 			{
 				if (wParam == SW_HIDE) {
-					if (IsTimerInstalled(hDlg,IDC_TIMER_100MS) == TRUE)
-						KillTimer (hDlg,IDC_TIMER_100MS);
+					thread_move_start = 0;
 					if (IsTimerInstalled(hDlg,IDC_TIMER_1S) == TRUE)
 						KillTimer (hDlg,IDC_TIMER_1S);
 				}
@@ -722,7 +737,7 @@ int createFormSettingWifi(HWND hMainWnd,void (*callback)(void))
 	if(Form) {
 		Screen.setCurrent(form_base_priv.name);
         showSwichOnOff(form_base->hDlg,g_config.net_config.enable);
-        SetTimer(form_base->hDlg,IDC_TIMER_100MS,3);
+		createThread(threadMoveInterval,NULL);
         SetTimer(form_base->hDlg,IDC_TIMER_1S,FORM_TIMER_1S);
 		ShowWindow(Form,SW_SHOWNORMAL);
 		scrollviewInit();
