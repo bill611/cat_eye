@@ -25,6 +25,7 @@ extern "C" {
 
 	void formVideoLayerCreate(void);
     void formVideoLayerScreenOn(void);
+	void formVideoLayerGotoPoweroff(void);
 
 #ifdef __cplusplus
 }

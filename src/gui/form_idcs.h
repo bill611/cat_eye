@@ -31,6 +31,7 @@ extern "C" {
 #define IDC_FORM_QRCODE_STATR 370
 #define IDC_FORM_UPDATE_STATR 380
 #define IDC_FORM_MONITOR_STATR 400
+#define IDC_FORM_POWEROFF_STATR 410
 
 #ifdef __cplusplus
 }

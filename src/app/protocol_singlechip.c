@@ -85,6 +85,7 @@ static void deal(int cmd,char *data,int size)
 #endif
 			break;
 		case IPC_UART_POWEROFF:
+			formVideoLayerGotoPoweroff();
 			break;
 		default:
 			break;

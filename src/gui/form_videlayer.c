@@ -21,6 +21,7 @@
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
 extern void createFormMain(HWND hMainWnd,void (*callback)(void));
+extern int createFormPowerOff(HWND hMainWnd);
 extern void formMainLoadBmp(void);
 extern void formSettingLoadBmp(void);
 extern void formVideoLoadBmp(void);
@@ -127,6 +128,13 @@ void formVideoLayerScreenOn(void)
 	screensaverStart(1);
 	auto_close_lcd = AUTO_CLOSE_LCD;
 	sleep_timer = 0;
+}
+void formVideoLayerGotoPoweroff(void)
+{
+	screensaverStart(1);
+	auto_close_lcd = 0;
+	sleep_timer = 0;
+	createFormPowerOff(hwnd_videolayer);
 }
 /* ---------------------------------------------------------------------------*/
 /**
