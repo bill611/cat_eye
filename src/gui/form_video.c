@@ -370,10 +370,10 @@ int createFormVideo(HWND hMainWnd,int type,void (*callback)(void),int count)
 {
 	HWND Form = Screen.Find(form_base_priv.name);
 	form_type = type;
-	screenAutoCloseStop();
-	screensaverStart(1);
 	auto_close_time = count;
 	if(Form) {
+		screenAutoCloseStop();
+		screensaverStart(1);
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
         if (bmp_load_finished == 0) {

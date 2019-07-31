@@ -57,6 +57,7 @@ enum {
     CHECK_KEY_HOM = (1 << 1),
     CHECK_KEY_DOORBELL = (1 << 2),
     CHECK_KEY_PIR = (1 << 3),
+    CHECK_KEY_WIFI = (1 << 4),
 };
 enum{
 	CMD_HEART = 0X01, 				// ARM→单片机	0X01	NBYTE	关机或休眠时，发送心跳到单片机
@@ -192,20 +193,26 @@ static void uartDeal(void)
 				IpcData ipc_data;
 				ipc_data.cmd = IPC_UART_KEY_POWER;
 				main_queue->post(main_queue,&ipc_data);
-            } else if (data[0] & CHECK_KEY_HOM) {
+            } 
+			if (data[0] & CHECK_KEY_HOM) {
 				IpcData ipc_data;
 				ipc_data.cmd = IPC_UART_KEYHOME;
 				main_queue->post(main_queue,&ipc_data);
-            } else if (data[0] & CHECK_KEY_DOORBELL) {
+            } 
+			if (data[0] & CHECK_KEY_DOORBELL) {
 				IpcData ipc_data;
 				ipc_data.cmd = IPC_UART_DOORBELL;
 				main_queue->post(main_queue,&ipc_data);
-				char path[64];
-				sprintf(path,"/data/dingdong.wav");	
-				playVoice(path);
-			} else if (data[0] & CHECK_KEY_PIR) {
+				playVoice("/data/dingdong.wav");
+			} 
+			if (data[0] & CHECK_KEY_PIR) {
 				IpcData ipc_data;
 				ipc_data.cmd = IPC_UART_PIR;
+				main_queue->post(main_queue,&ipc_data);
+			}
+			if (data[0] & CHECK_KEY_WIFI) {
+				IpcData ipc_data;
+				ipc_data.cmd = IPC_UART_WIFI_WAKE;
 				main_queue->post(main_queue,&ipc_data);
 			}
 			cmdPacket(CMD_REPORT,0,NULL,0);
@@ -240,7 +247,7 @@ static void ipcCallback(char *data,int size )
 		case IPC_UART_SLEEP:
 			{
 				uint8_t data = 1;
-				cmdPacket(CMD_POWER,id++,&data,0);
+				cmdPacket(CMD_POWER,id++,&data,1);
 				createThread(threadCmdSleep,NULL);
 			}
 			break;

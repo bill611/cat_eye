@@ -289,7 +289,6 @@ static void* threadFace(void *arg)
 		if (mem_data == NULL)
 			break;
 		if (mem_len == 0) {
-			printf("mem_len:%d\n", mem_len);
 			share_mem->GetEnd(share_mem);
 			goto send_sleep;
 		}
@@ -367,7 +366,6 @@ static void* sendVideoCallbackFunc(void *arg)
 		}
 		char *mem_data = (char *)share_mem->GetStart(share_mem,&mem_len);
 		if (!mem_data || mem_len == 0) {
-			printf("mem_len:%d\n", mem_len);
 			share_mem->GetEnd(share_mem);
 			goto send_sleep;
 		}
@@ -579,6 +577,10 @@ static void* threadCapture(void *arg)
         strcpy(ipc_data.data.cap_path,file_path);
         if (ipc_main)
             ipc_main->sendData(ipc_main,IPC_CAMMER,&ipc_data,sizeof(ipc_data));
+#ifdef X86
+		FILE *fp = fopen(file_path,"wb");
+		fclose(fp);
+#endif
 #endif
 		sprintf(url,"http://img.cateye.taichuan.com/%s_%d.jpg",cap_data_temp.file_name,i);
 		sqlInsertPicUrlNoBack(cap_data_temp.pic_id,url);

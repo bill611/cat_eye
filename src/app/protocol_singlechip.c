@@ -54,9 +54,8 @@ ProtocolSinglechip *protocol_singlechip;
 
 static void cmdSleep(void)
 {
-	return;
 	IpcData ipc_data;
-	enableSleepMpde();
+	protocol_hardcloud->enableSleepMpde();
 	ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
 	ipc_data.cmd = IPC_UART_SLEEP;
 	if (ipc_main)
@@ -80,11 +79,11 @@ static void deal(int cmd,char *data,int size)
 			formVideoLayerScreenOn();
 #endif
 #ifdef USE_UCPAAS
-			printf("[%s,%d]cmd:%d\n", __func__,__LINE__,cmd);
 			my_video->videoCallOutAll();
 #endif
 			break;
 		case IPC_UART_POWEROFF:
+			my_video->hideVideo();
 			formVideoLayerGotoPoweroff();
 			break;
 		default:

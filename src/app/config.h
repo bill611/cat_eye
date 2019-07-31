@@ -49,7 +49,7 @@ extern "C" {
 #define IPC_CAMMER "/tmp/ipc_cammer"
 #define IPC_UART "/tmp/ipc_uart"
 
-#define AUTO_CLOSE_LCD 30
+#define AUTO_CLOSE_LCD 11
 #define SLEEP_TIMER 10
 
 	typedef struct _EtcValueChar {
@@ -134,6 +134,13 @@ extern "C" {
 		signed  char rssi;
 	}TcWifiScan;
 
+	struct wifiLowPower {
+		char local_ip[16];
+		char dst_ip[16];
+		char dst_port[8];
+		char gateway[16];
+		char gateway_mac[20];
+	};
 	typedef struct _Config {
         char imei[64];         // 太川设备机身码
         char hardcode[64];     // 太川设备硬件码
@@ -142,6 +149,7 @@ extern "C" {
 		int  timestamp;        // 启动时间戳
 		int capture_count;	   // 抓拍图片数量
         TcWifiConfig net_config;  // 网络设置
+		struct wifiLowPower wifi_lowpower; // 低功耗wifi参数
 
 
 	} Config;

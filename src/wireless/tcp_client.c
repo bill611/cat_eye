@@ -115,7 +115,8 @@ static int TTCPClient_Connect(struct _TTCPClient *This,const char *IP,int port,i
 //---------------------------------------------------------------------------
 static void TTCPClient_DisConnect(struct _TTCPClient *This)
 {
-    close(This->m_socket);
+	if (This->m_socket)
+		close(This->m_socket);
     This->m_socket = 0;
 }
 //---------------------------------------------------------------------------

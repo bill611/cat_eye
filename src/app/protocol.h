@@ -27,24 +27,26 @@ extern "C" {
 		IPC_DEV_TYPE_UART,
 		IPC_DEV_TYPE_VIDEO,
 	};
+	// IPC通信消息
 	enum {
-		IPC_VIDEO_ON,
-		IPC_VIDEO_OFF,
-		IPC_VIDEO_FACE_ON,
-		IPC_VIDEO_FACE_OFF,
-		IPC_VIDEO_ENCODE_ON,
-		IPC_VIDEO_ENCODE_OFF,
-		IPC_VIDEO_DECODE_ON,
-		IPC_VIDEO_DECODE_OFF,
-		IPC_VIDEO_CAPTURE,
-		IPC_VIDEO_RECORD_START,
-		IPC_VIDEO_RECORD_STOP,
-		IPC_UART_SLEEP,
-		IPC_UART_KEY_POWER,
-		IPC_UART_KEYHOME,
-		IPC_UART_DOORBELL,
-		IPC_UART_PIR,
-		IPC_UART_POWEROFF,
+		IPC_VIDEO_ON,				// 打开本地视频
+		IPC_VIDEO_OFF,				// 关闭本地视频
+		IPC_VIDEO_FACE_ON,			// 打开人脸识别
+		IPC_VIDEO_FACE_OFF,			// 关闭人脸识别
+		IPC_VIDEO_ENCODE_ON,		// 打开h264编码
+		IPC_VIDEO_ENCODE_OFF,		// 关闭h264编码
+		IPC_VIDEO_DECODE_ON,		// 打开h264解码
+		IPC_VIDEO_DECODE_OFF,		// 关闭h264解码
+		IPC_VIDEO_CAPTURE,			// 抓拍图片
+		IPC_VIDEO_RECORD_START,		// 开始录像
+		IPC_VIDEO_RECORD_STOP,		// 停止录像
+		IPC_UART_SLEEP,				// 进入休眠
+		IPC_UART_KEY_POWER,			// 室内机电源按键短按
+		IPC_UART_KEYHOME,			// 室内机按键触发
+		IPC_UART_DOORBELL,			// 门铃按键触发
+		IPC_UART_PIR,				// 门外pir触发
+		IPC_UART_WIFI_WAKE,			// wifi唤醒触发
+		IPC_UART_POWEROFF,			// 室内机电源键长按关机
 	};
 	enum {
 		PROTOCOL_TALK_3000,
@@ -72,8 +74,8 @@ extern "C" {
 	};
 
 	enum {
-		ALARM_TYPE_LOWPOWER,
-		ALARM_TYPE_PEOPLES,
+		ALARM_TYPE_LOWPOWER,	// 低电量报警
+		ALARM_TYPE_PEOPLES,		// 陌生人徘徊报警
 	};
 
 	typedef struct _IpcData {
@@ -136,6 +138,7 @@ extern "C" {
 		void (*uploadPic)(void);
 		void (*reportCapture)(uint64_t pic_id);
 		void (*reportLowPower)(char *date);
+		void (*enableSleepMpde)(void);
 	}ProtocolHardcloud;
 	extern ProtocolHardcloud *protocol_hardcloud;
 

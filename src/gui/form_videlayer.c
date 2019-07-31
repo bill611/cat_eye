@@ -121,6 +121,7 @@ static void enableAutoClose(void)
 }
 void screenAutoCloseStop(void)
 {
+	printf("[%s]\n", __func__);
 	auto_close_lcd = 0;
 }
 void formVideoLayerScreenOn(void)
@@ -132,9 +133,9 @@ void formVideoLayerScreenOn(void)
 void formVideoLayerGotoPoweroff(void)
 {
 	screensaverStart(1);
-	auto_close_lcd = 0;
+	screenAutoCloseStop();
 	sleep_timer = 0;
-	createFormPowerOff(hwnd_videolayer);
+	createFormPowerOff(0);
 }
 /* ---------------------------------------------------------------------------*/
 /**
@@ -197,6 +198,8 @@ static int formVideoLayerProc(HWND hWnd, int message, WPARAM wParam, LPARAM lPar
 
 				formVideoLoadBmp();
 				HWND form = createFormVideo(hWnd,FORM_VIDEO_TYPE_CAPTURE,NULL,0);
+				ShowWindow(form,SW_HIDE);
+				form = createFormPowerOff(hWnd);
 				ShowWindow(form,SW_HIDE);
 				my_video->showLocalVideo();
 				formVideoInitInterface();

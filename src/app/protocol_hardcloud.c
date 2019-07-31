@@ -93,9 +93,9 @@ struct DebugInfo{
 };
 
 struct QueueList {
-	Queue *upload;
-	Queue *report_capture;
-	Queue *report_low_power;
+	Queue *upload;  // 上传七牛队列
+	Queue *report_capture; // 上报抓拍日志队列
+	Queue *report_low_power; // 上报低电量队列
 };
 /* ---------------------------------------------------------------------------*
  *                      variables define
@@ -104,6 +104,8 @@ ProtocolHardcloud *protocol_hardcloud;
 static MyHttp *http = NULL;
 static MyMqtt *mqtt = NULL;
 static int mqtt_connect_state,ntp_connect_state;
+static int heart_start = 0;
+static int heart_end = 0;
 static struct DebugInfo dbg_info[] = {
 	{Sys_TestData,"Sys_TestData"},
 	{Sys_UploadLog,"Sys_UploadLog"},
@@ -718,23 +720,14 @@ retry_qiniu:
 
 static void writeSleepScript(char *dst_ip,int dst_port)
 {
-	char port[16];
-	char local_ip[16],gateway[16];
-	char mac[20];
-	char imei[32];
-	char imei_len[8];
-	sprintf(port,"%d",dst_port);	
-	getLocalIP(local_ip,gateway);
-	getGateWayMac(gateway,mac);
-	sprintf(imei,"\"%s\"",g_config.imei);	
-	sprintf(imei_len,"%d",strlen(g_config.imei));	
-	excuteCmd("dhd_priv","wl","tcpka_conn_add","1",
-			mac,local_ip,dst_ip,
-			"0","1223",port,"1","0","1024","1062046","2130463","1",imei_len, imei,
-			NULL);
-	excuteCmd("dhd_priv","wl","tcpka_conn_enable","1","1","10","10","10",NULL);
+	strcpy(g_config.wifi_lowpower.dst_ip,dst_ip);
+	sprintf(g_config.wifi_lowpower.dst_port,"%d",dst_port);
 }
 
+static void enableSleepMpde(void)
+{
+	heart_start = 0;
+}
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief tcpHeartThread 硬件云心跳包
@@ -748,24 +741,57 @@ static void* tcpHeartThread(void *arg)
 {
 	char ip[16];
 	int connect_flag = 0;
+	char imei[32];
+	char imei_len[8];
+	int send_interval = 0;
+	heart_start = 1;
 	while (1) {
 		memset(ip,0,sizeof(ip));
 		waitConnectService();
 		dnsGetIp(opts.service_host,ip);
+		if (heart_start == 0)
+			break;
+		if (connect_flag == 1 && send_interval < 30) {
+			send_interval++;
+			goto loop_heart;
+		}
 		if (connect_flag == 0) {
 			writeSleepScript(ip,opts.service_port);
 			if (tcp_client->Connect(tcp_client,ip,opts.service_port,5000) < 0){
 				printf("connect fail,:%s,%d\n",ip,opts.service_port);
-				sleep(1);
-				continue;
+				goto loop_heart;
 			} else  {
 				connect_flag = 1;
 			}
 		}
 		tcp_client->SendBuffer(tcp_client,g_config.imei,strlen(g_config.imei));
-
-		sleep(30);
+loop_heart:
+		sleep(1);
 	}
+	tcp_client->DisConnect(tcp_client);
+
+	getLocalIP(g_config.wifi_lowpower.local_ip,g_config.wifi_lowpower.gateway);
+	getGateWayMac(g_config.wifi_lowpower.gateway,g_config.wifi_lowpower.gateway_mac);
+	sprintf(imei,"\"%s\"",g_config.imei);	
+	sprintf(imei_len,"%ld",strlen(g_config.imei));	
+	// excuteCmd("dhd_priv","wl","tcpka_conn_add","1",
+			// "6C:F0:49:49:49:11",
+			// g_config.wifi_lowpower.local_ip,
+			// "10.0.1.36",
+			// "0","1223",
+			// "9292",
+			// "1","0","1024","1062046","2130463","1",imei_len, imei,
+			// NULL);
+	excuteCmd("dhd_priv","wl","tcpka_conn_add","1",
+			g_config.wifi_lowpower.gateway_mac,
+			g_config.wifi_lowpower.local_ip,
+			g_config.wifi_lowpower.dst_ip,
+			"0","1223",
+			g_config.wifi_lowpower.dst_port,
+			"1","0","1024","1062046","2130463","1",imei_len, imei,
+			NULL);
+	excuteCmd("dhd_priv","wl","tcpka_conn_enable","1","1","10","10","10",NULL);
+	excuteCmd("dhd_priv","setsuspendmode","1",NULL);
 	return NULL;
 }
 
@@ -920,6 +946,7 @@ void registHardCloud(void)
 	protocol_hardcloud->uploadPic = uploadPic;
 	protocol_hardcloud->reportCapture = reportCapture;
 	protocol_hardcloud->reportLowPower = reportLowPower;
+	protocol_hardcloud->enableSleepMpde = enableSleepMpde;
 
 	mqtt_connect_state = 0;
 	ntp_connect_state = 0;

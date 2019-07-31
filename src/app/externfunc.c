@@ -671,10 +671,6 @@ void getCpuId(char *hardcode)
 	strcpy(hardcode,"f07440307d514cc7");
 #endif
 }
-void enableSleepMpde(void)
-{
-	excuteCmd("dhd_priv","setsuspendmode","1",NULL);
-}
 void powerOff(void)
 {
 	excuteCmd("poweroff",NULL);

@@ -56,7 +56,6 @@ uint64_t MyGetTickCount(void);
 int GetFileSize(char *file);
 int getLocalIP(char *IP,char *gateway);
 int getGateWayMac(char *gateway,char *mac);
-void enableSleepMpde(void);
 void powerOff(void);
 int checkSD(void);
 int getSdMem(char *total,char *residue,char *used);
