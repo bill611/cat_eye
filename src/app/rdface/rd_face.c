@@ -28,6 +28,8 @@
 #include "readsense_face_sdk.h"
 #include "ion/ion.h"
 #include "video_ion_alloc.h"
+#include "thread_helper.h"
+#include "rd_face.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
@@ -40,6 +42,8 @@
 /* ---------------------------------------------------------------------------*
  *                        macro define
  *----------------------------------------------------------------------------*/
+#define RECOGNIZE_INTAVAL 60
+
 #define WIDTH_MAX 1280
 #define HEIGHT_MAX 720
 #define FACE_MODEL_PATH "/root/usr/face_model/"
@@ -78,6 +82,25 @@ static struct video_ion dst_ion;
 static struct video_ion internal_ion;
 
 static int dsp_fd;
+static float feature_last[FACE_RECOGNITION_FEATURE_DIMENSION]; // 最后一次人脸特征值
+static int track_id_last;	// 最后一次人脸信息
+static int recognize_intaval = 0; // 识别结果处理间隔
+static int thread_start = 0;
+static int thread_end = 1;
+
+static void* threadTimer1s(void *arg)
+{
+	thread_start = 1;
+	thread_end = 0;
+    while (thread_start) {
+        if (recognize_intaval)
+            recognize_intaval--;
+        sleep(1);
+    }
+	thread_end = 1;
+    return NULL;
+}
+
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief rdfaceInit 初始化人脸识别算法
@@ -142,7 +165,7 @@ int rdfaceInit(void)
 				g_fle_light_weights_path, g_fle_infrared_weights_path,
 				g_fgs_weights_path, 0,
 				g_fr_lite_weights_path, g_fq_weights_path,
-				0,g_fags_weights_path, 
+				0,g_fags_weights_path,
 				APP_ID,
 				// 2dfe86e156957ca1
 				// "ea15e2876d514524c873b6159b86f2f5d715819598ee3b116e51cb2338b8ffbe5556ef1d9e7ee21739588fd631923ffd80df7158e7e6fb561eac7faa8252f67e"
@@ -155,6 +178,7 @@ int rdfaceInit(void)
 	}
 
 	DPRINT("=====exit rdfaceInit()====\n");
+    createThread(threadTimer1s,NULL);
 	return 0;
 
 exit_dsp:
@@ -178,6 +202,10 @@ exit:
 /* ---------------------------------------------------------------------------*/
 void rdfaceUninit(void)
 {
+	thread_start = 0;
+	while(thread_end == 0) {
+		usleep(10000);
+	}
 	close(dsp_fd);
 	video_ion_free(&internal_ion);
 	video_ion_free(&dst_ion);
@@ -265,7 +293,7 @@ int rdfaceRegist(unsigned char *image_buff,int w,int h,float **out_feature,int *
 	}
 	fillFaceTrackBuf(image_buff,w,h);
 
-	//人脸追踪
+	//人脸追踪,针对静态图片
 	ret = readsense_face_detection_and_landmark(model_ion.buffer, (void*)model_ion.phys,
 			raw_ion.buffer, (void*)raw_ion.phys, dst_ion.buffer, (void*)dst_ion.phys,
 			internal_ion.buffer, (void*)internal_ion.phys, dsp_fd, raw_ion.width, raw_ion.height);
@@ -311,7 +339,7 @@ int rdfaceRecognizer(unsigned char *image_buff,int w,int h,
 	int ret = -1;
 
 	fillFaceTrackBuf(image_buff,w,h);
-	//人脸检测追踪
+	//人脸检测追踪,针对动态图像
 	int result = readsense_face_tracking(model_ion.buffer, (void*)model_ion.phys,
 		raw_ion.buffer, (void*)raw_ion.phys, dst_ion.buffer, (void*)dst_ion.phys,
 		internal_ion.buffer, (void*)internal_ion.phys, dsp_fd, raw_ion.width, raw_ion.height);
@@ -339,10 +367,6 @@ int rdfaceRecognizer(unsigned char *image_buff,int w,int h,
 	int i=0;
 
 	for(i=0; i<faceCount ; i++) {
-		// DPRINT("face_count:%d , facenum:%d: ,trackId: %d, blur: %f,front_prob:%f, gender:%d,age:%d,position is: [%d, %d, %d, %d] \n",
-				// faceCount,i,pFaceALL[i].track_id, pFaceALL[i].blur_prob, pFaceALL[i].front_prob,
-				// pFaceALL[i].gender , pFaceALL[i].age,
-				// pFaceALL[i].left, pFaceALL[i].top, pFaceALL[i].right, pFaceALL[i].bottom);
 
 		float face_landmark[FACE_LANDMARK_NUM*2];
 		memcpy(face_landmark, pFaceALL[i].face_landmark, sizeof(face_landmark));
@@ -361,19 +385,33 @@ int rdfaceRecognizer(unsigned char *image_buff,int w,int h,
 			// DPRINT("Low quality=%f\n",*quality_value);
 			continue;
 		}
-        if (featureCompare) {
-            float feature[FACE_RECOGNITION_FEATURE_DIMENSION];
-            //提取特征值
-            if (getFaceFeature(&raw_ion,  (rs_point *)face_landmark,feature) == 0) {
-                if (featureCompare(feature,face_data_out,pFaceALL[i].gender,pFaceALL[i].age) == 0) {
-                    ret = 0;
-                    break;
-                }
-            }
-        } else {
-            ret = 0;
-            break;
-        }
+
+		if (track_id_last == pFaceALL[i].track_id) {
+			continue;
+		}
+		track_id_last = pFaceALL[i].track_id;
+		float feature[FACE_RECOGNITION_FEATURE_DIMENSION];
+		//提取特征值
+		if (getFaceFeature(&raw_ion,  (rs_point *)face_landmark,feature) != 0)
+			continue;
+		float sim = rdfaceGetFeatureSimilarity(feature_last,feature);
+		memcpy(feature_last,feature,sizeof(feature));
+		if (sim > SIMILAYRITY) {
+			if (recognize_intaval == 0)
+				recognize_intaval = RECOGNIZE_INTAVAL;
+			else {
+				break;
+			}
+		}
+		// DPRINT("face_count:%d , facenum:%d: ,trackId: %d, blur: %f,front_prob:%f, gender:%d,age:%d,position is: [%d, %d, %d, %d] \n",
+				// faceCount,i,pFaceALL[i].track_id, pFaceALL[i].blur_prob, pFaceALL[i].front_prob,
+				// pFaceALL[i].gender , pFaceALL[i].age,
+				// pFaceALL[i].left, pFaceALL[i].top, pFaceALL[i].right, pFaceALL[i].bottom);
+		if (!featureCompare)
+			continue;
+		ret = featureCompare(feature,face_data_out,pFaceALL[i].gender,pFaceALL[i].age);
+		if (ret >= 0)
+			break;
 	}
 
 exit:
@@ -439,4 +477,32 @@ float rdfaceGetFeatureSimilarity(float *feature1, float *feature2)
 	}
 	sum1 = vaddq_f32(sum1, sum2);
 	return vgetq_lane_f32(sum1, 0) + vgetq_lane_f32(sum1, 1) + vgetq_lane_f32(sum1, 2) + vgetq_lane_f32(sum1, 3);
+}
+
+int rdfaceRecognizerOnce(unsigned char *image_buff,int w,int h,int *age,int *sex)
+{
+	int *face_count = (int *)dst_ion.buffer;
+	RSFT_FACE_RESULT *pFace = (RSFT_FACE_RESULT *)((int *)dst_ion.buffer+1);
+
+	fillFaceTrackBuf(image_buff,w,h);
+	//人脸检测追踪,针对动态图像
+	int result = readsense_face_tracking(model_ion.buffer, (void*)model_ion.phys,
+		raw_ion.buffer, (void*)raw_ion.phys, dst_ion.buffer, (void*)dst_ion.phys,
+		internal_ion.buffer, (void*)internal_ion.phys, dsp_fd, raw_ion.width, raw_ion.height);
+
+	// DPRINT("\nreadsense_face_tracking  return %d \n",result);
+	if ( result == RSFT_LICENCE_VALIDATE_FAIL ) {
+		DPRINT("%s:------> readsense_face_tracking LICENCE_VALIDATE_FAIL.\n", __func__);
+		return -1;
+	}
+
+	// DPRINT("===>face num=%d\n",*face_count);
+	if (*face_count == 0) {
+		// DPRINT("error : face num=0\n");
+		return -1;
+	}
+	*age = pFace->age;
+	*sex = pFace->gender;
+
+	return 0;
 }

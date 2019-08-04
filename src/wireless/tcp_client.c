@@ -151,7 +151,7 @@ static int TTCPClient_RecvBuffer(TTCPClient *This,void *pBuf,int size,int TimeOu
 			timeout.tv_sec=TimeOut / 1000;
 			timeout.tv_usec=(TimeOut % 1000) * 1000;
 			if(select(This->m_socket+1, &fdR,NULL, NULL, &timeout)<=0 || !FD_ISSET(This->m_socket,&fdR)) {
-				printf("tcpclient:read select timeout\n");
+				// printf("tcpclient:read select timeout\n");
 				return -1;
 			}
     		RecvSize=recv(This->m_socket,((char*)pBuf)+(size-LeaveSize),LeaveSize,MSG_NOSIGNAL);

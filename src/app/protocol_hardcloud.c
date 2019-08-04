@@ -44,6 +44,7 @@
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
+extern void resetAutoSleepTimerLong(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -56,6 +57,11 @@
 // 正式地址
 // #define HARD_COULD_API "http://iot.taichuan.net/v1/Mqtt"
 #define HARD_COULD_API "http://84.internal.taichuan.net:8080/v1"
+enum {
+	MODE_SEND_NEED_REPLY = 1,
+	MODE_SEND_NONEED_REPLY = 2,
+	MODE_REPLY = 4,
+};
 enum {
 	Sys_TestData = 1,			//	Server	Send	测试数据指令 服务端发送测试内容到客户端 客户端必须立即将收到测试内容的data原封Return回来
 	Sys_UploadLog = 2,			//	Server	Post	上传日志指令 要求客户端将异常等日志到服务器
@@ -95,7 +101,8 @@ struct DebugInfo{
 struct QueueList {
 	Queue *upload;  // 上传七牛队列
 	Queue *report_capture; // 上报抓拍日志队列
-	Queue *report_low_power; // 上报低电量队列
+	Queue *report_alarm; // 上报报警队列
+	Queue *report_face; // 上报人脸记录队列
 };
 /* ---------------------------------------------------------------------------*
  *                      variables define
@@ -233,7 +240,7 @@ static void sysTestData(int api,int id,CjsonDec *dec)
 		return;
 	}
 	cJSON *data = dec->getValueObject(dec,"data");
-	cJSON *root = packData(api,4,id);
+	cJSON *root = packData(api,MODE_REPLY,id);
 	cJSON_AddItemToObject(root,"body",data);
 	send_buff = cJSON_PrintUnformatted(root);
 	cJSON_Delete(root);
@@ -302,8 +309,10 @@ static void ceGetIntercoms(CjsonDec *dec)
 	struct tm *tm_now = getTime();
 	g_config.timestamp = tm_now->tm_hour + tm_now->tm_mday * 24 + tm_now->tm_mon * 30 * 24;
 	ConfigSavePrivate();
-	protocol_talk->reload();
-	protocol_talk->reconnect();
+	if (protocol_talk) {
+		protocol_talk->reload();
+		protocol_talk->reconnect();
+	}
 }
 
 /* ---------------------------------------------------------------------------*/
@@ -321,7 +330,7 @@ static void ceGetFaces(int api,int id,CjsonDec *dec)
 	char user_id[32];
 	char nick_name[128];
 	char url[256];
-	cJSON *root = packData(api,4,id);
+	cJSON *root = packData(api,MODE_REPLY,id);
 	cJSON *arry = cJSON_CreateArray();
 	sqlGetFaceStart();
 	while (1) {
@@ -395,7 +404,7 @@ static void ceSetFace(int api,int id,CjsonDec *dec)
 		free(nick_name);
 
 send_return:
-	root = packData(api,4,id);
+	root = packData(api,MODE_REPLY,id);
 	if (result)
 		cJSON_AddStringToObject(root,"body","true");
 	else
@@ -432,7 +441,7 @@ static void ceRemoveFace(int api,int id,CjsonDec *dec)
 	}
 	result = 1;
 send_return:
-	root = packData(api,4,id);
+	root = packData(api,MODE_REPLY,id);
 	if (result)
 		cJSON_AddStringToObject(root,"body","true");
 	else
@@ -526,10 +535,14 @@ static void getIntercoms(void)
 	printf("timestamp :now:%d,old:%d,div:%d\n",
 		 timestamp_now, g_config.timestamp,timestamp_now - g_config.timestamp);
 	if (timestamp_now - g_config.timestamp <= 12) {
+		if (protocol_talk) {
+			protocol_talk->reload();
+			protocol_talk->reconnect();
+		}
 		return;
 	}
 	char *send_buff;
-	cJSON *root = packData(CE_GetIntercoms,1,++g_id);
+	cJSON *root = packData(CE_GetIntercoms,MODE_SEND_NEED_REPLY,++g_id);
 	cJSON_AddStringToObject(root,"body","");
 	send_buff = cJSON_PrintUnformatted(root);
 	cJSON_Delete(root);
@@ -743,6 +756,7 @@ static void* tcpHeartThread(void *arg)
 	int connect_flag = 0;
 	char imei[32];
 	char imei_len[8];
+	char gateway[16];
 	int send_interval = 0;
 	heart_start = 1;
 	while (1) {
@@ -753,8 +767,13 @@ static void* tcpHeartThread(void *arg)
 			break;
 		if (connect_flag == 1 && send_interval < 30) {
 			send_interval++;
+			char tcp_rec[64] = {0};
+			int len = tcp_client->RecvBuffer(tcp_client,tcp_rec,sizeof(tcp_rec),1000);
+			if (strcmp(tcp_rec,"AwakenAsync")== 0)
+				resetAutoSleepTimerLong();
 			goto loop_heart;
 		}
+		send_interval = 0;
 		if (connect_flag == 0) {
 			writeSleepScript(ip,opts.service_port);
 			if (tcp_client->Connect(tcp_client,ip,opts.service_port,5000) < 0){
@@ -770,8 +789,8 @@ loop_heart:
 	}
 	tcp_client->DisConnect(tcp_client);
 
-	getLocalIP(g_config.wifi_lowpower.local_ip,g_config.wifi_lowpower.gateway);
-	getGateWayMac(g_config.wifi_lowpower.gateway,g_config.wifi_lowpower.gateway_mac);
+	getLocalIP(g_config.wifi_lowpower.local_ip,gateway);
+	getGateWayMac(gateway,g_config.wifi_lowpower.dst_mac);
 	sprintf(imei,"\"%s\"",g_config.imei);	
 	sprintf(imei_len,"%ld",strlen(g_config.imei));	
 	// excuteCmd("dhd_priv","wl","tcpka_conn_add","1",
@@ -783,7 +802,7 @@ loop_heart:
 			// "1","0","1024","1062046","2130463","1",imei_len, imei,
 			// NULL);
 	excuteCmd("dhd_priv","wl","tcpka_conn_add","1",
-			g_config.wifi_lowpower.gateway_mac,
+			g_config.wifi_lowpower.dst_mac,
 			g_config.wifi_lowpower.local_ip,
 			g_config.wifi_lowpower.dst_ip,
 			"0","1223",
@@ -809,18 +828,18 @@ static void* getIntercomsThread(void *arg)
 
 static void* threadUpload(void *arg)
 {
-	int data = 0;
+	char path[64] = {0};
 	char *qiniu_upload= NULL;
 	DIR *dir;
 	struct dirent *dirp;
-	queue_list.upload = queueCreate("upload",QUEUE_BLOCK,sizeof(int));
+	queue_list.upload = queueCreate("upload",QUEUE_BLOCK,sizeof(path));
 	while (!qiniu_server_token) {
 		sleep(1);
 	}
 	while (1) {
-		queue_list.upload->get(queue_list.upload,&data);
-		if((dir=opendir(TEMP_PIC_PATH)) == NULL) {
-			printf("Open File %s Error %s\n",TEMP_PIC_PATH,strerror(errno));
+		queue_list.upload->get(queue_list.upload,&path);
+		if((dir=opendir(path)) == NULL) {
+			printf("Open File %s Error %s\n",path,strerror(errno));
 			return 0;
 		}
 		while((dirp=readdir(dir)) != NULL) {
@@ -829,7 +848,8 @@ static void* threadUpload(void *arg)
 
 			}
 			char buf[64];
-			sprintf(buf,"%s/%s",TEMP_PIC_PATH,dirp->d_name);
+			sprintf(buf,"%s%s",path,dirp->d_name);
+			printf("%s\n",buf);
 			http->qiniuUpload("http://upload-z2.qiniup.com",
 					NULL,qiniu_server_token,
 					buf,
@@ -850,11 +870,10 @@ static void* threadUpload(void *arg)
 	}
 	return NULL;
 }
-static void uploadPic(void)
+static void uploadPic(char *path)
 {
-	int data = 0;
 	if (queue_list.upload)
-		queue_list.upload->post(queue_list.upload,&data);
+		queue_list.upload->post(queue_list.upload,path);
 }
 
 static void* threadReportCapture(void *arg)
@@ -863,22 +882,20 @@ static void* threadReportCapture(void *arg)
 	char date[64] = {0};
 	int i;
 	char *send_buff;
-	queue_list.report_capture = queueCreate("re_cap",QUEUE_BLOCK,sizeof(uint64_t));
+	Queue * queue = queue_list.report_capture = queueCreate("re_cap",QUEUE_BLOCK,sizeof(picture_id));
 	waitConnectService();
 	while (1) {
-		queue_list.report_capture->get(queue_list.report_capture,&picture_id);
+		queue->get(queue,&picture_id);
 		int ret = sqlGetCapInfo(picture_id,date);
 		// 封装jcson信息
-		cJSON *root = cJSON_CreateObject();
-		cJSON_AddStringToObject(root,"num",g_config.imei);
-		cJSON_AddNumberToObject(root,"applicationId",CE_Report);
-		cJSON_AddStringToObject(root,"createTime",date);
-		cJSON_AddStringToObject(root,"dataType","capture");
+		cJSON *root = packData(CE_Report,MODE_SEND_NONEED_REPLY,++g_id);
+		cJSON *obj_body = cJSON_CreateObject();
+		cJSON_AddStringToObject(obj_body,"dataType","capture");
 		cJSON *arry = cJSON_CreateArray();
 		if (ret) {
-			char url[128] = {0};
 			int count = sqlGetPicInfoStart(picture_id);
 			for (i=0; i<count; i++) {
+				char url[128] = {0};
 				cJSON *obj = cJSON_CreateObject();
 				sqlGetPicInfos(url);
 				cJSON_AddStringToObject(obj,"url",url);
@@ -889,7 +906,8 @@ static void* threadReportCapture(void *arg)
 		cJSON *obj_data = cJSON_CreateObject();
 		cJSON_AddStringToObject(obj_data,"date",date);
 		cJSON_AddItemToObject(obj_data,"picture",arry);
-		cJSON_AddItemToObject(root,"data",obj_data);
+		cJSON_AddItemToObject(obj_body,"data",obj_data);
+		cJSON_AddItemToObject(root,"body",obj_body);
 		send_buff = cJSON_PrintUnformatted(root);
 		cJSON_Delete(root);
 		mqtt->send(opts.pubTopic,strlen(send_buff),send_buff);
@@ -903,26 +921,42 @@ static void reportCapture(uint64_t pic_id)
 	if (queue_list.report_capture)
 		queue_list.report_capture->post(queue_list.report_capture,&data);
 }
-static void* threadReportLowpower(void *arg)
+static void* threadReportAlarm(void *arg)
 {
-	char date[20] = {0};
+	ReportAlarmData alarm_data;
 	int i;
 	char *send_buff;
-	queue_list.report_low_power = queueCreate("re_low",QUEUE_BLOCK,sizeof(char)*20);
+	Queue * queue = queue_list.report_alarm = queueCreate("re_alarm",QUEUE_BLOCK,sizeof(alarm_data));
 	waitConnectService();
 	while (1) {
-		queue_list.report_low_power->get(queue_list.report_low_power,date);
+		queue->get(queue,&alarm_data);
 
 		// 封装jcson信息
-		cJSON *root = cJSON_CreateObject();
-		cJSON_AddStringToObject(root,"num",g_config.imei);
-		cJSON_AddNumberToObject(root,"applicationId",CE_Report);
-		cJSON_AddStringToObject(root,"createTime",date);
-		cJSON_AddStringToObject(root,"dataType","alarmRecord");
+		cJSON *root = packData(CE_Report,MODE_SEND_NONEED_REPLY,++g_id);
+		cJSON *obj_body = cJSON_CreateObject();
+		cJSON_AddStringToObject(obj_body,"dataType","alarmRecord");
 		cJSON *obj_data = cJSON_CreateObject();
-		cJSON_AddStringToObject(obj_data,"date",date);
-		cJSON_AddNumberToObject(obj_data,"type",ALARM_TYPE_LOWPOWER);
-		cJSON_AddItemToObject(root,"data",obj_data);
+		cJSON_AddStringToObject(obj_data,"date",alarm_data.date);
+		cJSON_AddNumberToObject(obj_data,"type",alarm_data.type);
+		if (alarm_data.has_people)
+			cJSON_AddTrueToObject(obj_data,"hasPeople");
+		else
+			cJSON_AddFalseToObject(obj_data,"hasPeople");
+		cJSON_AddNumberToObject(obj_data,"sex",alarm_data.sex);
+		cJSON_AddNumberToObject(obj_data,"age",alarm_data.age);
+		cJSON *arry = cJSON_CreateArray();
+		int count = sqlGetPicInfoStart(alarm_data.picture_id);
+		for (i=0; i<count; i++) {
+			char url[128] = {0};
+			cJSON *obj = cJSON_CreateObject();
+			sqlGetPicInfos(url);
+			cJSON_AddStringToObject(obj,"url",url);
+			cJSON_AddItemToArray(arry, obj);
+		}
+		sqlGetPicInfoEnd();
+		cJSON_AddItemToObject(obj_data,"picture",arry);
+		cJSON_AddItemToObject(obj_body,"data",obj_data);
+		cJSON_AddItemToObject(root,"body",obj_body);
 		send_buff = cJSON_PrintUnformatted(root);
 		cJSON_Delete(root);
 		mqtt->send(opts.pubTopic,strlen(send_buff),send_buff);
@@ -930,10 +964,52 @@ static void* threadReportLowpower(void *arg)
 	}
 	return NULL;
 }
-static void reportLowPower(char *date)
+static void reportAlarm(ReportAlarmData *data)
 {
-	if (queue_list.report_low_power)
-		queue_list.report_low_power->post(queue_list.report_low_power,date);
+	if (queue_list.report_alarm)
+		queue_list.report_alarm->post(queue_list.report_alarm,data);
+}
+static void* threadReportFace(void *arg)
+{
+	ReportFaceData face_data;
+	int i;
+	char *send_buff;
+	Queue * queue = queue_list.report_face = queueCreate("re_face",QUEUE_BLOCK,sizeof(face_data));
+	waitConnectService();
+	while (1) {
+		queue->get(queue,&face_data);
+
+		// 封装jcson信息
+		cJSON *root = packData(CE_Report,MODE_SEND_NONEED_REPLY,++g_id);
+		cJSON *obj_body = cJSON_CreateObject();
+		cJSON_AddStringToObject(obj_body,"dataType","faceRecognitionRecord");
+		cJSON *obj_data = cJSON_CreateObject();
+		cJSON_AddStringToObject(obj_data,"date",face_data.date);
+		cJSON_AddStringToObject(obj_data,"faceId",face_data.user_id);
+		cJSON *obj_face_info = cJSON_CreateObject();
+		cJSON_AddStringToObject(obj_face_info,"nickName",face_data.nick_name);
+		cJSON_AddItemToObject(obj_data,"faceInfo",obj_face_info);
+		int count = sqlGetPicInfoStart(face_data.picture_id);
+		if (count) {
+			char url[128] = {0};
+			sqlGetPicInfos(url);
+			cJSON_AddStringToObject(obj_data,"picture",url);
+		}
+		sqlGetPicInfoEnd();
+
+		cJSON_AddItemToObject(obj_body,"data",obj_data);
+		cJSON_AddItemToObject(root,"body",obj_body);
+		send_buff = cJSON_PrintUnformatted(root);
+		cJSON_Delete(root);
+		mqtt->send(opts.pubTopic,strlen(send_buff),send_buff);
+		free(send_buff);
+	}
+	return NULL;
+}
+static void reportFace(ReportFaceData *data)
+{
+	if (queue_list.report_face)
+		queue_list.report_face->post(queue_list.report_face,data);
 }
 /* ---------------------------------------------------------------------------*/
 /**
@@ -945,7 +1021,8 @@ void registHardCloud(void)
 	protocol_hardcloud = (ProtocolHardcloud *) calloc(1,sizeof(ProtocolHardcloud));
 	protocol_hardcloud->uploadPic = uploadPic;
 	protocol_hardcloud->reportCapture = reportCapture;
-	protocol_hardcloud->reportLowPower = reportLowPower;
+	protocol_hardcloud->reportAlarm = reportAlarm;
+	protocol_hardcloud->reportFace= reportFace;
 	protocol_hardcloud->enableSleepMpde = enableSleepMpde;
 
 	mqtt_connect_state = 0;
@@ -958,7 +1035,8 @@ void registHardCloud(void)
 	createThread(getIntercomsThread,NULL);
 	createThread(threadUpload,NULL);
 	createThread(threadReportCapture,NULL);
-	createThread(threadReportLowpower,NULL);
+	createThread(threadReportAlarm,NULL);
+	createThread(threadReportFace,NULL);
 
 }
 

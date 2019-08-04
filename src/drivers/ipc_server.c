@@ -15,6 +15,20 @@ typedef struct _IpcServerPriv {
 	IpcCallback callbackFunc;
 }IpcServerPriv;
 
+void waitIpcOpen(char *path)
+{
+	int fd = -1;
+	while (1) {
+		fd = access(path,0);
+		if (fd != 0) {
+			// printf("open ipc :%s fail,error:%s\n",path ,strerror(errno));
+			sleep(1);
+			continue;
+		}
+		close(fd);
+		return;
+	}
+}
 static int sendData(struct _IpcServer *This,char *path,void *data,int size)
 {
 	static struct sockaddr_un srv_addr;
@@ -28,7 +42,7 @@ static int sendData(struct _IpcServer *This,char *path,void *data,int size)
 	//connect server
 	int ret = connect(This->priv->send_fd, (struct sockaddr*)&srv_addr, sizeof(srv_addr));
 	if(ret == -1) {
-		perror("cannot connect to the server");	
+		// perror("cannot connect to the server");	
 		close(This->priv->send_fd);
 		return -1;
 	}

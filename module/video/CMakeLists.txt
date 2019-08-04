@@ -21,7 +21,7 @@ target_link_libraries(cammer_video
     ion pthread adk cam_ia cam_engine_cifisp rkfb rkrga 
 	rkmedia mpp drivers
 	turbojpeg 
-	yuv 
+	yuv rt
 	-Wl,--end-group
 )
 

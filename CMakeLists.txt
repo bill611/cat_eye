@@ -82,6 +82,7 @@ endfunction()
 
 # 项目的所有目录都为头文件搜索路径
 func_include_sub_directories_recursively(${PROJECT_SOURCE_DIR}/src)
+func_include_sub_directories_recursively(${PROJECT_SOURCE_DIR}/module)
 #func_include_sub_directories_recursively(${PROJECT_SOURCE_DIR}/include)
 
 # 增加其他目录头文件路径

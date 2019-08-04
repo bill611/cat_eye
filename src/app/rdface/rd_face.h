@@ -21,6 +21,7 @@
 extern "C" {
 #endif  /* __cplusplus */
 
+#define SIMILAYRITY 0.4
 
 	int rdfaceInit(void);
 	void rdfaceUninit(void);
@@ -28,6 +29,7 @@ extern "C" {
 	int rdfaceRegist(unsigned char *image_buff,int w,int h,float **out_feature,int *out_feature_size);
     int rdfaceRecognizer(unsigned char *image_buff,int w,int h,
 			int (*featureCompare)(float *feature,void *face_data_out,int gender,int age),void *face_data_out);
+	int rdfaceRecognizerOnce(unsigned char *image_buff,int w,int h,int *age,int *sex);
 
 #ifdef __cplusplus
 }

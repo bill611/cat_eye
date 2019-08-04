@@ -29,6 +29,8 @@ extern "C" {
         char user_id[32];
         char nick_name[128];
         char url[256];
+		int sex;//0: female, 1: male, -1: invalid value
+		int age;//>=0, -1: invalid value
     }MyFaceData;
 
     typedef struct _MyFaceRegistData {
@@ -39,11 +41,19 @@ extern "C" {
         char *url;
     }MyFaceRegistData;
 
+    typedef struct _MyFaceRecognizer {
+        unsigned char *image_buff;
+        int w,h;
+        int age;
+        int sex;
+    }MyFaceRecognizer;
+
 	typedef struct _MyFace{
 		int (*init)(void);
 		int (*deleteOne)(char *id);
 		int (*regist)(MyFaceRegistData *data);
 		void (*recognizer)(char *image_buff,int w,int h);
+		int (*recognizerOnce)(MyFaceRecognizer *data);
 		void (*uninit)(void);
 	}MyFace;
 

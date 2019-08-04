@@ -38,6 +38,7 @@ extern "C" {
 		IPC_VIDEO_DECODE_ON,		// 打开h264解码
 		IPC_VIDEO_DECODE_OFF,		// 关闭h264解码
 		IPC_VIDEO_CAPTURE,			// 抓拍图片
+		IPC_VIDEO_CAPTURE_END,		// 抓拍图片结束
 		IPC_VIDEO_RECORD_START,		// 开始录像
 		IPC_VIDEO_RECORD_STOP,		// 停止录像
 		IPC_UART_SLEEP,				// 进入休眠
@@ -47,6 +48,7 @@ extern "C" {
 		IPC_UART_PIR,				// 门外pir触发
 		IPC_UART_WIFI_WAKE,			// wifi唤醒触发
 		IPC_UART_POWEROFF,			// 室内机电源键长按关机
+		IPC_UART_REMOVE_CAP,		// 当识别到为熟人后删除门铃拍照
 	};
 	enum {
 		PROTOCOL_TALK_3000,
@@ -73,10 +75,28 @@ extern "C" {
 		CAP_TYPE_FACE,
 	};
 
-	enum {
+	typedef enum _AlarmType{
 		ALARM_TYPE_LOWPOWER,	// 低电量报警
 		ALARM_TYPE_PEOPLES,		// 陌生人徘徊报警
-	};
+	}AlarmType;
+
+	typedef struct _ReportAlarmData{
+		char file_path[64];	// 图片本地路径
+		char date[32];		// 日期
+		AlarmType type;		// 报警类型
+		int has_people;		// 徘徊报警时，判断是否有人
+		uint64_t picture_id;// 徘徊报警时，抓拍图片
+		int age;		// 年龄
+		int sex;		// 性别
+	}ReportAlarmData;
+
+	typedef struct _ReportFaceData{
+		char file_path[64];	// 图片本地路径
+		char date[32];		// 日期
+		uint64_t picture_id;// 徘徊报警时，抓拍图片
+		char nick_name[32];		// 年龄
+		char user_id[32];		// 年龄
+	}ReportFaceData;
 
 	typedef struct _IpcData {
 		int cmd;
@@ -84,7 +104,12 @@ extern "C" {
 		int leng;
         union {
             char array_buf[64];
-            char cap_path[64];
+			char cap_path[64];
+			struct {
+				char path[64];
+				char date[32];	
+				char name[32];	
+			}file;
         }data;
 	}IpcData;
 
@@ -133,19 +158,21 @@ extern "C" {
 	}ProtocolTalk;
 	extern ProtocolTalk *protocol_talk;
 
-	// 对讲协议
+	// 平台协议
 	typedef struct _ProtocolHardcloud {
-		void (*uploadPic)(void);
+		void (*uploadPic)(char *path);
 		void (*reportCapture)(uint64_t pic_id);
-		void (*reportLowPower)(char *date);
+		void (*reportAlarm)(ReportAlarmData *data);
+		void (*reportFace)(ReportFaceData *data);
 		void (*enableSleepMpde)(void);
 	}ProtocolHardcloud;
 	extern ProtocolHardcloud *protocol_hardcloud;
 
 	// 单片机协议
 	typedef struct _ProtocolSinglechip {
-		void (*deal)(int cmd,char *data,int size);
-		void (*cmdSleep)(void);
+		void (*deal)(IpcData *ipc_data);	// 处理单片机协议
+		void (*cmdSleep)(void);				// 发送进入睡眠模式
+		void (*hasPeople)(char *nick_name,char *user_id);// 人脸识别到熟人
 	}ProtocolSinglechip;
 	extern ProtocolSinglechip *protocol_singlechip;
 

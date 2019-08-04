@@ -88,10 +88,11 @@ static void* theadEle(void *arg)
 				if ( 	power_state == BATTERY_NORMAL
 					&& 	report_low_power == 0) {
 					report_low_power = 1;
-					char time_now[20] = {0}; 
-					getDate(time_now,sizeof(time_now));
-					sqlInsertRecordAlarm(time_now,ALARM_TYPE_LOWPOWER,0,0);
-					protocol_hardcloud->reportLowPower(time_now);
+					ReportAlarmData alarm_data;
+					alarm_data.type = ALARM_TYPE_LOWPOWER;
+					getDate(alarm_data.date,sizeof(alarm_data.date));
+					sqlInsertRecordAlarm(alarm_data.date,alarm_data.type,0,0,0,0);
+					protocol_hardcloud->reportAlarm(&alarm_data);
 				}
 			} else {
 				report_low_power = 0;

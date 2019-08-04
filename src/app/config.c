@@ -13,18 +13,9 @@
 #include "debug.h"
 
 
-#define INI_PUBLIC_FILENAME "config_para.ini"
-#define INI_PRIVATE_FILENAME "config.ini"
 #define SIZE_CONFIG(x)  x,sizeof(x) - 1
 
 #define NELEMENTS(array)  (sizeof (array) / sizeof ((array) [0]))
-
-typedef enum
-{
-    CONFIG_CRC,
-    CONFIG_SAVE,
-    CONFIG_SAVE_PRIVATE,
-} ConfigAction;
 
 Config g_config;
 static dictionary* cfg_public_ini;
@@ -65,7 +56,7 @@ static int etcFileCheck(void)
 {
 	const char * buf = iniparser_getstring(cfg_private_ini, "taichuan:imei", "0");
 	if (strcmp(buf,"0") == 0) {
-		recoverData(CFG_PRIVATE_DRIVE  INI_PRIVATE_FILENAME);
+		recoverData(CONFIG_FILENAME);
 		return 0;
 	} else {
 		return 1;
@@ -183,22 +174,13 @@ static void dumpIniFile(dictionary *d,char *file_name)
 
 }
 
-static void SavePublic(void)
-{
-	configSaveEtcInt(cfg_public_ini,etc_public_int,NELEMENTS(etc_public_int));
-	configSaveEtcChar(cfg_public_ini,etc_public_char,NELEMENTS(etc_public_char));
-	dumpIniFile(cfg_public_ini,CFG_PUBLIC_DRIVE  INI_PUBLIC_FILENAME);
-	DPRINT("[%s]end\n", __FUNCTION__);
-}
-
 static void SavePrivate(void)
 {
-	DPRINT("[%s]start\n", __FUNCTION__);
 	configSaveEtcInt(cfg_private_ini,etc_private_int,NELEMENTS(etc_private_int));
 	configSaveEtcChar(cfg_private_ini,etc_private_char,NELEMENTS(etc_private_char));
-	dumpIniFile(cfg_private_ini,CFG_PRIVATE_DRIVE  INI_PRIVATE_FILENAME);
+	dumpIniFile(cfg_private_ini,CONFIG_FILENAME);
 	if (etcFileCheck() == 1) {
-		backData(CFG_PRIVATE_DRIVE  INI_PRIVATE_FILENAME);
+		backData(CONFIG_FILENAME);
 	}
 	DPRINT("[%s]end\n", __FUNCTION__);
 }
@@ -257,7 +239,7 @@ void configLoad(void)
 {
 	char *sec_private[] = {"device","wireless","cloud",NULL};
 
-	int ret = loadIniFile(&cfg_private_ini,CFG_PRIVATE_DRIVE  INI_PRIVATE_FILENAME,sec_private);
+	int ret = loadIniFile(&cfg_private_ini,CONFIG_FILENAME,sec_private);
 	configLoadEtcInt(cfg_private_ini,etc_private_int,NELEMENTS(etc_private_int));
 	configLoadEtcChar(cfg_private_ini,etc_private_char,NELEMENTS(etc_private_char));
 	etcFileCheck();
@@ -284,60 +266,28 @@ void configLoad(void)
 
 static void* ConfigSaveTask(void* arg)
 {
-    int* args = (int*) arg;
-    ConfigAction action = (ConfigAction) args[0];
-	int func = 0;
 
     pthread_mutex_lock(&cfg_mutex);
 
-	if (action == CONFIG_SAVE) {
-		func = (int)args[2];
-        SavePublic();
-	} else if (action == CONFIG_SAVE_PRIVATE)  {
-		func = (int)args[2];
-		SavePrivate();
-	}
+	SavePrivate();
 
 	configSync();
-	if(func) {
-		configCallback p = (configCallback)func;
-		p();
-	}
+	configCallback func = (configCallback)arg;
+	if(func)
+		func();
 
     pthread_mutex_unlock(&cfg_mutex);
 
     return NULL;
 }
 
-void ConfigSave(configCallback func)
-{
-    static int args[3];
-
-    args[0] = CONFIG_SAVE;
-    args[1] = (int)CFG_PUBLIC_DRIVE  INI_PUBLIC_FILENAME;
-	args[2] = (int)func;
-
-    createThread(ConfigSaveTask, args);
-}
-
 void ConfigSavePrivate(void)
 {
-    static int args[3];
-
-    args[0] = CONFIG_SAVE_PRIVATE;
-    args[1] = (int)CFG_PRIVATE_DRIVE  INI_PRIVATE_FILENAME;
-
-    createThread(ConfigSaveTask, args);
+    createThread(ConfigSaveTask, NULL);
 }
 
 void ConfigSavePrivateCallback(configCallback func)
 {
-    static int args[3];
-
-    args[0] = CONFIG_SAVE_PRIVATE;
-    args[1] = (int)CFG_PRIVATE_DRIVE  INI_PRIVATE_FILENAME;
-	args[2] = (int)func;
-
-    createThread(ConfigSaveTask, args);
+    createThread(ConfigSaveTask, (void*)func);
 }
 

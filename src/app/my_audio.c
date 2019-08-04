@@ -79,9 +79,3 @@ void myAudioStopPlay(void)
 	loop_start = 0;
 	excuteCmd("busybox","killall","aplay",NULL);
 }
-void myAudioPlayDingdong(void)
-{
-	char path[64];
-	sprintf(path,"%sdingdong.wav",AUDIO_PATH);	
-	playwavfile(path);		
-}

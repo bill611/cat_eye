@@ -16,41 +16,38 @@ extern "C" {
 #define DEVICE_KVERSION	"V1.0.0"
 
 #if (defined X86)
-#define UPDATE_FILE	"/tmp/Update.cab"
-#define CFG_PUBLIC_DRIVE "./"
-#define CFG_PRIVATE_DRIVE "./"
-#define DATABSE_PATH "./"
-#define QRCODE_IMIE CFG_PRIVATE_DRIVE"imei.png"
-#define QRCODE_APP CFG_PRIVATE_DRIVE"app_url.png"
 #define SDCARD_PATH "./"
 #define AUDIO_PATH "./res/wav/"
-#define TEMP_PIC_PATH "cap/"
-#define CAP_PATH SDCARD_PATH"cap/"
-#define TALK_PATH SDCARD_PATH"talk/"
-#define ALARM_PATH SDCARD_PATH"alarm/"
-#define FACE_PATH SDCARD_PATH"face/"
 #else
-#define UPDATE_FILE	"/tmp/Update.cab"
-#define CFG_PUBLIC_DRIVE "./"
-#define CFG_PRIVATE_DRIVE "./"
-#define DATABSE_PATH "./"
-#define QRCODE_IMIE CFG_PRIVATE_DRIVE"imei.png"
-#define QRCODE_APP CFG_PRIVATE_DRIVE"app_url.png"
 #define SDCARD_PATH "/mnt/sdcard/"
 #define AUDIO_PATH "/root/usr/res/wav/"
-#define TEMP_PIC_PATH "cap/"
-#define CAP_PATH SDCARD_PATH"cap/"
-#define TALK_PATH SDCARD_PATH"talk/"
-#define ALARM_PATH SDCARD_PATH"alarm/"
-#define FACE_PATH SDCARD_PATH"face/"
 #endif
 
-#define IPC_MAIN "/tmp/ipc_main"
-#define IPC_CAMMER "/tmp/ipc_cammer"
-#define IPC_UART "/tmp/ipc_uart"
+#define UPDATE_FILE	"/tmp/Update.cab"
+#define DATABSE_PATH "./"						// 数据库文件路径
+#define QRCODE_IMIE "./imei.png"				// 机身码二维码路径
+#define QRCODE_APP "./app_url.png"				// app地址二维码路径
+
+#define CONFIG_FILENAME "./config.ini"			// 配置文件路径
+
+#define TEMP_PIC_PATH "cap/"					// 抓拍存储记录
+
+#define CAP_PATH SDCARD_PATH"cap/"				// SD卡抓拍存储目录
+#define TALK_PATH SDCARD_PATH"talk/"			// SD卡通话抓拍记录
+#define ALARM_PATH SDCARD_PATH"alarm/"          // SD卡报警抓拍记录
+#define FACE_PATH SDCARD_PATH"face/"			// SD卡人脸抓拍记录
+
+#define FAST_PIC_PATH "/tmp/cap/"  				// 快速启动抓拍路径，放到内存中
+
+#define IPC_MAIN "/tmp/ipc_main"				// 主进程
+#define IPC_CAMMER "/tmp/ipc_cammer"			// 摄像头处理进程
+#define IPC_UART "/tmp/ipc_uart"				// 串口处理进程
+
+#define QINIU_URL "http://img.cateye.taichuan.com"  // 七牛云存储地址
 
 #define AUTO_CLOSE_LCD 11
 #define SLEEP_TIMER 10
+#define SLEEP_LONG_TIMER 30
 
 	typedef struct _EtcValueChar {
 		const char* section;	
@@ -135,11 +132,10 @@ extern "C" {
 	}TcWifiScan;
 
 	struct wifiLowPower {
-		char local_ip[16];
-		char dst_ip[16];
-		char dst_port[8];
-		char gateway[16];
-		char gateway_mac[20];
+		char local_ip[16];		// 本机地址
+		char dst_ip[16];		// 目的地址
+		char dst_port[8];		// 目的端口
+		char dst_mac[20];		// 目的mac地址
 	};
 	typedef struct _Config {
         char imei[64];         // 太川设备机身码
@@ -149,18 +145,14 @@ extern "C" {
 		int  timestamp;        // 启动时间戳
 		int capture_count;	   // 抓拍图片数量
         TcWifiConfig net_config;  // 网络设置
+
 		struct wifiLowPower wifi_lowpower; // 低功耗wifi参数
-
-
 	} Config;
 
 	void configLoad(void);
-	void ConfigSave(configCallback func);
 	void ConfigSavePrivate(void);
 	void ConfigSavePrivateCallback(configCallback func);
-	void configSync(void);
 
-	void tcSetNetwork(int type);
 	void createSdcardDirs(void);
 	extern Config g_config;
 

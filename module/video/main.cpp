@@ -10,6 +10,7 @@
 #include "config.h"
 #include "ipc_server.h"
 #include "share_memory.h"
+#include "queue.h"
 
 #define COLOR_KEY_R 0x0
 #define COLOR_KEY_G 0x0
@@ -18,6 +19,7 @@
 static ShareMemory *share_mem = NULL;  //共享内存
 
 static IpcServer* ipc_video = NULL;
+static Queue *main_queue = NULL;
 
 class RKVideo {
  public:
@@ -36,7 +38,7 @@ class RKVideo {
 	void displayOff(void);
     void faceOnOff(bool type,FaceCallbackFunc faceCallback);
 	void h264EncOnOff(bool type,int w,int h,EncCallbackFunc encCallback);
-	void capture(char *file_name);
+	void capture(CapCallbackFunc capCallbackFunc,char *file_name);
 	void recordStart(EncCallbackFunc recordCallback);
 	void recordSetStopFunc(RecordStopCallbackFunc recordCallback);
 	void recordStop(void);
@@ -199,11 +201,11 @@ void RKVideo::h264EncOnOff(bool type,int w,int h,EncCallbackFunc encCallback)
 		}
 	}
 }
-void RKVideo::capture(char *file_name)
+void RKVideo::capture(CapCallbackFunc capCallbackFunc,char *file_name)
 {
 	if (display_state_ == 0)
 		return;
-	display_process->capture(file_name);
+	display_process->capture(capCallbackFunc,file_name);
 }
 
 void RKVideo::recordStart(EncCallbackFunc recordCallback)
@@ -293,10 +295,10 @@ int rkH264EncOff(void)
 		rkvideo->h264EncOnOff(false,0,0,NULL);
 }
 
-int rkVideoCapture(char *file_name)
+int rkVideoCapture(CapCallbackFunc capCallbackFunc,char *file_name)
 {
 	if (rkvideo)
-		rkvideo->capture(file_name);
+		rkvideo->capture(capCallbackFunc,file_name);
 }
 int rkVideoRecordStart(EncCallbackFunc recordCallback)
 {
@@ -360,6 +362,14 @@ static void callbackFace(void *data,int size)
 		memcpy(mem_data,data,size);
 	share_mem->SaveEnd(share_mem,size);
 }
+
+static void callbackCapture(void)
+{
+	IpcData ipc_cap;
+	ipc_cap.cmd = IPC_VIDEO_CAPTURE_END;
+	main_queue->post(main_queue,&ipc_cap);
+}
+
 static void callbackIpc(char *data,int size )
 {
 	IpcData ipc_data;
@@ -403,9 +413,7 @@ static void callbackIpc(char *data,int size )
 		case IPC_VIDEO_DECODE_OFF:
 			break;
 		case IPC_VIDEO_CAPTURE:
-            if (ipc_data.dev_type == IPC_DEV_TYPE_MAIN) {
-                rkVideoCapture(ipc_data.data.cap_path);
-            }
+			rkVideoCapture(callbackCapture,ipc_data.data.cap_path);
 			break;
 		case IPC_VIDEO_RECORD_START:
 			break;
@@ -415,13 +423,29 @@ static void callbackIpc(char *data,int size )
 			break;
 	}
 }
+static void* threadIpcSendMain(void *arg)
+{
+	Queue * queue = (Queue *)arg;
+	waitIpcOpen(IPC_MAIN);
+	IpcData ipc_data;
+	while (1) {
+		queue->get(queue,&ipc_data);	
+		ipc_data.dev_type = IPC_DEV_TYPE_VIDEO;
+		if (ipc_video)
+			ipc_video->sendData(ipc_video,IPC_MAIN,&ipc_data,sizeof(IpcData));
+	}
+	return NULL;
+}
 int main(int argc, char *argv[])
 {
 	rk_fb_init(FB_FORMAT_BGRA_8888);
 	rk_fb_set_yuv_range(CSC_BT601F);
 	display_clean_uiwin();
-	ipc_video = ipcCreate(IPC_CAMMER,callbackIpc);
 	rkVideoInit();
+	rkVideoDisplayLocal();
+	main_queue = queueCreate("main_queue",QUEUE_BLOCK,sizeof(IpcData));
+	createThread(threadIpcSendMain,main_queue);
+	ipc_video = ipcCreate(IPC_CAMMER,callbackIpc);
 	pause();
 	return 0;
 }

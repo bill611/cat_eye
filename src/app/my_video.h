@@ -31,6 +31,9 @@ extern "C" {
                 int w,int h,
                 char *id,char *nick_name,char *url);// 注册人脸
         void (*faceDelete)(char *id); // 删除人脸
+        int (*faceRecognizer)( unsigned char *image_buff,
+                int w,int h,
+                int *age,int *sex);// 识别人脸
 
 		void (*capture)(int type,int count);
 

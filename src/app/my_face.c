@@ -26,6 +26,7 @@
 #include "debug.h"
 #include "sql_handle.h"
 #include "thread_helper.h"
+#include "protocol.h"
 #include "my_audio.h"
 
 /* ---------------------------------------------------------------------------*
@@ -39,8 +40,6 @@
 /* ---------------------------------------------------------------------------*
  *                        macro define
  *----------------------------------------------------------------------------*/
-#define SIMILAYRITY 0.4
-#define RECOGNIZE_INTAVAL 30
 
 /* ---------------------------------------------------------------------------*
  *                      variables define
@@ -49,8 +48,6 @@ MyFace *my_face;
 
 static pthread_mutex_t mutex; // 初始化过程线程锁,初始化过程不可被打断
 static int face_init_finished = 0; // 初始化是否结束，未结束时不处理其他功能
-static MyFaceData face_data_last;// 最后一次人脸识别结果，如果为同一人，则每30秒处理一次结果
-static int recognize_intaval = 0; // 识别结果处理间隔
 
 /* ---------------------------------------------------------------------------*/
 /**
@@ -77,19 +74,8 @@ static void* threadInit(void *arg)
 #endif
     return NULL;
 }
-static void* threadTimer1s(void *arg)
-{
-    while (1) {
-        if (recognize_intaval)
-            recognize_intaval--;
-        sleep(1); 
-    }
-    return NULL;
-}
-
 static int init(void)
 {
-    memset(&face_data_last,0,sizeof(MyFaceData));
     createThread(threadInit,NULL);
 	return 0;
 }
@@ -117,6 +103,17 @@ regist_end:
 #endif
 }
 
+static int recognizerOnce(MyFaceRecognizer *data)
+{
+#ifdef USE_FACE
+	if (face_init_finished == 0)
+        return -1;
+	pthread_mutex_lock(&mutex);
+	int ret = rdfaceRecognizerOnce(data->image_buff,data->w,data->h,&data->age,&data->sex);
+	pthread_mutex_unlock(&mutex);
+    return ret;
+#endif
+}
 static int deleteOne(char *id)
 {
 	sqlDeleteFace(id);
@@ -130,26 +127,42 @@ static int featureCompareCallback(float *feature,
 {
 #ifdef USE_FACE
     MyFaceData data;
+	MyFaceData *p = (MyFaceData*)face_data_out;
     float feature_src[512];
     int result = -1;
-    sqlGetFaceStart();
-    while (1) {
-        memset(&data,0,sizeof(MyFaceData));
-        int ret = sqlGetFace(data.user_id,data.nick_name,data.url,feature_src);
-        if (ret == 0)
-            break;
-        float ret1 = rdfaceGetFeatureSimilarity(feature_src,feature);
-        if (ret1 > SIMILAYRITY) {
-			printf("similyrity:%f,:%s,name:%s,url:%s,sex:%d,age:%d\n", 
-					ret1,data.user_id,data.nick_name,data.url,sex,age);
-            result = 0;
-            if (face_data_out)
-                memcpy(face_data_out,&data,sizeof(MyFaceData));
-            break;
-        }
-    };
-    sqlGetFaceEnd();
-    return result;
+	if (sqlGetFaceCount()) {
+		sqlGetFaceStart();
+		while (1) {
+			memset(&data,0,sizeof(MyFaceData));
+			int ret = sqlGetFace(data.user_id,data.nick_name,data.url,feature_src);
+			if (ret == 0)
+				break;
+			float ret1 = rdfaceGetFeatureSimilarity(feature_src,feature);
+			if (ret1 > SIMILAYRITY) {
+				printf("similyrity:%f,:%s,name:%s,url:%s,sex:%d,age:%d\n", 
+						ret1,data.user_id,data.nick_name,data.url,sex,age);
+				result = 0;
+				if (p)
+					memcpy(p,&data,sizeof(MyFaceData));
+				break;
+			}
+		};
+		sqlGetFaceEnd();
+		if (result == -1) {
+			if (p) {
+				p->age = age;
+				p->sex = sex;
+			}
+			result = 1;
+		}
+	} else {
+		if (p) {
+			p->age = age;
+			p->sex = sex;
+		}
+		result = 1;
+	}
+	return result;
 #endif
 }
 
@@ -160,23 +173,17 @@ static void recognizer(char *image_buff,int w,int h)
         return;
 	if (pthread_mutex_trylock(&mutex) != 0)
 		return ;
-	int ret;
     MyFaceData face_data;
-	if (sqlGetFaceCount()) {
-        ret = rdfaceRecognizer(image_buff,w,h,featureCompareCallback,&face_data);
-        if (ret == 0) {
-            if (strcmp(face_data.nick_name,face_data_last.nick_name)) {
-                if (recognize_intaval == 0) {
-                    recognize_intaval = RECOGNIZE_INTAVAL;
-                    printf("recognizer->id:%s,name:%s,url:%s\n", 
-                            face_data.user_id,face_data.nick_name,face_data.url);
-					myAudioPlayRecognizer(face_data.nick_name);
-                }
-            }
-            memcpy(&face_data_last,&face_data,sizeof(MyFaceData));
-        }
-	} else {
-        ret = rdfaceRecognizer(image_buff,w,h,NULL,&face_data);
+	int ret = rdfaceRecognizer(image_buff,w,h,featureCompareCallback,&face_data);
+	if (ret == 0) {
+		printf("recognizer->id:%s,name:%s,url:%s\n", 
+				face_data.user_id,face_data.nick_name,face_data.url);
+		if (protocol_singlechip)
+			protocol_singlechip->hasPeople(face_data.nick_name,face_data.user_id);
+		myAudioPlayRecognizer(face_data.nick_name);
+	} else if (ret == 1) {
+		printf("recognizer->age:%d,sex:%d\n", 
+				face_data.age,face_data.sex);
 	}
 	pthread_mutex_unlock(&mutex);
 #endif
@@ -197,6 +204,7 @@ void myFaceInit(void)
 {
 	my_face = (MyFace *) calloc(1,sizeof(MyFace));
 	my_face->regist = regist;
+	my_face->recognizerOnce = recognizerOnce;
 	my_face->deleteOne = deleteOne;
 	my_face->recognizer = recognizer;
 	my_face->uninit = uninit;
@@ -207,6 +215,4 @@ void myFaceInit(void)
     pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE_NP);
     pthread_mutex_init(&mutex, &mutexattr);
 	pthread_mutexattr_destroy(&mutexattr);
-
-    createThread(threadTimer1s,NULL);
 }

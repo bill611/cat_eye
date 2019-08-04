@@ -79,6 +79,8 @@ ID INTEGER PRIMARY KEY,\
 date_time char(64),\
 type INTEGER, \
 hasPeople INTEGER, \
+age INTEGER, \
+sex INTEGER, \
 picture_id INTEGER\
 )";
 
@@ -482,12 +484,14 @@ void sqlInsertRecordAlarm(
 		char *date_time,
 		int type,
 		int has_people,
+		int age,
+		int sex,
 		uint64_t picture_id)
 {
 	char buf[256];
 	pthread_mutex_lock(&mutex);
-	sprintf(buf, "INSERT INTO RecordAlarm(date_time,type,hasPeople,picture_id) VALUES('%s','%d','%d','%d','%lld')",
-			date_time, type,has_people,picture_id);
+	sprintf(buf, "INSERT INTO RecordAlarm(date_time,type,hasPeople,age,sex,picture_id) VALUES('%s','%d','%d','%d','%d','%d','%lld')",
+			date_time, type,has_people,age,sex,picture_id);
 	printf("%s\n", buf);
 	LocalQueryExec(dbase.sql,buf);
 	dbase.checkFunc(dbase.sql);
@@ -521,6 +525,21 @@ void sqlInsertRecordTalkNoBack(
 	sprintf(buf, "INSERT INTO RecordTalk(date_time,people,callDir,hasPeople,autoAnswer,talkTime,picture_id)\
             VALUES('%s','%s','%d','%d','%d','%d','%d','%lld')",
 			date_time,people, call_dir,has_people,auto_answer,talk_time,picture_id);
+	printf("%s\n", buf);
+	LocalQueryExec(dbase.sql,buf);
+	pthread_mutex_unlock(&mutex);
+}
+
+void sqlInsertRecordFaceNoBack(
+		char *date_time,
+		char *face_id,
+		char *nick_name,
+		uint64_t picture_id)
+{
+	char buf[256];
+	pthread_mutex_lock(&mutex);
+	sprintf(buf, "INSERT INTO RecordFace(date_time,faceId,nickName,picture_id) VALUES('%s','%s','%s','%lld')",
+			date_time,face_id,nick_name,picture_id);
 	printf("%s\n", buf);
 	LocalQueryExec(dbase.sql,buf);
 	pthread_mutex_unlock(&mutex);

@@ -113,28 +113,48 @@ static BmpLocation base_bmps[] = {
 	{NULL},
 };
 
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief setAutoCloseLcdTime 设置关闭屏幕倒计时，同时重置睡眠倒计时
+ *
+ * @param count
+ */
+/* ---------------------------------------------------------------------------*/
+static void setAutoCloseLcdTime(int count)
+{
+	auto_close_lcd = count;
+	sleep_timer = 0;
+}
+
+void resetAutoSleepTimerLong(void)
+{
+	sleep_timer = SLEEP_LONG_TIMER;
+}
+
+void resetAutoSleepTimerShort(void)
+{
+	sleep_timer = SLEEP_TIMER;
+}
+
 static void enableAutoClose(void)
 {
 	flag_timer_stop = 0;	
-	auto_close_lcd = AUTO_CLOSE_LCD;
+	setAutoCloseLcdTime(AUTO_CLOSE_LCD);
 	my_video->showLocalVideo();
 }
 void screenAutoCloseStop(void)
 {
-	printf("[%s]\n", __func__);
-	auto_close_lcd = 0;
+	setAutoCloseLcdTime(0);
 }
 void formVideoLayerScreenOn(void)
 {
 	screensaverStart(1);
-	auto_close_lcd = AUTO_CLOSE_LCD;
-	sleep_timer = 0;
+	setAutoCloseLcdTime(AUTO_CLOSE_LCD);
 }
 void formVideoLayerGotoPoweroff(void)
 {
 	screensaverStart(1);
 	screenAutoCloseStop();
-	sleep_timer = 0;
 	createFormPowerOff(0);
 }
 /* ---------------------------------------------------------------------------*/
@@ -147,13 +167,15 @@ void formVideoLayerGotoPoweroff(void)
 static void formVideoLayerTimerProc1s(HWND hwnd)
 {
 	if (auto_close_lcd) {
-		// printf("auto_close_ld:%d\n",auto_close_lcd );
+		printf("auto_close_ld:%d\n",auto_close_lcd );
 		if (--auto_close_lcd == 0) {
 			screensaverStart(0);
-			sleep_timer = SLEEP_TIMER;
+			if(sleep_timer < SLEEP_TIMER)
+				sleep_timer = SLEEP_TIMER;
 		}
 	}
-	if (sleep_timer) {
+	if (sleep_timer && auto_close_lcd == 0) {
+		printf("sleep:%d\n", sleep_timer);
 		if (--sleep_timer == 0) {
 			protocol_singlechip->cmdSleep();
 		}
@@ -233,14 +255,14 @@ static int formVideoLayerProc(HWND hWnd, int message, WPARAM wParam, LPARAM lPar
 					break;
 				}
 				flag_timer_stop = 1;
-				auto_close_lcd = 0;
+				setAutoCloseLcdTime(0);
                 createFormMain(hWnd,enableAutoClose);
 			} break;
 		case MSG_LBUTTONDOWN:
 			if (screensaverStart(1)) {
 				screen_on = 1;
 			}
-			auto_close_lcd = AUTO_CLOSE_LCD;
+			setAutoCloseLcdTime(AUTO_CLOSE_LCD);
 			break;
 
 		case MSG_ENABLE_WINDOW:
@@ -248,6 +270,7 @@ static int formVideoLayerProc(HWND hWnd, int message, WPARAM wParam, LPARAM lPar
 			break;
 		case MSG_DISABLE_WINDOW:
 			flag_timer_stop = 1;
+			sleep_timer = 0;
 			break;
 		case MSG_DESTROY:
 			{

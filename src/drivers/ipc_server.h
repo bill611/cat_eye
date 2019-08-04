@@ -28,6 +28,7 @@ extern "C" {
 		int (*sendData)(struct _IpcServer *,char *path,void *data,int size);
 
 	}IpcServer;
+	void waitIpcOpen(char *path);
 
 	IpcServer* ipcCreate(const char *path,IpcCallback func);
 #ifdef __cplusplus

@@ -32,7 +32,7 @@
 #include "config.h"
 #include "my_audio.h"
 #include "debug.h"
-#include "externfunc.h"
+// #include "externfunc.h"
 #include "ipc_server.h"
 #include "thread_helper.h"
 #include "queue.h"
@@ -115,6 +115,31 @@ static Queue *video_queue = NULL;
 static Queue *main_queue = NULL;
 static uint8_t id = 0;
 
+static void getFileName(char *file_name,char *date)
+{
+	if (!file_name || !date)
+		return;
+	time_t timer;
+    struct tm *tm1;
+	timer = time(&timer);
+	tm1 = localtime(&timer);
+	sprintf(file_name,
+			"%02d%02d%02d%02d%02d%02d",
+			(tm1->tm_year+1900) % 100,
+			tm1->tm_mon+1,
+			tm1->tm_mday,
+			tm1->tm_hour,
+			tm1->tm_min,
+			tm1->tm_sec);
+	sprintf(date,
+			"%04d-%02d-%02d %02d:%02d:%02d",
+			tm1->tm_year+1900,
+			tm1->tm_mon+1,
+			tm1->tm_mday,
+			tm1->tm_hour,
+			tm1->tm_min,
+			tm1->tm_sec);
+}
 static void cmdPacket(uint8_t cmd,uint8_t id,uint8_t *data,int data_len)
 {
 	uint8_t *send_buff = NULL;
@@ -183,6 +208,7 @@ static void uartDeal(void)
 		return;
 	uint8_t cmd = buff[index + 3];
 	uint8_t *data = &buff[index + 4];
+	IpcData ipc_data;
 	switch(cmd)
 	{
 		case CMD_SET_PIR_RESPONSE:
@@ -190,28 +216,30 @@ static void uartDeal(void)
 		case CMD_GET_CHECK_RESPONSE:
 		case CMD_REPORT_RESPONSE:
 			if (data[0] & CHECK_POWER) {
-				IpcData ipc_data;
 				ipc_data.cmd = IPC_UART_KEY_POWER;
 				main_queue->post(main_queue,&ipc_data);
             } 
 			if (data[0] & CHECK_KEY_HOM) {
-				IpcData ipc_data;
 				ipc_data.cmd = IPC_UART_KEYHOME;
 				main_queue->post(main_queue,&ipc_data);
             } 
 			if (data[0] & CHECK_KEY_DOORBELL) {
-				IpcData ipc_data;
+				playVoice("/data/dingdong.wav");
+
+				getFileName(ipc_data.data.file.name,ipc_data.data.file.date);
+				sprintf(ipc_data.data.file.path,"%s%s_0.jpg",FAST_PIC_PATH,ipc_data.data.file.name);
+
+				ipc_data.cmd = IPC_VIDEO_CAPTURE;
+				video_queue->post(video_queue,&ipc_data);
+
 				ipc_data.cmd = IPC_UART_DOORBELL;
 				main_queue->post(main_queue,&ipc_data);
-				playVoice("/data/dingdong.wav");
 			} 
 			if (data[0] & CHECK_KEY_PIR) {
-				IpcData ipc_data;
 				ipc_data.cmd = IPC_UART_PIR;
 				main_queue->post(main_queue,&ipc_data);
 			}
 			if (data[0] & CHECK_KEY_WIFI) {
-				IpcData ipc_data;
 				ipc_data.cmd = IPC_UART_WIFI_WAKE;
 				main_queue->post(main_queue,&ipc_data);
 			}
@@ -219,7 +247,6 @@ static void uartDeal(void)
 			break;
 		case CMD_POWEROFF:
 			{
-				IpcData ipc_data;
 				ipc_data.cmd = IPC_UART_POWEROFF;
 				main_queue->post(main_queue,&ipc_data);
 				createThread(threadCmdSleep,NULL);
@@ -230,12 +257,6 @@ static void uartDeal(void)
 		default:
 			break;
 	}
-}
-
-static void registSingleChip(void)
-{
-	uartInit(uartDeal);
-	cmdCheckStatus();
 }
 
 static void ipcCallback(char *data,int size )
@@ -256,20 +277,6 @@ static void ipcCallback(char *data,int size )
 	}
 }
 
-static void waitIpcOpen(char *path)
-{
-	int fd = -1;
-	while (1) {
-		fd = access(path,0);
-		if (fd != 0) {
-			// printf("open ipc :%s fail,error:%s\n",path ,strerror(errno));
-			sleep(1);
-			continue;
-		}
-		close(fd);
-		return;
-	}
-}
 static void* threadIpcSendVideo(void *arg)
 {
 	Queue * queue = (Queue *)arg;
@@ -298,7 +305,10 @@ static void* threadIpcSendMain(void *arg)
 }
 int main(int argc, char *argv[])
 {
-	registSingleChip();
+	uartInit(uartDeal);
+	cmdCheckStatus();
+
+	mkdir(FAST_PIC_PATH, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
 	video_queue = queueCreate("video_queue",QUEUE_BLOCK,sizeof(IpcData));
 	main_queue = queueCreate("main_queue",QUEUE_BLOCK,sizeof(IpcData));

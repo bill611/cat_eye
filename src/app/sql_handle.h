@@ -77,6 +77,11 @@ extern "C" {
 	extern void sqlInsertRecordCapNoBack(
 			char *date,
 			uint64_t picture_id);
+	extern void sqlInsertRecordFaceNoBack(
+			char *date_time,
+			char *face_id,
+			char *nick_name,
+			uint64_t picture_id);
 	extern void sqlInsertPicUrlNoBack(
 			uint64_t picture_id,
 			char *url);
@@ -93,6 +98,8 @@ extern "C" {
 			char *date_time,
 			int type,
 			int has_people,
+			int age,
+			int sex,
 			uint64_t picture_id);
 	extern int sqlGetAlarmInfoUseDateType(
 			char *date_time,

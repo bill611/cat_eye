@@ -801,6 +801,6 @@ void saveLog(char *fmt, ...)
 		fclose(log_fd);
 	}
 	va_end(args);
-	configSync();
+	sync();
 }
 

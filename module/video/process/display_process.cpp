@@ -6,7 +6,7 @@
 
 static FILE *fp = NULL;
 int NV12Scale(unsigned char *psrc_buf, int psrc_w, int psrc_h, unsigned char **pdst_buf, int pdst_w, int pdst_h);
-static void writePicture(unsigned char *data)
+static void writePicture(DisplayProcess *This,unsigned char *data)
 {
 	if (fp == NULL)
 		return;
@@ -19,6 +19,8 @@ static void writePicture(unsigned char *data)
 		fclose(fp);
 		free(jpeg_buf);
 	}
+	if (This->capCallbackFunc())
+		This->capCallbackFunc()();
 	fp = NULL;
 }
 DisplayProcess::DisplayProcess()
@@ -66,7 +68,7 @@ bool DisplayProcess::processFrame(std::shared_ptr<BufferBase> inBuf,
         printf("rk_rga_ionfd_to_ionfd_rotate failed\n");
         return false;
     }
-	writePicture((unsigned char *)inBuf->getVirtAddr());
+	writePicture(this,(unsigned char *)inBuf->getVirtAddr());
 
     if (rk_fb_video_disp(video_win) < -1){
 		printf("rk_fb_video_disp failed\n");
@@ -119,7 +121,7 @@ static void* threadH264Dec(void *arg)
 			if (out_w != 0 && out_h != 0 && size_out > 0) {
 				NV12Scale(data_out, out_w, out_h, &nv12_scale_data, disp_width, disp_height);
 				memcpy(video_win->buffer,nv12_scale_data,disp_width*disp_height*3/2);
-				writePicture(nv12_scale_data);
+				writePicture(process,nv12_scale_data);
 				if (rk_fb_video_disp(video_win) < -1){
 					printf("rk_fb_video_disp failed\n");
 				}
@@ -147,11 +149,12 @@ void DisplayProcess::showPeerVideo(int w,int h,DecCallbackFunc decCallback)
 	createThread(threadH264Dec,this);
 }
 
-void DisplayProcess::capture(char *file_name)
+void DisplayProcess::capture(CapCallbackFunc capCallbackFunc,char *file_name)
 {
 	while (fp != NULL) {
 		usleep(10000);	
 	}
+	capCallbackFunc_ = capCallbackFunc;
 	if (fp == NULL)
 		fp = fopen(file_name,"wb");
 }

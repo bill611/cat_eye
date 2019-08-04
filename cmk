@@ -26,17 +26,17 @@ make
 if [ $? == 0 ]; then
 	cd ..
 	if [ $# == 0 ]; then
-		$RV1108_CROOS_PATH/bin/arm-linux-strip release/cat_eye
+		# $RV1108_CROOS_PATH/bin/arm-linux-strip release/cat_eye
 		cp release/cat_eye ~/arm_share/cat_eye/
 		cp release/cat_eye ../burn/root_usr/
 		cp release/cat_eye $RV1108_SDK_PATH/common/overlay/usr/
 
-		$RV1108_CROOS_PATH/bin/arm-linux-strip release/cammer_video
+		# $RV1108_CROOS_PATH/bin/arm-linux-strip release/cammer_video
 		cp release/cammer_video ~/arm_share/cat_eye/
 		cp release/cammer_video ../burn/userdata
 		cp release/cammer_video $RV1108_SDK_PATH/common/userdata/
 
-		$RV1108_CROOS_PATH/bin/arm-linux-strip release/singlechip
+		# $RV1108_CROOS_PATH/bin/arm-linux-strip release/singlechip
 		cp release/singlechip ~/arm_share/cat_eye/
 		cp release/singlechip ../burn/userdata
 		cp release/singlechip $RV1108_SDK_PATH/common/userdata/

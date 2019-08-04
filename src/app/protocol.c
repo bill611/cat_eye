@@ -472,12 +472,8 @@ static void ipcCallback(char *data,int size )
 {
 	IpcData ipc_data;
 	memcpy(&ipc_data,data,sizeof(IpcData));
-	if (ipc_data.dev_type == IPC_DEV_TYPE_UART) {
-		if (protocol_singlechip)
-			protocol_singlechip->deal(ipc_data.cmd,ipc_data.data.array_buf,ipc_data.leng);
-	} else if (ipc_data.dev_type == IPC_DEV_TYPE_VIDEO) {
-
-	}
+	if (protocol_singlechip)
+		protocol_singlechip->deal(&ipc_data);
 }
 
 void protocolInit(void)

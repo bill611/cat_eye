@@ -22,10 +22,8 @@
 #include <string.h>
 #include <unistd.h>
 #include "debug.h"
-#include "h264_enc_dec/mpi_enc_api.h"
 #include "jpeg_enc_dec.h"
 #include "avi_encode.h"
-#include "video_server.h"
 #include "my_face.h"
 #include "state_machine.h"
 #include "ucpaas/ucpaas.h"
@@ -64,6 +62,7 @@ enum {
 	EV_FACE_OFF,		// 关闭人脸识别功能
 	EV_FACE_OFF_FINISH,	// 关闭人脸识别功能结束
 	EV_FACE_REGIST,		// 注册人脸
+	EV_FACE_RECOGNIZER,	// 识别人脸
 	EV_TALK_CALLOUT,	// 对讲呼出
 	EV_TALK_CALLOUTALL,	// 遍历对讲呼出
 	EV_TALK_CALLOUTOK,	// 对讲呼出成功
@@ -94,6 +93,7 @@ enum {
 	DO_FACE_ON, 	// 人脸识别开启
 	DO_FACE_OFF, 	// 人脸识别关闭
     DO_FACE_REGIST, // 注册人脸
+	DO_FACE_RECOGNIZER,	// 识别人脸
     DO_TALK_CALLOUT, 	// 对讲呼出
     DO_TALK_CALLOUTALL, // 遍历对讲呼出
     DO_TALK_CALLIN, 	// 对讲呼入
@@ -149,6 +149,7 @@ static char *st_debug_ev[] = {
 	"EV_FACE_OFF",          // 关闭人脸识别功能
 	"EV_FACE_OFF_FINISH",   // 关闭人脸识别功能结束
 	"EV_FACE_REGIST",       // 注册人脸
+	"EV_FACE_RECOGNIZER",	// 识别人脸
 	"EV_TALK_CALLOUT",      // 对讲呼出
 	"EV_TALK_CALLOUTALL",   // 遍历对讲呼出
 	"EV_TALK_CALLOUTOK",	// 对讲呼出成功
@@ -177,6 +178,7 @@ static char *st_debug_do[] = {
 	"DO_FACE_ON",
 	"DO_FACE_OFF",
     "DO_FACE_REGIST",
+    "DO_FACE_RECOGNIZER",
     "DO_TALK_CALLOUT",
     "DO_TALK_CALLOUTALL",
     "DO_TALK_CALLIN",
@@ -209,6 +211,7 @@ static StateTable state_table[] =
 	{EV_FACE_ON,		ST_IDLE,	ST_FACE,	DO_FACE_ON},
 	{EV_FACE_OFF,		ST_FACE,	ST_IDLE,	DO_FACE_OFF},
 	{EV_FACE_REGIST,	ST_FACE,	ST_FACE,	DO_FACE_REGIST},
+	{EV_FACE_RECOGNIZER,ST_FACE,	ST_FACE,	DO_FACE_RECOGNIZER},
 
 	{EV_FACE_OFF_FINISH,ST_TALK_CALLOUT,	ST_TALK_CALLOUT,	DO_TALK_CALLOUT},
 	{EV_FACE_OFF_FINISH,ST_TALK_CALLOUTALL,	ST_TALK_CALLOUTALL,	DO_TALK_CALLOUTALL},
@@ -346,6 +349,14 @@ static int stmDoFaceRegist(void *data,MyVideo *arg)
 	else
 		return -1;
 }
+static int stmDoFaceRecognizer(void *data,MyVideo *arg)
+{
+	if (my_face)
+		return my_face->recognizerOnce((MyFaceRecognizer *)data);
+	else
+		return -1;
+}
+
 
 #ifdef USE_VIDEO
 static void sendVideoCallbackFunc(void *data,int size,int fram_type)
@@ -582,11 +593,11 @@ static void* threadCapture(void *arg)
 		fclose(fp);
 #endif
 #endif
-		sprintf(url,"http://img.cateye.taichuan.com/%s_%d.jpg",cap_data_temp.file_name,i);
+		sprintf(url,"%s/%s_%d.jpg",QINIU_URL,cap_data_temp.file_name,i);
 		sqlInsertPicUrlNoBack(cap_data_temp.pic_id,url);
 		usleep(500000);
 	}
-	protocol_hardcloud->uploadPic();
+	protocol_hardcloud->uploadPic(TEMP_PIC_PATH);
 	protocol_hardcloud->reportCapture(cap_data_temp.pic_id);
 	return NULL;
 }
@@ -740,6 +751,7 @@ static StmDo stm_do[] =
 	{DO_FACE_ON,    	stmDoFaceOn},
 	{DO_FACE_OFF,   	stmDoFaceOff},
 	{DO_FACE_REGIST,	stmDoFaceRegist},
+	{DO_FACE_RECOGNIZER,stmDoFaceRecognizer},
 	{DO_TALK_CALLOUT,	stmDoTalkCallout},
 	{DO_TALK_CALLOUTALL,stmDoTalkCalloutAll},
 	{DO_TALK_CALLIN,	stmDoTalkCallin},
@@ -899,6 +911,20 @@ static void faceDelete(char *id)
         my_face->deleteOne(id);
 }
 
+static int faceRecognizer( unsigned char *image_buff,int w,int h,int *age,int *sex)
+{
+    MyFaceRecognizer face_data;
+    face_data.image_buff = image_buff;
+    face_data.w = w;
+    face_data.h = h;
+	int ret = stm->msgPostSync(stm,EV_FACE_RECOGNIZER,&face_data);
+	if (ret == 0) {
+		*age = face_data.age;	
+		*sex = face_data.sex;	
+	}
+    return ret;
+}
+
 static void* threadVideoTimer(void *arg)
 {
 	while (1) {
@@ -922,6 +948,7 @@ void myVideoInit(void)
 	my_video->faceStop = faceStop;
 	my_video->faceRegist = faceRegist;
 	my_video->faceDelete = faceDelete;
+	my_video->faceRecognizer = faceRecognizer;
 	my_video->capture = capture;
 	my_video->recordStart = recordStart;
 	my_video->recordStop = recordStop;
