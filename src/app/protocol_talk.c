@@ -29,6 +29,7 @@
 #include "my_mixer.h"
 #include "my_gpio.h"
 #include "my_audio.h"
+#include "my_echo.h"
 #include "ucpaas/ucpaas.h"
 #include "udp_server.h"
 #include "udp_talk/udp_talk_protocol.h"
@@ -258,16 +259,19 @@ static void cbRecording(char *data,unsigned int size)
     char audio_buff[1024] = {0};
 	if (my_mixer ) {
 		int real_size = my_mixer->Read(my_mixer,audio_buff,size);
-        if (mic_open)
+		if (mic_open) {
             memcpy(data,audio_buff,real_size); 
+		}
         if (my_video)
             my_video->recordWriteCallback(audio_buff,real_size);
 	}
 }
 static void cbPlayAudio(const char *data,unsigned int size)
 {
-	if (my_mixer)
+	if (my_mixer) {
+		
 		my_mixer->Write(my_mixer,audio_fp,data,size);
+	}
 }
 
 static Callbacks interface = {
@@ -430,4 +434,5 @@ void registTalk(void)
 	protocol_video->enable(protocol_video);
 	udp_talk_trans = createRtp(&rtp_interface,protocol_video);
 #endif
+	rkEchoInit();
 }

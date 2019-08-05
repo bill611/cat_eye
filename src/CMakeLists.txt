@@ -28,6 +28,9 @@ target_link_libraries (${EXE}
 	-Wl,--end-group
 	)
 if (PLATFORM_RV1108)
-	target_link_libraries (${EXE} ts rkrga rkfb ion yuv stdc++)
+	target_link_libraries (${EXE} 
+		ts 
+		rkrga rkfb ion yuv stdc++
+		voice_process )
 endif()
 

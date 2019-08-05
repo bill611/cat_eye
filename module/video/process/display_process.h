@@ -7,6 +7,7 @@
 #include <rk_rga/rk_rga.h>
 
 typedef void (*DecCallbackFunc)(void *data,int *size);
+typedef void (*DecCallbackEndFunc)(void);
 typedef void (*CapCallbackFunc)(void);
 
 class DisplayProcess : public StreamPUBase {
@@ -18,7 +19,7 @@ class DisplayProcess : public StreamPUBase {
                             std::shared_ptr<BufferBase> output) override;
 	void setVideoBlack(void);
 	void showLocalVideo(void);
-	void showPeerVideo(int w,int h,DecCallbackFunc decCallBack);
+	void showPeerVideo(int w,int h,DecCallbackFunc decCallBack,DecCallbackEndFunc decEndCallBack);
 	void capture(CapCallbackFunc capCallbackFunc,char *file_name);
     
 	bool start_dec(void) const {
@@ -36,6 +37,10 @@ class DisplayProcess : public StreamPUBase {
 		return decCallback_;
 	};
 
+	DecCallbackEndFunc decEndCallBack(void) const {
+		return decEndCallBack_;
+	};
+
 	CapCallbackFunc capCallbackFunc(void) const {
 		return capCallbackFunc_;
 	};
@@ -47,6 +52,7 @@ class DisplayProcess : public StreamPUBase {
 	int width_;
 	int height_;
 	DecCallbackFunc decCallback_;
+	DecCallbackEndFunc decEndCallBack_;
 	CapCallbackFunc capCallbackFunc_;
 };
 

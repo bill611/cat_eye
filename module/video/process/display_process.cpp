@@ -134,14 +134,16 @@ static void* threadH264Dec(void *arg)
     }
 	if (my_h264dec)
 		my_h264dec->unInit(my_h264dec);
-	printf("%s(),%d\n", __func__,__LINE__);
+	if (process->decEndCallBack())
+		process->decEndCallBack()();
 	return NULL;
 }
-void DisplayProcess::showPeerVideo(int w,int h,DecCallbackFunc decCallback)
+void DisplayProcess::showPeerVideo(int w,int h,DecCallbackFunc decCallback,DecCallbackEndFunc decEndCallBack)
 {
 	width_ = w;
 	height_ = h;
 	decCallback_ = decCallback;
+	decEndCallBack_ = decEndCallBack;
 	start_dec_ = true;
 	setVideoBlack();
 	if (my_h264dec)

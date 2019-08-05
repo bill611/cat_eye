@@ -259,7 +259,7 @@ static void loadIconviewData(void)
 {
 	int i;
 	memset(item_data,0,sizeof(struct IconviewItem));
-	int user_num = sqlGetUserInfoUseScopeStart(DEV_TYPE_HOUSEHOLDAPP);
+	int user_num = sqlGetUserInfoUseScopeStart(DEV_TYPE_ENTRANCEMACHINE);
 	SendMessage (hIconView, IVM_RESETCONTENT, 0, 0);
 	for (i=0; i<user_num && i<16; i++) {
 		sqlGetUserInfosUseScope(item_data[i].user_id,item_data[i].nick_name);

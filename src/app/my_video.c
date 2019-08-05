@@ -205,6 +205,7 @@ static TalkPeerDev talk_peer_dev;
 static pthread_mutex_t mutex;
 static ShareMemory *share_mem = NULL;  //共享内存
 static int send_video_start = 0;
+static int rec_video_start = 0;
 
 static StateTable state_table[] =
 {
@@ -282,12 +283,17 @@ static void* threadFace(void *arg)
 {
 	if (share_mem == NULL)
 		share_mem = shareMemoryCreateSlave(IMAGE_MAX_DATA,1);
+	if (share_mem == NULL) {
+		printf("[%s]main:share mem create fail\n",__func__);
+		return NULL;
+	}
+    IpcData ipc_data;
+    ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
+    ipc_data.cmd = IPC_VIDEO_FACE_ON;
+    if (ipc_main)
+        ipc_main->sendData(ipc_main,IPC_CAMMER,&ipc_data,sizeof(ipc_data));
 	while (1) {
 		int mem_len = 0;
-		if (share_mem == NULL) {
-			printf("main:share mem create fail\n");
-			return NULL;
-		}
 		CammerData *mem_data = (CammerData *)share_mem->GetStart(share_mem,&mem_len);
 		if (mem_data == NULL)
 			break;
@@ -314,11 +320,6 @@ static int stmDoFaceOn(void *data,MyVideo *arg)
 	if (my_face)    
 		my_face->init();
 	createThread(threadFace,NULL);
-    IpcData ipc_data;
-    ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
-    ipc_data.cmd = IPC_VIDEO_FACE_ON;
-    if (ipc_main)
-        ipc_main->sendData(ipc_main,IPC_CAMMER,&ipc_data,sizeof(ipc_data));
 #endif
 }
 
@@ -369,12 +370,12 @@ static void* sendVideoCallbackFunc(void *arg)
 	send_video_start = 1;
 	if (share_mem == NULL)
 		share_mem = shareMemoryCreateSlave(1024*50,4);
+	if (share_mem == NULL) {
+		printf("[%s]main:share mem create fail\n",__func__);
+		return NULL;
+	}
 	while (send_video_start) {
 		int mem_len = 0;
-		if (share_mem == NULL) {
-			printf("main:share mem create fail\n");
-			return NULL;
-		}
 		char *mem_data = (char *)share_mem->GetStart(share_mem,&mem_len);
 		if (!mem_data || mem_len == 0) {
 			share_mem->GetEnd(share_mem);
@@ -552,6 +553,7 @@ static int stmDoTalkHangupAll(void *data,MyVideo *arg)
 	if (ipc_main)
 		ipc_main->sendData(ipc_main,IPC_CAMMER,&ipc_data,sizeof(ipc_data));
 	send_video_start = 0;
+	rec_video_start = 0;
 #endif
 	protocol_talk->hangup();
 	if (protocol_talk->uiHangup)
@@ -870,15 +872,45 @@ static void showLocalVideo(void)
 #endif
 	faceStart();
 }
-static void receiveVideo(void *data,int *size)
+static void *threadReceiveVideo(void *arg)
 {
-	protocol_talk->receiveVideo(data,size);	
+	rec_video_start = 1;
+	if (share_mem == NULL)
+		share_mem = shareMemoryCreateMaster(1024*50,4);
+	if (share_mem == NULL) {
+		printf("[%s]main:share mem create fail\n",__func__);
+		return NULL;
+	}
+
+	IpcData ipc_data;
+	ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
+	ipc_data.cmd = IPC_VIDEO_DECODE_ON;
+	if (ipc_main)
+		ipc_main->sendData(ipc_main,IPC_CAMMER,&ipc_data,sizeof(ipc_data));
+
+	while (rec_video_start) {
+		int size = 0;
+		char * mem_data = (char *)share_mem->SaveStart(share_mem);
+		if (mem_data) {
+			char data[1024*50];
+			protocol_talk->receiveVideo(data,&size);	
+			if (size)
+				memcpy(mem_data,data,size);
+		}
+		share_mem->SaveEnd(share_mem,size);
+	}
+	share_mem->CloseMemory(share_mem);
+	share_mem->Destroy(share_mem);
+	share_mem = NULL;
+	return NULL;
 }
 
 static void showPeerVideo(void)
 {
 #ifdef USE_VIDEO
 	rkVideoDisplayPeer(1024,600,receiveVideo);
+#else
+	createThread(threadReceiveVideo,NULL);
 #endif
 }
 static void hideVideo(void)

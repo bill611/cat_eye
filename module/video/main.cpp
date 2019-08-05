@@ -33,7 +33,7 @@ class RKVideo {
     void disconnect(std::shared_ptr<CamHwItf::PathBase> mpath,
 		                 std::shared_ptr<StreamPUBase> next);
 
-	void displayPeer(int w,int h,void* decCallback);
+	void displayPeer(int w,int h,void* decCallback,void* decEndCallback);
 	void displayLocal(void);
 	void displayOff(void);
     void faceOnOff(bool type,FaceCallbackFunc faceCallback);
@@ -144,14 +144,14 @@ void RKVideo::displayLocal(void)
 		connect(cam_dev->mpath(), display_process, cam_dev->format(), 0, nullptr);
 	}
 }
-void RKVideo::displayPeer(int w,int h,void* decCallback)
+void RKVideo::displayPeer(int w,int h,void* decCallback,void* decEndCallback)
 {
 	if (cam_info.num_camers <= 0)
 		return;
 	if (display_state_ != 2) {
 		display_state_ = 2;
 		disconnect(cam_dev->mpath(), display_process);
-		display_process->showPeerVideo(w,h,(DecCallbackFunc)decCallback);
+		display_process->showPeerVideo(w,h,(DecCallbackFunc)decCallback,(DecCallbackEndFunc)decEndCallback);
 	}
 }
 
@@ -257,13 +257,33 @@ int rkVideoDisplayLocal(void)
 
 static void callbackDecode(void *data,int *size)
 {
-
+	int mem_len = 0;
+	char *mem_data = (char *)share_mem->GetStart(share_mem,&mem_len);
+	if (mem_data == NULL)
+		return;
+	if (mem_len == 0) {
+		share_mem->GetEnd(share_mem);
+		return;
+	}
+	memcpy(data,mem_data,mem_len);
+	*size = mem_len;
+	share_mem->GetEnd(share_mem);
+}
+static void callbackDecodeEnd(void)
+{
+	if (share_mem == NULL)
+		return;
+	share_mem->CloseMemory(share_mem);
+	share_mem->Destroy(share_mem);
+	share_mem = NULL;
 }
 
-int rkVideoDisplayPeer(int w,int h,void * callbackDecode)
+int rkVideoDisplayPeer(int w,int h,void * callbackDecode, void *callbackDecodeEnd)
 {
+	if (share_mem == NULL)
+		share_mem = shareMemoryCreateSlave(1024*50,4);
 	if (rkvideo)
-		rkvideo->displayPeer(w,h,callbackDecode);
+		rkvideo->displayPeer(w,h,callbackDecode,callbackDecodeEnd);
 }
 int rkVideoDisplayOff(void)
 {
@@ -409,8 +429,10 @@ static void callbackIpc(char *data,int size )
             }
 			break;
 		case IPC_VIDEO_DECODE_ON:
+			rkVideoDisplayPeer(1024,600,(void *)callbackDecode,(void *)callbackDecodeEnd);
 			break;
 		case IPC_VIDEO_DECODE_OFF:
+			rkVideoDisplayLocal();
 			break;
 		case IPC_VIDEO_CAPTURE:
 			rkVideoCapture(callbackCapture,ipc_data.data.cap_path);
