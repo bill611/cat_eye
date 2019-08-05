@@ -42,7 +42,7 @@
  *----------------------------------------------------------------------------*/
 
 static char   cmd_buf[1024] = {0};
-static char * excuteCmd(char *Cmd,...)
+char * excuteCmd(char *Cmd,...)
 {
 	int i;
 	FILE *fp;

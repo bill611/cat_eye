@@ -1,13 +1,11 @@
 
 set(MODULE_VIDEO
     main.cpp
-	h264_enc_dec/mpi_dec_api.c
 	h264_enc_dec/mpi_enc_api.c
 	camera/camerahal.cpp
 	buffer/camerabuf.cpp
 	process/display_process.cpp
 	process/encoder_process.cpp
-	process/face_process.cpp
 )
 
 add_definitions(

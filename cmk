@@ -18,7 +18,6 @@ else
 		-DCMAKE_BUILD_TYPE=Release \
 		-DMODE_UDPTALK=OFF \
 		\
-		-DMODE_VIDEO=OFF \
 		-DMODE_UART=OFF \
 		..
 fi

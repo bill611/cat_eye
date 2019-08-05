@@ -6,6 +6,8 @@
 #include <rk_fb/rk_fb.h>
 #include <rk_rga/rk_rga.h>
 
+typedef void (*DecCallbackFunc)(void *data,int *size);
+
 class DisplayProcess : public StreamPUBase {
  public:
     DisplayProcess();
@@ -15,6 +17,7 @@ class DisplayProcess : public StreamPUBase {
                             std::shared_ptr<BufferBase> output) override;
 	void setVideoBlack(void);
 	void showLocalVideo(void);
+	void showPeerVideo(int w,int h,DecCallbackFunc decCallBack);
 	void capture(char *file_name);
     
 	bool start_dec(void) const {
@@ -28,11 +31,16 @@ class DisplayProcess : public StreamPUBase {
 		return height_;
 	}
 
+	DecCallbackFunc decCallback(void) const {
+		return decCallback_;
+	};
+
  private:
     int rga_fd;
     bool start_dec_;
 	int width_;
 	int height_;
+	DecCallbackFunc decCallback_;
 };
 
 

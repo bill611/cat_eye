@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include "face_process.h"
 #include "thread_helper.h"
+#include "my_face.h"
 #include "debug.h"
 
 /* ---------------------------------------------------------------------------*
@@ -33,6 +34,22 @@
 /* ---------------------------------------------------------------------------*
  *                        macro define
  *----------------------------------------------------------------------------*/
+#define IAMGE_MAX_W 1280
+#define IAMGE_MAX_H 720
+#define IMAGE_MAX_DATA (IAMGE_MAX_W * IAMGE_MAX_H * 3 / 2 )
+
+enum {
+	TYPE_GET_FACE,	   // 人脸识别
+	TYPE_GET_CAPTURE,  // 抓拍
+	TYPE_GET_RECORD,   // 录像
+};
+
+typedef struct _CammerData {
+	int get_data_end;
+	int type;
+	int w,h;
+	char data[IMAGE_MAX_DATA];
+}CammerData;
 
 /* ---------------------------------------------------------------------------*
  *                      variables define
@@ -41,6 +58,7 @@ static CammerData camm_info;
 static pthread_mutex_t mutex;		//队列控制互斥信号
 
 
+//#define TEST_WRITE_SP_TO_FILE
 static void* faceProcessThread(void *arg)
 {
 	FaceProcess *process = (FaceProcess *)arg;
@@ -49,12 +67,12 @@ static void* faceProcessThread(void *arg)
 			usleep(10000);
 			continue;
 		}
-        if (process->faceCallback())
-            process->faceCallback()(&camm_info,sizeof(camm_info));
+		if (my_face){
+			my_face->recognizer(camm_info.data,camm_info.w,camm_info.h);
+		}
 		pthread_mutex_lock(&mutex);
 		camm_info.get_data_end = 0;
 		pthread_mutex_unlock(&mutex);
-		usleep(100000);
 	}
 	return NULL;	
 }
@@ -90,9 +108,10 @@ bool FaceProcess::processFrame(std::shared_ptr<BufferBase> inBuf,
     return true;
 }
 
-void FaceProcess::faceInit(FaceCallbackFunc faceCallback)
+void FaceProcess::faceInit(void)
 {
-    faceCallback_ = faceCallback;
+    if (my_face)    
+        my_face->init();
 	camm_info.get_data_end = 0;
 	start_enc_ = true;
 	createThread(faceProcessThread,this);
@@ -100,7 +119,16 @@ void FaceProcess::faceInit(FaceCallbackFunc faceCallback)
 
 void FaceProcess::faceUnInit(void)
 {
+    if (my_face)    
+        my_face->uninit();
 	camm_info.get_data_end = 0;
 	start_enc_ = false;
 }
 
+int FaceProcess::faceRegist(void *data)
+{
+    MyFaceRegistData *face_data = (MyFaceRegistData *)data;
+    if (!my_face)
+        return -1;
+    return my_face->regist(face_data);
+}

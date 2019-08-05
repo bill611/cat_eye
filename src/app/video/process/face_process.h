@@ -19,19 +19,6 @@
 
 #include <CameraHal/StrmPUBase.h>
 
-typedef void (*FaceCallbackFunc)(void *data,int size);
-
-#define IAMGE_MAX_W 1280
-#define IAMGE_MAX_H 720
-#define IMAGE_MAX_DATA (IAMGE_MAX_W * IAMGE_MAX_H * 3 / 2 )
-
-
-typedef struct _CammerData {
-	int get_data_end;
-	int type;
-	int w,h;
-	char data[IMAGE_MAX_DATA];
-}CammerData;
 
 class FaceProcess : public StreamPUBase {
  public:
@@ -43,15 +30,12 @@ class FaceProcess : public StreamPUBase {
 	bool start_enc(void) const {
 		return start_enc_;
 	};
-	FaceCallbackFunc faceCallback(void) const {
-		return faceCallback_;
-	};
 
-    void faceInit(FaceCallbackFunc faceCallback);
+    void faceInit(void);
     void faceUnInit(void);
+    int faceRegist(void *data);
  private:
     bool start_enc_;
-    FaceCallbackFunc faceCallback_;
 };
 
 

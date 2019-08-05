@@ -4,14 +4,8 @@
 #include "camerabuf.h"
 #include "thread_helper.h"
 #include "process/display_process.h"
+#include "process/face_process.h"
 #include "process/encoder_process.h"
-#include "protocol.h"
-#include "config.h"
-#include "queue.h"
-
-#define COLOR_KEY_R 0x0
-#define COLOR_KEY_G 0x0
-#define COLOR_KEY_B 0x1
 
 
 class RKVideo {
@@ -19,14 +13,17 @@ class RKVideo {
     RKVideo();
     ~RKVideo();
 
-	int connect(std::shared_ptr<CamHwItf::PathBase> mpath,
+	int connect(std::shared_ptr<CamHwItf::PathBase> mpath, 
 		            std::shared_ptr<StreamPUBase> next,
-                    frm_info_t& frmFmt, const uint32_t num,
+                    frm_info_t& frmFmt, const uint32_t num, 
                     std::shared_ptr<RKCameraBufferAllocator> allocator);
-    void disconnect(std::shared_ptr<CamHwItf::PathBase> mpath,
+    void disconnect(std::shared_ptr<CamHwItf::PathBase> mpath, 
 		                 std::shared_ptr<StreamPUBase> next);
 
+	void displayPeer(int w,int h,void* decCallback);
 	void displayLocal(void);
+	void displayOff(void);
+    void faceOnOff(bool type);
 	void h264EncOnOff(bool type,int w,int h,EncCallbackFunc encCallback);
 	void capture(char *file_name);
 	void recordStart(EncCallbackFunc recordCallback);
@@ -34,8 +31,9 @@ class RKVideo {
 	void recordStop(void);
 
  private:
-
+ 	
     int display_state_; // 0关闭 1本地视频 2远程视频
+    bool face_state_;
     bool h264enc_state_;
     struct rk_cams_dev_info cam_info;
     std::shared_ptr<RKCameraBufferAllocator> ptr_allocator;
@@ -43,6 +41,7 @@ class RKVideo {
     std::shared_ptr<RKCameraHal> cam_dev;
 
     std::shared_ptr<DisplayProcess> display_process;
+    std::shared_ptr<FaceProcess> face_process;
     std::shared_ptr<H264Encoder> encode_process;
 };
 
@@ -52,6 +51,7 @@ static int init_ok = 0;
 RKVideo::RKVideo()
 {
     display_state_ = false;
+	face_state_ = false;
 	h264enc_state_ = false;
 
     memset(&cam_info, 0, sizeof(cam_info));
@@ -64,13 +64,17 @@ RKVideo::RKVideo()
 	cam_dev = ((shared_ptr<RKCameraHal>)
 			new RKCameraHal(new_dev, cam_info.cam[0]->index,  cam_info.cam[0]->type));
 	cam_dev->init(1280, 720, 25);
-
+	
     ptr_allocator = shared_ptr<RKCameraBufferAllocator>(new RKCameraBufferAllocator());
-	cam_dev->start(4, ptr_allocator);
+	cam_dev->start(5, ptr_allocator);
 
     display_process = std::make_shared<DisplayProcess>();
 	if (display_process.get() == nullptr)
 		std::cout << "[rv_video]DisplayProcess make_shared error" << std::endl;
+
+    face_process = std::make_shared<FaceProcess>();
+	if (face_process.get() == nullptr)
+		std::cout << "[rv_video]FaceProcess make_shared error" << std::endl;
 
 	encode_process = std::make_shared<H264Encoder>();
 	if (encode_process.get() == nullptr)
@@ -85,11 +89,11 @@ RKVideo::~RKVideo()
 	init_ok = 0;
 }
 
-int RKVideo::connect(std::shared_ptr<CamHwItf::PathBase> mpath,
+int RKVideo::connect(std::shared_ptr<CamHwItf::PathBase> mpath, 
 				std::shared_ptr<StreamPUBase> next,
-				frm_info_t& frmFmt, const uint32_t num,
+				frm_info_t& frmFmt, const uint32_t num, 
 				std::shared_ptr<RKCameraBufferAllocator> allocator)
-{
+{			
 	if (!mpath.get() || !next.get()) {
 		printf("[rv_video:%s]PathBase,PU is NULL\n",__func__);
 	}
@@ -104,7 +108,7 @@ int RKVideo::connect(std::shared_ptr<CamHwItf::PathBase> mpath,
 }
 
 
-void RKVideo::disconnect(std::shared_ptr<CamHwItf::PathBase> mpath,
+void RKVideo::disconnect(std::shared_ptr<CamHwItf::PathBase> mpath, 
 					 std::shared_ptr<StreamPUBase> next)
 {
 	if (!mpath.get() || !next.get()) {
@@ -125,6 +129,45 @@ void RKVideo::displayLocal(void)
 		display_state_ = 1;
 		display_process->showLocalVideo();
 		connect(cam_dev->mpath(), display_process, cam_dev->format(), 0, nullptr);
+	}
+}
+void RKVideo::displayPeer(int w,int h,void* decCallback)
+{
+	if (cam_info.num_camers <= 0)
+		return;
+	if (display_state_ != 2) {
+		display_state_ = 2;
+		disconnect(cam_dev->mpath(), display_process);
+		display_process->showPeerVideo(w,h,(DecCallbackFunc)decCallback);
+	}
+} 
+
+void RKVideo::displayOff(void)
+{
+	if (cam_info.num_camers <= 0)
+		return;
+	if (display_state_ != 0) {
+		display_state_ = 0;
+		disconnect(cam_dev->mpath(), display_process);
+		display_process->setVideoBlack();
+	}
+} 
+void RKVideo::faceOnOff(bool type)
+{
+	if (cam_info.num_camers <= 0)
+		return;
+    if (type == true) {
+        if (face_state_ == false) {
+            face_state_ = true;
+            face_process->faceInit();
+            connect(cam_dev->mpath(), face_process, cam_dev->format(), 0, nullptr);
+        }
+    } else {
+        if (face_state_ == true) {
+            face_state_ = false;
+            disconnect(cam_dev->mpath(), face_process);
+            face_process->faceUnInit();
+        }
 	}
 }
 void RKVideo::h264EncOnOff(bool type,int w,int h,EncCallbackFunc encCallback)
@@ -148,9 +191,10 @@ void RKVideo::h264EncOnOff(bool type,int w,int h,EncCallbackFunc encCallback)
 void RKVideo::capture(char *file_name)
 {
 	if (display_state_ == 0)
-		return;
+		return;	
 	display_process->capture(file_name);
 }
+
 void RKVideo::recordStart(EncCallbackFunc recordCallback)
 {
     if (display_state_ != 1)
@@ -170,96 +214,96 @@ void RKVideo::recordStop(void)
 	h264EncOnOff(false,0,0,NULL);
 }
 
-
-static int rkVideoDisplayLocal(void)
+static void* threadVideoInit(void *arg)
 {
+	RKVideo* p_video = NULL;
+	while (1) {
+		p_video = new RKVideo();
+		if (init_ok == 0) {
+			printf("[%s,%d]\n", __func__,__LINE__);
+			delete p_video;
+		} else {
+			printf("[%s,%d]\n", __func__,__LINE__);
+			rkvideo = p_video;
+			break;
+		}
+		sleep(1);
+	}
+	return NULL;
 }
 
+extern "C" 
+int rkVideoInit(void)
+{
+	// createThread(threadVideoInit,NULL);
+	rkvideo = new RKVideo();
+}
 
-static int rkH264EncOn(int w,int h,EncCallbackFunc encCallback)
+extern "C" 
+int rkVideoDisplayLocal(void)
+{
+	if (rkvideo)
+		rkvideo->displayLocal();
+}
+
+extern "C" 
+int rkVideoDisplayPeer(int w,int h,void * decCallBack)
+{
+	if (rkvideo)
+		rkvideo->displayPeer(w,h,decCallBack);
+}
+extern "C" 
+int rkVideoDisplayOff(void)
+{
+	if (rkvideo)
+		rkvideo->displayOff();
+}
+extern "C" 
+int rkVideoFaceOnOff(int type)
+{
+	if (rkvideo == NULL)
+		return 0;
+	if (type)
+		rkvideo->faceOnOff(true);
+	else
+		rkvideo->faceOnOff(false);
+}
+
+extern "C" 
+int rkH264EncOn(int w,int h,EncCallbackFunc encCallback)
 {
 	if (rkvideo)
 		rkvideo->h264EncOnOff(true,w,h,encCallback);
 }
 
-static int rkH264EncOff(void)
+extern "C" 
+int rkH264EncOff(void)
 {
 	if (rkvideo)
 		rkvideo->h264EncOnOff(false,0,0,NULL);
 }
 
-static int rkVideoCapture(char *file_name)
+extern "C" 
+int rkVideoCapture(char *file_name)
 {
 	if (rkvideo)
 		rkvideo->capture(file_name);
 }
-static int rkVideoRecordStart(EncCallbackFunc recordCallback)
+extern "C" 
+int rkVideoRecordStart(EncCallbackFunc recordCallback)
 {
 	if (rkvideo)
 		rkvideo->recordStart(recordCallback);
 }
-static int rkVideoRecordSetStopFunc(RecordStopCallbackFunc recordCallback)
+extern "C" 
+int rkVideoRecordSetStopFunc(RecordStopCallbackFunc recordCallback)
 {
 	if (rkvideo)
 		rkvideo->recordSetStopFunc(recordCallback);
 }
-static int rkVideoRecordStop(void)
+extern "C" 
+int rkVideoRecordStop(void)
 {
 	if (rkvideo)
 		rkvideo->recordStop();
-}
-static void display_clean_uiwin(void)
-{
-	struct win * ui_win;
-	struct color_key color_key;
-	unsigned short rgb565_data;
-	unsigned short *ui_buff;
-	int i;
-	int w, h;
-
-	ui_win = rk_fb_getuiwin();
-	ui_buff = (unsigned short *)ui_win->buffer;
-
-	/* enable and set color key */
-	color_key.enable = 1;
-	color_key.red = (COLOR_KEY_R & 0x1f) << 3;
-	color_key.green = (COLOR_KEY_G & 0x3f) << 2;
-	color_key.blue = (COLOR_KEY_B & 0x1f) << 3;
-	rk_fb_set_color_key(color_key);
-
-	rk_fb_get_out_device(&w, &h);
-
-	/* set ui win color key */
-	rgb565_data = (COLOR_KEY_R & 0x1f) << 11 | ((COLOR_KEY_G & 0x3f) << 5) | (COLOR_KEY_B & 0x1f);
-	for (i = 0; i < w * h; i ++) {
-		ui_buff[i] = rgb565_data;
-	}
-}
-
-static void callbackEncode(void *data,int size,int fram_type)
-{
-}
-
-
-int main(int argc, char *argv[])
-{
-	rk_fb_init(FB_FORMAT_BGRA_8888);
-	rk_fb_set_yuv_range(CSC_BT601F);
-	display_clean_uiwin();
-	rkvideo = new RKVideo();
-	if (rkvideo)
-		rkvideo->displayLocal();
-	if (argc < 2)	
-		goto process_end;
-	if (strcmp(argv[1],"cap") == 0) {
-		printf("cap:%s\n",argv[2]);
-		rkVideoCapture(argv[2]);
-	} else if (strcmp(argv[1],"record") == 0) {
-		printf("record:%s\n",argv[2]);
-		rkH264EncOn(320,240,callbackEncode);
-	}
-
-process_end:
-	delete rkvideo;
-	return 0;
 }

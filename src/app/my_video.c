@@ -35,6 +35,7 @@
 #include "config.h"
 #include "my_video.h"
 #include "my_mixer.h"
+#include "video/video_server.h"
 #include "share_memory.h"
 
 /* ---------------------------------------------------------------------------*
@@ -903,6 +904,10 @@ static void *threadReceiveVideo(void *arg)
 	share_mem->Destroy(share_mem);
 	share_mem = NULL;
 	return NULL;
+}
+static void receiveVideo(void *data,int *size)
+{
+	protocol_talk->receiveVideo(data,size);
 }
 
 static void showPeerVideo(void)
