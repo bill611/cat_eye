@@ -13,14 +13,8 @@ class DisplayProcess : public StreamPUBase {
 
     bool processFrame(std::shared_ptr<BufferBase> input,
                             std::shared_ptr<BufferBase> output) override;
-	void setVideoBlack(void);
-	void showLocalVideo(void);
 	void capture(char *file_name);
     
-	bool start_dec(void) const {
-		return start_dec_;
-	};
-
 	int getWidth(void) const {
 		return width_;
 	}
@@ -30,7 +24,6 @@ class DisplayProcess : public StreamPUBase {
 
  private:
     int rga_fd;
-    bool start_dec_;
 	int width_;
 	int height_;
 };

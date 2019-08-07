@@ -146,11 +146,21 @@ void screenAutoCloseStop(void)
 {
 	setAutoCloseLcdTime(0);
 }
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief formVideoLayerScreenOn 点亮屏幕
+ */
+/* ---------------------------------------------------------------------------*/
 void formVideoLayerScreenOn(void)
 {
 	screensaverStart(1);
 	setAutoCloseLcdTime(AUTO_CLOSE_LCD);
 }
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief formVideoLayerGotoPoweroff 关机时调用
+ */
+/* ---------------------------------------------------------------------------*/
 void formVideoLayerGotoPoweroff(void)
 {
 	screensaverStart(1);
@@ -219,10 +229,12 @@ static int formVideoLayerProc(HWND hWnd, int message, WPARAM wParam, LPARAM lPar
 				SetTimer(hWnd, IDC_TIMER_1S, TIME_1S);
 
 				formVideoLoadBmp();
-				HWND form = createFormVideo(hWnd,FORM_VIDEO_TYPE_CAPTURE,NULL,0);
+				HWND form = createFormPowerOff(hWnd);
 				ShowWindow(form,SW_HIDE);
-				form = createFormPowerOff(hWnd);
+				form = createFormVideo(hWnd,FORM_VIDEO_TYPE_CAPTURE,NULL,0);
 				ShowWindow(form,SW_HIDE);
+
+				Screen.setCurrent("TFrmVL");
 				my_video->showLocalVideo();
 				formVideoInitInterface();
 				screensaverStart(1);

@@ -296,7 +296,7 @@ static void buttonCapturePress(HWND hwnd, int id, int nc, DWORD add_data)
 	if (nc != BN_CLICKED)
 		return;
 	flag_timer_stop = 1;
-	my_video->capture(CAP_TYPE_FORMMAIN,g_config.capture_count);
+	my_video->capture(CAP_TYPE_FORMMAIN,g_config.cap.count,NULL,NULL);
 }
 static void buttonAccessPress(HWND hwnd, int id, int nc, DWORD add_data)
 {

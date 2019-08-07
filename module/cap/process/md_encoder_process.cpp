@@ -23,8 +23,8 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-#include "h264_enc_dec/mpi_enc_api.h"
-#include "encoder_process.h"
+#include "h264_enc_dec/md_mpi_enc_api.h"
+#include "md_encoder_process.h"
 #include "thread_helper.h"
 #include "libyuv.h"
 #include "debug.h"

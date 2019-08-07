@@ -24,10 +24,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "debug.h"
-#include "thread_helper.h"
 #include "my_gpio.h"
-#include "externfunc.h"
 #include "protocol.h"
 #include "sql_handle.h"
 #include "config.h"

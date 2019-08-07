@@ -49,6 +49,7 @@ extern "C" {
 		IPC_UART_WIFI_WAKE,			// wifi唤醒触发
 		IPC_UART_POWEROFF,			// 室内机电源键长按关机
 		IPC_UART_REMOVE_CAP,		// 当识别到为熟人后删除门铃拍照
+		IPC_UART_CAPTURE,			// 开机前抓拍图片
 	};
 	enum {
 		PROTOCOL_TALK_3000,
@@ -97,6 +98,11 @@ extern "C" {
 		char nick_name[32];		// 年龄
 		char user_id[32];		// 年龄
 	}ReportFaceData;
+
+	typedef struct _UpLoadData{
+		char file_path[64];	// 图片本地路径
+		uint64_t picture_id;// 徘徊报警时，抓拍图片
+	}UpLoadData;
 
 	typedef struct _IpcData {
 		int cmd;
@@ -160,7 +166,7 @@ extern "C" {
 
 	// 平台协议
 	typedef struct _ProtocolHardcloud {
-		void (*uploadPic)(char *path);
+		void (*uploadPic)(char *path,uint64_t pic_id);
 		void (*reportCapture)(uint64_t pic_id);
 		void (*reportAlarm)(ReportAlarmData *data);
 		void (*reportFace)(ReportFaceData *data);

@@ -30,7 +30,9 @@ static EtcValueChar etc_public_char[]={
 static EtcValueInt etc_private_int[]={
 {"wireless",	"enable",		&g_config.net_config.enable,0},
 {"cloud",		"timestamp",	&g_config.timestamp,		0},
-{"device",		"capture_count",&g_config.capture_count,	1},
+{"cap",			"type",			&g_config.cap.type,			0},
+{"cap",			"count",		&g_config.cap.count,		1},
+{"cap",			"timer",		&g_config.cap.timer,		5},
 };
 
 static EtcValueChar etc_private_char[]={
@@ -43,6 +45,7 @@ static EtcValueChar etc_private_char[]={
 {"wireless",	"security",	SIZE_CONFIG(g_config.net_config.security),	"WPA/WPA2 PSK"},
 {"wireless",	"password",	SIZE_CONFIG(g_config.net_config.password),	"12345678"},
 {"wireless",	"running",	SIZE_CONFIG(g_config.net_config.running),	"station"},
+{"face",		"license",	SIZE_CONFIG(g_config.f_license),			"0"},
 
 };
 
@@ -237,7 +240,7 @@ void createSdcardDirs(void)
 }
 void configLoad(void)
 {
-	char *sec_private[] = {"device","wireless","cloud",NULL};
+	char *sec_private[] = {"device","wireless","cloud","face","cap",NULL};
 
 	int ret = loadIniFile(&cfg_private_ini,CONFIG_FILENAME,sec_private);
 	configLoadEtcInt(cfg_private_ini,etc_private_int,NELEMENTS(etc_private_int));
@@ -259,7 +262,7 @@ void configLoad(void)
 	if (fileexists(QRCODE_APP) == 0) {
 
 	}
-	mkdir(TEMP_PIC_PATH, 	S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+	// mkdir(TEMP_PIC_PATH, 	S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 	createSdcardDirs();
 }
 

@@ -12,11 +12,11 @@ add_definitions(
 	-DLINUX -DSUPPORT_ION -DENABLE_ASSERT -DDEBUG
 )
 
-add_executable(cammer_video ${MODULE_VIDEO})
+add_executable(cammer_cap ${MODULE_VIDEO})
 
-target_link_libraries(cammer_video
+target_link_libraries(cammer_cap
 	-Wl,--start-group
-    ion pthread adk cam_ia cam_engine_cifisp rkfb rkrga 
+    ion pthread adk cam_ia cam_engine_cifisp 
 	rkmedia mpp drivers
 	turbojpeg 
 	yuv rt

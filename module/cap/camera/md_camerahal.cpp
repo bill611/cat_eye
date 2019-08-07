@@ -1,4 +1,4 @@
-#include "camerahal.h"
+#include "md_camerahal.h"
 
 RKCameraHal::RKCameraHal(std::shared_ptr<CamHwItf> dev, 
 							   int index, int type)

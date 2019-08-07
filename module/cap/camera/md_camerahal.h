@@ -1,9 +1,9 @@
 #ifndef __CAMERA_HAL_H__
 #define __CAMERA_HAL_H__
 
-#include "camera_factory.h"
-#include "camerabuf.h"
-#include "display_process.h"
+#include "md_camera_factory.h"
+#include "md_camerabuf.h"
+#include "md_display_process.h"
 
 class RKCameraHal  {
  public:

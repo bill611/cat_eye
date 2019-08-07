@@ -114,6 +114,7 @@ int createFormPowerOff(HWND hMainWnd)
 		ShowWindow(Form,SW_SHOWNORMAL);
 		Screen.setCurrent(form_base_priv.name);
 	} else {
+		ShowWindow(Form,SW_SHOWNORMAL);
 		form_base = formBaseCreate(&form_base_priv);
 		return CreateMyWindowIndirectParam(form_base->priv->dlgInitParam,
 				hMainWnd, form_base->priv->dlgProc, 0);

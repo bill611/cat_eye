@@ -227,7 +227,7 @@ static void cbReceivedCmd(const char *user_id,void *arg)
 			mic_open = 0;
 			break;
 		case MSG_TYPE_CAPTURE :
-			my_video->capture(CAP_TYPE_TALK,1);
+			my_video->capture(CAP_TYPE_TALK,1,NULL,NULL);
 			break;
 		case MSG_TYPE_RECORD_START:
 			my_video->recordStart(CAP_TYPE_TALK);

@@ -19,11 +19,12 @@
  *                      include head files
  *----------------------------------------------------------------------------*/
 #include <arm_neon.h>
-#include "stdlib.h"
-#include "stdio.h"
-#include "unistd.h"
-#include "string.h"
-#include "fcntl.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
+#include <fcntl.h>
+#include "config.h"
 #include "RSCommon.h"
 #include "readsense_face_sdk.h"
 #include "ion/ion.h"
@@ -170,7 +171,8 @@ int rdfaceInit(void)
 				// 2dfe86e156957ca1
 				// "ea15e2876d514524c873b6159b86f2f5d715819598ee3b116e51cb2338b8ffbe5556ef1d9e7ee21739588fd631923ffd80df7158e7e6fb561eac7faa8252f67e"
 				// f07440307d514cc7
-				"424b15c4f0f7f373f7a893544bd758a95bda33c689ab124c66efdb9d93533afc5024f5c8abb68150991e642f54c8e13b34b8ed968aedd024d7d0bc72622ffedb"
+				g_config.f_license
+				// "424b15c4f0f7f373f7a893544bd758a95bda33c689ab124c66efdb9d93533afc5024f5c8abb68150991e642f54c8e13b34b8ed968aedd024d7d0bc72622ffedb"
 				)) {
 
 		DPRINT("%s:------> readsense_initial_face_sdk failed.\n", __func__);

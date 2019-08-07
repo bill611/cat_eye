@@ -42,6 +42,10 @@
  *----------------------------------------------------------------------------*/
 extern int playVoice(char * file_name);
 extern char * excuteCmd(char *Cmd,...);
+extern void sconfigLoad(void);
+extern int getCapType(void);
+extern int getCapCount(void);
+extern int getCapTimer(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -176,6 +180,17 @@ static void* threadCmdSleep(void *arg)
 	}
 	return NULL;
 }
+static void* threadCapture(void *arg)
+{
+	IpcData ipc_data;
+	getFileName(ipc_data.data.file.name,ipc_data.data.file.date);
+	char count[5];
+	sprintf(count,"%d",getCapCount());
+	excuteCmd("/data/cammer_cap",ipc_data.data.file.name,count,NULL);
+	ipc_data.cmd = IPC_UART_CAPTURE;
+	main_queue->post(main_queue,&ipc_data);
+	return NULL;	
+}
 
 static void uartDeal(void)
 {
@@ -215,6 +230,7 @@ static void uartDeal(void)
 			break;
 		case CMD_GET_CHECK_RESPONSE:
 		case CMD_REPORT_RESPONSE:
+			cmdPacket(CMD_REPORT,0,NULL,0);
 			if (data[0] & CHECK_POWER) {
 				ipc_data.cmd = IPC_UART_KEY_POWER;
 				main_queue->post(main_queue,&ipc_data);
@@ -226,11 +242,9 @@ static void uartDeal(void)
 			if (data[0] & CHECK_KEY_DOORBELL) {
 				playVoice("/data/dingdong.wav");
 
-				getFileName(ipc_data.data.file.name,ipc_data.data.file.date);
-				sprintf(ipc_data.data.file.path,"%s%s_0.jpg",FAST_PIC_PATH,ipc_data.data.file.name);
-
-				if (access(path,0) == 0)
-					excuteCmd("/data/cammer_video","cap",ipc_data.data.file.path);
+				if (access(IPC_MAIN,0) != 0) {
+					createThread(threadCapture,NULL);
+				}
 
 				ipc_data.cmd = IPC_UART_DOORBELL;
 				main_queue->post(main_queue,&ipc_data);
@@ -243,7 +257,6 @@ static void uartDeal(void)
 				ipc_data.cmd = IPC_UART_WIFI_WAKE;
 				main_queue->post(main_queue,&ipc_data);
 			}
-			cmdPacket(CMD_REPORT,0,NULL,0);
 			break;
 		case CMD_POWEROFF:
 			{
@@ -292,14 +305,15 @@ static void* threadIpcSendMain(void *arg)
 }
 int main(int argc, char *argv[])
 {
+	sconfigLoad();
 	uartInit(uartDeal);
 	cmdCheckStatus();
 
 	mkdir(FAST_PIC_PATH, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
 	main_queue = queueCreate("main_queue",QUEUE_BLOCK,sizeof(IpcData));
-	createThread(threadIpcSendMain,main_queue);
 	ipc_uart = ipcCreate(IPC_UART,ipcCallback);
+	createThread(threadIpcSendMain,main_queue);
 	pause();
 	return 0;
 }

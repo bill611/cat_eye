@@ -28,7 +28,7 @@
 #include <mpi/mpp_common.h>
 
 #include "utils.h"
-#include "mpi_enc_api.h"
+#include "md_mpi_enc_api.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare

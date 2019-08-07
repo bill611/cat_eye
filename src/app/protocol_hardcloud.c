@@ -44,7 +44,6 @@
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
-extern void resetAutoSleepTimerLong(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -770,7 +769,7 @@ static void* tcpHeartThread(void *arg)
 			char tcp_rec[64] = {0};
 			int len = tcp_client->RecvBuffer(tcp_client,tcp_rec,sizeof(tcp_rec),1000);
 			if (strcmp(tcp_rec,"AwakenAsync")== 0)
-				resetAutoSleepTimerLong();
+				my_video->delaySleepTime(1);
 			goto loop_heart;
 		}
 		send_interval = 0;
@@ -793,14 +792,6 @@ loop_heart:
 	getGateWayMac(gateway,g_config.wifi_lowpower.dst_mac);
 	sprintf(imei,"\"%s\"",g_config.imei);	
 	sprintf(imei_len,"%ld",strlen(g_config.imei));	
-	// excuteCmd("dhd_priv","wl","tcpka_conn_add","1",
-			// "6C:F0:49:49:49:11",
-			// g_config.wifi_lowpower.local_ip,
-			// "10.0.1.36",
-			// "0","1223",
-			// "9292",
-			// "1","0","1024","1062046","2130463","1",imei_len, imei,
-			// NULL);
 	excuteCmd("dhd_priv","wl","tcpka_conn_add","1",
 			g_config.wifi_lowpower.dst_mac,
 			g_config.wifi_lowpower.local_ip,
@@ -828,27 +819,31 @@ static void* getIntercomsThread(void *arg)
 
 static void* threadUpload(void *arg)
 {
-	char path[64] = {0};
+	UpLoadData up_data;
 	char *qiniu_upload= NULL;
 	DIR *dir;
 	struct dirent *dirp;
-	queue_list.upload = queueCreate("upload",QUEUE_BLOCK,sizeof(path));
+	queue_list.upload = queueCreate("upload",QUEUE_BLOCK,sizeof(UpLoadData));
 	while (!qiniu_server_token) {
 		sleep(1);
 	}
 	while (1) {
-		queue_list.upload->get(queue_list.upload,&path);
-		if((dir=opendir(path)) == NULL) {
-			printf("Open File %s Error %s\n",path,strerror(errno));
+		queue_list.upload->get(queue_list.upload,&up_data);
+		char file_name[32] = {0};
+		sprintf(file_name,"%lld",up_data.picture_id);
+		int file_len = strlen(file_name);
+		if((dir=opendir(up_data.file_path)) == NULL) {
+			printf("Open File %s Error %s\n",up_data.file_path,strerror(errno));
 			return 0;
 		}
 		while((dirp=readdir(dir)) != NULL) {
-			if ((strcmp(".",dirp->d_name) == 0) || (strcmp("..",dirp->d_name) == 0)) {
+			if (		(strcmp(".",dirp->d_name) == 0) 
+					|| 	(strcmp("..",dirp->d_name) == 0)
+					|| 	strncmp(file_name,dirp->d_name,file_len)) {
 				continue;
-
 			}
 			char buf[64];
-			sprintf(buf,"%s%s",path,dirp->d_name);
+			sprintf(buf,"%s%s",up_data.file_path,dirp->d_name);
 			printf("%s\n",buf);
 			http->qiniuUpload("http://upload-z2.qiniup.com",
 					NULL,qiniu_server_token,
@@ -870,10 +865,13 @@ static void* threadUpload(void *arg)
 	}
 	return NULL;
 }
-static void uploadPic(char *path)
+static void uploadPic(char *path,uint64_t pic_id)
 {
+	UpLoadData up_data;
+	strcpy(up_data.file_path,path);
+	up_data.picture_id = pic_id;
 	if (queue_list.upload)
-		queue_list.upload->post(queue_list.upload,path);
+		queue_list.upload->post(queue_list.upload,&up_data);
 }
 
 static void* threadReportCapture(void *arg)

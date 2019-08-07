@@ -35,7 +35,7 @@ extern "C" {
                 int w,int h,
                 int *age,int *sex);// 识别人脸
 
-		void (*capture)(int type,int count);
+		void (*capture)(int type,int count,char *nick_name,char *user_id);
 
 		void (*recordStart)(int type);
 		void (*recordWriteCallback)(char *data,int size);
@@ -47,6 +47,8 @@ extern "C" {
 		void (*videoAnswer)(int dir,int dev_type); // dir 0本机接听 1对方接听
 		void (*videoHangup)(void);
 		int (*videoGetCallTime)(void);
+
+		int (*delaySleepTime)(int type); // 延长睡眠时间0短 1长
 	}MyVideo;
 	extern MyVideo *my_video;
 	void myVideoInit(void);

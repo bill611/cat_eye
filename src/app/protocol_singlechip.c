@@ -40,7 +40,6 @@
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
 extern void screenAutoCloseStop(void);
-extern void resetAutoSleepTimerShort(void);
 extern IpcServer* ipc_main;
 
 /* ---------------------------------------------------------------------------*
@@ -63,7 +62,6 @@ static int pir_act_timer = 0; // PIR传感器触发倒计时，10秒内没有触
 static int pir_disact_timer = 0; // PIR传感器触发倒计时，10秒内没有触发，清零
 static int pir_cycle_end = 0; // PIR触发周期结束,一个周期内，只触发一次人脸或门铃
 static uint64_t picture_id = 0;
-static int cap_end = 0; // 是否抓图结束，结束后可以上传图片
 
 static void cmdSleep(void)
 {
@@ -98,64 +96,11 @@ static void* threadPirTimer(void *arg)
 static void* threadCapture(void *arg)
 {
 	uint64_t picture_id = *(uint64_t *)arg;
-	while (cap_end == 0) {
-		usleep(100000);
-	}
-	cap_end = 0;
-	protocol_hardcloud->uploadPic(FAST_PIC_PATH);
+	protocol_hardcloud->uploadPic(FAST_PIC_PATH,picture_id);
 	protocol_hardcloud->reportCapture(picture_id);
 	return NULL;
 }
 
-static void* threadAlarm(void *arg)
-{
-	ReportAlarmData *alarm_data = (ReportAlarmData *)arg;
-	while (cap_end == 0) {
-		usleep(100000);
-	}
-	char pic_buf_jpg[100 * 1024];
-	unsigned char *pic_buf_yuv = NULL;
-	int yuv_len = 0;
-	int w,h;
-	cap_end = 0;
-	FILE *fp = fopen(alarm_data->file_path,"rb");
-	int leng = fread(pic_buf_jpg,1,sizeof(pic_buf_jpg),fp);
-	fclose(fp);
-	jpegToYuv420sp((unsigned char *)pic_buf_jpg, leng,&w,&h, &pic_buf_yuv, &yuv_len);
-	if (my_video) {
-		if (my_video->faceRecognizer(pic_buf_yuv,w,h,&alarm_data->age,&alarm_data->sex) == 0)
-			alarm_data->has_people = 1;
-		else
-			alarm_data->has_people = 0;
-	}
-	if (pic_buf_yuv)
-		free(pic_buf_yuv);
-
-	sqlInsertRecordAlarm(alarm_data->date,
-			alarm_data->type,
-			alarm_data->has_people,
-			alarm_data->age,
-			alarm_data->sex,
-			alarm_data->picture_id);
-	protocol_hardcloud->uploadPic(FAST_PIC_PATH);
-	protocol_hardcloud->reportAlarm(alarm_data);
-	return NULL;
-}
-static void* threadFace(void *arg)
-{
-	ReportFaceData *face_data = (ReportFaceData *)arg;
-	while (cap_end == 0) {
-		usleep(100000);
-	}
-
-	sqlInsertRecordFaceNoBack(face_data->date,
-			face_data->user_id,
-			face_data->nick_name,
-			face_data->picture_id);
-	protocol_hardcloud->uploadPic(FAST_PIC_PATH);
-	protocol_hardcloud->reportFace(face_data);
-	return NULL;
-}
 static void deal(IpcData *ipc_data)
 {
 	switch(ipc_data->cmd)
@@ -174,8 +119,12 @@ static void deal(IpcData *ipc_data)
 				formVideoLayerScreenOn();
 #endif
 #ifdef USE_UCPAAS
-				// my_video->videoCallOutAll();
+				my_video->videoCallOutAll();
 #endif
+			}
+			break;
+		case IPC_UART_CAPTURE:
+			{
 				if (pir_cycle_end == 1)
 					break;
 				pir_cycle_end = 1;
@@ -185,42 +134,24 @@ static void deal(IpcData *ipc_data)
 				sqlInsertRecordCapNoBack(ipc_data->data.file.date,picture_id);
 				sqlInsertPicUrlNoBack(picture_id,url);
 				createThread(threadCapture,&picture_id);
-			}
-			break;
-		case IPC_VIDEO_CAPTURE_END:
-			cap_end = 1;
-			break;
+			} break;
 		case IPC_UART_POWEROFF:
 			my_video->hideVideo();
 			formVideoLayerGotoPoweroff();
 			break;
 		case IPC_UART_PIR:
-			resetAutoSleepTimerShort();
+			my_video->delaySleepTime(0);
 			pir_act_timer = PIR_TIMER_INTERVAL;
 			pir_disact_timer = 0;
 			if (pir_cycle_end == 1)
 				break;
 			if (++pir_act_count == PIR_ACTIVE_COUNT) {
 				pir_cycle_end = 1;
-				// 上传报警记录
-				static ReportAlarmData alarm_data;
-				IpcData ipc_data;
-				char url[256] = {0};
-				getFileName(ipc_data.data.file.name,ipc_data.data.file.date);
-				sprintf(ipc_data.data.file.path,"%s%s_0.jpg",FAST_PIC_PATH,ipc_data.data.file.name);
-				sprintf(url,"%s/%s_0.jpg",QINIU_URL,ipc_data.data.file.name);
-
-				strcpy(alarm_data.date,ipc_data.data.file.date);
-				strcpy(alarm_data.file_path,ipc_data.data.file.path);
-				alarm_data.type = ALARM_TYPE_PEOPLES;
-				alarm_data.picture_id = atoll(ipc_data.data.file.name);
-				sqlInsertPicUrlNoBack(alarm_data.picture_id,url);
-				createThread(threadAlarm,&alarm_data);
-
-				ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
-				ipc_data.cmd = IPC_VIDEO_CAPTURE;
-				if (ipc_main)
-					ipc_main->sendData(ipc_main,IPC_CAMMER,&ipc_data,sizeof(ipc_data));
+				if (g_config.cap.type == 0)
+					my_video->capture(CAP_TYPE_ALARM,g_config.cap.count,NULL,NULL);
+				else {
+					// 录像	
+				}
 			}
 			break;
 		default:
@@ -233,26 +164,7 @@ static void hasPeople(char *nick_name,char *user_id)
 	if (pir_cycle_end == 1)
 		return;
 	pir_cycle_end = 1;
-	// 上传人脸识别记录		
-	static ReportFaceData face_data;
-	IpcData ipc_data;
-	char url[256] = {0};
-	getFileName(ipc_data.data.file.name,ipc_data.data.file.date);
-	sprintf(ipc_data.data.file.path,"%s%s_0.jpg",FAST_PIC_PATH,ipc_data.data.file.name);
-	sprintf(url,"%s/%s_0.jpg",QINIU_URL,ipc_data.data.file.name);
-
-	strcpy(face_data.date,ipc_data.data.file.date);
-	strcpy(face_data.file_path,ipc_data.data.file.path);
-	strcpy(face_data.nick_name,nick_name);
-	strcpy(face_data.user_id,user_id);
-	face_data.picture_id = atoll(ipc_data.data.file.name);
-	sqlInsertPicUrlNoBack(face_data.picture_id,url);
-	createThread(threadFace,&face_data);
-
-	ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
-	ipc_data.cmd = IPC_VIDEO_CAPTURE;
-	if (ipc_main)
-		ipc_main->sendData(ipc_main,IPC_CAMMER,&ipc_data,sizeof(ipc_data));
+	my_video->capture(CAP_TYPE_FACE,1,nick_name,user_id);
 }
 
 void registSingleChip(void)

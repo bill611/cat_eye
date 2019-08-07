@@ -41,6 +41,8 @@
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
+extern void resetAutoSleepTimerLong(void);
+extern void resetAutoSleepTimerShort(void);
 extern int formCreateCaputure(int count);
 extern IpcServer* ipc_main;
 
@@ -75,6 +77,7 @@ enum {
 	EV_RECORD_START,	// 录像开始
 	EV_RECORD_STOP,	    // 录像结束
 	EV_RECORD_STOP_FINISHED,// 录像结束后执行动作
+	EV_DELAY_SLEEP,		// APP操作时延长睡眠时间
 };
 
 enum {
@@ -105,6 +108,7 @@ enum {
     DO_CAPTURE_NO_UI, 	// 抓拍本地,不进入抓拍界面
     DO_RECORD_START, 	// 录像开始
     DO_RECORD_STOP, 	// 录像结束
+	DO_DELAY_SLEEP,		// APP操作时延长睡眠时间
 };
 
 typedef struct _StmData {
@@ -132,6 +136,8 @@ typedef struct _CapData {
 	int count;
 	char file_date[32];
 	char file_name[32];
+	char nick_name[128];
+	char usr_id[128];
 }CapData;
 
 typedef struct _CammerData {
@@ -162,6 +168,7 @@ static char *st_debug_ev[] = {
 	"EV_RECORD_START",      // 录像开始
 	"EV_RECORD_STOP",       // 录像结束
 	"EV_RECORD_STOP_FINISHED",// 录像结束后执行动作
+	"EV_DELAY_SLEEP", 		// APP操作时延长睡眠时间
 };
 static char *st_debug_st[] = {
 	"ST_IDLE",
@@ -190,6 +197,7 @@ static char *st_debug_do[] = {
 	"DO_CAPTURE_NO_UI",
     "DO_RECORD_START",
     "DO_RECORD_STOP",
+	"DO_DELAY_SLEEP",		// APP操作时延长睡眠时间
 };
 
 static StateTableDebug st_debug = {
@@ -259,6 +267,9 @@ static StateTable state_table[] =
 	{EV_CAPTURE,	ST_IDLE,			ST_IDLE,		DO_CAPTURE},
 	{EV_CAPTURE,	ST_FACE,			ST_FACE,		DO_CAPTURE},
 	{EV_CAPTURE,	ST_TALK_TALKING,	ST_TALK_TALKING,DO_CAPTURE_NO_UI},
+	
+	{EV_DELAY_SLEEP,ST_IDLE,	ST_IDLE,	DO_DELAY_SLEEP},
+	{EV_DELAY_SLEEP,ST_FACE,	ST_FACE,	DO_DELAY_SLEEP},
 };
 
 static int stmDoFail(void *data,MyVideo *arg)
@@ -280,47 +291,10 @@ static int stmDoNothing(void *data,MyVideo *arg)
 	
 }
 
-static void* threadFace(void *arg)
-{
-	if (share_mem == NULL)
-		share_mem = shareMemoryCreateSlave(IMAGE_MAX_DATA,1);
-	if (share_mem == NULL) {
-		printf("[%s]main:share mem create fail\n",__func__);
-		return NULL;
-	}
-    IpcData ipc_data;
-    ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
-    ipc_data.cmd = IPC_VIDEO_FACE_ON;
-    if (ipc_main)
-        ipc_main->sendData(ipc_main,IPC_CAMMER,&ipc_data,sizeof(ipc_data));
-	while (1) {
-		int mem_len = 0;
-		CammerData *mem_data = (CammerData *)share_mem->GetStart(share_mem,&mem_len);
-		if (mem_data == NULL)
-			break;
-		if (mem_len == 0) {
-			share_mem->GetEnd(share_mem);
-			goto send_sleep;
-		}
-		if (my_face)    
-			my_face->recognizer(mem_data->data,mem_data->w,mem_data->h);
-		share_mem->GetEnd(share_mem);
-send_sleep:
-		usleep(10000);
-	}
-	share_mem->CloseMemory(share_mem);
-	share_mem->Destroy(share_mem);
-	share_mem = NULL;
-	return NULL;
-}
 static int stmDoFaceOn(void *data,MyVideo *arg)
 {
 #ifdef USE_VIDEO
     rkVideoFaceOnOff(1);
-#else
-	if (my_face)    
-		my_face->init();
-	createThread(threadFace,NULL);
 #endif
 }
 
@@ -328,14 +302,6 @@ static int stmDoFaceOff(void *data,MyVideo *arg)
 {
 #ifdef USE_VIDEO
     rkVideoFaceOnOff(0);
-#else
-	if (my_face)    
-		my_face->uninit();
-    IpcData ipc_data;
-    ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
-    ipc_data.cmd = IPC_VIDEO_FACE_OFF;
-    if (ipc_main)
-        ipc_main->sendData(ipc_main,IPC_CAMMER,&ipc_data,sizeof(ipc_data));
 #endif
 	st_data = (StmData *)stm->initPara(stm,
 			        sizeof(StmData));
@@ -547,14 +513,6 @@ static int stmDoTalkHangupAll(void *data,MyVideo *arg)
 {
 #ifdef USE_VIDEO
 	rkH264EncOff();
-#else
-	IpcData ipc_data;
-	ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
-	ipc_data.cmd = IPC_VIDEO_ENCODE_OFF;
-	if (ipc_main)
-		ipc_main->sendData(ipc_main,IPC_CAMMER,&ipc_data,sizeof(ipc_data));
-	send_video_start = 0;
-	rec_video_start = 0;
 #endif
 	protocol_talk->hangup();
 	if (protocol_talk->uiHangup)
@@ -567,7 +525,7 @@ static int stmDoTalkHangupAll(void *data,MyVideo *arg)
 static int stmDoTalkHangup(void *data,MyVideo *arg)
 {
 	stmDoTalkHangupAll(data,arg);
-	my_video->hideVideo();
+	// my_video->hideVideo();
 }
 
 static void* threadCapture(void *arg)
@@ -579,7 +537,7 @@ static void* threadCapture(void *arg)
 	char url[256] = {0};
 	// printf("thread count:%d,date:%s,name:%s\n",cap_data_temp.count,cap_data_temp.file_date,cap_data_temp.file_name);
 	for (i=0; i<cap_data_temp.count; i++) {
-		sprintf(file_path,"%s%s_%d.jpg",TEMP_PIC_PATH,cap_data_temp.file_name,i);
+		sprintf(file_path,"%s%s_%d.jpg",FAST_PIC_PATH,cap_data_temp.file_name,i);
 		// printf("wirte :%s\n",file_path);
 
 #ifdef USE_VIDEO
@@ -600,8 +558,91 @@ static void* threadCapture(void *arg)
 		sqlInsertPicUrlNoBack(cap_data_temp.pic_id,url);
 		usleep(500000);
 	}
-	protocol_hardcloud->uploadPic(TEMP_PIC_PATH);
+	protocol_hardcloud->uploadPic(FAST_PIC_PATH,cap_data_temp.pic_id);
 	protocol_hardcloud->reportCapture(cap_data_temp.pic_id);
+	return NULL;
+}
+
+static void* threadAlarm(void *arg)
+{
+	CapData cap_data_temp;
+	memcpy(&cap_data_temp,arg,sizeof(CapData));
+
+	int i;
+	char file_path[64] = {0};
+	char url[256] = {0};
+	static ReportAlarmData alarm_data;
+	alarm_data.type = ALARM_TYPE_PEOPLES;
+	alarm_data.picture_id = cap_data_temp.pic_id;
+	alarm_data.has_people = 0;
+	for (i=0; i<cap_data_temp.count; i++) {
+		sprintf(file_path,"%s%s_%d.jpg",FAST_PIC_PATH,cap_data_temp.file_name,i);
+#ifdef USE_VIDEO
+		rkVideoCapture(file_path);
+#endif
+		sprintf(url,"%s/%s_%d.jpg",QINIU_URL,cap_data_temp.file_name,i);
+		sqlInsertPicUrlNoBack(cap_data_temp.pic_id,url);
+
+		// wait for write file
+		usleep(500000);
+
+		char pic_buf_jpg[100 * 1024] = {0};
+		unsigned char *pic_buf_yuv = NULL;
+		int yuv_len = 0;
+		int w,h;
+		FILE *fp = fopen(file_path,"rb");
+		int leng = fread(pic_buf_jpg,1,sizeof(pic_buf_jpg),fp);
+		fclose(fp);
+		jpegToYuv420sp((unsigned char *)pic_buf_jpg, leng,&w,&h, &pic_buf_yuv, &yuv_len);
+		if (my_video->faceRecognizer(pic_buf_yuv,w,h,&alarm_data.age,&alarm_data.sex) == 0)
+			alarm_data.has_people = 1;
+		if (pic_buf_yuv)
+			free(pic_buf_yuv);
+	}
+	sqlInsertRecordAlarm(alarm_data.date,
+			alarm_data.type,
+			alarm_data.has_people,
+			alarm_data.age,
+			alarm_data.sex,
+			alarm_data.picture_id);
+	protocol_hardcloud->uploadPic(FAST_PIC_PATH,alarm_data.picture_id);
+	protocol_hardcloud->reportAlarm(&alarm_data);
+	return NULL;
+}
+static void* threadFace(void *arg)
+{
+	CapData cap_data_temp;
+	memcpy(&cap_data_temp,arg,sizeof(CapData));
+
+	int i;
+	char file_path[64] = {0};
+	char url[256] = {0};
+	static ReportFaceData face_data;
+	
+	strcpy(face_data.date,cap_data_temp.file_date);
+	strcpy(face_data.nick_name,cap_data_temp.nick_name);
+	strcpy(face_data.user_id,cap_data_temp.usr_id);
+	face_data.picture_id = cap_data_temp.pic_id;
+
+	for (i=0; i<cap_data_temp.count; i++) {
+		sprintf(file_path,"%s%s_%d.jpg",FAST_PIC_PATH,cap_data_temp.file_name,i);
+#ifdef USE_VIDEO
+		rkVideoCapture(file_path);
+#endif
+		sprintf(url,"%s/%s_%d.jpg",QINIU_URL,cap_data_temp.file_name,i);
+		sqlInsertPicUrlNoBack(cap_data_temp.pic_id,url);
+
+		// wait for write file
+		usleep(500000);
+
+	}
+
+	sqlInsertRecordFaceNoBack(face_data.date,
+			face_data.user_id,
+			face_data.nick_name,
+			face_data.picture_id);
+	protocol_hardcloud->uploadPic(FAST_PIC_PATH,face_data.picture_id);
+	protocol_hardcloud->reportFace(&face_data);
 	return NULL;
 }
 static int stmDoCaptureNoUi(void *data,MyVideo *arg)
@@ -611,7 +652,6 @@ static int stmDoCaptureNoUi(void *data,MyVideo *arg)
 	getFileName(cap_data.file_name,cap_data.file_date);
 	cap_data.pic_id = atoll(cap_data.file_name);
 	cap_data.count = data_temp->cap_count;
-	// printf("count:%d,date:%s,name:%s\n",cap_data.count,cap_data.file_date,cap_data.file_name);
 	switch(data_temp->cap_type)
 	{
 		case CAP_TYPE_FORMMAIN :
@@ -620,11 +660,14 @@ static int stmDoCaptureNoUi(void *data,MyVideo *arg)
 			createThread(threadCapture,&cap_data);
 			break;
 		case CAP_TYPE_ALARM :
-			{
-				printf("file_name\n");
-			}
+			createThread(threadAlarm,&cap_data);
 			break;
 		case CAP_TYPE_FACE :
+			if (data_temp->nick_name)
+				strcpy(cap_data.nick_name,data_temp->nick_name);
+			if (data_temp->usr_id)
+				strcpy(cap_data.usr_id,data_temp->usr_id);
+			createThread(threadFace,&cap_data);
 			break;
 		default:
 			break;
@@ -713,7 +756,7 @@ static int stmDoRecordStart(void *data,MyVideo *arg)
                 char file_path[64] = {0};
                 char url[256] = {0};
                 sqlInsertRecordCapNoBack(cap_data.file_date,cap_data.pic_id);
-                sprintf(file_path,"%s%s.avi",TEMP_PIC_PATH,cap_data.file_name);
+                sprintf(file_path,"%s%s.avi",FAST_PIC_PATH,cap_data.file_name);
                 if (avi == NULL) {
                     avi = Mpeg4_Create(320,240,file_path,WRITE_READ,0);
 					if (data_temp->cap_type == CAP_TYPE_FORMMAIN)
@@ -747,6 +790,17 @@ static int stmDoRecordStop(void *data,MyVideo *arg)
 	stm->msgPost(stm,EV_RECORD_STOP_FINISHED,NULL);
 }
 
+static int stmDoDelaySleepTime(void *data,MyVideo *arg)
+{
+	StmData *data_temp = (StmData *)data;
+	if (data_temp->type) {
+		resetAutoSleepTimerLong();
+	} else {
+		resetAutoSleepTimerShort();
+	}
+	
+}
+
 static StmDo stm_do[] =
 {
 	{DO_FAIL,			stmDoFail},
@@ -765,6 +819,8 @@ static StmDo stm_do[] =
 	{DO_CAPTURE_NO_UI,	stmDoCaptureNoUi},
 	{DO_RECORD_START,	stmDoRecordStart},
 	{DO_RECORD_STOP,	stmDoRecordStop},
+	{DO_DELAY_SLEEP,	stmDoDelaySleepTime},
+
 };
 
 static int stmHandle(StMachine *This,int result,void *data,void *arg)
@@ -794,12 +850,16 @@ static void faceStop(void)
     stm->msgPost(stm,EV_FACE_OFF,NULL);
 }
 
-static void capture(int type,int count)
+static void capture(int type,int count,char *nick_name,char *user_id)
 {
 	st_data = (StmData *)stm->initPara(stm,
 			        sizeof(StmData));
 	st_data->cap_count = count;
 	st_data->cap_type = type;
+	if (nick_name)
+		strcpy(st_data->nick_name,nick_name);
+	if (user_id)
+		strcpy(st_data->usr_id,user_id);
 	stm->msgPost(stm,EV_CAPTURE,st_data);
 }
 
@@ -873,38 +933,6 @@ static void showLocalVideo(void)
 #endif
 	faceStart();
 }
-static void *threadReceiveVideo(void *arg)
-{
-	rec_video_start = 1;
-	if (share_mem == NULL)
-		share_mem = shareMemoryCreateMaster(1024*50,4);
-	if (share_mem == NULL) {
-		printf("[%s]main:share mem create fail\n",__func__);
-		return NULL;
-	}
-
-	IpcData ipc_data;
-	ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
-	ipc_data.cmd = IPC_VIDEO_DECODE_ON;
-	if (ipc_main)
-		ipc_main->sendData(ipc_main,IPC_CAMMER,&ipc_data,sizeof(ipc_data));
-
-	while (rec_video_start) {
-		int size = 0;
-		char * mem_data = (char *)share_mem->SaveStart(share_mem);
-		if (mem_data) {
-			char data[1024*50];
-			protocol_talk->receiveVideo(data,&size);	
-			if (size)
-				memcpy(mem_data,data,size);
-		}
-		share_mem->SaveEnd(share_mem,size);
-	}
-	share_mem->CloseMemory(share_mem);
-	share_mem->Destroy(share_mem);
-	share_mem = NULL;
-	return NULL;
-}
 static void receiveVideo(void *data,int *size)
 {
 	protocol_talk->receiveVideo(data,size);
@@ -914,8 +942,6 @@ static void showPeerVideo(void)
 {
 #ifdef USE_VIDEO
 	rkVideoDisplayPeer(1024,600,receiveVideo);
-#else
-	createThread(threadReceiveVideo,NULL);
 #endif
 }
 static void hideVideo(void)
@@ -961,6 +987,13 @@ static int faceRecognizer( unsigned char *image_buff,int w,int h,int *age,int *s
 	}
     return ret;
 }
+static int delaySleepTime(int type) // 延长睡眠时间0短 1长
+{
+	st_data = (StmData *)stm->initPara(stm,
+			        sizeof(StmData));
+	st_data->type = type;
+    stm->msgPost(stm,EV_DELAY_SLEEP,st_data);
+}
 
 static void* threadVideoTimer(void *arg)
 {
@@ -996,6 +1029,7 @@ void myVideoInit(void)
 	my_video->videoAnswer = videoAnswer;
 	my_video->videoGetCallTime = videoGetCallTime;
     my_video->recordWriteCallback = recordWriteCallback;
+    my_video->delaySleepTime = delaySleepTime;
     pthread_mutexattr_t mutexattr;
     pthread_mutexattr_init(&mutexattr);
     pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE_NP);

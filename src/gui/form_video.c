@@ -375,7 +375,6 @@ int createFormVideo(HWND hMainWnd,int type,void (*callback)(void),int count)
 	auto_close_time = count;
 	if(Form) {
 		screenAutoCloseStop();
-		screensaverStart(1);
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
         if (bmp_load_finished == 0) {
@@ -403,6 +402,7 @@ static void interfaceCreateFormVideoDirect(int type,char *name)
 			break;
 		case DEV_TYPE_ENTRANCEMACHINE:
 		case DEV_TYPE_HOUSEENTRANCEMACHINE:
+			screensaverStart(1);
 			if (protocol_talk->type == PROTOCOL_TALK_3000)
 				createFormVideo(0,FORM_VIDEO_TYPE_OUTDOOR,NULL,0); 
 			else

@@ -18,9 +18,11 @@ extern "C" {
 #if (defined X86)
 #define SDCARD_PATH "./"
 #define AUDIO_PATH "./res/wav/"
+#define CONFIG_FILE_PATH "./"
 #else
 #define SDCARD_PATH "/mnt/sdcard/"
 #define AUDIO_PATH "/root/usr/res/wav/"
+#define CONFIG_FILE_PATH "/data/"
 #endif
 
 #define UPDATE_FILE	"/tmp/Update.cab"
@@ -28,9 +30,7 @@ extern "C" {
 #define QRCODE_IMIE "./imei.png"				// 机身码二维码路径
 #define QRCODE_APP "./app_url.png"				// app地址二维码路径
 
-#define CONFIG_FILENAME "./config.ini"			// 配置文件路径
-
-#define TEMP_PIC_PATH "cap/"					// 抓拍存储记录
+#define CONFIG_FILENAME CONFIG_FILE_PATH"config.ini"			// 配置文件路径
 
 #define CAP_PATH SDCARD_PATH"cap/"				// SD卡抓拍存储目录
 #define TALK_PATH SDCARD_PATH"talk/"			// SD卡通话抓拍记录
@@ -40,7 +40,6 @@ extern "C" {
 #define FAST_PIC_PATH "/tmp/cap/"  				// 快速启动抓拍路径，放到内存中
 
 #define IPC_MAIN "/tmp/ipc_main"				// 主进程
-#define IPC_CAMMER "/tmp/ipc_cammer"			// 摄像头处理进程
 #define IPC_UART "/tmp/ipc_uart"				// 串口处理进程
 
 #define QINIU_URL "http://img.cateye.taichuan.com"  // 七牛云存储地址
@@ -75,11 +74,11 @@ extern "C" {
 		int enable;
 
 		// station 
-		char ssid[64];
-		char mode[64];
-		char security[128];
-		char password[64];
-		char running[64];
+		char ssid[64 + 1];
+		char mode[64 + 1];
+		char security[128 + 1];
+		char password[64 + 1];
+		char running[64 + 1];
 
 	}TcWifiConfig;
 
@@ -123,8 +122,8 @@ extern "C" {
 		TC_AUTH_TYPE_INVALID = 0xff,
 	};
 	typedef struct _TcWifiScan{
-		char ssid[64];     // 账号
-		uint8_t bssid[16]; // mac地址
+		char ssid[64 + 1];     // 账号
+		uint8_t bssid[16 + 1]; // mac地址
 		enum AWSS_AUTH_TYPE auth;
 		enum AWSS_ENC_TYPE encry;
 		uint8_t channel;
@@ -132,21 +131,28 @@ extern "C" {
 	}TcWifiScan;
 
 	struct wifiLowPower {
-		char local_ip[16];		// 本机地址
-		char dst_ip[16];		// 目的地址
-		char dst_port[8];		// 目的端口
-		char dst_mac[20];		// 目的mac地址
+		char local_ip[16 + 1];		// 本机地址
+		char dst_ip[16 + 1];		// 目的地址
+		char dst_port[8 + 1];		// 目的端口
+		char dst_mac[20 + 1];		// 目的mac地址
+	};
+
+	struct CapType {
+		int type;	// 0 图片 1 录像
+		int count; // 抓拍图片数量
+		int timer; // 录像时间长短
 	};
 	typedef struct _Config {
-        char imei[64];         // 太川设备机身码
-        char hardcode[64];     // 太川设备硬件码
-        char version[16];      // 太川软件版本
-        char app_url[128];     // app地址 
+        char imei[64 + 1];         // 太川设备机身码
+        char hardcode[64 + 1];     // 太川设备硬件码
+        char version[16 + 1];      // 太川软件版本
+        char app_url[128 + 1];     // app地址 
 		int  timestamp;        // 启动时间戳
-		int capture_count;	   // 抓拍图片数量
         TcWifiConfig net_config;  // 网络设置
+        char f_license[128 + 1];     // 阅面人脸
 
 		struct wifiLowPower wifi_lowpower; // 低功耗wifi参数
+		struct CapType cap;		// 抓拍或录像
 	} Config;
 
 	void configLoad(void);
