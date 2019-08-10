@@ -258,6 +258,9 @@ void configLoad(void)
 	}
 	getCpuId(g_config.hardcode);
 	printf("imei:%s,hard:%s\n", g_config.imei,g_config.hardcode);
+		// char buf[128] = {0};
+		// sprintf(buf,"%s/%s",g_config.imei,g_config.hardcode);
+		// qrcodeString(buf,QRCODE_IMIE);
 	// 判断是否APP地址图片
 	if (fileexists(QRCODE_APP) == 0) {
 

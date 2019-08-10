@@ -82,7 +82,7 @@ static BmpLocation bmp_load[] = {
 };
 
 static MY_CTRLDATA ChildCtrls [] = {
-    ICONVIEW(192,200,640,252,IDC_ICONVIEW),
+    ICONVIEW(192,200,640,304,IDC_ICONVIEW),
 };
 
 
@@ -193,8 +193,8 @@ static void myDrawItem (HWND hWnd, GHANDLE hsvi, HDC hdc, RECT *rcDraw)
 	SetBkMode (hdc, BM_TRANSPARENT);
 	SelectFont (hdc, font20);
 
-	int bmp_x = rcDraw->left + (rcDraw->right - rcDraw->left - bmp_access_pre.bmWidth) / 2;
-	int bmp_y = rcDraw->top + (rcDraw->bottom - rcDraw->top - bmp_access_pre.bmHeight) / 2;
+	int bmp_x = rcDraw->left + 45;//rcDraw->left + (rcDraw->right - rcDraw->left - bmp_access_pre.bmWidth) / 2;
+	int bmp_y = rcDraw->top + 26;//rcDraw->top + (rcDraw->bottom - rcDraw->top - bmp_access_pre.bmHeight) / 2;
 	if (iconview_is_item_hilight(hWnd, hsvi)) {
 		SetTextColor (hdc, 0x10B7F5);
 		FILL_BMP_STRUCT(bmp_x,bmp_y,bmp_access_pre);
@@ -205,7 +205,7 @@ static void myDrawItem (HWND hWnd, GHANDLE hsvi, HDC hdc, RECT *rcDraw)
 
 	if (label) {
 		RECT rcTxt = *rcDraw;
-		rcTxt.top = rcTxt.bottom - GetWindowFont (hWnd)->size * 2;
+		rcTxt.top = rcDraw->top + 77 ;//rcTxt.bottom - GetWindowFont (hWnd)->size * 2;
 		// rcTxt.left = rcTxt.left - (GetWindowFont (hWnd)->size) + 2;
 
 		DrawText (hdc, label, -1, &rcTxt,  DT_CENTER | DT_VCENTER);
@@ -291,7 +291,7 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 	hIconView = GetDlgItem (hDlg, IDC_ICONVIEW);
 	SetWindowBkColor (hIconView, PIXEL_lightwhite);
 	SendMessage (hIconView, IVM_SETITEMDRAW, 0, (LPARAM)myDrawItem);
-	SendMessage (hIconView, IVM_SETITEMSIZE, 123, 126);
+	SendMessage (hIconView, IVM_SETITEMSIZE, 123, 152);
 	RECT rcMargin;
 	memset(&rcMargin,0,sizeof(RECT));
 	SendMessage (hIconView, IVM_SETMARGINS, 0, (LPARAM)&rcMargin);

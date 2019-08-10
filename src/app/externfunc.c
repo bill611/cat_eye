@@ -647,9 +647,9 @@ int screensaverStart(int state)
 		return 0;
 	state_old = state;
 	if (state) {
-		excuteCmd("echo","0",">","/sys/class/backlight/rk28_bl/bl_power ",NULL);
+		excuteCmd("echo","160",">","/sys/class/backlight/rk28_bl/brightness ",NULL);
 	} else {
-		excuteCmd("echo","1",">","/sys/class/backlight/rk28_bl/bl_power ",NULL);
+		excuteCmd("echo","0",">","/sys/class/backlight/rk28_bl/brightness ",NULL);
 	}
 #endif
 	return 1;
@@ -668,7 +668,7 @@ void getCpuId(char *hardcode)
 	}
 	fclose(fp);
 #else
-	strcpy(hardcode,"f07440307d514cc7");
+	strcpy(hardcode,"217aa023d24d2833");
 #endif
 }
 void powerOff(void)

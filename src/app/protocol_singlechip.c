@@ -50,7 +50,7 @@ extern IpcServer* ipc_main;
  *                        macro define
  *----------------------------------------------------------------------------*/
 #define PIR_TIMER_INTERVAL 10
-#define PIR_ACTIVE_COUNT 5
+#define PIR_ACTIVE_COUNT 10
 
 /* ---------------------------------------------------------------------------*
  *                      variables define

@@ -193,7 +193,7 @@ static void transdata_received_cb(const char* from_userId,
 
 static void transdata_send_result_cb(int err_code)
 {
-    DPRINT("transdata_send_result_cb: err_code[%d]\n", err_code);
+    DPRINT("transdata_send_result_cb: err_code[%s]\n",ucDebugInfo(err_code) );
 	if (call_backs.sendCmd)
 		call_backs.sendCmd(&err_code);
 }
@@ -291,9 +291,6 @@ static int TUCS_Init()
 
     UCS_GetVersion(version);
 	DPRINT("ucpaas version %s\n",version);
-
-    UCS_vqecfg_t vqecfg = {0, 0, 0};
-    UCS_SetVqeCfg(&vqecfg);
 
     return 0;
 }
@@ -393,9 +390,9 @@ void registUcpaas(Callbacks *interface)
 		UCS_SetExtVideoStreamEnable(g_externalAVEn);
 		UCS_ViERingPreviewEnable(1);
 		UCS_vqecfg_t vqecfg;
-		vqecfg.aec_enable = 0;
-		vqecfg.agc_enable = 0;
-		vqecfg.ns_enable = 0;
+		vqecfg.aec_enable = 1;
+		vqecfg.agc_enable = 1;
+		vqecfg.ns_enable = 1;
 		UCS_SetVqeCfg(&vqecfg);
 	}
 

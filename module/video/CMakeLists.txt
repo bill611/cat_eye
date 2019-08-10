@@ -17,7 +17,7 @@ add_executable(cammer_video ${MODULE_VIDEO})
 target_link_libraries(cammer_video
 	-Wl,--start-group
     ion pthread adk cam_ia cam_engine_cifisp rkfb rkrga 
-	rkmedia mpp drivers
+	easymedia mpp drivers
 	turbojpeg 
 	yuv rt
 	-Wl,--end-group

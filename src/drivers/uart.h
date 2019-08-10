@@ -24,7 +24,7 @@ extern "C" {
 #include <stdint.h>
 #define MAX_SEND_BUFF 128
 
-#if 1
+#if 0
 #define DEBUG_UART(dir,pbuf,size) \
 do {         \
 	int i;\

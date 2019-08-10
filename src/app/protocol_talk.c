@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include "sql_handle.h"
+#include "cJSON.h"
 #include "json_dec.h"
 #include "protocol.h"
 #include "my_video.h"
@@ -32,6 +33,7 @@
 #include "my_echo.h"
 #include "ucpaas/ucpaas.h"
 #include "udp_server.h"
+#include "config.h"
 #include "udp_talk/udp_talk_protocol.h"
 #include "udp_talk/udp_talk_transport.h"
 
@@ -56,11 +58,31 @@ enum {
 	MSG_TYPE_RECORD_START,
 	MSG_TYPE_RECORD_STOP,
 };
+enum {
+	DEV_TYPE_APP = 0,
+	DEV_TYPE_CATEYE,
+	DEV_TYPE_OUTDOOR,
+};
+/* 透传协议示例，messageType为以上枚举类型
+   {
+	   "messageType":9,
+	   "deviceType":1,
+	   "deviceNumber":"机身码",
+	   "fromId":"对讲Id",
+	   "messageContent":"",
+	   "data":{
+			"electricQuantity":60, // 剩余百分60的电量
+			"time":"2019-06-21 13:13"
+		}
+
+   }
+*/
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
 ProtocolTalk *protocol_talk;
 static UserStruct local_user;
+static UserStruct peer_user;
 static int has_connect = 0; // 判断是否有连接过，如果有，则重连调用disconnect
 static int audio_fp = -1;
 static int mic_open = 0; // mic状态 0关闭 1开启
@@ -76,6 +98,8 @@ static void dial(char *user_id,void (*callBack)(int result))
 {
 #ifdef USE_UCPAAS
 	ucsDial(user_id);
+    memset(&peer_user,0,sizeof(UserStruct));
+	strcpy(peer_user.id,user_id);
 #endif
 	dialCallBack = callBack;
 #ifdef USE_UDPTALK
@@ -103,6 +127,20 @@ static void unlock(void)
 	if (protocol_video)
 		protocol_video->unlock(protocol_video);
 #endif
+#ifdef USE_UCPAAS
+	char *send_buff;
+	cJSON *root = cJSON_CreateObject();
+	cJSON_AddNumberToObject(root,"messageType",MSG_TYPE_UNLOCK);
+	cJSON_AddNumberToObject(root,"deviceType",DEV_TYPE_CATEYE);
+	cJSON_AddStringToObject(root,"deviceNumber",g_config.imei);
+	cJSON_AddStringToObject(root,"fromId",local_user.id);
+	cJSON_AddStringToObject(root,"messageContent","");
+	send_buff = cJSON_PrintUnformatted(root);
+	cJSON_Delete(root);
+	ucsSendCmd(send_buff,peer_user.id);
+	printf("send:%s,id:%s\n",send_buff,peer_user.id );
+	free(send_buff);
+#endif
 }
 
 static void answer(void)
@@ -116,13 +154,6 @@ static void answer(void)
 		protocol_video->answer(protocol_video);
 	if (udp_talk_trans)
 		udp_talk_trans->startAudio(udp_talk_trans);
-#endif
-}
-
-static void sendCmd(char *cmd,char *user_id)
-{
-#ifdef USE_UCPAAS
-	ucsSendCmd(cmd,user_id);
 #endif
 }
 
@@ -189,6 +220,7 @@ static void cblIncomingCall(void *arg)
 {
 	if (my_video)
 		my_video->videoCallIn((char *)arg);
+	strcpy(peer_user.id,(char *)arg);
 }
 static void cbSendCmd(void *arg)
 {

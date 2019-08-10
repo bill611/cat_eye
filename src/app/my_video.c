@@ -368,13 +368,6 @@ static void dialCallBack(int result)
 				&& 	talk_peer_dev.type != DEV_TYPE_HOUSEENTRANCEMACHINE) {
 #ifdef USE_VIDEO
 			rkH264EncOn(320,240,sendVideoCallbackFunc);
-#else
-			IpcData ipc_data;
-			ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
-			ipc_data.cmd = IPC_VIDEO_ENCODE_ON;
-			if (ipc_main)
-				ipc_main->sendData(ipc_main,IPC_CAMMER,&ipc_data,sizeof(ipc_data));
-			createThread(sendVideoCallbackFunc,NULL);
 #endif
 		}
 	} else {
@@ -487,13 +480,6 @@ static int stmDoTalkAnswer(void *data,MyVideo *arg)
 			&& 	talk_peer_dev.type != DEV_TYPE_HOUSEENTRANCEMACHINE) {
 #ifdef USE_VIDEO
 		rkH264EncOn(320,240,sendVideoCallbackFunc);
-#else
-		IpcData ipc_data;
-		ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
-		ipc_data.cmd = IPC_VIDEO_ENCODE_ON;
-		if (ipc_main)
-			ipc_main->sendData(ipc_main,IPC_CAMMER,&ipc_data,sizeof(ipc_data));
-		createThread(sendVideoCallbackFunc,NULL);
 #endif
 	}
 	memset(ui_title,0,sizeof(ui_title));
@@ -542,13 +528,6 @@ static void* threadCapture(void *arg)
 
 #ifdef USE_VIDEO
 		rkVideoCapture(file_path);
-#else
-        IpcData ipc_data;
-        ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
-        ipc_data.cmd = IPC_VIDEO_CAPTURE;
-        strcpy(ipc_data.data.cap_path,file_path);
-        if (ipc_main)
-            ipc_main->sendData(ipc_main,IPC_CAMMER,&ipc_data,sizeof(ipc_data));
 #ifdef X86
 		FILE *fp = fopen(file_path,"wb");
 		fclose(fp);
@@ -924,12 +903,6 @@ static void showLocalVideo(void)
 {
 #ifdef USE_VIDEO
 	rkVideoDisplayLocal();
-#else
-	IpcData ipc_data;
-	ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
-	ipc_data.cmd = IPC_VIDEO_ON;
-	if (ipc_main)
-		ipc_main->sendData(ipc_main,IPC_CAMMER,&ipc_data,sizeof(ipc_data));
 #endif
 	faceStart();
 }
@@ -948,12 +921,6 @@ static void hideVideo(void)
 {
 #ifdef USE_VIDEO
 	rkVideoDisplayOff();
-#else
-	IpcData ipc_data;
-	ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
-	ipc_data.cmd = IPC_VIDEO_OFF;
-	if (ipc_main)
-		ipc_main->sendData(ipc_main,IPC_CAMMER,&ipc_data,sizeof(ipc_data));
 #endif
 }
 
