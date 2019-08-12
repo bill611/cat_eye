@@ -68,6 +68,7 @@ char * excuteCmd(char *Cmd,...)
 	}
 	va_end(argp);
 	DPRINT("cmd :%s\n",commond);
+#if 0
 	if ((fp = popen(commond, "r") ) == 0) {
 		perror("popen");
 		return NULL;
@@ -79,14 +80,15 @@ char * excuteCmd(char *Cmd,...)
 		DPRINT("close popen file pointer fp error!\n");
 	}
 	return cmd_buf;
-
+#else
 	// 用此函数导致产生僵尸进程
-	// system(commond);
-	// return 0;
+	 system(commond);
+	 return 0;
+#endif
 }
 
 int playVoice(char * file_name)
 {
-	excuteCmd("aplay",file_name,NULL);
+	excuteCmd("/data/play.sh",file_name,NULL);
 }
 
