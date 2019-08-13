@@ -82,7 +82,6 @@ extern "C" {
 	}AlarmType;
 
 	typedef struct _ReportAlarmData{
-		char file_path[64];	// 图片本地路径
 		char date[32];		// 日期
 		AlarmType type;		// 报警类型
 		int has_people;		// 徘徊报警时，判断是否有人
@@ -92,12 +91,20 @@ extern "C" {
 	}ReportAlarmData;
 
 	typedef struct _ReportFaceData{
-		char file_path[64];	// 图片本地路径
+		char date[32];		// 日期
+		uint64_t picture_id;// 识别人脸时，抓拍图片
+		char nick_name[32];		// 名称
+		char user_id[32];		// face_id
+	}ReportFaceData;
+
+	typedef struct _ReportTalkData{
 		char date[32];		// 日期
 		uint64_t picture_id;// 徘徊报警时，抓拍图片
-		char nick_name[32];		// 年龄
-		char user_id[32];		// 年龄
-	}ReportFaceData;
+		int call_dir;		// 0呼入 1呼出
+		int auto_answer;		// true 接听 false未接听
+		int talk_time;		// 通话时间
+		char nick_name[32];		// 通话人
+	}ReportTalkData;
 
 	typedef struct _UpLoadData{
 		char file_path[64];	// 图片本地路径

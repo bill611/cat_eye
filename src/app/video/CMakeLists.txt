@@ -21,6 +21,7 @@ add_library (${CURRENT_FOLDER_APP_VIDEO} ${SRC_APP_VIDEO})
 
 target_link_libraries(${CURRENT_FOLDER_APP_VIDEO}
     ion pthread adk cam_ia cam_engine_cifisp rkfb rkrga
-	easymedia mpp
+	yuv
+	rkmedia mpp
 )
 

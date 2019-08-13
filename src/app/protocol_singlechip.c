@@ -65,6 +65,7 @@ static uint64_t picture_id = 0;
 
 static void cmdSleep(void)
 {
+	return;
 	IpcData ipc_data;
 	protocol_hardcloud->enableSleepMpde();
 	ipc_data.dev_type = IPC_DEV_TYPE_MAIN;

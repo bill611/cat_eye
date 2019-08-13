@@ -112,6 +112,7 @@ static void* threadH264Dec(void *arg)
 		memset(data_out,0,sizeof(data_out));
         if (process->decCallback())
             process->decCallback()(data_in,&size_in);
+		printf("[%s]%d\n", __func__,size_in);
 		unsigned char *nv12_scale_data = NULL;
 		if (size_in > 0) {
 			if (my_h264dec)
@@ -128,7 +129,7 @@ static void* threadH264Dec(void *arg)
 		if (nv12_scale_data)
 			free(nv12_scale_data);
 
-		usleep(10000);
+		usleep(30000);
     }
 	if (my_h264dec)
 		my_h264dec->unInit(my_h264dec);

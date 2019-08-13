@@ -4,7 +4,6 @@
 #include "md_camerabuf.h"
 #include "thread_helper.h"
 #include "process/md_display_process.h"
-#include "process/md_encoder_process.h"
 #include "protocol.h"
 #include "config.h"
 
@@ -21,11 +20,7 @@ class RKVideo {
 		                 std::shared_ptr<StreamPUBase> next);
 
 	void displayLocal(void);
-	void h264EncOnOff(bool type,int w,int h,EncCallbackFunc encCallback);
 	void capture(char *file_name);
-	void recordStart(EncCallbackFunc recordCallback);
-	void recordSetStopFunc(RecordStopCallbackFunc recordCallback);
-	void recordStop(void);
 
  private:
 

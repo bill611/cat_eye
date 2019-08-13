@@ -294,14 +294,14 @@ static int stmDoNothing(void *data,MyVideo *arg)
 static int stmDoFaceOn(void *data,MyVideo *arg)
 {
 #ifdef USE_VIDEO
-    rkVideoFaceOnOff(1);
+    // rkVideoFaceOnOff(1);
 #endif
 }
 
 static int stmDoFaceOff(void *data,MyVideo *arg)
 {
 #ifdef USE_VIDEO
-    rkVideoFaceOnOff(0);
+    // rkVideoFaceOnOff(0);
 #endif
 	st_data = (StmData *)stm->initPara(stm,
 			        sizeof(StmData));

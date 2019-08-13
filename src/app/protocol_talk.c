@@ -113,8 +113,8 @@ static void hangup(void)
 #ifdef USE_UCPAAS
 	ucsHangup();
 #endif
-	// myAudioStopPlay();
 #ifdef USE_UDPTALK
+	myAudioStopPlay();
 	if (protocol_video)
 		protocol_video->hangup(protocol_video);
 	if (udp_talk_trans)
@@ -128,18 +128,11 @@ static void unlock(void)
 		protocol_video->unlock(protocol_video);
 #endif
 #ifdef USE_UCPAAS
-	char *send_buff;
-	cJSON *root = cJSON_CreateObject();
-	cJSON_AddNumberToObject(root,"messageType",MSG_TYPE_UNLOCK);
-	cJSON_AddNumberToObject(root,"deviceType",DEV_TYPE_CATEYE);
-	cJSON_AddStringToObject(root,"deviceNumber",g_config.imei);
-	cJSON_AddStringToObject(root,"fromId",local_user.id);
-	cJSON_AddStringToObject(root,"messageContent","");
-	send_buff = cJSON_PrintUnformatted(root);
-	cJSON_Delete(root);
+	char send_buff[256];
+	sprintf(send_buff,"{\\\"messageType\\\":%d,\\\"deviceType\\\":%d,\\\"deviceNumber\\\":\\\"%s\\\",\\\"fromId\\\":\\\"%s\\\",\\\"messageContent\\\":\\\"\\\"}",
+			MSG_TYPE_UNLOCK,DEV_TYPE_CATEYE,g_config.imei,local_user.id);
 	ucsSendCmd(send_buff,peer_user.id);
 	printf("send:%s,id:%s\n",send_buff,peer_user.id );
-	free(send_buff);
 #endif
 }
 
@@ -210,6 +203,7 @@ static void cbHangup(void *arg)
 			my_mixer->DeInitPlay(my_mixer,&audio_fp);
 	}
 	dialCallBack = NULL;
+	myAudioStopPlay();
 }
 static void cbDialRet(void *arg)
 {
@@ -221,6 +215,7 @@ static void cblIncomingCall(void *arg)
 	if (my_video)
 		my_video->videoCallIn((char *)arg);
 	strcpy(peer_user.id,(char *)arg);
+	// myAudioPlayRing();
 }
 static void cbSendCmd(void *arg)
 {
@@ -277,6 +272,7 @@ static void cbReceivedCmd(const char *user_id,void *arg)
 }
 static void cbInitAudio(unsigned int rate,unsigned int bytes_per_sample,unsigned int channle)
 {
+	return;
 	gpio->SetValue(gpio,ENUM_GPIO_MICKEY,IO_ACTIVE);
 	mic_open = 1;
 	if (my_mixer)
@@ -288,6 +284,7 @@ static void cbStartRecord(unsigned int rate,unsigned int bytes_per_sample,unsign
 }
 static void cbRecording(char *data,unsigned int size)
 {
+	return;
     char audio_buff[1024] = {0};
 	if (my_mixer ) {
 		int real_size = my_mixer->Read(my_mixer,audio_buff,size);
@@ -300,8 +297,8 @@ static void cbRecording(char *data,unsigned int size)
 }
 static void cbPlayAudio(const char *data,unsigned int size)
 {
+	return;
 	if (my_mixer) {
-		
 		my_mixer->Write(my_mixer,audio_fp,data,size);
 	}
 }

@@ -102,6 +102,7 @@ struct QueueList {
 	Queue *report_capture; // 上报抓拍日志队列
 	Queue *report_alarm; // 上报报警队列
 	Queue *report_face; // 上报人脸记录队列
+	Queue *report_talk; // 上报通话记录队列
 };
 /* ---------------------------------------------------------------------------*
  *                      variables define
@@ -233,7 +234,7 @@ static void mqttConnectFailure(void* context)
 
 static void sysTestData(int api,int id,CjsonDec *dec)
 {
-	char *send_buff;
+	char *send_buff = NULL;
 	if(dec->changeCurrentObj(dec,"body")) {
 		printf("change body fail\n");
 		return;
@@ -1009,6 +1010,57 @@ static void reportFace(ReportFaceData *data)
 	if (queue_list.report_face)
 		queue_list.report_face->post(queue_list.report_face,data);
 }
+
+static void* threadReportTalk(void *arg)
+{
+	ReportTalkData talk_data;
+	int i;
+	char *send_buff;
+	Queue * queue = queue_list.report_talk = queueCreate("re_talk",QUEUE_BLOCK,sizeof(talk_data));
+	waitConnectService();
+	while (1) {
+		queue->get(queue,&talk_data);
+
+		// 封装jcson信息
+		cJSON *root = packData(CE_Report,MODE_SEND_NONEED_REPLY,++g_id);
+		cJSON *obj_body = cJSON_CreateObject();
+		cJSON_AddStringToObject(obj_body,"dataType","callRecord");
+		cJSON *obj_data = cJSON_CreateObject();
+		cJSON_AddStringToObject(obj_data,"date",talk_data.date);
+		cJSON_AddStringToObject(obj_data,"people",talk_data.nick_name);
+		cJSON_AddNumberToObject(obj_data,"callDir",talk_data.call_dir);
+		if (talk_data.auto_answer)
+			cJSON_AddTrueToObject(obj_data,"autoAnswer");
+		else
+			cJSON_AddFalseToObject(obj_data,"autoAnswer");
+		cJSON_AddNumberToObject(obj_data,"talkTime",talk_data.talk_time);
+
+		cJSON *arry = cJSON_CreateArray();
+		int count = sqlGetPicInfoStart(talk_data.picture_id);
+		for (i=0; i<count; i++) {
+			char url[128] = {0};
+			cJSON *obj = cJSON_CreateObject();
+			sqlGetPicInfos(url);
+			cJSON_AddStringToObject(obj,"url",url);
+			cJSON_AddItemToArray(arry, obj);
+		}
+		sqlGetPicInfoEnd();
+
+		cJSON_AddItemToObject(obj_data,"picture",arry);
+		cJSON_AddItemToObject(obj_body,"data",obj_data);
+		cJSON_AddItemToObject(root,"body",obj_body);
+		send_buff = cJSON_PrintUnformatted(root);
+		cJSON_Delete(root);
+		mqtt->send(opts.pubTopic,strlen(send_buff),send_buff);
+		free(send_buff);
+	}
+	return NULL;
+}
+static void reportTalk(ReportTalkData *data)
+{
+	if (queue_list.report_talk)
+		queue_list.report_talk->post(queue_list.report_talk,data);
+}
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief registHardCloud 注册硬件云
@@ -1035,6 +1087,7 @@ void registHardCloud(void)
 	createThread(threadReportCapture,NULL);
 	createThread(threadReportAlarm,NULL);
 	createThread(threadReportFace,NULL);
+	createThread(threadReportTalk,NULL);
 
 }
 

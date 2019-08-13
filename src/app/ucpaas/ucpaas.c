@@ -26,6 +26,7 @@
 
 #include "ucpaas.h"
 #include "sql_handle.h"
+#include "thread_helper.h"
 #include "ucpaas/UCSService.h"
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
@@ -59,6 +60,9 @@ static Callbacks call_backs;
 static int g_externalAVEn = 1;
 static int connect_state = 0;
 static int call_status = 0;
+static unsigned char *rec_buf = NULL;
+static unsigned int rec_buf_len = 0;
+static int send_for_reciev_video = 0; // 为了接收视频，发送视频数据保持连接
 
 
 static const char * ucDebugInfo(int ev_reason)
@@ -162,8 +166,14 @@ static void on_hangup_cb(const char* callid, int reason)
 {
     DPRINT("callid[%s] reason[%s]\n", callid,ucDebugInfo(reason));
 	call_status = 0;
+	send_for_reciev_video = 0;
 	if (call_backs.hangup)
 		call_backs.hangup((void *)callid);
+	if (rec_buf) {
+		free(rec_buf);
+		rec_buf = NULL;
+		rec_buf_len = 0;
+	}
 }
 
 // received dtmf
@@ -325,6 +335,17 @@ void ucsHangup(void)
 	UCS_CallHangUp();
 }
 
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief ucsSendCmd 云之讯cmd会将cmd内容打包成json,所以传入的cmd碰到"需要加转义
+ * 字符，例如:
+ *
+ * {\\\"messageType\\\":%d,\\\"deviceType\\\":%d,\\\"deviceNumber\\\":\\\"%s\\\"}
+ *
+ * @param cmd
+ * @param user_id
+ */
+/* ---------------------------------------------------------------------------*/
 void ucsSendCmd(char *cmd,char *user_id)
 {
 	if (connect_state == 0)
@@ -340,6 +361,19 @@ void ucsSendVideo(const unsigned char* frameData, const unsigned int dataLen)
 	UCS_PushExternalVideoStream(frameData,dataLen);
 }
 
+static void* threadSendForRecive(void *arg)
+{
+	send_for_reciev_video = 1;
+	while (send_for_reciev_video) {
+		if (rec_buf)	 {
+			printf("len:%d\n", rec_buf_len);
+			UCS_PushExternalVideoStream(rec_buf,rec_buf_len);
+		}
+		usleep(100000);
+	}
+	return NULL;
+}
+
 void ucsReceiveVideo(unsigned char* frameData,
 	   	unsigned int *dataLen,
 		long long *timeStamp,
@@ -348,6 +382,12 @@ void ucsReceiveVideo(unsigned char* frameData,
 	if (connect_state == 0)
 		return;
 	UCS_get_video_frame(frameData, dataLen,timeStamp,frameType);
+	if (rec_buf == NULL && *dataLen) {
+		rec_buf = (unsigned char *)malloc (*dataLen);
+		rec_buf_len = *dataLen;
+		memcpy(rec_buf,frameData,*dataLen);
+		createThread(threadSendForRecive,NULL);
+	}
 }
 
 int ucsConnect(char *user_token)

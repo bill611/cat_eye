@@ -177,7 +177,7 @@ void formVideoLayerGotoPoweroff(void)
 static void formVideoLayerTimerProc1s(HWND hwnd)
 {
 	if (auto_close_lcd) {
-		printf("auto_close_ld:%d\n",auto_close_lcd );
+		// printf("auto_close_ld:%d\n",auto_close_lcd );
 		if (--auto_close_lcd == 0) {
 			screensaverStart(0);
 			if(sleep_timer < SLEEP_TIMER)
@@ -185,7 +185,7 @@ static void formVideoLayerTimerProc1s(HWND hwnd)
 		}
 	}
 	if (sleep_timer && auto_close_lcd == 0) {
-		printf("sleep:%d\n", sleep_timer);
+		// printf("sleep:%d\n", sleep_timer);
 		if (--sleep_timer == 0) {
 			protocol_singlechip->cmdSleep();
 		}
