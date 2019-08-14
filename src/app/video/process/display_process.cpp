@@ -129,7 +129,7 @@ static void* threadH264Dec(void *arg)
 		if (nv12_scale_data)
 			free(nv12_scale_data);
 
-		usleep(30000);
+		usleep(50000);
     }
 	if (my_h264dec)
 		my_h264dec->unInit(my_h264dec);

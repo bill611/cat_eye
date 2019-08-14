@@ -759,12 +759,12 @@ static void* tcpHeartThread(void *arg)
 	char gateway[16];
 	int send_interval = 0;
 	heart_start = 1;
-	while (1) {
-		memset(ip,0,sizeof(ip));
-		waitConnectService();
-		dnsGetIp(opts.service_host,ip);
-		if (heart_start == 0)
-			break;
+	memset(ip,0,sizeof(ip));
+	// 等待连接上服务器
+	waitConnectService();
+	dnsGetIp(opts.service_host,ip);
+	writeSleepScript(ip,opts.service_port);
+	while (heart_start) {
 		if (connect_flag == 1 && send_interval < 30) {
 			send_interval++;
 			char tcp_rec[64] = {0};
@@ -774,16 +774,13 @@ static void* tcpHeartThread(void *arg)
 			goto loop_heart;
 		}
 		send_interval = 0;
-		if (connect_flag == 0) {
-			writeSleepScript(ip,opts.service_port);
-			if (tcp_client->Connect(tcp_client,ip,opts.service_port,5000) < 0){
-				printf("connect fail,:%s,%d\n",ip,opts.service_port);
-				goto loop_heart;
-			} else  {
-				connect_flag = 1;
-			}
+		if (tcp_client->Connect(tcp_client,ip,opts.service_port,5000) < 0){
+			printf("connect fail,:%s,%d\n",ip,opts.service_port);
+			goto loop_heart;
+		} else {
+			connect_flag = 1;
+			tcp_client->SendBuffer(tcp_client,g_config.imei,strlen(g_config.imei));
 		}
-		tcp_client->SendBuffer(tcp_client,g_config.imei,strlen(g_config.imei));
 loop_heart:
 		sleep(1);
 	}

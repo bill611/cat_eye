@@ -294,14 +294,14 @@ static int stmDoNothing(void *data,MyVideo *arg)
 static int stmDoFaceOn(void *data,MyVideo *arg)
 {
 #ifdef USE_VIDEO
-    // rkVideoFaceOnOff(1);
+    rkVideoFaceOnOff(1);
 #endif
 }
 
 static int stmDoFaceOff(void *data,MyVideo *arg)
 {
 #ifdef USE_VIDEO
-    // rkVideoFaceOnOff(0);
+    rkVideoFaceOnOff(0);
 #endif
 	st_data = (StmData *)stm->initPara(stm,
 			        sizeof(StmData));
@@ -377,15 +377,15 @@ static void dialCallBack(int result)
 }
 static int stmDoTalkCallout(void *data,MyVideo *arg)
 {
-#ifdef USE_UCPAAS
 	StmData *data_temp = (StmData *)data;
+	char ui_title[128] = {0};
+#ifdef USE_UCPAAS
 	int ret = sqlGetUserInfoUseUserId(data_temp->usr_id,data_temp->nick_name,&data_temp->type);
 	if (ret == 0) {
 		printf("can't find usr_id:%s\n", data_temp->usr_id);
 		stm->msgPost(stm,EV_TALK_HANGUP,NULL);
 		return -1;
 	}
-	char ui_title[128] = {0};
 	sprintf(ui_title,"正在呼叫 %s",data_temp->nick_name);
 	if (protocol_talk->uiShowFormVideo)
 		protocol_talk->uiShowFormVideo(data_temp->type,ui_title);
@@ -394,8 +394,6 @@ static int stmDoTalkCallout(void *data,MyVideo *arg)
 	protocol_talk->dial(data_temp->usr_id,dialCallBack);
 #endif
 #ifdef USE_UDPTALK
-	StmData *data_temp = (StmData *)data;
-	char ui_title[128] = {0};
 	sprintf(ui_title,"正在呼叫 门口机");
 	talk_peer_dev.type = DEV_TYPE_ENTRANCEMACHINE;
 	talk_peer_dev.call_time = TIME_CALLING;
@@ -469,6 +467,7 @@ static int stmDoTalkCallin(void *data,MyVideo *arg)
 	if (data_temp->type == DEV_TYPE_HOUSEHOLDAPP) {
 		my_video->videoAnswer(0,data_temp->type);
 	} else {
+		myAudioPlayRing();
 		my_video->showPeerVideo();	
 	}
 	return 0;

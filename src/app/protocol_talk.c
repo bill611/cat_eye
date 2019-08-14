@@ -215,7 +215,6 @@ static void cblIncomingCall(void *arg)
 	if (my_video)
 		my_video->videoCallIn((char *)arg);
 	strcpy(peer_user.id,(char *)arg);
-	// myAudioPlayRing();
 }
 static void cbSendCmd(void *arg)
 {
@@ -272,7 +271,6 @@ static void cbReceivedCmd(const char *user_id,void *arg)
 }
 static void cbInitAudio(unsigned int rate,unsigned int bytes_per_sample,unsigned int channle)
 {
-	return;
 	gpio->SetValue(gpio,ENUM_GPIO_MICKEY,IO_ACTIVE);
 	mic_open = 1;
 	if (my_mixer)
@@ -284,7 +282,6 @@ static void cbStartRecord(unsigned int rate,unsigned int bytes_per_sample,unsign
 }
 static void cbRecording(char *data,unsigned int size)
 {
-	return;
     char audio_buff[1024] = {0};
 	if (my_mixer ) {
 		int real_size = my_mixer->Read(my_mixer,audio_buff,size);
@@ -297,7 +294,6 @@ static void cbRecording(char *data,unsigned int size)
 }
 static void cbPlayAudio(const char *data,unsigned int size)
 {
-	return;
 	if (my_mixer) {
 		my_mixer->Write(my_mixer,audio_fp,data,size);
 	}

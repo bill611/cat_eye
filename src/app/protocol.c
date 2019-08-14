@@ -437,7 +437,7 @@ static int udpUdpProtocolFilter(SocketHandle *ABinding,SocketPacket *AData)
 }
 static void udpLocalCall(SocketHandle *ABinding,SocketPacket *AData)
 {
-	if (protocol_talk)
+	if (protocol_talk && protocol_talk->udpCmd)
 		protocol_talk->udpCmd( ABinding->IP,ABinding->Port,
 				AData->Data,AData->Size);
 }

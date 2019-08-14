@@ -16,10 +16,9 @@ else
 	cd release
 	cmake \
 		-DCMAKE_BUILD_TYPE=Release \
+		-DMODE_UDPTALK=OFF \
 		\
 		-DMODE_UART=OFF \
-		-DMODE_FACE=OFF \
-		-DMODE_UCPAAS=OFF \
 		..
 fi
 make
