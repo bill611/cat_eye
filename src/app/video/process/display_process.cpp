@@ -99,8 +99,8 @@ static void* threadH264Dec(void *arg)
 {
 	DisplayProcess *process = (DisplayProcess *)arg;
 	struct win* video_win = rk_fb_getvideowin();
-	unsigned char data_in[1024*300];
-	unsigned char data_out[1024*600*3/2];
+	unsigned char data_in[1024*50];
+	unsigned char data_out[640*480*3/2];
 	int out_w = 0,out_h = 0;
     int disp_width = 0, disp_height = 0;
     int out_device = rk_fb_get_out_device(&disp_width, &disp_height);
@@ -112,7 +112,6 @@ static void* threadH264Dec(void *arg)
 		memset(data_out,0,sizeof(data_out));
         if (process->decCallback())
             process->decCallback()(data_in,&size_in);
-		printf("[%s]%d\n", __func__,size_in);
 		unsigned char *nv12_scale_data = NULL;
 		if (size_in > 0) {
 			if (my_h264dec)
@@ -129,7 +128,7 @@ static void* threadH264Dec(void *arg)
 		if (nv12_scale_data)
 			free(nv12_scale_data);
 
-		usleep(50000);
+		usleep(10000);
     }
 	if (my_h264dec)
 		my_h264dec->unInit(my_h264dec);
@@ -143,8 +142,8 @@ void DisplayProcess::showPeerVideo(int w,int h,DecCallbackFunc decCallback)
 	decCallback_ = decCallback;
 	start_dec_ = true;
 	setVideoBlack();
-	if (my_h264dec)
-		my_h264dec->init(my_h264dec,w,h);
+	// if (my_h264dec)
+		// my_h264dec->init(my_h264dec,w,h);
 	createThread(threadH264Dec,this);
 }
 

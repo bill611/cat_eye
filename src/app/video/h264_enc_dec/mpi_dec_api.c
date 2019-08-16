@@ -27,10 +27,10 @@
 #include "utils.h"
 #include "mpi_dec_api.h"
 
-#define MPI_DEC_LOOP_COUNT          4
-#define MPI_DEC_STREAM_SIZE         1024*600*3
+#define MPI_DEC_STREAM_SIZE         1024*50
 #define MAX_FILE_NAME_LENGTH        256
 
+int split_h264_separate(const uint8_t *buffer, size_t length,int *sps_length,int *pps_length) ;
 typedef struct {
     MppApi          *mpi;
 
@@ -72,6 +72,7 @@ static MppPacket packet    = NULL;
 static MppFrame  frame     = NULL;
 static char *buf           = NULL;
 static MpiDecLoopData data;
+static char h264_sps_pps[64];
 
 static int dump_mpp_frame_to_buf(MppFrame frame, unsigned char *out_data)
 {
@@ -350,6 +351,15 @@ try_again:
 
 static int mpiH264Decode(H264Decode *This,unsigned char *in_data,int in_size,unsigned char *out_data,int *out_w,int *out_h)
 {
+	int sps_length = 0,pps_length = 0;
+	int frame_type = split_h264_separate(in_data,in_size,&sps_length,&pps_length);
+	if (frame_type == 7) {
+		if (memcmp(h264_sps_pps,in_data,sps_length)) {
+			my_h264dec->unInit(my_h264dec);
+			my_h264dec->init(my_h264dec,1024,600);
+			memcpy(h264_sps_pps,in_data,sps_length);
+		}
+	}
 	memset(buf,0,MPI_DEC_STREAM_SIZE);
 	return decode_simple(&data,in_data,in_size,out_data,out_w,out_h);
 }
@@ -402,17 +412,18 @@ static int mpiH264DecInit(H264Decode *This,int width,int height)
 
 static int mpiH264DecUnInit(H264Decode *This)
 {
-    MPP_RET ret = mpi->reset(ctx);
-    if (MPP_OK != ret) {
-        printf("mpi->reset failed\n");
-        return -1;
-    }
+    // MPP_RET ret = mpi->reset(ctx);
+    // if (MPP_OK != ret) {
+        // printf("mpi->reset failed\n");
+        // return -1;
+    // }
     if (packet) {
         mpp_packet_deinit(&packet);
         packet = NULL;
     }
 
     if (ctx) {
+		mpi->reset(ctx);
         mpp_destroy(ctx);
         ctx = NULL;
     }
@@ -426,6 +437,7 @@ static int mpiH264DecUnInit(H264Decode *This)
         data.frm_grp = NULL;
     }
 
+	memset(h264_sps_pps,0,sizeof(h264_sps_pps));
 	return 0;
 }
 void myH264DecInit(void)

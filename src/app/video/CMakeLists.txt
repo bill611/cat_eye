@@ -5,6 +5,7 @@ set(SRC_APP_VIDEO
     video_server.cpp
 	h264_enc_dec/mpi_dec_api.c
 	h264_enc_dec/mpi_enc_api.c
+	h264_enc_dec/h264_split.c
 	camera/camerahal.cpp
 	buffer/camerabuf.cpp
 	process/display_process.cpp

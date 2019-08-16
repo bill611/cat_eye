@@ -169,11 +169,6 @@ static void on_hangup_cb(const char* callid, int reason)
 	send_for_reciev_video = 0;
 	if (call_backs.hangup)
 		call_backs.hangup((void *)callid);
-	if (rec_buf) {
-		free(rec_buf);
-		rec_buf = NULL;
-		rec_buf_len = 0;
-	}
 }
 
 // received dtmf
@@ -366,10 +361,14 @@ static void* threadSendForRecive(void *arg)
 	send_for_reciev_video = 1;
 	while (send_for_reciev_video) {
 		if (rec_buf)	 {
-			printf("len:%d\n", rec_buf_len);
 			UCS_PushExternalVideoStream(rec_buf,rec_buf_len);
 		}
 		usleep(100000);
+	}
+	if (rec_buf) {
+		free(rec_buf);
+		rec_buf = NULL;
+		rec_buf_len = 0;
 	}
 	return NULL;
 }

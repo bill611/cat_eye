@@ -373,10 +373,10 @@ static void version(void)
  */
 static void prg_exit(int code) 
 {
-	done_stdin();
-	if (handle)
-		snd_pcm_close(handle);
-	exit(code);
+	// done_stdin();
+	// if (handle)
+		// snd_pcm_close(handle);
+	// exit(code);
 }
 
 static void signal_handler(int sig)
@@ -2997,8 +2997,10 @@ int rvMixerPlayWrite(void *data,int size)
 	int l = size * 8 / bits_per_frame;
 	int ret =  snd_pcm_writei(handle, data, l);
 	// printf("s:%d,l:%d,ret:%d\n",size,l, ret);
-	if (ret == -EPIPE)
+	if (ret == -EPIPE) {
 		xrun();
+		return 0;	
+	}
 	return ret * bits_per_sample * rhwparams.channels / 8;
 }
 

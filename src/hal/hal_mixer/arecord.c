@@ -86,6 +86,7 @@ static snd_pcm_sframes_t (*writei_func)(snd_pcm_t *handle, const void *buffer, s
 static snd_pcm_sframes_t (*readn_func)(snd_pcm_t *handle, void **bufs, snd_pcm_uframes_t size);
 static snd_pcm_sframes_t (*writen_func)(snd_pcm_t *handle, void **bufs, snd_pcm_uframes_t size);
 
+void rvMixerCaptureClose(void);
 enum {
 	VUMETER_NONE,
 	VUMETER_MONO,
@@ -373,10 +374,12 @@ static void version(void)
  */
 static void prg_exit(int code) 
 {
-	done_stdin();
-	if (handle)
-		snd_pcm_close(handle);
-	exit(code);
+	rvMixerCaptureClose();
+	// done_stdin();
+	// if (handle)
+		// snd_pcm_close(handle);
+	// handle = NULL;
+	// exit(code);
 }
 
 static void signal_handler(int sig)
@@ -2994,12 +2997,16 @@ void rvMixerCaptureClose(void)
 }
 int rvMixerCaptureRead(void *data,int size)
 {
-	if (!handle)
+	if (!handle) {
+		rvMixerCaptureOpen();
 		return 0;
+	}
 	int l = size * 8 / bits_per_frame;
 	int ret =  snd_pcm_readi(handle, data, l);
-	if (ret == -EPIPE)
+	if (ret == -EPIPE) {
 		xrun();
+		return 0;
+	}
 	// printf("size:%d,ret:%d\n", size,ret);	
 	return ret * bits_per_sample * rhwparams.channels / 8;
 }

@@ -35,6 +35,7 @@
 #include "config.h"
 #include "my_video.h"
 #include "my_mixer.h"
+#include "my_audio.h"
 #include "video/video_server.h"
 #include "share_memory.h"
 
@@ -965,7 +966,7 @@ static void* threadVideoTimer(void *arg)
 {
 	while (1) {
 		if (talk_peer_dev.call_time) {
-			printf("call time:%d\n", talk_peer_dev.call_time);
+			// printf("call time:%d\n", talk_peer_dev.call_time);
 			if (--talk_peer_dev.call_time == 0) {
 				stm->msgPost(stm,EV_TALK_HANGUP,NULL);
 			}

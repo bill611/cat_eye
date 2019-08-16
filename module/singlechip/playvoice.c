@@ -48,7 +48,7 @@ do {                          \
  *                      variables define
  *----------------------------------------------------------------------------*/
 
-static char   cmd_buf[1024] = {0};
+// static char   cmd_buf[1024] = {0};
 char * excuteCmd(char *Cmd,...)
 {
 	int i;

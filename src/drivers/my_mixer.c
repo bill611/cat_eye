@@ -32,7 +32,6 @@
 #include <signal.h>
 #include <sys/time.h>
 #include <time.h>
-#include <pthread.h>
 #include <errno.h>
 
 #include "hal_mixer.h"
