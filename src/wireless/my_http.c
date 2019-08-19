@@ -115,18 +115,18 @@ static int download(char *url, char *para, char *file_path)
 
 	if (r != CURLE_OK) {
 		printf("curl download CURLOPT_SSL_VERIFYPEER failed :%s\n",curl_easy_strerror(r));
-		goto EXIT;
+		goto CLOSE_FD_EXIT;
 	}
 	r = curl_easy_perform(easy_handle);
 
 	if (r != CURLE_OK) {
 		printf("curl download failed :%s\n",curl_easy_strerror(r));
-		goto EXIT;
 	}
+
+CLOSE_FD_EXIT:
     fflush(fd);
     fclose(fd);
     sync();
-
 EXIT:
 	curl_easy_cleanup(easy_handle);
 	return 0;

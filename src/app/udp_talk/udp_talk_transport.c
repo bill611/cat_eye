@@ -197,6 +197,7 @@ static int rtpGetVideo(Rtp* This,void *data)
 /* ---------------------------------------------------------------------------*/
 static void * rtpThreadExecute(void *ThreadData)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	Rtp* This = (Rtp*)ThreadData;
 	char *pData;
 	int Size=0;
@@ -337,6 +338,7 @@ static void spiHeart(rec_body *pAudioPack)
 /* ---------------------------------------------------------------------------*/
 static void * spiThreadExecute(void *ThreadData)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	Rtp* This = (Rtp*)ThreadData;
 
 	rec_body *pAudioPack = (rec_body*)malloc(sizeof(rec_body));

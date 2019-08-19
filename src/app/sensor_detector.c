@@ -48,6 +48,7 @@ Sensors *sensor;
 
 static void* theadProximity(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	int state = HAL_SENSER_ERR;
 	int state_old = HAL_SENSER_ERR;
 	halSensorInit();	
@@ -67,6 +68,7 @@ static void* theadProximity(void *arg)
 }
 static void* theadEle(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	int power_old = 0;
 	int power_state_old = 0;
 	int report_low_power = 0; // 发送低电量报警

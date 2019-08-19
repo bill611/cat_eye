@@ -22,6 +22,7 @@ extern "C" {
 #endif  /* __cplusplus */
 
 #include <pthread.h>
+#include <sys/prctl.h>
 
 	int createThread(void *(*start_routine)(void *), void *arg);
 

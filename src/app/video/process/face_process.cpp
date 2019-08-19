@@ -61,6 +61,7 @@ static pthread_mutex_t mutex;		//队列控制互斥信号
 //#define TEST_WRITE_SP_TO_FILE
 static void* faceProcessThread(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	FaceProcess *process = (FaceProcess *)arg;
 	while (process->start_enc() == true) {
 		if (camm_info.get_data_end == 0) {

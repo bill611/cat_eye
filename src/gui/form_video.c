@@ -158,7 +158,7 @@ static void formVideoTimerProc1s(HWND hwnd)
 	// 更新时间
 	int call_time = my_video->videoGetCallTime();
 	if (call_time != call_time_old) {
-		char buf[16] = {0};
+		char buf[32] = {0};
 		sprintf(buf,"剩余时间: %d s",call_time);
 		SendMessage(GetDlgItem (form_base->hDlg, IDC_MYSTATIC_TIME),
 				MSG_MYSTATIC_SET_TITLE,(WPARAM)buf,0);

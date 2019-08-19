@@ -193,6 +193,7 @@ static void stmDestroy(StMachine **This)
 /* ---------------------------------------------------------------------------*/
 static void *stmThread(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
     StMachine *stm= (StMachine *)arg;
 	MsgData   msg_data;
     while(1) {

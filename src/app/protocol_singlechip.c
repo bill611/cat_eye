@@ -65,7 +65,6 @@ static uint64_t picture_id = 0;
 
 static void cmdSleep(void)
 {
-	return;
 	IpcData ipc_data;
 	protocol_hardcloud->enableSleepMpde();
 	ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
@@ -76,6 +75,7 @@ static void cmdSleep(void)
 
 static void* threadPirTimer(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	while (1) {
 		if (pir_act_timer) {
 			// printf("[%s]act:%d\n", __func__,pir_act_timer);
@@ -96,6 +96,7 @@ static void* threadPirTimer(void *arg)
 }
 static void* threadCapture(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	uint64_t picture_id = *(uint64_t *)arg;
 	protocol_hardcloud->uploadPic(FAST_PIC_PATH,picture_id);
 	protocol_hardcloud->reportCapture(picture_id);
@@ -131,7 +132,7 @@ static void deal(IpcData *ipc_data)
 				pir_cycle_end = 1;
 				char url[256] = {0};
 				picture_id = atoll(ipc_data->data.file.name);
-				sprintf(url,"%s/%s_0.jpg",QINIU_URL,ipc_data->data.file.name);
+				sprintf(url,"%s/%s_%s_0.jpg",QINIU_URL,g_config.imei,ipc_data->data.file.name);
 				sqlInsertRecordCapNoBack(ipc_data->data.file.date,picture_id);
 				sqlInsertPicUrlNoBack(picture_id,url);
 				createThread(threadCapture,&picture_id);

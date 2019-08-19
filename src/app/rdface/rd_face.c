@@ -91,6 +91,7 @@ static int thread_end = 1;
 
 static void* threadTimer1s(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	thread_start = 1;
 	thread_end = 0;
     while (thread_start) {

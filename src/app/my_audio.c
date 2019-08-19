@@ -51,6 +51,7 @@ void myAudioPlayRecognizer(char *usr_name)
 }
 static void* loopPlay(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	char *path = (char *)arg;
 	loop_end = 0;
 	while (loop_start){
@@ -78,4 +79,11 @@ void myAudioStopPlay(void)
 {
 	loop_start = 0;
 	excuteCmd("busybox","killall","aplay",NULL);
+}
+
+void myAudioPlayAlarm(void)
+{
+	char path[64];
+	sprintf(path,"%salarm.wav",AUDIO_PATH);	
+	playwavfile(path);		
 }

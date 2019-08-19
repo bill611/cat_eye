@@ -105,6 +105,13 @@ extern "C" {
 			char *date_time,
 			int type,
 			int *has_people);
+	extern void sqlInsertRecordTalkNoBack(
+			char *date_time,
+			char *people,
+			int call_dir,
+			int answered,
+			int talk_time,
+			uint64_t picture_id);
 
 #ifdef __cplusplus
 }

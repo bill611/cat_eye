@@ -26,6 +26,7 @@
 #include <netdb.h>
 #include <pthread.h>
 #include <arpa/inet.h>
+#include <sys/prctl.h>
 #include "debug.h"
 #include "queue.h"
 #include "udp_server.h"
@@ -219,6 +220,7 @@ static void udpServerRecvData(TUDPServer* This,
 /* ---------------------------------------------------------------------------*/
 static void * udpServerThread(void *ThreadData)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 //	socklen_t addrlen;
 	TUDPServer *This = (TUDPServer *)ThreadData;
 	UdpThreadOps *control = This->priv->control;
@@ -501,6 +503,7 @@ static int udpServerKillTaskCondition(TUDPServer* This,
 /* ---------------------------------------------------------------------------*/
 static void *udpSocketReadThread(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	UdpSocket socket_data;
 	TUDPServer *udp = (TUDPServer*)arg;
 	// 阻塞状态 不需要延时

@@ -290,6 +290,7 @@ static void udpServerRecvData(TUDPServer* This,
 /* ---------------------------------------------------------------------------*/
 static void * udpServerThread(void *ThreadData)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 //	socklen_t addrlen;
 	TUDPServer *This = (TUDPServer *)ThreadData;
 	UdpThreadOps *control = This->priv->control;
@@ -651,6 +652,7 @@ error:
 /* ---------------------------------------------------------------------------*/
 static void *udpSocketReadThread(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	UdpSocket socket_data;
 	// 阻塞状态 不需要延时
 	while (1) {

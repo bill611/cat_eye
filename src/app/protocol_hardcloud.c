@@ -536,8 +536,7 @@ static void getIntercoms(void)
 		 timestamp_now, g_config.timestamp,timestamp_now - g_config.timestamp);
 	if (timestamp_now - g_config.timestamp <= 12) {
 		if (protocol_talk) {
-			protocol_talk->reload();
-			protocol_talk->reconnect();
+			protocol_talk->connect();
 		}
 		return;
 	}
@@ -576,6 +575,7 @@ static void waitConnectService(void)
 /* ---------------------------------------------------------------------------*/
 static void* initThread(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	char *mqtt_server_content = NULL;
 	char url[128] = {0};
 	sprintf(url,"%s/Mqtt/GetSevice?num=%s",HARD_COULD_API,g_config.imei);
@@ -752,6 +752,7 @@ static void enableSleepMpde(void)
 /* ---------------------------------------------------------------------------*/
 static void* tcpHeartThread(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	char ip[16];
 	int connect_flag = 0;
 	char imei[32];
@@ -805,6 +806,7 @@ loop_heart:
 
 static void* getIntercomsThread(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	while (1) {
 		if (mqtt_connect_state && ntp_connect_state) {
 			getIntercoms();
@@ -817,6 +819,7 @@ static void* getIntercomsThread(void *arg)
 
 static void* threadUpload(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	UpLoadData up_data;
 	char *qiniu_upload= NULL;
 	DIR *dir;
@@ -827,8 +830,8 @@ static void* threadUpload(void *arg)
 	}
 	while (1) {
 		queue_list.upload->get(queue_list.upload,&up_data);
-		char file_name[32] = {0};
-		sprintf(file_name,"%lld",up_data.picture_id);
+		char file_name[64] = {0};
+		sprintf(file_name,"%s_%lld",g_config.imei,up_data.picture_id);
 		int file_len = strlen(file_name);
 		if((dir=opendir(up_data.file_path)) == NULL) {
 			printf("Open File %s Error %s\n",up_data.file_path,strerror(errno));
@@ -865,6 +868,8 @@ static void* threadUpload(void *arg)
 }
 static void uploadPic(char *path,uint64_t pic_id)
 {
+	if (pic_id == 0)
+		return;
 	UpLoadData up_data;
 	strcpy(up_data.file_path,path);
 	up_data.picture_id = pic_id;
@@ -874,6 +879,7 @@ static void uploadPic(char *path,uint64_t pic_id)
 
 static void* threadReportCapture(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	uint64_t picture_id = 0;
 	char date[64] = {0};
 	int i;
@@ -919,6 +925,7 @@ static void reportCapture(uint64_t pic_id)
 }
 static void* threadReportAlarm(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	ReportAlarmData alarm_data;
 	int i;
 	char *send_buff;
@@ -967,6 +974,7 @@ static void reportAlarm(ReportAlarmData *data)
 }
 static void* threadReportFace(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	ReportFaceData face_data;
 	int i;
 	char *send_buff;
@@ -1002,6 +1010,7 @@ static void* threadReportFace(void *arg)
 	}
 	return NULL;
 }
+
 static void reportFace(ReportFaceData *data)
 {
 	if (queue_list.report_face)
@@ -1010,6 +1019,7 @@ static void reportFace(ReportFaceData *data)
 
 static void* threadReportTalk(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	ReportTalkData talk_data;
 	int i;
 	char *send_buff;
@@ -1026,7 +1036,7 @@ static void* threadReportTalk(void *arg)
 		cJSON_AddStringToObject(obj_data,"date",talk_data.date);
 		cJSON_AddStringToObject(obj_data,"people",talk_data.nick_name);
 		cJSON_AddNumberToObject(obj_data,"callDir",talk_data.call_dir);
-		if (talk_data.auto_answer)
+		if (talk_data.answered)
 			cJSON_AddTrueToObject(obj_data,"autoAnswer");
 		else
 			cJSON_AddFalseToObject(obj_data,"autoAnswer");
@@ -1070,6 +1080,7 @@ void registHardCloud(void)
 	protocol_hardcloud->reportCapture = reportCapture;
 	protocol_hardcloud->reportAlarm = reportAlarm;
 	protocol_hardcloud->reportFace= reportFace;
+	protocol_hardcloud->reportTalk= reportTalk;
 	protocol_hardcloud->enableSleepMpde = enableSleepMpde;
 
 	mqtt_connect_state = 0;

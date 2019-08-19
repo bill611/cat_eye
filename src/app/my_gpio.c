@@ -427,6 +427,7 @@ static void myGpioHandle(MyGpio *This)
 /* ---------------------------------------------------------------------------*/
 static void * myGpioOutputThread(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	MyGpio *This = arg;
 	while (This != NULL) {
 		myGpioHandle(This);

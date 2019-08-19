@@ -26,12 +26,16 @@ do {                          \
 static dictionary* cfg_private_ini = NULL;
 
 static struct CapType cap;		// 抓拍或录像
+static char imei[64 + 1];         // 太川设备机身码
 static EtcValueInt etc_private_int[]={
 {"cap",			"type",			&cap.type,		0},
 {"cap",			"count",		&cap.count,		1},
 {"cap",			"timer",		&cap.timer,		5},
 };
 
+static EtcValueChar etc_private_char[]={
+{"device",		"imei",	    SIZE_CONFIG(imei),		"0"},
+};
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief configoadEtcInt 加载int型配置文件
@@ -49,6 +53,29 @@ static void configLoadEtcInt(dictionary *cfg_ini, EtcValueInt *etc_file,
 		sprintf(buf,"%s:%s",etc_file->section,etc_file->key);
 		*etc_file->value = iniparser_getint(cfg_ini, buf, etc_file->default_int);
 		DPRINT("%s,%d\n", buf,*etc_file->value);
+		etc_file++;
+	}
+}
+
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief configLoadEtcChar 加载char型配置文件
+ *
+ * @param etc_file 文件数组地址
+ * @param length 数组长度
+ */
+/* ---------------------------------------------------------------------------*/
+static void configLoadEtcChar(dictionary *cfg_ini, EtcValueChar *etc_file,
+		unsigned int length)
+{
+	unsigned int i;
+	char buf[64];
+	for (i=0; i<length; i++) {
+		sprintf(buf,"%s:%s",etc_file->section,etc_file->key);
+		strncpy(etc_file->value,
+			   	iniparser_getstring(cfg_ini, buf, etc_file->default_char),
+			   	etc_file->leng);
+		// DPRINT("[%s]%s,%s\n", __FUNCTION__,buf,etc_file->value);
 		etc_file++;
 	}
 }
@@ -96,10 +123,11 @@ static int loadIniFile(dictionary **d,char *file_path,char *sec[])
 
 void sconfigLoad(void)
 {
-	char *sec_private[] = {"cap",NULL};
+	char *sec_private[] = {"cap","device",NULL};
 
 	loadIniFile(&cfg_private_ini,CONFIG_FILENAME,sec_private);
 	configLoadEtcInt(cfg_private_ini,etc_private_int,NELEMENTS(etc_private_int));
+	configLoadEtcChar(cfg_private_ini,etc_private_char,NELEMENTS(etc_private_char));
 	iniparser_freedict(cfg_private_ini);
 }
 
@@ -116,4 +144,8 @@ int getCapCount(void)
 int getCapTimer(void)
 {
 	return cap.timer;
+}
+char * getCapImei(void)
+{
+	return imei;
 }

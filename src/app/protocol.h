@@ -81,6 +81,11 @@ extern "C" {
 		ALARM_TYPE_PEOPLES,		// 陌生人徘徊报警
 	}AlarmType;
 
+	typedef enum _CallDir{
+		CALL_DIR_IN,	// 呼入
+		CALL_DIR_OUT,	// 呼出
+	}CalLDir;
+
 	typedef struct _ReportAlarmData{
 		char date[32];		// 日期
 		AlarmType type;		// 报警类型
@@ -99,9 +104,9 @@ extern "C" {
 
 	typedef struct _ReportTalkData{
 		char date[32];		// 日期
-		uint64_t picture_id;// 徘徊报警时，抓拍图片
-		int call_dir;		// 0呼入 1呼出
-		int auto_answer;		// true 接听 false未接听
+		uint64_t picture_id;// 抓拍图片
+		CalLDir call_dir;	// 0呼入 1呼出
+		int answered;		// true 接听 false未接听
 		int talk_time;		// 通话时间
 		char nick_name[32];		// 通话人
 	}ReportTalkData;
@@ -177,6 +182,7 @@ extern "C" {
 		void (*reportCapture)(uint64_t pic_id);
 		void (*reportAlarm)(ReportAlarmData *data);
 		void (*reportFace)(ReportFaceData *data);
+		void (*reportTalk)(ReportTalkData *data);
 		void (*enableSleepMpde)(void);
 	}ProtocolHardcloud;
 	extern ProtocolHardcloud *protocol_hardcloud;

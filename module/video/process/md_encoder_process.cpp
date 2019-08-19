@@ -111,6 +111,7 @@ int NV12Scale(unsigned char *psrc_buf, int psrc_w, int psrc_h, unsigned char **p
 
 static void* encoderProcessThread(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	H264Encoder *process = (H264Encoder *)arg;
 	while (process->start_enc() == true) {
 		if (h264_info.get_data_end == 0) {

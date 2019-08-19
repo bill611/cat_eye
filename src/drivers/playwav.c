@@ -22,6 +22,7 @@
 #include <string.h>
 #include <memory.h>
 #include <unistd.h>
+#include <sys/prctl.h>
 #include "pthread.h"
 #include "playwav.h"
 #include "externfunc.h"
@@ -118,6 +119,7 @@ static void playWavThreadEnd(void)
 /* ----------------------------------------------------------------*/
 static void * threadWav(void *file_name)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	FILE *fp;
 	int wav_size;
 	int read_size;

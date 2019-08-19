@@ -99,6 +99,7 @@ static int writePNG(const QRcode *qrcode, const char *outfile, enum imageType ty
 		fp = fopen(outfile, "wb");
 		if(fp == NULL) {
 			fprintf(stderr, "Failed to create file: %s\n", outfile);
+			free(row);
 			perror(NULL);
 			return -1;
 		}
@@ -106,18 +107,21 @@ static int writePNG(const QRcode *qrcode, const char *outfile, enum imageType ty
 
 	png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 	if(png_ptr == NULL) {
+		free(row);
 		fprintf(stderr, "Failed to initialize PNG writer.\n");
 		return -1;
 	}
 
 	info_ptr = png_create_info_struct(png_ptr);
 	if(info_ptr == NULL) {
+		free(row);
 		fprintf(stderr, "Failed to initialize PNG write.\n");
 		return -1;
 	}
 
 	if(setjmp(png_jmpbuf(png_ptr))) {
 		png_destroy_write_struct(&png_ptr, &info_ptr);
+		free(row);
 		fprintf(stderr, "Failed to write PNG image.\n");
 		return -1;
 	}
@@ -125,6 +129,7 @@ static int writePNG(const QRcode *qrcode, const char *outfile, enum imageType ty
 	if(type == PNG_TYPE) {
 		palette = (png_colorp) malloc(sizeof(png_color) * 2);
 		if(palette == NULL) {
+			free(row);
 			fprintf(stderr, "Failed to allocate memory.\n");
 			return -1;
 		}

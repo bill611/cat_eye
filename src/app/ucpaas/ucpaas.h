@@ -47,6 +47,7 @@ extern "C" {
 			unsigned int *dataLen,
 			long long *timeStamp,
 			int *frameType);
+	int ucsConnectState(void);
 
 #ifdef __cplusplus
 }

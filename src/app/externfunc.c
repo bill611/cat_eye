@@ -592,6 +592,7 @@ uint32_t getDiffSysTick(uint64_t new,uint64_t old)
 
 static void* getWifiListThread(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	TcWifiScan *plist = (TcWifiScan *)arg;
 	char *cmd[] = { "cat_eye", "wlan0", "scan"  };
 	int cnt = 0;

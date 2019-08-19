@@ -46,6 +46,7 @@ extern void sconfigLoad(void);
 extern int getCapType(void);
 extern int getCapCount(void);
 extern int getCapTimer(void);
+extern char * getCapImei(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -173,6 +174,7 @@ static void cmdCheckStatus(void)
 
 static void* threadCmdSleep(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	uint8_t data = 1;
 	while (1) {
 		cmdPacket(CMD_HEART,id++,&data,0);
@@ -182,10 +184,13 @@ static void* threadCmdSleep(void *arg)
 }
 static void* threadCapture(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	IpcData ipc_data;
 	getFileName(ipc_data.data.file.name,ipc_data.data.file.date);
 	char count[5];
 	sprintf(count,"%d",getCapCount());
+	char file_name[32];
+	sprintf(file_name,"%s_%s",getCapImei(),ipc_data.data.file.name);
 	excuteCmd("/data/cammer_cap",ipc_data.data.file.name,count,NULL);
 	ipc_data.cmd = IPC_UART_CAPTURE;
 	main_queue->post(main_queue,&ipc_data);
@@ -274,6 +279,7 @@ static void uartDeal(void)
 
 static void ipcCallback(char *data,int size )
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	IpcData ipc_data;
 	memcpy(&ipc_data,data,sizeof(IpcData));
 	switch(ipc_data.cmd)
@@ -292,6 +298,7 @@ static void ipcCallback(char *data,int size )
 
 static void* threadIpcSendMain(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	Queue * queue = (Queue *)arg;
 	waitIpcOpen(IPC_MAIN);
 	IpcData ipc_data;

@@ -95,6 +95,7 @@ static void timerDestroy(Timer *This)
 
 static void* timerThread(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	Timer *This = (Timer *)arg;
 	This->priv->thread_end = 0;
 	while(This->priv->real_id) {

@@ -121,6 +121,9 @@ static const char * ucDebugInfo(int ev_reason)
 static void connect_event_cb(int ev_reason)
 {
     DPRINT("ev_reason[%s]\n", ucDebugInfo(ev_reason));
+	if (ev_reason == eUCS_REASON_LOGIN_SUCCESS) {
+		connect_state = 1;
+	}
 }
 
 // UCS dailing out failed
@@ -358,6 +361,7 @@ void ucsSendVideo(const unsigned char* frameData, const unsigned int dataLen)
 
 static void* threadSendForRecive(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	send_for_reciev_video = 1;
 	while (send_for_reciev_video) {
 		if (rec_buf)	 {
@@ -395,7 +399,6 @@ int ucsConnect(char *user_token)
 		return 0;
     if (user_token[0] != 0) {
 		UCS_Connect(user_token);
-		connect_state = 1;
 		// test 门口机
 		// UCS_Connect("eyJBbGciOiJIUzI1NiIsIkFjY2lkIjoiY2I3MzhjZmNkNmFlYTkxMDZiZTk5OTc2NzZlNzJhMDIiLCJBcHBpZCI6ImFjNTdhMDc3ZGIwYjRjY2JhNzEwNTU5Yzk4NzlkYmQ1IiwiVXNlcmlkIjoiVGNjMTkwNDFiZDI1YjQ0ZWY0YmJjZDgifQ==.Du+oG8HxUJBfaLDfaCcVanWRNCSvLSxVnQOHFRDzMAA=");
         return 1;
@@ -439,4 +442,9 @@ void registUcpaas(Callbacks *interface)
 int unregistUcpaas(void)
 {
     TUCS_Destory();
+}
+
+int ucsConnectState(void)
+{
+	return connect_state;	
 }

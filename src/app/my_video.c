@@ -45,7 +45,6 @@
 extern void resetAutoSleepTimerLong(void);
 extern void resetAutoSleepTimerShort(void);
 extern int formCreateCaputure(int count);
-extern IpcServer* ipc_main;
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -63,7 +62,6 @@ extern IpcServer* ipc_main;
 #define TIME_CALLING 30
 enum {
 	EV_FACE_ON,			// 打开人脸识别功能
-	EV_FACE_OFF,		// 关闭人脸识别功能
 	EV_FACE_OFF_FINISH,	// 关闭人脸识别功能结束
 	EV_FACE_REGIST,		// 注册人脸
 	EV_FACE_RECOGNIZER,	// 识别人脸
@@ -112,6 +110,12 @@ enum {
 	DO_DELAY_SLEEP,		// APP操作时延长睡眠时间
 };
 
+enum {
+	CALL_RESULT_NO,		// 未得到呼叫结果或已处理过呼叫结果
+	CALL_RESULT_SUCCESS, // 呼叫成功
+	CALL_RESULT_FAIL,  // 呼叫失败
+};
+
 typedef struct _StmData {
 	int type;
 	int call_dir; // 操作方向 0 本机，1对方
@@ -154,7 +158,6 @@ typedef struct _CammerData {
 MyVideo *my_video;
 static char *st_debug_ev[] = {
 	"EV_FACE_ON",			// 打开人脸识别功能
-	"EV_FACE_OFF",          // 关闭人脸识别功能
 	"EV_FACE_OFF_FINISH",   // 关闭人脸识别功能结束
 	"EV_FACE_REGIST",       // 注册人脸
 	"EV_FACE_RECOGNIZER",	// 识别人脸
@@ -210,6 +213,7 @@ static StmData *st_data = NULL;
 static StMachine* stm;
 static CapData cap_data;
 static MPEG4Head* avi = NULL;
+static ReportTalkData talk_data;
 
 static TalkPeerDev talk_peer_dev;
 static pthread_mutex_t mutex;
@@ -220,7 +224,6 @@ static int rec_video_start = 0;
 static StateTable state_table[] =
 {
 	{EV_FACE_ON,		ST_IDLE,	ST_FACE,	DO_FACE_ON},
-	{EV_FACE_OFF,		ST_FACE,	ST_IDLE,	DO_FACE_OFF},
 	{EV_FACE_REGIST,	ST_FACE,	ST_FACE,	DO_FACE_REGIST},
 	{EV_FACE_RECOGNIZER,ST_FACE,	ST_FACE,	DO_FACE_RECOGNIZER},
 
@@ -363,7 +366,7 @@ send_sleep:
 static void dialCallBack(int result)
 {
 	if (result) {
-		talk_peer_dev.call_out_result = 1;
+		talk_peer_dev.call_out_result = CALL_RESULT_SUCCESS;
 		stm->msgPost(stm,EV_TALK_CALLOUTOK,NULL);
 		if (		talk_peer_dev.type != DEV_TYPE_ENTRANCEMACHINE
 				&& 	talk_peer_dev.type != DEV_TYPE_HOUSEENTRANCEMACHINE) {
@@ -372,7 +375,7 @@ static void dialCallBack(int result)
 #endif
 		}
 	} else {
-		talk_peer_dev.call_out_result = 0;
+		talk_peer_dev.call_out_result = CALL_RESULT_FAIL;
 		stm->msgPost(stm,EV_TALK_HANGUP,NULL);
 	}
 }
@@ -393,6 +396,10 @@ static int stmDoTalkCallout(void *data,MyVideo *arg)
 	talk_peer_dev.type = data_temp->type;
 	talk_peer_dev.call_time = TIME_CALLING;
 	protocol_talk->dial(data_temp->usr_id,dialCallBack);
+	// 保存通话记录到内存
+	strcpy(talk_data.nick_name,data_temp->nick_name);
+	talk_data.call_dir = CALL_DIR_OUT;
+	getDate(talk_data.date,sizeof(talk_data.date));
 #endif
 #ifdef USE_UDPTALK
 	sprintf(ui_title,"正在呼叫 门口机");
@@ -407,27 +414,39 @@ static int stmDoTalkCallout(void *data,MyVideo *arg)
 
 static void *threadCallOutAll(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	char user_id[128] = {0};
 	int index = 0;
+	int talk_online_times = 10 * 10; // 判断云对讲是否连上服务，超过10S未连上服务，则不呼叫
 	int user_num = sqlGetUserInfoUseScopeStart(DEV_TYPE_HOUSEHOLDAPP);
 	sqlGetUserInfoEnd();
 	while (user_num) {
+		if (ucsConnectState() == 0) {
+			if (talk_online_times) {
+				if (--talk_online_times == 0) {
+					user_num = 0;
+					break;
+				}
+			}
+			usleep(100000);
+			continue;
+		}
 		sqlGetUserInfosUseScopeIndex(user_id,talk_peer_dev.peer_nick_name,DEV_TYPE_HOUSEHOLDAPP,index++);
 		my_video->videoCallOut(user_id);
 		printf("[%s]id:%s,name:%s\n", __func__,user_id,talk_peer_dev.peer_nick_name);
 		int wait_times = 300;
 		while (wait_times) {
-			if (talk_peer_dev.call_out_result == -1) {
+			if (talk_peer_dev.call_out_result == CALL_RESULT_NO) {
 				usleep(10000);
 				wait_times--;
 				continue;
 			}
-			if (talk_peer_dev.call_out_result == 1) {
-				talk_peer_dev.call_out_result = -1;
+			if (talk_peer_dev.call_out_result == CALL_RESULT_SUCCESS) {
+				talk_peer_dev.call_out_result = CALL_RESULT_NO;
 				return NULL;
 			}
-			if (talk_peer_dev.call_out_result == 0) {
-				talk_peer_dev.call_out_result = -1;
+			if (talk_peer_dev.call_out_result == CALL_RESULT_FAIL) {
+				talk_peer_dev.call_out_result = CALL_RESULT_NO;
 				break;
 			}
 		}
@@ -460,8 +479,14 @@ static int stmDoTalkCallin(void *data,MyVideo *arg)
 	if (protocol_talk->type == PROTOCOL_TALK_3000) {
 		data_temp->type = DEV_TYPE_ENTRANCEMACHINE;
 	}
+
 	if (protocol_talk->uiShowFormVideo)
 		protocol_talk->uiShowFormVideo(data_temp->type,ui_title);
+
+	// 保存通话记录到内存
+	strcpy(talk_data.nick_name,data_temp->nick_name);
+	talk_data.call_dir = CALL_DIR_IN;
+	getDate(talk_data.date,sizeof(talk_data.date));
 
 	talk_peer_dev.type = data_temp->type;
 	talk_peer_dev.call_time = TIME_CALLING;
@@ -493,9 +518,30 @@ static int stmDoTalkAnswer(void *data,MyVideo *arg)
 	if (protocol_talk->uiAnswer)
 		protocol_talk->uiAnswer(ui_title);
 	talk_peer_dev.call_time = TIME_TALKING;
+	talk_data.answered = 1;
+}
+
+static void* threadRecordTalk(void *arg)
+{
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
+	sqlInsertRecordTalkNoBack(talk_data.date,
+			talk_data.nick_name,
+			talk_data.call_dir,
+			talk_data.answered,
+			talk_data.talk_time,
+			talk_data.picture_id);
+	protocol_hardcloud->uploadPic(FAST_PIC_PATH,talk_data.picture_id);
+	protocol_hardcloud->reportTalk(&talk_data);
+	memset(&talk_data,0,sizeof(talk_data));
+	return NULL;
 }
 
 static int stmDoTalkHangupAll(void *data,MyVideo *arg)
+{
+	protocol_talk->hangup();
+}
+
+static int stmDoTalkHangup(void *data,MyVideo *arg)
 {
 #ifdef USE_VIDEO
 	rkH264EncOff();
@@ -503,27 +549,28 @@ static int stmDoTalkHangupAll(void *data,MyVideo *arg)
 	protocol_talk->hangup();
 	if (protocol_talk->uiHangup)
 		protocol_talk->uiHangup();
-	talk_peer_dev.call_time = 0;
+	if (talk_data.answered) {
+		talk_data.talk_time = TIME_TALKING - talk_peer_dev.call_time;
+	} else {
+		talk_data.talk_time = TIME_CALLING - talk_peer_dev.call_time;
+	}
+	createThread(threadRecordTalk,NULL);
 	memset(&talk_peer_dev,0,sizeof(talk_peer_dev));
-	talk_peer_dev.call_out_result = -1;
-}
-
-static int stmDoTalkHangup(void *data,MyVideo *arg)
-{
-	stmDoTalkHangupAll(data,arg);
-	// my_video->hideVideo();
 }
 
 static void* threadCapture(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	CapData cap_data_temp;
 	memcpy(&cap_data_temp,arg,sizeof(CapData));
 	int i;
+	char jpg_name[64] = {0};
 	char file_path[64] = {0};
 	char url[256] = {0};
 	// printf("thread count:%d,date:%s,name:%s\n",cap_data_temp.count,cap_data_temp.file_date,cap_data_temp.file_name);
 	for (i=0; i<cap_data_temp.count; i++) {
-		sprintf(file_path,"%s%s_%d.jpg",FAST_PIC_PATH,cap_data_temp.file_name,i);
+		sprintf(jpg_name,"%s_%s_%d.jpg",g_config.imei,cap_data_temp.file_name,i);
+		sprintf(file_path,"%s%s",FAST_PIC_PATH,jpg_name);
 		// printf("wirte :%s\n",file_path);
 
 #ifdef USE_VIDEO
@@ -533,7 +580,7 @@ static void* threadCapture(void *arg)
 		fclose(fp);
 #endif
 #endif
-		sprintf(url,"%s/%s_%d.jpg",QINIU_URL,cap_data_temp.file_name,i);
+		sprintf(url,"%s/%s",QINIU_URL,jpg_name);
 		sqlInsertPicUrlNoBack(cap_data_temp.pic_id,url);
 		usleep(500000);
 	}
@@ -544,10 +591,12 @@ static void* threadCapture(void *arg)
 
 static void* threadAlarm(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	CapData cap_data_temp;
 	memcpy(&cap_data_temp,arg,sizeof(CapData));
 
 	int i;
+	char jpg_name[64] = {0};
 	char file_path[64] = {0};
 	char url[256] = {0};
 	static ReportAlarmData alarm_data;
@@ -555,11 +604,12 @@ static void* threadAlarm(void *arg)
 	alarm_data.picture_id = cap_data_temp.pic_id;
 	alarm_data.has_people = 0;
 	for (i=0; i<cap_data_temp.count; i++) {
-		sprintf(file_path,"%s%s_%d.jpg",FAST_PIC_PATH,cap_data_temp.file_name,i);
+		sprintf(jpg_name,"%s_%s_%d.jpg",g_config.imei,cap_data_temp.file_name,i);
+		sprintf(file_path,"%s%s",FAST_PIC_PATH,jpg_name);
 #ifdef USE_VIDEO
 		rkVideoCapture(file_path);
 #endif
-		sprintf(url,"%s/%s_%d.jpg",QINIU_URL,cap_data_temp.file_name,i);
+		sprintf(url,"%s/%s",QINIU_URL,jpg_name);
 		sqlInsertPicUrlNoBack(cap_data_temp.pic_id,url);
 
 		// wait for write file
@@ -586,15 +636,18 @@ static void* threadAlarm(void *arg)
 			alarm_data.picture_id);
 	protocol_hardcloud->uploadPic(FAST_PIC_PATH,alarm_data.picture_id);
 	protocol_hardcloud->reportAlarm(&alarm_data);
+	myAudioPlayAlarm();
 	return NULL;
 }
 static void* threadFace(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	CapData cap_data_temp;
 	memcpy(&cap_data_temp,arg,sizeof(CapData));
 
 	int i;
 	char file_path[64] = {0};
+	char jpg_name[64] = {0};
 	char url[256] = {0};
 	static ReportFaceData face_data;
 	
@@ -604,11 +657,12 @@ static void* threadFace(void *arg)
 	face_data.picture_id = cap_data_temp.pic_id;
 
 	for (i=0; i<cap_data_temp.count; i++) {
-		sprintf(file_path,"%s%s_%d.jpg",FAST_PIC_PATH,cap_data_temp.file_name,i);
+		sprintf(jpg_name,"%s_%s_%d.jpg",g_config.imei,cap_data_temp.file_name,i);
+		sprintf(file_path,"%s%s",FAST_PIC_PATH,jpg_name);
 #ifdef USE_VIDEO
 		rkVideoCapture(file_path);
 #endif
-		sprintf(url,"%s/%s_%d.jpg",QINIU_URL,cap_data_temp.file_name,i);
+		sprintf(url,"%s/%s",QINIU_URL,jpg_name);
 		sqlInsertPicUrlNoBack(cap_data_temp.pic_id,url);
 
 		// wait for write file
@@ -686,6 +740,7 @@ static void recordStopCallbackFunc(void)
 #if (defined X86)
 static void* threadAviReadVideo(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	int i;
 	for (i=0; i<50; i++) {
 		char buf[100];
@@ -702,6 +757,7 @@ static void* threadAviReadVideo(void *arg)
 #endif
 static void* threadAviReadAudio(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
     int audio_fp = -1;
     avi->InitAudio(avi,2,8000,1024);
 	if (my_mixer)
@@ -820,15 +876,6 @@ static void init(void)
 #endif
 }
 
-static void faceStart(void)
-{
-    stm->msgPost(stm,EV_FACE_ON,NULL);
-}
-static void faceStop(void)
-{
-    stm->msgPost(stm,EV_FACE_OFF,NULL);
-}
-
 static void capture(int type,int count,char *nick_name,char *user_id)
 {
 	st_data = (StmData *)stm->initPara(stm,
@@ -868,7 +915,7 @@ static void videoCallOut(char *user_id)
 			        sizeof(StmData));
 	strcpy(st_data->usr_id,user_id);
 	stm->msgPost(stm,EV_TALK_CALLOUT,st_data);
-	talk_peer_dev.call_out_result = -1;
+	talk_peer_dev.call_out_result = CALL_RESULT_NO;
 }
 static int videoGetCallTime(void)
 {
@@ -899,12 +946,20 @@ static void videoAnswer(int dir,int dev_type)
 	st_data->type = dev_type;
 	stm->msgPost(stm,EV_TALK_ANSWER,st_data);
 }
+static void* threadFaceOnDelay(void *arg)
+{
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
+	sleep(4);
+    stm->msgPost(stm,EV_FACE_ON,NULL);
+	return NULL;
+}
 static void showLocalVideo(void)
 {
 #ifdef USE_VIDEO
 	rkVideoDisplayLocal();
 #endif
-	faceStart();
+	createThread(threadFaceOnDelay,NULL);
+    // stm->msgPost(stm,EV_FACE_ON,NULL);
 }
 static void receiveVideo(void *data,int *size)
 {
@@ -964,9 +1019,10 @@ static int delaySleepTime(int type) // 延长睡眠时间0短 1长
 
 static void* threadVideoTimer(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	while (1) {
 		if (talk_peer_dev.call_time) {
-			// printf("call time:%d\n", talk_peer_dev.call_time);
+			printf("call time:%d\n", talk_peer_dev.call_time);
 			if (--talk_peer_dev.call_time == 0) {
 				stm->msgPost(stm,EV_TALK_HANGUP,NULL);
 			}
@@ -981,8 +1037,6 @@ void myVideoInit(void)
 	my_video->showLocalVideo = showLocalVideo;
 	my_video->showPeerVideo = showPeerVideo;
 	my_video->hideVideo = hideVideo;
-	my_video->faceStart = faceStart;
-	my_video->faceStop = faceStop;
 	my_video->faceRegist = faceRegist;
 	my_video->faceDelete = faceDelete;
 	my_video->faceRecognizer = faceRecognizer;
@@ -997,6 +1051,7 @@ void myVideoInit(void)
 	my_video->videoGetCallTime = videoGetCallTime;
     my_video->recordWriteCallback = recordWriteCallback;
     my_video->delaySleepTime = delaySleepTime;
+	memset(&talk_data,0,sizeof(talk_data));
     pthread_mutexattr_t mutexattr;
     pthread_mutexattr_init(&mutexattr);
     pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE_NP);

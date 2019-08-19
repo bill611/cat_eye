@@ -89,8 +89,7 @@ ID INTEGER PRIMARY KEY,\
 date_time char(64),\
 people char(64),\
 callDir INTEGER, \
-hasPeople INTEGER, \
-autoAnswer INTEGER,\
+answered INTEGER,\
 talkTime INTEGER,\
 picture_id INTEGER\
 )";
@@ -490,7 +489,7 @@ void sqlInsertRecordAlarm(
 {
 	char buf[256];
 	pthread_mutex_lock(&mutex);
-	sprintf(buf, "INSERT INTO RecordAlarm(date_time,type,hasPeople,age,sex,picture_id) VALUES('%s','%d','%d','%d','%d','%d','%lld')",
+	sprintf(buf, "INSERT INTO RecordAlarm(date_time,type,hasPeople,age,sex,picture_id) VALUES('%s','%d','%d','%d','%d','%lld')",
 			date_time, type,has_people,age,sex,picture_id);
 	printf("%s\n", buf);
 	LocalQueryExec(dbase.sql,buf);
@@ -515,16 +514,15 @@ void sqlInsertRecordTalkNoBack(
 		char *date_time,
 		char *people,
 		int call_dir,
-		int has_people,
-		int auto_answer,
+		int answered,
 		int talk_time,
 		uint64_t picture_id)
 {
 	char buf[256];
 	pthread_mutex_lock(&mutex);
-	sprintf(buf, "INSERT INTO RecordTalk(date_time,people,callDir,hasPeople,autoAnswer,talkTime,picture_id)\
-            VALUES('%s','%s','%d','%d','%d','%d','%d','%lld')",
-			date_time,people, call_dir,has_people,auto_answer,talk_time,picture_id);
+	sprintf(buf, "INSERT INTO RecordTalk(date_time,people,callDir,answered,talkTime,picture_id)\
+            VALUES('%s','%s','%d','%d','%d','%lld')",
+			date_time,people, call_dir,answered,talk_time,picture_id);
 	printf("%s\n", buf);
 	LocalQueryExec(dbase.sql,buf);
 	pthread_mutex_unlock(&mutex);

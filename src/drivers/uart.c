@@ -32,6 +32,7 @@
 #include <sys/ioctl.h>
 
 #include <pthread.h>
+#include <sys/prctl.h>
 
 #include <termios.h>	//termios.tcgetattr(),tcsetattr
 
@@ -168,6 +169,7 @@ static void uartClose(UartServer *This)
 //---------------------------------------------------------------------------
 static void * uartReceiveThead(UartServer *This)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	int fs_sel;
 	fd_set fs_read;
 	struct timeval tv_timeout;
@@ -188,6 +190,7 @@ static void * uartReceiveThead(UartServer *This)
 
 static void * uartSendThead(UartServer *This)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	UartSendBuf send_buf;
 	while(!This->priv->terminated){
 		This->priv->queue->get(This->priv->queue, &send_buf);

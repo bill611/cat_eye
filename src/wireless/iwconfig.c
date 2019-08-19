@@ -1510,7 +1510,7 @@ set_rts_info(int		skfd,
 	  }
 	else
 	  {	/* Should be a numeric value */
-	    long	temp;
+	    long	temp = 0;
 	    if(sscanf(args[0], "%li", (unsigned long *) &(temp)) != 1)
 	      {
 		errarg = 0;

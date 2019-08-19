@@ -97,6 +97,7 @@ void DisplayProcess::showLocalVideo(void)
 }
 static void* threadH264Dec(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	DisplayProcess *process = (DisplayProcess *)arg;
 	struct win* video_win = rk_fb_getvideowin();
 	unsigned char data_in[1024*50];

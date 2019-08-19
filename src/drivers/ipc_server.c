@@ -52,6 +52,7 @@ static int sendData(struct _IpcServer *This,char *path,void *data,int size)
 }
 static void* threadIpcRecieved(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	struct sockaddr_un clt_addr;
 	IpcServer *This = (IpcServer *)arg;
 	int len;

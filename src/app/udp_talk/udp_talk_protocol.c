@@ -1509,6 +1509,7 @@ static void udpCallHandle(VideoTrans *This,
 
 static void *videoTimerThread(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	while (1) {
 		videoTransHandleCallTime(arg);
 		sleep(1);

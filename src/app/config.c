@@ -273,6 +273,7 @@ void configLoad(void)
 static void* ConfigSaveTask(void* arg)
 {
 
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
     pthread_mutex_lock(&cfg_mutex);
 
 	SavePrivate();

@@ -212,6 +212,7 @@ static int ntpModLocalTime(struct timeval newtime)
 
 static void *ntpTimeThread(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
     int ret;
     int sock;
     struct timeval newtime;

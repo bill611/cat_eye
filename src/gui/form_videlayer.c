@@ -195,6 +195,7 @@ static void formVideoLayerTimerProc1s(HWND hwnd)
 
 static void * loadBmpsThread(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
     int i;
     for (i=0; load_bmps_func[i] != NULL; i++) {
         load_bmps_func[i]();

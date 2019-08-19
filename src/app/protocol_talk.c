@@ -447,8 +447,8 @@ void registTalk(void)
 #ifdef USE_UCPAAS
 	protocol_talk->type = PROTOCOL_TALK_OTHER;
 	registUcpaas(&interface);
-	// protocol_talk->reload();
-	// protocol_talk->connect();
+	protocol_talk->reload();
+	protocol_talk->connect();
 #endif
 
 #ifdef USE_UDPTALK

@@ -373,6 +373,7 @@ static void buttonAdd(HWND hwnd, int id, int nc, DWORD add_data)
 
 static void* threadMoveInterval(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	thread_move_start = 1;
 	while (thread_move_start) {
 		int div_pos = scro_opt.timer_cur_pos - scro_opt.timer_old_pos;

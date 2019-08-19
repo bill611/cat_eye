@@ -60,6 +60,7 @@ static int face_init_finished = 0; // 初始化是否结束，未结束时不处
 /* ---------------------------------------------------------------------------*/
 static void* threadInit(void *arg)
 {
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 #ifdef USE_FACE
 	pthread_mutex_lock(&mutex);
 	face_init_finished = 0;
