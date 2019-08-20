@@ -421,6 +421,7 @@ static void *threadCallOutAll(void *arg)
 	int user_num = sqlGetUserInfoUseScopeStart(DEV_TYPE_HOUSEHOLDAPP);
 	sqlGetUserInfoEnd();
 	while (user_num) {
+#ifdef USE_UCPAAS
 		if (ucsConnectState() == 0) {
 			if (talk_online_times) {
 				if (--talk_online_times == 0) {
@@ -431,6 +432,7 @@ static void *threadCallOutAll(void *arg)
 			usleep(100000);
 			continue;
 		}
+#endif
 		sqlGetUserInfosUseScopeIndex(user_id,talk_peer_dev.peer_nick_name,DEV_TYPE_HOUSEHOLDAPP,index++);
 		my_video->videoCallOut(user_id);
 		printf("[%s]id:%s,name:%s\n", __func__,user_id,talk_peer_dev.peer_nick_name);
