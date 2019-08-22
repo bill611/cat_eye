@@ -119,8 +119,8 @@ int rdfaceInit(void)
 	DPRINT("=====into rdfaceInit()====\n");
 
 
-	if (video_ion_alloc_rational(&model_ion, 32 * 1024, 1024, 1, 1)) {
-		DPRINT("-----> model_ion alloc failed(32MB)\n");
+	if (video_ion_alloc_rational(&model_ion, 24 * 1024, 1024, 1, 1)) {
+		DPRINT("-----> model_ion alloc failed(24MB)\n");
 		goto exit;
 	}
 
