@@ -122,3 +122,8 @@ int createFormPowerOff(HWND hMainWnd)
 
 	return 0;
 }
+int createFormPowerOffLowPower(void)
+{
+	createFormPowerOff(0);
+	SendMessage(GetDlgItem(form_base->hDlg,IDC_CONTTENT),MSG_SETTEXT,0,(LPARAM)"电量过低，正在关机，请及时充电...");
+}

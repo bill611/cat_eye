@@ -84,6 +84,9 @@ RKVideo::RKVideo()
 
 RKVideo::~RKVideo()
 {
+	disconnect(cam_dev->mpath(), display_process);
+	disconnect(cam_dev->mpath(), encode_process);
+	disconnect(cam_dev->mpath(), face_process);
 	if (cam_dev)
 		cam_dev->stop();
 	init_ok = 0;

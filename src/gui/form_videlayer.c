@@ -7,6 +7,7 @@
 #include "screen.h"
 #include "config.h"
 #include "protocol.h"
+#include "sensor_detector.h"
 #include "thread_helper.h"
 
 #include "my_button.h"
@@ -22,6 +23,7 @@
  *----------------------------------------------------------------------------*/
 extern void createFormMain(HWND hMainWnd,void (*callback)(void));
 extern int createFormPowerOff(HWND hMainWnd);
+extern int createFormPowerOffLowPower(void);
 extern void formMainLoadBmp(void);
 extern void formSettingLoadBmp(void);
 extern void formVideoLoadBmp(void);
@@ -163,9 +165,20 @@ void formVideoLayerScreenOn(void)
 /* ---------------------------------------------------------------------------*/
 void formVideoLayerGotoPoweroff(void)
 {
+	my_video->hideVideo();
 	screensaverStart(1);
 	screenAutoCloseStop();
 	createFormPowerOff(0);
+}
+
+static void interfaceLowPowerToPowerOff(void)
+{
+	my_video->hideVideo();
+	screensaverStart(1);
+	screenAutoCloseStop();
+	createFormPowerOffLowPower();
+	auto_close_lcd = 0;
+	sleep_timer = SLEEP_TIMER;
 }
 /* ---------------------------------------------------------------------------*/
 /**
@@ -239,6 +252,9 @@ static int formVideoLayerProc(HWND hWnd, int message, WPARAM wParam, LPARAM lPar
 				my_video->showLocalVideo();
 				formVideoInitInterface();
 				screensaverStart(1);
+				if (sensor) {
+					sensor->interface->uiLowPowerToPowerOff = interfaceLowPowerToPowerOff;
+				}
 			} break;
 
 		case MSG_ERASEBKGND:

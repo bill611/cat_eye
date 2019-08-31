@@ -11,6 +11,15 @@ if [ $# == 0 ]; then
 		-DMODE_UART=OFF \
 		\
 		..
+elif [ $1 == "debug" ]; then
+	cmake_dir=debug
+	mkdir -p $cmake_dir
+	cd $cmake_dir
+	cmake \
+		-DCMAKE_BUILD_TYPE=Debug \
+		-DMODE_UDPTALK=OFF \
+		-DMODE_UART=OFF \
+		..
 elif [ $1 == "x86" ]; then
 	cmake_dir=x86
 	mkdir -p $cmake_dir
@@ -22,15 +31,6 @@ elif [ $1 == "x86" ]; then
 		-DMODE_VIDEO=OFF \
 		-DMODE_FACE=OFF \
 		-DMODE_UCPAAS=OFF \
-		..
-elif [ $1 == "debug" ]; then
-	cmake_dir=debug
-	mkdir -p $cmake_dir
-	cd $cmake_dir
-	cmake \
-		-DCMAKE_BUILD_TYPE=Debug \
-		-DMODE_UDPTALK=OFF \
-		-DMODE_UART=OFF \
 		..
 fi
 make

@@ -82,6 +82,13 @@ static void* theadEle(void *arg)
 		}
 		// 更新电量
 		int power = halBatteryGetEle();
+		// 电量为0且非充电状态
+		if (power == 0 && power_state == BATTERY_NORMAL) {
+			if (sensor->interface->uiLowPowerToPowerOff) {
+				sensor->interface->uiLowPowerToPowerOff();
+				break;
+			}
+		}
 		if (power_old == 0 || power_old != power) {
 			power_old = power;
 			if (sensor->interface->uiUpadteElePower)

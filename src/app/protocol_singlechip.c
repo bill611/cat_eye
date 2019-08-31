@@ -138,7 +138,6 @@ static void deal(IpcData *ipc_data)
 				createThread(threadCapture,&picture_id);
 			} break;
 		case IPC_UART_POWEROFF:
-			my_video->hideVideo();
 			formVideoLayerGotoPoweroff();
 			break;
 		case IPC_UART_PIR:

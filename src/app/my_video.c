@@ -726,7 +726,6 @@ static void recordVideoCallbackFunc(void *data,int size,int fram_type)
             avi->WriteVideo(avi,data,size);
         }
     } else {
-		return;
         avi->WriteVideo(avi,data,size);
     }
 }
@@ -737,6 +736,8 @@ static void recordStopCallbackFunc(void)
     if (avi) 
         avi->DestoryMPEG4(&avi);
     pthread_mutex_unlock(&mutex);
+	// protocol_hardcloud->uploadPic(FAST_PIC_PATH,cap_data.pic_id);
+	// protocol_hardcloud->reportCapture(cap_data.pic_id);
 }
 
 #if (defined X86)
@@ -792,12 +793,14 @@ static int stmDoRecordStart(void *data,MyVideo *arg)
             {
                 char file_path[64] = {0};
                 char url[256] = {0};
+				char jpg_name[64] = {0};
                 sqlInsertRecordCapNoBack(cap_data.file_date,cap_data.pic_id);
-                sprintf(file_path,"%s%s.avi",FAST_PIC_PATH,cap_data.file_name);
+				sprintf(jpg_name,"%s_%s.avi",g_config.imei,cap_data.file_name);
+				sprintf(file_path,"%s%s",FAST_PIC_PATH,jpg_name);
                 if (avi == NULL) {
                     avi = Mpeg4_Create(320,240,file_path,WRITE_READ,0);
-					if (data_temp->cap_type == CAP_TYPE_FORMMAIN)
-						createThread(threadAviReadAudio,NULL);
+					// if (data_temp->cap_type == CAP_TYPE_FORMMAIN)
+						// createThread(threadAviReadAudio,NULL);
                 }
 #ifdef USE_VIDEO
                 rkVideoRecordStart(recordVideoCallbackFunc);
@@ -806,7 +809,7 @@ static int stmDoRecordStart(void *data,MyVideo *arg)
 #ifdef X86
 				createThread(threadAviReadVideo,NULL);
 #endif
-                sprintf(url,"http://img.cateye.taichuan.com/%s.avi",cap_data.file_name);
+				sprintf(url,"%s/%s",QINIU_URL,jpg_name);
                 sqlInsertRecordUrlNoBack(cap_data.pic_id,url);
             }
 			break;

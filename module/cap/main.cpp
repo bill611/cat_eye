@@ -126,11 +126,12 @@ int main(int argc, char *argv[])
 	rkvideo->displayLocal();
 	int count  = atoi(argv[2]);
 	char path[64] = {0};
+	usleep(500000);
 	for (int i = 0; i < count; ++i) {
 		sprintf(path,"%s%s_%d.jpg",FAST_PIC_PATH,argv[1],i);
-		printf("path:%s\n", path);
 		rkvideo->capture(path);
 		usleep(500000);
+		printf("cap:%s\n", path);
 	}
 	delete rkvideo;
 	return 0;
