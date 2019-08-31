@@ -107,6 +107,7 @@ static FormBasePriv form_base_priv= {
 	.dlgProc = formSettingQrcodeProc,
 	.dlgInitParam = &DlgInitParam,
 	.initPara =  initPara,
+	.auto_close_time_set = 30,
 };
 
 static MyCtrlTitle ctrls_title[] = {

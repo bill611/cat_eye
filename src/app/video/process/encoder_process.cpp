@@ -26,6 +26,7 @@
 #include "h264_enc_dec/mpi_enc_api.h"
 #include "encoder_process.h"
 #include "thread_helper.h"
+#include "jpeg_enc_dec.h"
 #include "libyuv.h"
 #include "debug.h"
 
@@ -69,6 +70,23 @@ do {                          \
  *----------------------------------------------------------------------------*/
 static H264Data h264_info;
 static pthread_mutex_t enc_mutex;
+static FILE *fp = NULL;
+
+static void writePicture(unsigned char *data)
+{
+	if (fp == NULL)
+		return;
+	unsigned char *jpeg_buf = NULL;
+	int size = 0;
+	yuv420spToJpeg(data,1280,720,&jpeg_buf,&size);
+	if (jpeg_buf) {
+		fwrite(jpeg_buf,1,size,fp);
+		fflush(fp);
+		fclose(fp);
+		free(jpeg_buf);
+	}
+	fp = NULL;
+}
 int NV12Scale(unsigned char *psrc_buf, int psrc_w, int psrc_h, unsigned char **pdst_buf, int pdst_w, int pdst_h)
 {
 	libyuv::FilterModeEnum pfmode = libyuv::kFilterNone;
@@ -228,9 +246,19 @@ post_frame:
 		h264_info.w = inBuf->getWidth();
 		h264_info.h = inBuf->getHeight();
 		memcpy(h264_info.data,inBuf->getVirtAddr(),inBuf->getDataSize());
+		writePicture((unsigned char *)inBuf->getVirtAddr());
 		pthread_mutex_lock(&enc_mutex);
 		h264_info.get_data_end = 1;
 		pthread_mutex_unlock(&enc_mutex);
 	}
     return true;
+}
+
+void H264Encoder::capture(char *file_name)
+{
+	while (fp != NULL) {
+		usleep(10000);	
+	}
+	if (fp == NULL)
+		fp = fopen(file_name,"wb");
 }

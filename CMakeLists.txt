@@ -20,6 +20,7 @@ option(MODE_FACE "This is a option for face" ON)
 option(MODE_UART "This is a option for uart" ON)
 option(MODE_VIDEO "This is a option for video" ON)
 option(MODE_UDPTALK "This is a option for udptalk" ON)
+option(AUTO_SLEEP "This is a option for auto_sleep" ON)
 
 # 添加编译过程变量
 # set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -132,6 +133,9 @@ if (MODE_VIDEO)
 endif()
 if (MODE_UDPTALK)
 	add_definitions(-DUSE_UDPTALK)
+endif()
+if (AUTO_SLEEP)
+	add_definitions(-DAUTO_SLEEP)
 endif()
 
 # 添加宏定义

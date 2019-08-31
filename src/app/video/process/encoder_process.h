@@ -24,6 +24,7 @@ class H264Encoder : public StreamPUBase {
     void recordStart(EncCallbackFunc recordCallback);
     void recordSetStopFunc(RecordStopCallbackFunc recordCallback);
     void recordStop(void);
+	void capture(char *file_name);
 
     FILE* fd(void) const {
         return fd_;

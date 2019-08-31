@@ -50,7 +50,7 @@ static int init_ok = 0;
 
 RKVideo::RKVideo()
 {
-    display_state_ = false;
+    display_state_ = 0;
 	face_state_ = false;
 	h264enc_state_ = false;
 
@@ -195,7 +195,11 @@ void RKVideo::capture(char *file_name)
 {
 	if (display_state_ == 0)
 		return;	
-	display_process->capture(file_name);
+	if (h264enc_state_ == true) {
+		encode_process->capture(file_name);
+	} else {
+		display_process->capture(file_name);
+	}
 }
 
 void RKVideo::recordStart(EncCallbackFunc recordCallback)

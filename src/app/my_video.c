@@ -586,6 +586,7 @@ static void* threadCapture(void *arg)
 		sqlInsertPicUrlNoBack(cap_data_temp.pic_id,url);
 		usleep(500000);
 	}
+	sleep(1);
 	protocol_hardcloud->uploadPic(FAST_PIC_PATH,cap_data_temp.pic_id);
 	protocol_hardcloud->reportCapture(cap_data_temp.pic_id);
 	return NULL;
@@ -636,6 +637,7 @@ static void* threadAlarm(void *arg)
 			alarm_data.age,
 			alarm_data.sex,
 			alarm_data.picture_id);
+	sleep(1);
 	protocol_hardcloud->uploadPic(FAST_PIC_PATH,alarm_data.picture_id);
 	protocol_hardcloud->reportAlarm(&alarm_data);
 	myAudioPlayAlarm();
@@ -676,6 +678,7 @@ static void* threadFace(void *arg)
 			face_data.user_id,
 			face_data.nick_name,
 			face_data.picture_id);
+	sleep(1);
 	protocol_hardcloud->uploadPic(FAST_PIC_PATH,face_data.picture_id);
 	protocol_hardcloud->reportFace(&face_data);
 	return NULL;
@@ -728,6 +731,7 @@ static void recordVideoCallbackFunc(void *data,int size,int fram_type)
     } else {
         avi->WriteVideo(avi,data,size);
     }
+	printf("size:%d\n", size);
 }
 
 static void recordStopCallbackFunc(void)
@@ -796,7 +800,8 @@ static int stmDoRecordStart(void *data,MyVideo *arg)
 				char jpg_name[64] = {0};
                 sqlInsertRecordCapNoBack(cap_data.file_date,cap_data.pic_id);
 				sprintf(jpg_name,"%s_%s.avi",g_config.imei,cap_data.file_name);
-				sprintf(file_path,"%s%s",FAST_PIC_PATH,jpg_name);
+				sprintf(file_path,"/temp/%s",jpg_name);
+				// sprintf(file_path,"%s%s",FAST_PIC_PATH,jpg_name);
                 if (avi == NULL) {
                     avi = Mpeg4_Create(320,240,file_path,WRITE_READ,0);
 					// if (data_temp->cap_type == CAP_TYPE_FORMMAIN)

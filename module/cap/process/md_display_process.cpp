@@ -1,4 +1,4 @@
-#include "display_process.h"
+#include "md_display_process.h"
 #include "thread_helper.h"
 #include "h264_enc_dec/mpi_dec_api.h"
 #include "jpeg_enc_dec.h"
