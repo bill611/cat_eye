@@ -43,13 +43,14 @@ static uint8_t ReadFile(FILE *stream,void *buffer,size_t size,uint64_t *lpNumber
 //---------------------------------------------------------------------------------------
 static void InitAudioMpeg4(struct _CMPEG4Head *This, uint32_t Channels,uint64_t Sample,uint64_t dwBlockSize)
 {
-	if(This->dwFrameCnt==0)
+	AVI_set_audio(This->avi_lib,Channels, Sample, 16, WAVE_FORMAT_PCM, Sample);
+	/*if(This->dwFrameCnt==0)
 	{
 		This->mChannels = Channels;
 		This->mSample = Sample;
 		This->mBlockSize = dwBlockSize;
 		This->bHaveAudio = 1;
-	}
+	}*/
 }
 //---------------------------------------------------------------------------------------
 static void StartTimer(struct _CMPEG4Head *This)
@@ -89,18 +90,18 @@ static uint8_t WriteAviHead(struct _CMPEG4Head *This)
 				// dwFrameRate,
 				// dwFileSize);
 		SetFilePointer(This->hFile,0,NULL,0);
-		ListHead.fcc = 0x46464952;		//ÎÄ¼şÍ·RIFF
-		ListHead.cb = dwFileSize-8;		//ÎÄ¼ş´óĞ¡
+		ListHead.fcc = 0x46464952;		//æ–‡ä»¶å¤´RIFF
+		ListHead.cb = dwFileSize-8;		//æ–‡ä»¶å¤§å°
 		ListHead.type = 0x20495641;		//'AVI '
 		WriteFile(This->hFile,&ListHead,sizeof(LISTAREASTRUCT),&WriteSize,NULL);
 
-		//±ØĞëµÄµÚÒ»¸öhdrlÁĞ±í,ÓÃÓÚÃèÊöAVIÎÄ¼şÖĞ¸÷¸öÁ÷µÄ¸ñÊ½ĞÅÏ¢£¬
+		//å¿…é¡»çš„ç¬¬ä¸€ä¸ªhdrlåˆ—è¡¨,ç”¨äºæè¿°AVIæ–‡ä»¶ä¸­å„ä¸ªæµçš„æ ¼å¼ä¿¡æ¯ï¼Œ
 		ListHead.fcc = 0x5453494C;		//'LIST'
 		ListHead.cb = 2048*2+256;				// 4(type)+64(AVIMAINHEADER)+138(AVISTREAMHEADER)
 		ListHead.type = 0x6C726468;		//'hdrl'
 		WriteFile(This->hFile,&ListHead,sizeof(LISTAREASTRUCT),&WriteSize,NULL);
 
-		//hdrlÁĞ±íÇ¶Ì×ÁËÒ»ÏµÁĞ¿éºÍ×ÓÁĞ±í¡ª¡ªÊ×ÏÈÊÇÒ»¸ö¡®avih¡¯¿é£¬ÓÃÓÚ¼ÇÂ¼AVIÎÄ¼şµÄÈ«¾ÖĞÅÏ¢£¬±ÈÈçÁ÷µÄÊıÁ¿¡¢ÊÓÆµÍ¼ÏñµÄ¿íºÍ¸ßµÈ
+		//hdrlåˆ—è¡¨åµŒå¥—äº†ä¸€ç³»åˆ—å—å’Œå­åˆ—è¡¨â€”â€”é¦–å…ˆæ˜¯ä¸€ä¸ªâ€˜avihâ€™å—ï¼Œç”¨äºè®°å½•AVIæ–‡ä»¶çš„å…¨å±€ä¿¡æ¯ï¼Œæ¯”å¦‚æµçš„æ•°é‡ã€è§†é¢‘å›¾åƒçš„å®½å’Œé«˜ç­‰
 		AVIMAINHEADER AviMainHead;
 		AviMainHead.fcc = 0x68697661;			//'avih'
 		AviMainHead.cb = 56;
@@ -109,7 +110,7 @@ static uint8_t WriteAviHead(struct _CMPEG4Head *This)
 		AviMainHead.dwPaddingGranularity = 0;
 		AviMainHead.dwFlags = 0;
 		AviMainHead.dwTotalFrames = This->dwFrameCnt;
-		AviMainHead.dwInitialFrames = 0;		//Îª½»»¥¸ñÊ½Ö¸¶¨³õÊ¼Ö¡Êı
+		AviMainHead.dwInitialFrames = 0;		//ä¸ºäº¤äº’æ ¼å¼æŒ‡å®šåˆå§‹å¸§æ•°
 		if(This->bWriteAudio)
 			AviMainHead.dwStreams = 2;
 		else
@@ -123,7 +124,7 @@ static uint8_t WriteAviHead(struct _CMPEG4Head *This)
 		AviMainHead.dwReserved[3] = 0;
 		WriteFile(This->hFile,&AviMainHead,sizeof(AVIMAINHEADER),&WriteSize,NULL);
 
-		//È»ºó£¬¾ÍÊÇÒ»¸ö»ò¶à¸ö¡®strl¡¯×ÓÁĞ±í¡££¨ÎÄ¼şÖĞÓĞ¶àÉÙ¸öÁ÷£¬ÕâÀï¾Í¶ÔÓ¦ÓĞ¶àÉÙ¸ö¡®strl¡¯×ÓÁĞ±í¡££©Ã¿¸ö¡®strl¡¯×ÓÁĞ±íÖÁÉÙ°üº¬Ò»¸ö¡®strh¡¯¿éºÍÒ»¸ö¡®strf¡¯¿é
+		//ç„¶åï¼Œå°±æ˜¯ä¸€ä¸ªæˆ–å¤šä¸ªâ€˜strlâ€™å­åˆ—è¡¨ã€‚ï¼ˆæ–‡ä»¶ä¸­æœ‰å¤šå°‘ä¸ªæµï¼Œè¿™é‡Œå°±å¯¹åº”æœ‰å¤šå°‘ä¸ªâ€˜strlâ€™å­åˆ—è¡¨ã€‚ï¼‰æ¯ä¸ªâ€˜strlâ€™å­åˆ—è¡¨è‡³å°‘åŒ…å«ä¸€ä¸ªâ€˜strhâ€™å—å’Œä¸€ä¸ªâ€˜strfâ€™å—
 		ListHead.fcc = 0x5453494C;		//'LIST'
 		ListHead.cb = 2040;				//4(strl) + 64(strh) + 48(strf) + 14(strn)
 		ListHead.type = 0x6C727473;		//'strl'
@@ -131,30 +132,30 @@ static uint8_t WriteAviHead(struct _CMPEG4Head *This)
 
 		AVISTREAMHEADER AviStreamHead;
 		AviStreamHead.fcc = 0x68727473;		//'strh'
-		AviStreamHead.cb = 56;				//// ±¾Êı¾İ½á¹¹µÄ´óĞ¡£¬²»°üÀ¨×î³õµÄ8¸ö×Ö½Ú£¨fccºÍcbÁ½¸öÓò£©
-		AviStreamHead.fccType = 0x73646976;	//'vids'  // Á÷µÄÀàĞÍ£º¡®auds¡¯£¨ÒôÆµÁ÷£©¡¢¡®vids¡¯£¨ÊÓÆµÁ÷£©¡¢¡®mids¡¯£¨MIDIÁ÷£©¡¢¡®txts¡¯£¨ÎÄ×ÖÁ÷£©
+		AviStreamHead.cb = 56;				//// æœ¬æ•°æ®ç»“æ„çš„å¤§å°ï¼Œä¸åŒ…æ‹¬æœ€åˆçš„8ä¸ªå­—èŠ‚ï¼ˆfccå’Œcbä¸¤ä¸ªåŸŸï¼‰
+		AviStreamHead.fccType = 0x73646976;	//'vids'  // æµçš„ç±»å‹ï¼šâ€˜audsâ€™ï¼ˆéŸ³é¢‘æµï¼‰ã€â€˜vidsâ€™ï¼ˆè§†é¢‘æµï¼‰ã€â€˜midsâ€™ï¼ˆMIDIæµï¼‰ã€â€˜txtsâ€™ï¼ˆæ–‡å­—æµï¼‰
 		if(This->m_VideoType==0)
-			AviStreamHead.fccHandler = 0x34363248;	//'h264' Ö¸¶¨Á÷µÄ´¦ÀíÕß£¬¶ÔÓÚÒôÊÓÆµÀ´Ëµ¾ÍÊÇ½âÂëÆ÷
+			AviStreamHead.fccHandler = 0x34363248;	//'h264' æŒ‡å®šæµçš„å¤„ç†è€…ï¼Œå¯¹äºéŸ³è§†é¢‘æ¥è¯´å°±æ˜¯è§£ç å™¨
 		else
-			AviStreamHead.fccHandler = 0x78766964;	//'divx' Ö¸¶¨Á÷µÄ´¦ÀíÕß£¬¶ÔÓÚÒôÊÓÆµÀ´Ëµ¾ÍÊÇ½âÂëÆ÷
-		AviStreamHead.dwFlags = 0;				//±ê¼Ç£ºÊÇ·ñÔÊĞíÕâ¸öÁ÷Êä³ö£¿µ÷É«°åÊÇ·ñ±ä»¯
-		AviStreamHead.wPriority = 0;			//Á÷µÄÓÅÏÈ¼¶£¨µ±ÓĞ¶à¸öÏàÍ¬ÀàĞÍµÄÁ÷Ê±ÓÅÏÈ¼¶×î¸ßµÄÎªÄ¬ÈÏÁ÷£©
+			AviStreamHead.fccHandler = 0x78766964;	//'divx' æŒ‡å®šæµçš„å¤„ç†è€…ï¼Œå¯¹äºéŸ³è§†é¢‘æ¥è¯´å°±æ˜¯è§£ç å™¨
+		AviStreamHead.dwFlags = 0;				//æ ‡è®°ï¼šæ˜¯å¦å…è®¸è¿™ä¸ªæµè¾“å‡ºï¼Ÿè°ƒè‰²æ¿æ˜¯å¦å˜åŒ–
+		AviStreamHead.wPriority = 0;			//æµçš„ä¼˜å…ˆçº§ï¼ˆå½“æœ‰å¤šä¸ªç›¸åŒç±»å‹çš„æµæ—¶ä¼˜å…ˆçº§æœ€é«˜çš„ä¸ºé»˜è®¤æµï¼‰
 		AviStreamHead.wLanguage = 0;
-		AviStreamHead.dwInitialFrames = 0;		//Îª½»»¥¸ñÊ½Ö¸¶¨³õÊ¼Ö¡Êı(·Ç½»»¥¸ñÊ½Ó¦Ö¸¶¨Îª0)
-		AviStreamHead.dwScale = 1;				// Õâ¸öÁ÷Ê¹ÓÃµÄÊ±¼ä³ß¶È
+		AviStreamHead.dwInitialFrames = 0;		//ä¸ºäº¤äº’æ ¼å¼æŒ‡å®šåˆå§‹å¸§æ•°(éäº¤äº’æ ¼å¼åº”æŒ‡å®šä¸º0)
+		AviStreamHead.dwScale = 1;				// è¿™ä¸ªæµä½¿ç”¨çš„æ—¶é—´å°ºåº¦
 		AviStreamHead.dwRate = dwFrameRate;
-		AviStreamHead.dwStart = 0;				// Á÷µÄ¿ªÊ¼Ê±¼ä
-		AviStreamHead.dwLength = This->dwFrameCnt;		//Ö¡Êı Á÷µÄ³¤¶È£¨µ¥Î»ÓëdwScaleºÍdwRateµÄ¶¨ÒåÓĞ¹Ø£©
-		AviStreamHead.dwSuggestedBufferSize = 40000;	// ¶ÁÈ¡Õâ¸öÁ÷Êı¾İ½¨ÒéÊ¹ÓÃµÄ»º´æ´óĞ¡,Ó¦ÄÜÈİÄÉ×î´óÖ¡
-		AviStreamHead.dwQuality = 0;				// Á÷Êı¾İµÄÖÊÁ¿Ö¸±ê£¨0 ~ 10,000£©
-		AviStreamHead.dwSampleSize = 0;				// SampleµÄ´óĞ¡
-		AviStreamHead.rcFrame.left = 0;				// Ö¸¶¨Õâ¸öÁ÷£¨ÊÓÆµÁ÷»òÎÄ×ÖÁ÷£©ÔÚÊÓÆµÖ÷´°¿ÚÖĞµÄÏÔÊ¾Î»ÖÃ
+		AviStreamHead.dwStart = 0;				// æµçš„å¼€å§‹æ—¶é—´
+		AviStreamHead.dwLength = This->dwFrameCnt;		//å¸§æ•° æµçš„é•¿åº¦ï¼ˆå•ä½ä¸dwScaleå’ŒdwRateçš„å®šä¹‰æœ‰å…³ï¼‰
+		AviStreamHead.dwSuggestedBufferSize = 40000;	// è¯»å–è¿™ä¸ªæµæ•°æ®å»ºè®®ä½¿ç”¨çš„ç¼“å­˜å¤§å°,åº”èƒ½å®¹çº³æœ€å¤§å¸§
+		AviStreamHead.dwQuality = 0;				// æµæ•°æ®çš„è´¨é‡æŒ‡æ ‡ï¼ˆ0 ~ 10,000ï¼‰
+		AviStreamHead.dwSampleSize = 0;				// Sampleçš„å¤§å°
+		AviStreamHead.rcFrame.left = 0;				// æŒ‡å®šè¿™ä¸ªæµï¼ˆè§†é¢‘æµæˆ–æ–‡å­—æµï¼‰åœ¨è§†é¢‘ä¸»çª—å£ä¸­çš„æ˜¾ç¤ºä½ç½®
 		AviStreamHead.rcFrame.top = 0;
 		AviStreamHead.rcFrame.right = This->m_Width;
 		AviStreamHead.rcFrame.bottom = This->m_Height;
 		WriteFile(This->hFile,&AviStreamHead,sizeof(AVISTREAMHEADER),&WriteSize,NULL);
 
-		//¡®strf¡¯¿é£¬ÓÃÓÚËµÃ÷Á÷µÄ¾ßÌå¸ñÊ½¡£Èç¹ûÊÇÊÓÆµÁ÷£¬ÔòÊ¹ÓÃÒ»¸öBITMAPINFOÊı¾İ½á¹¹À´ÃèÊö£»Èç¹ûÊÇÒôÆµÁ÷£¬ÔòÊ¹ÓÃÒ»¸öWAVEFORMATEXÊı¾İ½á¹¹À´ÃèÊö
+		//â€˜strfâ€™å—ï¼Œç”¨äºè¯´æ˜æµçš„å…·ä½“æ ¼å¼ã€‚å¦‚æœæ˜¯è§†é¢‘æµï¼Œåˆ™ä½¿ç”¨ä¸€ä¸ªBITMAPINFOæ•°æ®ç»“æ„æ¥æè¿°ï¼›å¦‚æœæ˜¯éŸ³é¢‘æµï¼Œåˆ™ä½¿ç”¨ä¸€ä¸ªWAVEFORMATEXæ•°æ®ç»“æ„æ¥æè¿°
 		CHUNKSTRUCT Chunk;
 		Chunk.fcc = 0x66727473;		//'strf'
 		Chunk.cb = 0x28;
@@ -177,7 +178,7 @@ static uint8_t WriteAviHead(struct _CMPEG4Head *This)
 		BitmapInfo.biClrImportant = 0;
 		WriteFile(This->hFile,&BitmapInfo,sizeof(MYBITMAPINFOHEADER),&WriteSize,NULL);
 
-		//¡®JUNK¡¯¿é£¬Ìî³ä
+		//â€˜JUNKâ€™å—ï¼Œå¡«å……
 		Chunk.fcc = 0x4B4E554A;		//'JUNK'
 		Chunk.cb = 2048-12-64-48-8;		//LIST+strl+strf+Junk_head
 		WriteFile(This->hFile,&Chunk,sizeof(CHUNKSTRUCT),&WriteSize,NULL);
@@ -193,47 +194,47 @@ static uint8_t WriteAviHead(struct _CMPEG4Head *This)
 
 			AVISTREAMHEADER AviStreamHead;
 			AviStreamHead.fcc = 0x68727473;		//'strh'
-			AviStreamHead.cb = 56;				//// ±¾Êı¾İ½á¹¹µÄ´óĞ¡£¬²»°üÀ¨×î³õµÄ8¸ö×Ö½Ú£¨fccºÍcbÁ½¸öÓò£©
-			AviStreamHead.fccType = 0x73647561;	//'auds'  // Á÷µÄÀàĞÍ£º¡®auds¡¯£¨ÒôÆµÁ÷£©¡¢¡®vids¡¯£¨ÊÓÆµÁ÷£©¡¢¡®mids¡¯£¨MIDIÁ÷£©¡¢¡®txts¡¯£¨ÎÄ×ÖÁ÷£©
-			AviStreamHead.fccHandler = 0x01;	//Ö¸¶¨Á÷µÄ´¦ÀíÕß£¬¶ÔÓÚÒôÊÓÆµÀ´Ëµ¾ÍÊÇ½âÂëÆ÷,ÕâÀïÊÇPCM
-			AviStreamHead.dwFlags = 0;				//±ê¼Ç£ºÊÇ·ñÔÊĞíÕâ¸öÁ÷Êä³ö£¿µ÷É«°åÊÇ·ñ±ä»¯
-			AviStreamHead.wPriority = 0;			//Á÷µÄÓÅÏÈ¼¶£¨µ±ÓĞ¶à¸öÏàÍ¬ÀàĞÍµÄÁ÷Ê±ÓÅÏÈ¼¶×î¸ßµÄÎªÄ¬ÈÏÁ÷£©
+			AviStreamHead.cb = 56;				//// æœ¬æ•°æ®ç»“æ„çš„å¤§å°ï¼Œä¸åŒ…æ‹¬æœ€åˆçš„8ä¸ªå­—èŠ‚ï¼ˆfccå’Œcbä¸¤ä¸ªåŸŸï¼‰
+			AviStreamHead.fccType = 0x73647561;	//'auds'  // æµçš„ç±»å‹ï¼šâ€˜audsâ€™ï¼ˆéŸ³é¢‘æµï¼‰ã€â€˜vidsâ€™ï¼ˆè§†é¢‘æµï¼‰ã€â€˜midsâ€™ï¼ˆMIDIæµï¼‰ã€â€˜txtsâ€™ï¼ˆæ–‡å­—æµï¼‰
+			AviStreamHead.fccHandler = 0x01;	//æŒ‡å®šæµçš„å¤„ç†è€…ï¼Œå¯¹äºéŸ³è§†é¢‘æ¥è¯´å°±æ˜¯è§£ç å™¨,è¿™é‡Œæ˜¯PCM
+			AviStreamHead.dwFlags = 0;				//æ ‡è®°ï¼šæ˜¯å¦å…è®¸è¿™ä¸ªæµè¾“å‡ºï¼Ÿè°ƒè‰²æ¿æ˜¯å¦å˜åŒ–
+			AviStreamHead.wPriority = 0;			//æµçš„ä¼˜å…ˆçº§ï¼ˆå½“æœ‰å¤šä¸ªç›¸åŒç±»å‹çš„æµæ—¶ä¼˜å…ˆçº§æœ€é«˜çš„ä¸ºé»˜è®¤æµï¼‰
 			AviStreamHead.wLanguage = 0;
-			AviStreamHead.dwInitialFrames = 0;//InitAudioFrame;		//Îª½»»¥¸ñÊ½Ö¸¶¨³õÊ¼Ö¡Êı
-			AviStreamHead.dwScale = 1;				// Õâ¸öÁ÷Ê¹ÓÃµÄÊ±¼ä³ß¶È,ÕâÀïÎªÁ½¸ö×Ö½Ú(16bit PCMÒôÆµ)
-			AviStreamHead.dwRate = This->mChannels*This->mSample;		//ÒôÆµËÙ¶È£¬Ã¿Ãë¶àÉÙ×Ö½Ú
-			AviStreamHead.dwStart = 0;				//Á÷µÄ¿ªÊ¼Ê±¼ä
-			AviStreamHead.dwLength = This->dwAudioFrame*This->mBlockSize/2;		//Á÷µÄ³¤¶È£¨µ¥Î»ÓëdwScaleºÍdwRateµÄ¶¨ÒåÓĞ¹Ø£©£¬ÒôÆµ×Ü³¤³ıÊ±¼ä³ß¶È
-			AviStreamHead.dwSuggestedBufferSize = 8000;	// ¶ÁÈ¡Õâ¸öÁ÷Êı¾İ½¨ÒéÊ¹ÓÃµÄ»º´æ´óĞ¡8000
-			AviStreamHead.dwQuality = 0;				// Á÷Êı¾İµÄÖÊÁ¿Ö¸±ê£¨0 ~ 10,000£©
-			AviStreamHead.dwSampleSize = 2*This->mChannels;				// SampleµÄ´óĞ¡,PCMÓÃ2  ADPCMÊ¹ÓÃ256
-			AviStreamHead.rcFrame.left = 0;				// Ö¸¶¨Õâ¸öÁ÷£¨ÊÓÆµÁ÷»òÎÄ×ÖÁ÷£©ÔÚÊÓÆµÖ÷´°¿ÚÖĞµÄÏÔÊ¾Î»ÖÃ
+			AviStreamHead.dwInitialFrames = 0;//InitAudioFrame;		//ä¸ºäº¤äº’æ ¼å¼æŒ‡å®šåˆå§‹å¸§æ•°
+			AviStreamHead.dwScale = 1;				// è¿™ä¸ªæµä½¿ç”¨çš„æ—¶é—´å°ºåº¦,è¿™é‡Œä¸ºä¸¤ä¸ªå­—èŠ‚(16bit PCMéŸ³é¢‘)
+			AviStreamHead.dwRate = This->mChannels*This->mSample;		//éŸ³é¢‘é€Ÿåº¦ï¼Œæ¯ç§’å¤šå°‘å­—èŠ‚
+			AviStreamHead.dwStart = 0;				//æµçš„å¼€å§‹æ—¶é—´
+			AviStreamHead.dwLength = This->dwAudioFrame*This->mBlockSize/2;		//æµçš„é•¿åº¦ï¼ˆå•ä½ä¸dwScaleå’ŒdwRateçš„å®šä¹‰æœ‰å…³ï¼‰ï¼ŒéŸ³é¢‘æ€»é•¿é™¤æ—¶é—´å°ºåº¦
+			AviStreamHead.dwSuggestedBufferSize = 8000;	// è¯»å–è¿™ä¸ªæµæ•°æ®å»ºè®®ä½¿ç”¨çš„ç¼“å­˜å¤§å°8000
+			AviStreamHead.dwQuality = 0;				// æµæ•°æ®çš„è´¨é‡æŒ‡æ ‡ï¼ˆ0 ~ 10,000ï¼‰
+			AviStreamHead.dwSampleSize = 2*This->mChannels;				// Sampleçš„å¤§å°,PCMç”¨2  ADPCMä½¿ç”¨256
+			AviStreamHead.rcFrame.left = 0;				// æŒ‡å®šè¿™ä¸ªæµï¼ˆè§†é¢‘æµæˆ–æ–‡å­—æµï¼‰åœ¨è§†é¢‘ä¸»çª—å£ä¸­çš„æ˜¾ç¤ºä½ç½®
 			AviStreamHead.rcFrame.top = 0;
 			AviStreamHead.rcFrame.right = 0;
 			AviStreamHead.rcFrame.bottom = 0;
 			WriteFile(This->hFile,&AviStreamHead,sizeof(AVISTREAMHEADER),&WriteSize,NULL);
 
-			//¡®strf¡¯¿é£¬ÓÃÓÚËµÃ÷Á÷µÄ¾ßÌå¸ñÊ½¡£Èç¹ûÊÇÊÓÆµÁ÷£¬ÔòÊ¹ÓÃÒ»¸öBITMAPINFOÊı¾İ½á¹¹À´ÃèÊö£»Èç¹ûÊÇÒôÆµÁ÷£¬ÔòÊ¹ÓÃÒ»¸öWAVEFORMATEXÊı¾İ½á¹¹À´ÃèÊö
+			//â€˜strfâ€™å—ï¼Œç”¨äºè¯´æ˜æµçš„å…·ä½“æ ¼å¼ã€‚å¦‚æœæ˜¯è§†é¢‘æµï¼Œåˆ™ä½¿ç”¨ä¸€ä¸ªBITMAPINFOæ•°æ®ç»“æ„æ¥æè¿°ï¼›å¦‚æœæ˜¯éŸ³é¢‘æµï¼Œåˆ™ä½¿ç”¨ä¸€ä¸ªWAVEFORMATEXæ•°æ®ç»“æ„æ¥æè¿°
 			Chunk.fcc = 0x66727473;		//'strf'
-			Chunk.cb = 18+0;				//sizeof(WAVEFORMATEX)+0(À©Õ¹Êı¾İ)
+			Chunk.cb = 18+0;				//sizeof(WAVEFORMATEX)+0(æ‰©å±•æ•°æ®)
 			WriteFile(This->hFile,&Chunk,sizeof(CHUNKSTRUCT),&WriteSize,NULL);
 
-			//ÒôÆµÊı¾İ
+			//éŸ³é¢‘æ•°æ®
 			WAVEFORMATEX WaveEx;
 			WaveEx.wFormatTag = 0x01;			//1.PCM 2.ADPCM
-			WaveEx.nChannels = This->mChannels;		//Í¨µÀÊı
-			WaveEx.nSamplesPerSec = This->mSample;	//²ÉÑùÂÊ
+			WaveEx.nChannels = This->mChannels;		//é€šé“æ•°
+			WaveEx.nSamplesPerSec = This->mSample;	//é‡‡æ ·ç‡
 			WaveEx.nAvgBytesPerSec = This->mSample*2*This->mChannels;
 			WaveEx.nBlockAlign = 2;
 			WaveEx.wBitsPerSample = 16;
 			WaveEx.cbSize = 0;
 			WriteFile(This->hFile,&WaveEx,sizeof(WAVEFORMATEX),&WriteSize,NULL);
-			//À©Õ¹Êı¾İ
+			//æ‰©å±•æ•°æ®
 			//unsigned char usTmp[] = {0xF4,0x01,0x07,0x00,0x00,0x01,0x00,0x00,0x00,0x02,0x00,0xFF,0x00,0x00,
 			//	0x00,0x00,0xC0,0x00,0x40,0x00,0xF0,0x00,0x00,0x00,0xCC,0x01,0x30,0xFF,0x88,0x01,0x18,0xFF};
 			//WriteFile(hFile,&usTmp,sizeof(usTmp),&WriteSize,NULL);
 
-			//Ìî³ä¡®JUNK¡¯¿é
+			//å¡«å……â€˜JUNKâ€™å—
 			Chunk.fcc = 0x4B4E554A;		//'JUNK'
 			Chunk.cb = 2048-12-64-(Chunk.cb+8)-8;		//LIST(12)+strh(64)+strf+Junk_head
 			WriteFile(This->hFile,&Chunk,sizeof(CHUNKSTRUCT),&WriteSize,NULL);
@@ -241,7 +242,7 @@ static uint8_t WriteAviHead(struct _CMPEG4Head *This)
 		}
 		else
 		{
-			//¡®JUNK¡¯¿é£¬Ìî³ä
+			//â€˜JUNKâ€™å—ï¼Œå¡«å……
 			Chunk.fcc = 0x4B4E554A;		//'JUNK'
 			Chunk.cb = 2048-8;		//LIST+strl+strf+Junk_head
 			WriteFile(This->hFile,&Chunk,sizeof(CHUNKSTRUCT),&WriteSize,NULL);
@@ -258,7 +259,7 @@ static uint8_t WriteAviHead(struct _CMPEG4Head *This)
 		WriteFile(This->hFile,&Chunk,sizeof(CHUNKSTRUCT),&WriteSize,NULL);
 		SetFilePointer(This->hFile,Chunk.cb,NULL,FILE_CURRENT);
 
-		//AVIÎÄ¼ş±ØĞèµÄµÚ¶ş¸öÁĞ±í¡ª¡ª¡®movi¡¯ÁĞ±í£¬ÓÃÓÚ±£´æÕæÕıµÄÃ½ÌåÁ÷Êı¾İ£¨ÊÓÆµÍ¼ÏñÖ¡Êı¾İ»òÒôÆµ²ÉÑùÊı¾İµÈ£©¡£
+		//AVIæ–‡ä»¶å¿…éœ€çš„ç¬¬äºŒä¸ªåˆ—è¡¨â€”â€”â€˜moviâ€™åˆ—è¡¨ï¼Œç”¨äºä¿å­˜çœŸæ­£çš„åª’ä½“æµæ•°æ®ï¼ˆè§†é¢‘å›¾åƒå¸§æ•°æ®æˆ–éŸ³é¢‘é‡‡æ ·æ•°æ®ç­‰ï¼‰ã€‚
 		ListHead.fcc = 0x5453494C;		//'LIST'
 		ListHead.cb = This->dwStreamSize+4;	//dwStreamSize + type size
 		ListHead.type = 0x69766F6D;		//'movi'
@@ -266,19 +267,25 @@ static uint8_t WriteAviHead(struct _CMPEG4Head *This)
 
 		bRet = 1;
         pthread_mutex_unlock(&This->mutex);
-		//LeaveCriticalSection (&mutex);		//½âËø
+		//LeaveCriticalSection (&mutex);		//è§£é”
 	}
 	return bRet;
 }
 //---------------------------------------------------------------------------------------
 static uint8_t WriteVideo(struct _CMPEG4Head *This, const void *pData,uint64_t dwSize)
 {
+        pthread_mutex_lock(&This->mutex);
+		StartTimer(This);
+		AVI_write_frame(This->avi_lib,pData,dwSize,1);
+		This->dwFrameCnt++;
+        pthread_mutex_unlock(&This->mutex);
+		/*
 	uint8_t bRet = 0;
 	unsigned char *p = (unsigned char *)pData;
 	if(This->hFile != INVALID_HANDLE_VALUE)
 	{
         pthread_mutex_lock(&This->mutex);
-		//EnterCriticalSection (&mutex);		//¼ÓËø
+		//EnterCriticalSection (&mutex);		//åŠ é”
 
 		StartTimer(This);
 		uint64_t WriteSize;
@@ -298,20 +305,25 @@ static uint8_t WriteVideo(struct _CMPEG4Head *This, const void *pData,uint64_t d
 				This->dwFrameCnt++;
 
 				bRet = 1;
-				if(dwSize % 2) { //¶ÔÆë
+				if(dwSize % 2) { //å¯¹é½
 					WriteFile(This->hFile,"\0",1,&WriteSize,NULL);
 					This->dwStreamSize += 1;
 				}
 			}
 		}
         pthread_mutex_unlock(&This->mutex);
-		//LeaveCriticalSection (&mutex);		//½âËø
+		//LeaveCriticalSection (&mutex);		//è§£é”
 	}
 	return bRet;
+	*/
 }
 //---------------------------------------------------------------------------------------
 static uint8_t WriteAudio(struct _CMPEG4Head *This, const void *pData,uint64_t dwSize)
 {
+        pthread_mutex_lock(&This->mutex);
+		AVI_write_audio(This->avi_lib,pData,dwSize);
+        pthread_mutex_unlock(&This->mutex);
+		/*
 	int i;
 	uint8_t bRet = 0;
 	if(This->hFile!=INVALID_HANDLE_VALUE && This->bHaveAudio)
@@ -320,7 +332,7 @@ static uint8_t WriteAudio(struct _CMPEG4Head *This, const void *pData,uint64_t d
 		int nBlock = (dwSize+This->mBlockSize-1) / This->mBlockSize;
 		const char *p = (const char *)pData;
         pthread_mutex_lock(&This->mutex);
-		//EnterCriticalSection (&mutex);		//¼ÓËø
+		//EnterCriticalSection (&mutex);		//åŠ é”
 		for(i=0;i<nBlock;i++)
 		{
 			uint64_t WriteSize;
@@ -336,7 +348,7 @@ static uint8_t WriteAudio(struct _CMPEG4Head *This, const void *pData,uint64_t d
 				{
 					This->InitVideoFrame = This->dwFrameCnt;
 				}
-				This->dwAudioFrame++;		//ÒôÆµÁ÷Ö¡Êı
+				This->dwAudioFrame++;		//éŸ³é¢‘æµå¸§æ•°
 
 				if(WriteSize==Chunk.cb)
 				{
@@ -345,7 +357,7 @@ static uint8_t WriteAudio(struct _CMPEG4Head *This, const void *pData,uint64_t d
 					bRet = 1;
 					if(Chunk.cb % 2)
 					{
-						//¶ÔÆë
+						//å¯¹é½
 						WriteFile(This->hFile,"\0",1,&WriteSize,NULL);
 						This->dwStreamSize += 1;
 					}
@@ -354,12 +366,13 @@ static uint8_t WriteAudio(struct _CMPEG4Head *This, const void *pData,uint64_t d
 		}
 		This->bWriteAudio = 1;
         pthread_mutex_unlock(&This->mutex);
-		//LeaveCriticalSection (&mutex);		//½âËø
+		//LeaveCriticalSection (&mutex);		//è§£é”
 	}
 	return bRet;
+	*/
 }
 //---------------------------------------------------------------------------------------
-// »ñÈ¡AVIÎÄ¼ş²¥·Å×ÜÊ±¼ä
+// è·å–AVIæ–‡ä»¶æ’­æ”¾æ€»æ—¶é—´
 static int GetAviTotalTime(struct _CMPEG4Head *This)
 {
 	int Ret = 0;
@@ -380,7 +393,7 @@ static int GetAviTotalTime(struct _CMPEG4Head *This)
 	return Ret;
 }
 //--------------------------------------------------------------------------------------
-// »ñÈ¡AVIÎÄ¼şÖ¡ÂÊ
+// è·å–AVIæ–‡ä»¶å¸§ç‡
 static int GetAviFileFrameRate(struct _CMPEG4Head *This)
 {
 	int Ret = 0;
@@ -400,8 +413,8 @@ static int GetAviFileFrameRate(struct _CMPEG4Head *This)
 }
 
 //--------------------------------------------------------------------------------------
-// ¶ÁÊÓÆµÊı¾İ»òÒôÆµÊı¾İ
-// ·µ»ØÖµ 1:ÊÓÆµÊı¾İ  2:ÒôÆµÊı¾İ 0:ÎŞĞ§
+// è¯»è§†é¢‘æ•°æ®æˆ–éŸ³é¢‘æ•°æ®
+// è¿”å›å€¼ 1:è§†é¢‘æ•°æ®  2:éŸ³é¢‘æ•°æ® 0:æ— æ•ˆ
 static int ReadAviData(struct _CMPEG4Head *This, void *pData,uint64_t *dwSize,int *InCameraWidth,int *InCameraHeight)
 {
 	int Ret = 0;
@@ -428,7 +441,7 @@ static int ReadAviData(struct _CMPEG4Head *This, void *pData,uint64_t *dwSize,in
 		}
 		ReadFile(This->hFile,&Chunk,sizeof(CHUNKSTRUCT),&ReadSize,NULL);
 		if(ReadSize==sizeof(CHUNKSTRUCT)) {
-			if(Chunk.fcc == 0x63643030) {// ÊÓÆµÊı¾İ
+			if(Chunk.fcc == 0x63643030) {// è§†é¢‘æ•°æ®
 				ReadFile(This->hFile,pData,Chunk.cb,&ReadSize,NULL);
 				if(Chunk.cb == ReadSize) {
 					*dwSize = ReadSize;
@@ -438,12 +451,12 @@ static int ReadAviData(struct _CMPEG4Head *This, void *pData,uint64_t *dwSize,in
 					}
 					This->dwFrameCnt++;
 					Ret = 1;
-					if(*dwSize % 2) {//¶ÔÆë
+					if(*dwSize % 2) {//å¯¹é½
 						ReadFile(This->hFile,&tmp,1,&ReadSize,NULL);
 						This->dwStreamSize += 1;
 					}
 				}
-			} else if(Chunk.fcc == 0x62773130) {// ÒôÆµÊı¾İ
+			} else if(Chunk.fcc == 0x62773130) {// éŸ³é¢‘æ•°æ®
 				char *p = (char *)pData;
 				do{
 					ReadFile(This->hFile,p,Chunk.cb,&ReadSize,NULL);
@@ -451,18 +464,18 @@ static int ReadAviData(struct _CMPEG4Head *This, void *pData,uint64_t *dwSize,in
 					if(This->dwAudioFrame==0) {
 						This->InitVideoFrame = This->dwFrameCnt;
 					}
-					This->dwAudioFrame++;		//ÒôÆµÁ÷Ö¡Êı
+					This->dwAudioFrame++;		//éŸ³é¢‘æµå¸§æ•°
 
 					if(ReadSize==Chunk.cb) {
 						*dwSize += ReadSize;
 						This->dwStreamSize += (Chunk.cb + sizeof(CHUNKSTRUCT));
 						Ret = 2;
-						if(Chunk.cb % 2) { //¶ÔÆë
+						if(Chunk.cb % 2) { //å¯¹é½
 							ReadFile(This->hFile, &tmp, 1, &ReadSize, NULL);
 							This->dwStreamSize += 1;
 						}
 					}
-					// ÖØ¶ÁÒ»ÏÂ£¬¿´ÊÇ·ñ»¹ÓĞÒôÆµÊı¾İ
+					// é‡è¯»ä¸€ä¸‹ï¼Œçœ‹æ˜¯å¦è¿˜æœ‰éŸ³é¢‘æ•°æ®
 					memset(&Chunk, 0, sizeof(CHUNKSTRUCT));
 					ReadFile(This->hFile,&Chunk,sizeof(CHUNKSTRUCT),&ReadSize,NULL);
 					if(Chunk.fcc != 0x62773130) {
@@ -478,6 +491,7 @@ static int ReadAviData(struct _CMPEG4Head *This, void *pData,uint64_t *dwSize,in
 //---------------------------------------------------------------
 static void DestoryMPEG4Head(struct _CMPEG4Head **This)
 {
+	/*
 	if((*This)->hFile != INVALID_HANDLE_VALUE)
 	{
 		if((*This)->m_ReadWrite == WRITE_READ)
@@ -485,19 +499,35 @@ static void DestoryMPEG4Head(struct _CMPEG4Head **This)
 		fflush((*This)->hFile);
 		fclose((*This)->hFile);
 	}
+	*/
+	StopTimer(*This);
+	uint64_t diff_time = (*This)->dwEndTick - (*This)->dwStartTick;
+	float dwFrameRate = (*This)->dwFrameCnt * 1000.0 / (float)diff_time;
+	AVI_set_video((*This)->avi_lib,(*This)->m_Width,(*This)->m_Height,dwFrameRate,"H264");
+	AVI_close((*This)->avi_lib);
 	free(*This);
 	(*This) = NULL;
 }
 //---------------------------------------------------------------
 
-//bReadWrite ¶ÁĞ´±êÖ¾, =0Ğ´ÎÄ¼ş  =1¶ÁÎÄ¼ş
+//bReadWrite è¯»å†™æ ‡å¿—, =0å†™æ–‡ä»¶  =1è¯»æ–‡ä»¶
 MPEG4Head* Mpeg4_Create(int Width,int Height,const char *FileName, int ReadWrite, int VideoType)
 {
 	FILE *fd;
 	struct _CMPEG4Head *This = (MPEG4Head*)calloc(1,sizeof(MPEG4Head));
 	DBG_P("[%s] enter!\n",__FUNCTION__);
-	if(access(FileName,F_OK) == -1) { //ÅĞ¶ÏÎÄ¼şÊÇ·ñ´æÔÚ´æÔÚÓë·ñ
-		fd = fopen(FileName,"wb+");	//´´½¨ÎÄ¼ş
+	if(ReadWrite == READ_ONLY) {
+	} else {
+		This->avi_lib = AVI_open_output_file(FileName);
+		This->dwStartTick = 0;
+		This->dwEndTick = 0;
+		This->dwFrameCnt = 0;
+		This->m_Width = Width;
+		This->m_Height = Height;
+	}
+	/*
+	if(access(FileName,F_OK) == -1) { //åˆ¤æ–­æ–‡ä»¶æ˜¯å¦å­˜åœ¨å­˜åœ¨ä¸å¦
+		fd = fopen(FileName,"wb+");	//åˆ›å»ºæ–‡ä»¶
 		fclose(fd);
 	}
 	if(ReadWrite == READ_ONLY)
@@ -505,7 +535,7 @@ MPEG4Head* Mpeg4_Create(int Width,int Height,const char *FileName, int ReadWrite
 	else
 		This->hFile = fopen(FileName,"rb+");
 	if(This->hFile == INVALID_HANDLE_VALUE) {
-		//'ÎÄ¼ş´´½¨Ê§°Ü
+		//'æ–‡ä»¶åˆ›å»ºå¤±è´¥
 		printf("[%s] fopen file %s fail!\n",__FUNCTION__,FileName);
 		printf("error %s\n",strerror(errno));
 		return NULL;
@@ -516,8 +546,6 @@ MPEG4Head* Mpeg4_Create(int Width,int Height,const char *FileName, int ReadWrite
 		SetFilePointer(This->hFile,20+2048*2+256+1024+12,NULL,0);
 		This->dwStartTick = 0;
 		This->dwEndTick = 0;
-		This->m_Width = Width;
-		This->m_Height = Height;
 		This->bHaveAudio = 0;
 		This->bWriteAudio = 0;
 		This->InitVideoFrame = 0;
@@ -532,6 +560,7 @@ MPEG4Head* Mpeg4_Create(int Width,int Height,const char *FileName, int ReadWrite
         pthread_mutex_init(&This->mutex, &mutexattr);
 		pthread_mutexattr_destroy(&mutexattr);
 	}
+	*/
 
 	This->InitAudio = InitAudioMpeg4;
 	This->WriteVideo = WriteVideo;

@@ -24,6 +24,7 @@
 extern void createFormMain(HWND hMainWnd,void (*callback)(void));
 extern int createFormPowerOff(HWND hMainWnd);
 extern int createFormPowerOffLowPower(void);
+extern int createFormUpdate(HWND hMainWnd);
 extern void formMainLoadBmp(void);
 extern void formSettingLoadBmp(void);
 extern void formVideoLoadBmp(void);
@@ -244,6 +245,8 @@ static int formVideoLayerProc(HWND hWnd, int message, WPARAM wParam, LPARAM lPar
 
 				formVideoLoadBmp();
 				HWND form = createFormPowerOff(hWnd);
+				ShowWindow(form,SW_HIDE);
+				form = createFormUpdate(hWnd);
 				ShowWindow(form,SW_HIDE);
 				form = createFormVideo(hWnd,FORM_VIDEO_TYPE_CAPTURE,NULL,0);
 				ShowWindow(form,SW_HIDE);

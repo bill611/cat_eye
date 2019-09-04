@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+#include "avilib/avilib.h"
 #include <stdint.h>
 #include <pthread.h>
 #define AUDIOBLOCKSIZE 1024
@@ -16,7 +17,7 @@ extern "C" {
 #define READ_ONLY	1
 
 //#define uint64_t unsigned int
-#define FOURCC uint64_t
+#define FOURCC uint32_t
 #define HANDLE int
 
 #pragma pack (1)
@@ -47,65 +48,65 @@ typedef struct WAVEFORMATEX {
 #pragma pack ()
 
 typedef struct _listareastruct {
-	FOURCC fcc;					// ±êÊ¶
-	uint64_t  cb;					// ´óĞ¡£¬²»°üÀ¨×î³õµÄ8¸ö×Ö½Ú£¨fccºÍcbÁ½¸öÓò£©
-	FOURCC type;				// LISTÀàĞÍ
+	FOURCC fcc;					// æ ‡è¯†
+	uint64_t  cb;					// å¤§å°ï¼Œä¸åŒ…æ‹¬æœ€åˆçš„8ä¸ªå­—èŠ‚ï¼ˆfccå’Œcbä¸¤ä¸ªåŸŸï¼‰
+	FOURCC type;				// LISTç±»å‹
 } LISTAREASTRUCT;
 
 typedef struct _ChunkStruct
 {
-	FOURCC fcc;					// ±êÊ¶
-	uint64_t  cb;					// ¿é´óĞ¡£¬²»°üÀ¨±¾½á¹¹
+	FOURCC fcc;					// æ ‡è¯†
+	uint64_t  cb;					// å—å¤§å°ï¼Œä¸åŒ…æ‹¬æœ¬ç»“æ„
 } CHUNKSTRUCT;
 
 // prefix AMHF denoting Avi Main Header Flag
-#define    AMHF_HASINDEX        0x00000010		//ÊÇ·ñ°üº¬Ë÷Òı
+#define    AMHF_HASINDEX        0x00000010		//æ˜¯å¦åŒ…å«ç´¢å¼•
 #define    AMHF_MUSTUSEINDEX    0x00000020
-#define    AMHF_ISINTERLEAVED    0x00000100		//ÊÇ·ñ°üº¬±£ÁôÇøÓò
+#define    AMHF_ISINTERLEAVED    0x00000100		//æ˜¯å¦åŒ…å«ä¿ç•™åŒºåŸŸ
 #define    AMHF_TRUSTCKTYPE    0x00000800 /* Use CKType to find key frames? */
 #define    AMHF_WASCAPTUREFILE    0x00010000
 #define    AMHF_COPYRIGHTED    0x00020000
 
 typedef struct _avimainheader {
-	FOURCC fcc;					// ±ØĞëÎª¡®avih¡¯
-	uint64_t  cb;					// ±¾Êı¾İ½á¹¹µÄ´óĞ¡£¬²»°üÀ¨×î³õµÄ8¸ö×Ö½Ú£¨fccºÍcbÁ½¸öÓò£©
-	uint64_t  dwMicroSecPerFrame;   // ÊÓÆµÖ¡¼ä¸ôÊ±¼ä£¨ÒÔÎ¢ÃëÎªµ¥Î»£©
-	uint64_t  dwMaxBytesPerSec;     // Õâ¸öAVIÎÄ¼şµÄ×î´óÊı¾İÂÊ
-	uint64_t  dwPaddingGranularity; // Êı¾İÌî³äµÄÁ£¶È
-	uint64_t  dwFlags;         // AVIÎÄ¼şµÄÈ«¾Ö±ê¼Ç£¬±ÈÈçÊÇ·ñº¬ÓĞË÷Òı¿éµÈ  (0x810   HASINDEX   |   TRUSTCKTYPE)
-	uint64_t  dwTotalFrames;   // ×ÜÖ¡Êı
-	uint64_t  dwInitialFrames; // Îª½»»¥¸ñÊ½Ö¸¶¨³õÊ¼Ö¡Êı£¨·Ç½»»¥¸ñÊ½Ó¦¸ÃÖ¸¶¨Îª0£©
-	uint64_t  dwStreams;       // ±¾ÎÄ¼ş°üº¬µÄÁ÷µÄ¸öÊı
-	uint64_t  dwSuggestedBufferSize; // ½¨Òé¶ÁÈ¡±¾ÎÄ¼şµÄ»º´æ´óĞ¡£¨Ó¦ÄÜÈİÄÉ×î´óµÄ¿é£©
-	uint64_t  dwWidth;         // ÊÓÆµÍ¼ÏñµÄ¿í£¨ÒÔÏñËØÎªµ¥Î»£©
-	uint64_t  dwHeight;        // ÊÓÆµÍ¼ÏñµÄ¸ß£¨ÒÔÏñËØÎªµ¥Î»£©
-	uint64_t  dwReserved[4];   // ±£Áô
+	FOURCC fcc;					// å¿…é¡»ä¸ºâ€˜avihâ€™
+	uint64_t  cb;					// æœ¬æ•°æ®ç»“æ„çš„å¤§å°ï¼Œä¸åŒ…æ‹¬æœ€åˆçš„8ä¸ªå­—èŠ‚ï¼ˆfccå’Œcbä¸¤ä¸ªåŸŸï¼‰
+	uint64_t  dwMicroSecPerFrame;   // è§†é¢‘å¸§é—´éš”æ—¶é—´ï¼ˆä»¥å¾®ç§’ä¸ºå•ä½ï¼‰
+	uint64_t  dwMaxBytesPerSec;     // è¿™ä¸ªAVIæ–‡ä»¶çš„æœ€å¤§æ•°æ®ç‡
+	uint64_t  dwPaddingGranularity; // æ•°æ®å¡«å……çš„ç²’åº¦
+	uint64_t  dwFlags;         // AVIæ–‡ä»¶çš„å…¨å±€æ ‡è®°ï¼Œæ¯”å¦‚æ˜¯å¦å«æœ‰ç´¢å¼•å—ç­‰  (0x810   HASINDEX   |   TRUSTCKTYPE)
+	uint64_t  dwTotalFrames;   // æ€»å¸§æ•°
+	uint64_t  dwInitialFrames; // ä¸ºäº¤äº’æ ¼å¼æŒ‡å®šåˆå§‹å¸§æ•°ï¼ˆéäº¤äº’æ ¼å¼åº”è¯¥æŒ‡å®šä¸º0ï¼‰
+	uint64_t  dwStreams;       // æœ¬æ–‡ä»¶åŒ…å«çš„æµçš„ä¸ªæ•°
+	uint64_t  dwSuggestedBufferSize; // å»ºè®®è¯»å–æœ¬æ–‡ä»¶çš„ç¼“å­˜å¤§å°ï¼ˆåº”èƒ½å®¹çº³æœ€å¤§çš„å—ï¼‰
+	uint64_t  dwWidth;         // è§†é¢‘å›¾åƒçš„å®½ï¼ˆä»¥åƒç´ ä¸ºå•ä½ï¼‰
+	uint64_t  dwHeight;        // è§†é¢‘å›¾åƒçš„é«˜ï¼ˆä»¥åƒç´ ä¸ºå•ä½ï¼‰
+	uint64_t  dwReserved[4];   // ä¿ç•™
 } AVIMAINHEADER;
 
 typedef struct _avistreamheader {
-	FOURCC fcc;  // '±ØĞëÎª¡®strh¡¯
-	uint64_t  cb;   // ±¾Êı¾İ½á¹¹µÄ´óĞ¡£¬²»°üÀ¨×î³õµÄ8¸ö×Ö½Ú£¨fccºÍcbÁ½¸öÓò£©
-	FOURCC fccType;    // Á÷µÄÀàĞÍ£º¡®auds¡¯£¨ÒôÆµÁ÷£©¡¢¡®vids¡¯£¨ÊÓÆµÁ÷£©¡¢¡®mids¡¯£¨MIDIÁ÷£©¡¢¡®txts¡¯£¨ÎÄ×ÖÁ÷£©
-	FOURCC fccHandler; // 'Ö¸¶¨Á÷µÄ´¦ÀíÕß£¬¶ÔÓÚÒôÊÓÆµÀ´Ëµ¾ÍÊÇ½âÂëÆ÷
-	uint64_t  dwFlags;    // '±ê¼Ç£ºÊÇ·ñÔÊĞíÕâ¸öÁ÷Êä³ö£¿µ÷É«°åÊÇ·ñ±ä»¯£¿
-	uint32_t   wPriority;  // 'Á÷µÄÓÅÏÈ¼¶£¨µ±ÓĞ¶à¸öÏàÍ¬ÀàĞÍµÄÁ÷Ê±ÓÅÏÈ¼¶×î¸ßµÄÎªÄ¬ÈÏÁ÷£©
+	FOURCC fcc;  // 'å¿…é¡»ä¸ºâ€˜strhâ€™
+	uint64_t  cb;   // æœ¬æ•°æ®ç»“æ„çš„å¤§å°ï¼Œä¸åŒ…æ‹¬æœ€åˆçš„8ä¸ªå­—èŠ‚ï¼ˆfccå’Œcbä¸¤ä¸ªåŸŸï¼‰
+	FOURCC fccType;    // æµçš„ç±»å‹ï¼šâ€˜audsâ€™ï¼ˆéŸ³é¢‘æµï¼‰ã€â€˜vidsâ€™ï¼ˆè§†é¢‘æµï¼‰ã€â€˜midsâ€™ï¼ˆMIDIæµï¼‰ã€â€˜txtsâ€™ï¼ˆæ–‡å­—æµï¼‰
+	FOURCC fccHandler; // 'æŒ‡å®šæµçš„å¤„ç†è€…ï¼Œå¯¹äºéŸ³è§†é¢‘æ¥è¯´å°±æ˜¯è§£ç å™¨
+	uint64_t  dwFlags;    // 'æ ‡è®°ï¼šæ˜¯å¦å…è®¸è¿™ä¸ªæµè¾“å‡ºï¼Ÿè°ƒè‰²æ¿æ˜¯å¦å˜åŒ–ï¼Ÿ
+	uint32_t   wPriority;  // 'æµçš„ä¼˜å…ˆçº§ï¼ˆå½“æœ‰å¤šä¸ªç›¸åŒç±»å‹çš„æµæ—¶ä¼˜å…ˆçº§æœ€é«˜çš„ä¸ºé»˜è®¤æµï¼‰
 	uint32_t   wLanguage;
-	uint64_t  dwInitialFrames; // Îª½»»¥¸ñÊ½Ö¸¶¨³õÊ¼Ö¡Êı
-	uint64_t  dwScale;   // 'Õâ¸öÁ÷Ê¹ÓÃµÄÊ±¼ä³ß¶È
+	uint64_t  dwInitialFrames; // ä¸ºäº¤äº’æ ¼å¼æŒ‡å®šåˆå§‹å¸§æ•°
+	uint64_t  dwScale;   // 'è¿™ä¸ªæµä½¿ç”¨çš„æ—¶é—´å°ºåº¦
 	// uint64_t  dwRate;	  // 4055
-	float  dwRate;	  // 4055  Ê¹ÓÃ¸¡µã¼ÆËã²¥·ÅÊ±¼ä½Ï¾«È·
-	uint64_t  dwStart;   // 'Á÷µÄ¿ªÊ¼Ê±¼ä
-	uint64_t  dwLength;  // 'Á÷µÄÖ¡Êı (158)
-	uint64_t  dwSuggestedBufferSize; // '¶ÁÈ¡Õâ¸öÁ÷Êı¾İ½¨ÒéÊ¹ÓÃµÄ»º´æ´óĞ¡1536
-	uint64_t  dwQuality;    // Á÷Êı¾İµÄÖÊÁ¿Ö¸±ê£¨0 ~ 10,000£©
-	uint64_t  dwSampleSize; // 'SampleµÄ´óĞ¡
+	float  dwRate;	  // 4055  ä½¿ç”¨æµ®ç‚¹è®¡ç®—æ’­æ”¾æ—¶é—´è¾ƒç²¾ç¡®
+	uint64_t  dwStart;   // 'æµçš„å¼€å§‹æ—¶é—´
+	uint64_t  dwLength;  // 'æµçš„å¸§æ•° (158)
+	uint64_t  dwSuggestedBufferSize; // 'è¯»å–è¿™ä¸ªæµæ•°æ®å»ºè®®ä½¿ç”¨çš„ç¼“å­˜å¤§å°1536
+	uint64_t  dwQuality;    // æµæ•°æ®çš„è´¨é‡æŒ‡æ ‡ï¼ˆ0 ~ 10,000ï¼‰
+	uint64_t  dwSampleSize; // 'Sampleçš„å¤§å°
 	struct {
 		short int left;
 		short int top;
 		short int right;
 		short int bottom;
-	}  rcFrame;  // 'Ö¸¶¨Õâ¸öÁ÷£¨ÊÓÆµÁ÷»òÎÄ×ÖÁ÷£©ÔÚÊÓÆµÖ÷´°¿ÚÖĞµÄÏÔÊ¾Î»ÖÃ'
-	// ÊÓÆµÖ÷´°¿ÚÓÉAVIMAINHEADER½á¹¹ÖĞµÄdwWidthºÍdwHeight¾ö¶¨
+	}  rcFrame;  // 'æŒ‡å®šè¿™ä¸ªæµï¼ˆè§†é¢‘æµæˆ–æ–‡å­—æµï¼‰åœ¨è§†é¢‘ä¸»çª—å£ä¸­çš„æ˜¾ç¤ºä½ç½®'
+	// è§†é¢‘ä¸»çª—å£ç”±AVIMAINHEADERç»“æ„ä¸­çš„dwWidthå’ŒdwHeightå†³å®š
 } AVISTREAMHEADER;
 
 
@@ -117,28 +118,29 @@ typedef struct _avistreamheader {
 #define    AIEF_FIXKEYFRAME    0x00001000L        // XXX: borrowed from VLC, avoid using
 
 typedef struct _avioldindex {
-	FOURCC  fcc;  // ±ØĞëÎª¡®idx1¡¯
-	uint64_t   cb;   // ±¾Êı¾İ½á¹¹µÄ´óĞ¡£¬²»°üÀ¨×î³õµÄ8¸ö×Ö½Ú£¨fccºÍcbÁ½¸öÓò£©
+	FOURCC  fcc;  // å¿…é¡»ä¸ºâ€˜idx1â€™
+	uint64_t   cb;   // æœ¬æ•°æ®ç»“æ„çš„å¤§å°ï¼Œä¸åŒ…æ‹¬æœ€åˆçš„8ä¸ªå­—èŠ‚ï¼ˆfccå’Œcbä¸¤ä¸ªåŸŸï¼‰
 	struct _avioldindex_entry {
-		uint64_t   dwChunkId;   // ±íÕ÷±¾Êı¾İ¿éµÄËÄ×Ö·ûÂë
-		uint64_t   dwFlags;     // ËµÃ÷±¾Êı¾İ¿éÊÇ²»ÊÇ¹Ø¼üÖ¡¡¢ÊÇ²»ÊÇ¡®rec ¡¯ÁĞ±íµÈĞÅÏ¢
-		uint64_t   dwOffset;    // ±¾Êı¾İ¿éÔÚÎÄ¼şÖĞµÄÆ«ÒÆÁ¿
-		uint64_t   dwSize;      // ±¾Êı¾İ¿éµÄ´óĞ¡
-	} aIndex[1]; // ÕâÊÇÒ»¸öÊı×é£¡ÎªÃ¿¸öÃ½ÌåÊı¾İ¿é¶¼¶¨ÒåÒ»¸öË÷ÒıĞÅÏ¢
+		uint64_t   dwChunkId;   // è¡¨å¾æœ¬æ•°æ®å—çš„å››å­—ç¬¦ç 
+		uint64_t   dwFlags;     // è¯´æ˜æœ¬æ•°æ®å—æ˜¯ä¸æ˜¯å…³é”®å¸§ã€æ˜¯ä¸æ˜¯â€˜rec â€™åˆ—è¡¨ç­‰ä¿¡æ¯
+		uint64_t   dwOffset;    // æœ¬æ•°æ®å—åœ¨æ–‡ä»¶ä¸­çš„åç§»é‡
+		uint64_t   dwSize;      // æœ¬æ•°æ®å—çš„å¤§å°
+	} aIndex[1]; // è¿™æ˜¯ä¸€ä¸ªæ•°ç»„ï¼ä¸ºæ¯ä¸ªåª’ä½“æ•°æ®å—éƒ½å®šä¹‰ä¸€ä¸ªç´¢å¼•ä¿¡æ¯
 } AVIOLDINDEX;
 
 typedef struct _CMPEG4Head
 {
 	FILE *hFile;
-	char filename[64];				//ÎÄ¼şÃû£¬º¬Â·¾¶
+	avi_t *avi_lib;
+	char filename[64];				//æ–‡ä»¶åï¼Œå«è·¯å¾„
     pthread_mutex_t mutex;
-	uint64_t dwFrameCnt;			//ÊÓÆµÁ÷Ö¡Êı
-	uint64_t dwAudioFrame;			//ÒôÆµÁ÷Ö¡Êı
-	uint64_t dwStreamSize;			//ÊÓÆµÁ÷´óĞ¡
+	uint64_t dwFrameCnt;			//è§†é¢‘æµå¸§æ•°
+	uint64_t dwAudioFrame;			//éŸ³é¢‘æµå¸§æ•°
+	uint64_t dwStreamSize;			//è§†é¢‘æµå¤§å°
 	uint64_t dwStartTick;
 	uint64_t dwEndTick;
-	int FirstFrame;		//ÊÇ·ñÊÇµÚÒ»Ö¡Êı¾İ
-	int ReadFirstFrame;	//ÊÇ·ñÒÑ¾­¶ÁÈ¡µÚÒ»Ö¡
+	int FirstFrame;		//æ˜¯å¦æ˜¯ç¬¬ä¸€å¸§æ•°æ®
+	int ReadFirstFrame;	//æ˜¯å¦å·²ç»è¯»å–ç¬¬ä¸€å¸§
 	int m_Width;
 	int m_Height;
 	int InitVideoFrame;
@@ -149,10 +151,10 @@ typedef struct _CMPEG4Head
 	uint32_t mChannels;
 	uint64_t mSample;
 	uint8_t (*WriteAviHead)(struct _CMPEG4Head *This);
-	uint8_t m_ReadWrite; // ¶ÁĞ´±êÖ¾, =0Ğ´ÎÄ¼ş  =1¶ÁÎÄ¼ş
-	int  m_VideoType;  // ÊÓÆµÀàĞÍ =0H264 =1divx
+	uint8_t m_ReadWrite; // è¯»å†™æ ‡å¿—, =0å†™æ–‡ä»¶  =1è¯»æ–‡ä»¶
+	int  m_VideoType;  // è§†é¢‘ç±»å‹ =0H264 =1divx
 
-	void (*InitAudio)(struct _CMPEG4Head *This, uint32_t Channels,uint64_t Sample,uint64_t dwBlockSize);		//Í¨µÀÊı£¬Î»ÂÊ£¬¿é´óĞ¡
+	void (*InitAudio)(struct _CMPEG4Head *This, uint32_t Channels,uint64_t Sample,uint64_t dwBlockSize);		//é€šé“æ•°ï¼Œä½ç‡ï¼Œå—å¤§å°
 	uint8_t (*WriteVideo)(struct _CMPEG4Head *This, const void *pData,uint64_t dwSize);
 	uint8_t (*WriteAudio)(struct _CMPEG4Head *This, const void *pData,uint64_t dwSize);
 	int (*GetAviTotalTime)(struct _CMPEG4Head *This);

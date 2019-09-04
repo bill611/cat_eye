@@ -118,6 +118,8 @@ typedef struct _ProtocolComm{
  *----------------------------------------------------------------------------*/
 static IpcServer* ipc_uart = NULL;
 static Queue *main_queue = NULL;
+static int timer_interval = 0; // 按键时间间隔
+static int cap_statue = 0; // 是否正在抓拍
 static uint8_t id = 0;
 
 static void getFileName(char *file_name,char *date)
@@ -186,6 +188,7 @@ static void* threadCapture(void *arg)
 {
 	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	IpcData ipc_data;
+	cap_statue = 1;
 	getFileName(ipc_data.data.file.name,ipc_data.data.file.date);
 	char count[5];
 	sprintf(count,"%d",getCapCount());
@@ -194,6 +197,7 @@ static void* threadCapture(void *arg)
 	excuteCmd("/data/cammer_cap",ipc_data.data.file.name,count,NULL);
 	ipc_data.cmd = IPC_UART_CAPTURE;
 	main_queue->post(main_queue,&ipc_data);
+	cap_statue = 0;
 	return NULL;	
 }
 
@@ -245,14 +249,18 @@ static void uartDeal(void)
 				main_queue->post(main_queue,&ipc_data);
             } 
 			if (data[0] & CHECK_KEY_DOORBELL) {
-				playVoice("/data/dingdong.wav");
+				if (timer_interval == 0 && cap_statue == 0) {
+					timer_interval = 3;
+					excuteCmd("busybox","killall","aplay",NULL);
+					playVoice("/data/dingdong.wav");
 
-				if (access(IPC_MAIN,0) != 0) {
-					createThread(threadCapture,NULL);
+					if (access(IPC_MAIN,0) != 0) {
+						createThread(threadCapture,NULL);
+					}
+
+					ipc_data.cmd = IPC_UART_DOORBELL;
+					main_queue->post(main_queue,&ipc_data);
 				}
-
-				ipc_data.cmd = IPC_UART_DOORBELL;
-				main_queue->post(main_queue,&ipc_data);
 			} 
 			if (data[0] & CHECK_KEY_PIR) {
 				ipc_data.cmd = IPC_UART_PIR;
@@ -310,6 +318,16 @@ static void* threadIpcSendMain(void *arg)
 	}
 	return NULL;
 }
+static void* threadTimer(void *arg)
+{
+	while (1) {
+		if (timer_interval) {
+			timer_interval--;
+		}
+		sleep(1);
+	}
+	return NULL;
+}
 int main(int argc, char *argv[])
 {
 	sconfigLoad();
@@ -321,6 +339,7 @@ int main(int argc, char *argv[])
 	main_queue = queueCreate("main_queue",QUEUE_BLOCK,sizeof(IpcData));
 	ipc_uart = ipcCreate(IPC_UART,ipcCallback);
 	createThread(threadIpcSendMain,main_queue);
+	createThread(threadTimer,NULL);
 	pause();
 	return 0;
 }

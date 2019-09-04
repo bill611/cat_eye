@@ -321,6 +321,17 @@ void sqlDeleteDevice(char *id)
 	pthread_mutex_unlock(&mutex);
 }
 
+void sqlDeleteDeviceUseTypeNoBack(int type)
+{
+	char buf[128];
+	pthread_mutex_lock(&mutex);
+	sprintf(buf, "Delete From UserInfo Where type=%d", type);
+	DPRINT("%s\n",buf);
+	LocalQueryExec(dbase.sql,buf);
+	dbase.checkFunc(dbase.sql);
+	pthread_mutex_unlock(&mutex);
+}
+
 void sqlClearDevice(void)
 {
 	char buf[128];
@@ -582,6 +593,27 @@ void sqlGetPicInfos(char *url)
 	dbase.sql->Next(dbase.sql);
 }
 void sqlGetPicInfoEnd(void)
+{
+	dbase.sql->Close(dbase.sql);
+	pthread_mutex_unlock(&mutex);
+}
+
+int sqlGetRecordInfoStart(uint64_t picture_id)
+{
+	char buf[128];
+	sprintf(buf,"select url from RecordUrl where record_id = %lld",picture_id );
+	pthread_mutex_lock(&mutex);
+	LocalQueryOpen(dbase.sql,buf);
+	return dbase.sql->RecordCount(dbase.sql);
+}
+
+void sqlGetRecordInfos(char *url)
+{
+	if (url)
+		LocalQueryOfChar(dbase.sql,"url",url,128);
+	dbase.sql->Next(dbase.sql);
+}
+void sqlGetRecordInfoEnd(void)
 {
 	dbase.sql->Close(dbase.sql);
 	pthread_mutex_unlock(&mutex);

@@ -38,6 +38,7 @@
 #include "my_audio.h"
 #include "video/video_server.h"
 #include "share_memory.h"
+#include "my_update.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
@@ -77,6 +78,8 @@ enum {
 	EV_RECORD_STOP,	    // 录像结束
 	EV_RECORD_STOP_FINISHED,// 录像结束后执行动作
 	EV_DELAY_SLEEP,		// APP操作时延长睡眠时间
+	EV_UPDATE,			// 升级软件
+	EV_UPDATE_FINISH,	// 升级完成
 };
 
 enum {
@@ -88,6 +91,7 @@ enum {
 	ST_TALK_TALKING,// 对讲中状态
 	ST_RECORDING, 	// 录像状态
 	ST_RECORD_STOPPING,// 录像停止状态
+	ST_UPDATE,		// 升级状态
 };
 
 enum {
@@ -108,6 +112,7 @@ enum {
     DO_RECORD_START, 	// 录像开始
     DO_RECORD_STOP, 	// 录像结束
 	DO_DELAY_SLEEP,		// APP操作时延长睡眠时间
+	DO_UPDATE,			// 执行升级操作
 };
 
 enum {
@@ -123,7 +128,12 @@ typedef struct _StmData {
 	int cap_type; // 抓拍类型
 	char nick_name[128];
 	char usr_id[128];
+	// 升级使用
+	char ip[16];
+	int port;
+	char file_path[512];
 }StmData;
+
 typedef struct _TalkPeerDev {
 	char peer_nick_name[128];
 	int call_out_result;
@@ -173,6 +183,8 @@ static char *st_debug_ev[] = {
 	"EV_RECORD_STOP",       // 录像结束
 	"EV_RECORD_STOP_FINISHED",// 录像结束后执行动作
 	"EV_DELAY_SLEEP", 		// APP操作时延长睡眠时间
+	"EV_UPDATE",			// 升级软件
+	"EV_UPDATE_FINISH",		// 升级完成
 };
 static char *st_debug_st[] = {
 	"ST_IDLE",
@@ -183,6 +195,7 @@ static char *st_debug_st[] = {
 	"ST_TALK_TALKING",
 	"ST_RECORDING",
 	"ST_RECORD_STOPPING",
+	"ST_UPDATE",		// 升级状态
 };
 static char *st_debug_do[] = {
 	"DO_FAIL",
@@ -202,6 +215,7 @@ static char *st_debug_do[] = {
     "DO_RECORD_START",
     "DO_RECORD_STOP",
 	"DO_DELAY_SLEEP",		// APP操作时延长睡眠时间
+	"DO_UPDATE",			// 执行升级操作
 };
 
 static StateTableDebug st_debug = {
@@ -223,14 +237,17 @@ static int rec_video_start = 0;
 
 static StateTable state_table[] =
 {
+	// 人脸开启，注册，识别
 	{EV_FACE_ON,		ST_IDLE,	ST_FACE,	DO_FACE_ON},
 	{EV_FACE_REGIST,	ST_FACE,	ST_FACE,	DO_FACE_REGIST},
 	{EV_FACE_RECOGNIZER,ST_FACE,	ST_FACE,	DO_FACE_RECOGNIZER},
 
+	// 关闭人脸时，根据当前不同状态，做不同操作
 	{EV_FACE_OFF_FINISH,ST_TALK_CALLOUT,	ST_TALK_CALLOUT,	DO_TALK_CALLOUT},
 	{EV_FACE_OFF_FINISH,ST_TALK_CALLOUTALL,	ST_TALK_CALLOUTALL,	DO_TALK_CALLOUTALL},
 	{EV_FACE_OFF_FINISH,ST_TALK_CALLIN,		ST_TALK_CALLIN,		DO_TALK_CALLIN},
 	{EV_FACE_OFF_FINISH,ST_RECORDING,		ST_RECORDING,		DO_RECORD_START},
+	{EV_FACE_OFF_FINISH,ST_UPDATE,			ST_UPDATE,			DO_UPDATE},
 
 	{EV_TALK_CALLOUT,	ST_IDLE,			ST_TALK_CALLOUT,	DO_TALK_CALLOUT},
 	{EV_TALK_CALLOUT,	ST_FACE,			ST_TALK_CALLOUT,	DO_FACE_OFF},
@@ -274,6 +291,9 @@ static StateTable state_table[] =
 	
 	{EV_DELAY_SLEEP,ST_IDLE,	ST_IDLE,	DO_DELAY_SLEEP},
 	{EV_DELAY_SLEEP,ST_FACE,	ST_FACE,	DO_DELAY_SLEEP},
+
+	{EV_UPDATE,		ST_FACE,	ST_UPDATE,	DO_FACE_OFF},
+	{EV_UPDATE,		ST_IDLE,	ST_UPDATE,	DO_UPDATE},
 };
 
 static int stmDoFail(void *data,MyVideo *arg)
@@ -731,7 +751,6 @@ static void recordVideoCallbackFunc(void *data,int size,int fram_type)
     } else {
         avi->WriteVideo(avi,data,size);
     }
-	printf("size:%d\n", size);
 }
 
 static void recordStopCallbackFunc(void)
@@ -740,8 +759,8 @@ static void recordStopCallbackFunc(void)
     if (avi) 
         avi->DestoryMPEG4(&avi);
     pthread_mutex_unlock(&mutex);
-	// protocol_hardcloud->uploadPic(FAST_PIC_PATH,cap_data.pic_id);
-	// protocol_hardcloud->reportCapture(cap_data.pic_id);
+	protocol_hardcloud->uploadPic(FAST_PIC_PATH,cap_data.pic_id);
+	protocol_hardcloud->reportCapture(cap_data.pic_id);
 }
 
 #if (defined X86)
@@ -790,9 +809,14 @@ static int stmDoRecordStart(void *data,MyVideo *arg)
 	memset(&cap_data,0,sizeof(CapData));
 	getFileName(cap_data.file_name,cap_data.file_date);
 	cap_data.pic_id = atoll(cap_data.file_name);
+	int w = 320,h = 240;
 	switch(data_temp->cap_type)
 	{
 		case CAP_TYPE_FORMMAIN :
+			{
+				w = 640;
+				h = 480;
+			}
 		case CAP_TYPE_TALK :
             {
                 char file_path[64] = {0};
@@ -800,15 +824,15 @@ static int stmDoRecordStart(void *data,MyVideo *arg)
 				char jpg_name[64] = {0};
                 sqlInsertRecordCapNoBack(cap_data.file_date,cap_data.pic_id);
 				sprintf(jpg_name,"%s_%s.avi",g_config.imei,cap_data.file_name);
-				sprintf(file_path,"/temp/%s",jpg_name);
-				// sprintf(file_path,"%s%s",FAST_PIC_PATH,jpg_name);
+				// sprintf(file_path,"/temp/%s",jpg_name);
+				sprintf(file_path,"%s%s",FAST_PIC_PATH,jpg_name);
                 if (avi == NULL) {
-                    avi = Mpeg4_Create(320,240,file_path,WRITE_READ,0);
-					// if (data_temp->cap_type == CAP_TYPE_FORMMAIN)
-						// createThread(threadAviReadAudio,NULL);
+                    avi = Mpeg4_Create(w,h,file_path,WRITE_READ,0);
+					if (data_temp->cap_type == CAP_TYPE_FORMMAIN)
+						createThread(threadAviReadAudio,NULL);
                 }
 #ifdef USE_VIDEO
-                rkVideoRecordStart(recordVideoCallbackFunc);
+                rkVideoRecordStart(w,h,recordVideoCallbackFunc);
                 rkVideoRecordSetStopFunc(recordStopCallbackFunc);
 #endif
 #ifdef X86
@@ -846,6 +870,12 @@ static int stmDoDelaySleepTime(void *data,MyVideo *arg)
 	
 }
 
+static int stmDoUpdate(void *data,MyVideo *arg)
+{
+	StmData *data_temp = (StmData *)data;
+	myUpdateStart(data_temp->type,data_temp->ip,data_temp->port,data_temp->file_path);
+}
+
 static StmDo stm_do[] =
 {
 	{DO_FAIL,			stmDoFail},
@@ -865,6 +895,7 @@ static StmDo stm_do[] =
 	{DO_RECORD_START,	stmDoRecordStart},
 	{DO_RECORD_STOP,	stmDoRecordStop},
 	{DO_DELAY_SLEEP,	stmDoDelaySleepTime},
+	{DO_UPDATE,			stmDoUpdate},
 
 };
 
@@ -1027,6 +1058,17 @@ static int delaySleepTime(int type) // 延长睡眠时间0短 1长
     stm->msgPost(stm,EV_DELAY_SLEEP,st_data);
 }
 
+static int update(int type,char *ip,int port,char *file_path)
+{
+	st_data = (StmData *)stm->initPara(stm,
+			        sizeof(StmData));
+	st_data->type = type;
+	st_data->port = port;
+	strcpy(st_data->ip,ip);
+	strcpy(st_data->file_path,file_path);
+    stm->msgPost(stm,EV_UPDATE,st_data);
+}
+
 static void* threadVideoTimer(void *arg)
 {
 	prctl(PR_SET_NAME, __func__, 0, 0, 0);
@@ -1060,7 +1102,10 @@ void myVideoInit(void)
 	my_video->videoAnswer = videoAnswer;
 	my_video->videoGetCallTime = videoGetCallTime;
     my_video->recordWriteCallback = recordWriteCallback;
+
     my_video->delaySleepTime = delaySleepTime;
+    my_video->update = update;
+
 	memset(&talk_data,0,sizeof(talk_data));
     pthread_mutexattr_t mutexattr;
     pthread_mutexattr_init(&mutexattr);

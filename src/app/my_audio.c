@@ -43,6 +43,12 @@
 static int loop_start = 0;
 static int loop_end = 1;
 
+void myAudioStopPlay(void)
+{
+	loop_start = 0;
+	excuteCmd("busybox","killall","aplay",NULL);
+}
+
 void myAudioPlayRecognizer(char *usr_name)
 {
 	char path[64];
@@ -75,12 +81,6 @@ void myAudioPlayRing(void)
 	sprintf(path,"%sring.wav",AUDIO_PATH);	
 	createThread(loopPlay,path);
 }
-void myAudioStopPlay(void)
-{
-	loop_start = 0;
-	excuteCmd("busybox","killall","aplay",NULL);
-}
-
 void myAudioPlayAlarm(void)
 {
 	char path[64];

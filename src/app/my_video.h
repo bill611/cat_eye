@@ -3,7 +3,7 @@
  *
  *       Filename:  my_video.h
  *
- *    Description:  视频接口
+ *    Description:  视频接口,所有功能控制接口
  *
  *        Version:  1.0
  *        Created:  2019-06-19 10:20:06 
@@ -46,6 +46,7 @@ extern "C" {
 		void (*videoHangup)(void);
 		int (*videoGetCallTime)(void);
 
+		int (*update)(int type,char *ip,int port,char *file_path); // 升级
 		int (*delaySleepTime)(int type); // 延长睡眠时间0短 1长
 	}MyVideo;
 	extern MyVideo *my_video;

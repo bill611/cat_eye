@@ -53,7 +53,7 @@ static void buttonUpdateNetwork(HWND hwnd, int id, int nc, DWORD add_data);
 
 #define BMP_LOCAL_PATH "setting/"
 enum {
-	IDC_TIMER_1S = IDC_FORM_UPDATE_STATR,
+	IDC_TIMER_1S = IDC_FORM_SET_UPDATE_STATR,
 
 	IDC_STATIC_TEXT_FIND,
 	IDC_STATIC_TEXT_VERSION,

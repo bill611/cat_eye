@@ -25,6 +25,7 @@
 #include <unistd.h>
 
 #include "my_gpio.h"
+#include "my_update.h"
 #include "protocol.h"
 #include "sql_handle.h"
 #include "config.h"
@@ -69,6 +70,7 @@ int MiniGUIMain(int argc, const char* argv[])
 	gpioInit();
 	myMixerInit();
 	myVideoInit();
+	myUpdateInit();
 	protocolInit();
 	sensorDetectorInit();
 	formVideoLayerCreate();

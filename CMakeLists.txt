@@ -149,5 +149,7 @@ set(EXE cat_eye)
 
 # 增加子目录,可以传递参数
 add_subdirectory(src)
-add_subdirectory(module)
+if (PLATFORM_RV1108)
+	add_subdirectory(module)
+endif()
 

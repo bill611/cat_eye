@@ -251,6 +251,83 @@ static void sysTestData(int api,int id,CjsonDec *dec)
 
 /* ---------------------------------------------------------------------------*/
 /**
+ * @brief ceSetSelfIntercom 设置本机对讲信息
+ *
+ * @param dec
+ */
+/* ---------------------------------------------------------------------------*/
+static void ceSetSelfIntercom(CjsonDec *dec)
+{
+	if(dec->changeCurrentObj(dec,"body")) {
+		printf("change body fail\n");
+		return;
+	}
+	char *user_id = NULL;
+	char *login_token = NULL;
+	char *nick_name = NULL;
+	int scope = 0 ;
+	dec->getValueChar(dec,"userId",&user_id);
+	dec->getValueChar(dec,"loginToken",&login_token);
+	dec->getValueChar(dec,"nickName",&nick_name);
+	scope = dec->getValueInt(dec,"scope");
+
+	sqlDeleteDeviceUseTypeNoBack(USER_TYPE_CATEYE);
+	sqlInsertUserInfo(user_id,login_token,nick_name,USER_TYPE_CATEYE,scope);
+	if (user_id)
+		free(user_id);
+	if (login_token)
+		free(login_token);
+	if (nick_name)
+		free(nick_name);
+
+	if (protocol_talk) {
+		protocol_talk->reload();
+		protocol_talk->reconnect();
+	}
+}
+
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief ceSetTargetsIntercom 设置对方对讲账号
+ *
+ * @param dec
+ */
+/* ---------------------------------------------------------------------------*/
+static void ceSetTargetsIntercom(CjsonDec *dec)
+{
+	if(dec->changeCurrentObj(dec,"body")) {
+		printf("change body fail\n");
+		return;
+	}
+	char *user_id = NULL;
+	char *nick_name = NULL;
+	int scope = 0 ;
+	sqlDeleteDeviceUseTypeNoBack(USER_TYPE_OTHERS);
+	int size = dec->getArraySize(dec);
+	int i;
+	for (i=0; i<size; i++) {
+		user_id = NULL;
+		nick_name = NULL;
+		scope = 0 ;
+		dec->getArrayChar(dec,i,"userId",&user_id);
+		dec->getArrayChar(dec,i,"nickName",&nick_name);
+		scope = dec->getArrayInt(dec,i,"scope");
+		sqlInsertUserInfoNoBack(user_id,NULL,nick_name,USER_TYPE_OTHERS,scope);
+		if (user_id)
+			free(user_id);
+		if (nick_name)
+			free(nick_name);
+	}
+	sqlCheckBack();
+
+	if (protocol_talk) {
+		protocol_talk->reload();
+		protocol_talk->reconnect();
+	}
+}
+
+/* ---------------------------------------------------------------------------*/
+/**
  * @brief ceGetIntercoms 获取对讲信息
  *
  * @param dec
@@ -491,8 +568,10 @@ static int mqttConnectCallBack(void* context, char* topicName, int topicLen, voi
 		case CE_SendAwaken :
 			break;
 		case CE_SetSelfIntercom :
+			ceSetSelfIntercom(dec);
 			break;
 		case CE_SetTargetsIntercom :
+			ceSetTargetsIntercom(dec);
 			break;
 		case CE_GetIntercoms :
 			ceGetIntercoms(dec);
@@ -770,8 +849,10 @@ static void* tcpHeartThread(void *arg)
 			send_interval++;
 			char tcp_rec[64] = {0};
 			int len = tcp_client->RecvBuffer(tcp_client,tcp_rec,sizeof(tcp_rec),1000);
-			if (strcmp(tcp_rec,"AwakenAsync")== 0)
-				my_video->delaySleepTime(1);
+			if (strcmp(tcp_rec,"AwakenAsync")== 0) {
+				if (my_video)
+					my_video->delaySleepTime(1);
+			}
 			goto loop_heart;
 		}
 		send_interval = 0;
@@ -893,7 +974,8 @@ static void* threadReportCapture(void *arg)
 		cJSON *root = packData(CE_Report,MODE_SEND_NONEED_REPLY,++g_id);
 		cJSON *obj_body = cJSON_CreateObject();
 		cJSON_AddStringToObject(obj_body,"dataType","capture");
-		cJSON *arry = cJSON_CreateArray();
+		cJSON *arry_pic = cJSON_CreateArray();
+		cJSON *arry_record = cJSON_CreateArray();
 		if (ret) {
 			int count = sqlGetPicInfoStart(picture_id);
 			for (i=0; i<count; i++) {
@@ -901,13 +983,24 @@ static void* threadReportCapture(void *arg)
 				cJSON *obj = cJSON_CreateObject();
 				sqlGetPicInfos(url);
 				cJSON_AddStringToObject(obj,"url",url);
-				cJSON_AddItemToArray(arry, obj);
+				cJSON_AddItemToArray(arry_pic, obj);
 			}
 			sqlGetPicInfoEnd();
+
+			count = sqlGetRecordInfoStart(picture_id);
+			for (i=0; i<count; i++) {
+				char url[128] = {0};
+				cJSON *obj = cJSON_CreateObject();
+				sqlGetRecordInfos(url);
+				cJSON_AddStringToObject(obj,"url",url);
+				cJSON_AddItemToArray(arry_record, obj);
+			}
+			sqlGetRecordInfoEnd();
 		}
 		cJSON *obj_data = cJSON_CreateObject();
 		cJSON_AddStringToObject(obj_data,"date",date);
-		cJSON_AddItemToObject(obj_data,"picture",arry);
+		cJSON_AddItemToObject(obj_data,"picture",arry_pic);
+		cJSON_AddItemToObject(obj_data,"record",arry_record);
 		cJSON_AddItemToObject(obj_body,"data",obj_data);
 		cJSON_AddItemToObject(root,"body",obj_body);
 		send_buff = cJSON_PrintUnformatted(root);

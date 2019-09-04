@@ -26,7 +26,7 @@ class RKVideo {
     void faceOnOff(bool type);
 	void h264EncOnOff(bool type,int w,int h,EncCallbackFunc encCallback);
 	void capture(char *file_name);
-	void recordStart(EncCallbackFunc recordCallback);
+	void recordStart(int w,int h,EncCallbackFunc recordCallback);
 	void recordSetStopFunc(RecordStopCallbackFunc recordCallback);
 	void recordStop(void);
 
@@ -202,11 +202,11 @@ void RKVideo::capture(char *file_name)
 	}
 }
 
-void RKVideo::recordStart(EncCallbackFunc recordCallback)
+void RKVideo::recordStart(int w,int h,EncCallbackFunc recordCallback)
 {
     if (display_state_ != 1)
         return ;
-	h264EncOnOff(true,320,240,NULL);
+	h264EncOnOff(true,w,h,NULL);
     encode_process->recordStart(recordCallback);
 }
 
@@ -297,10 +297,10 @@ int rkVideoCapture(char *file_name)
 		rkvideo->capture(file_name);
 }
 extern "C" 
-int rkVideoRecordStart(EncCallbackFunc recordCallback)
+int rkVideoRecordStart(int w,int h,EncCallbackFunc recordCallback)
 {
 	if (rkvideo)
-		rkvideo->recordStart(recordCallback);
+		rkvideo->recordStart(w,h,recordCallback);
 }
 extern "C" 
 int rkVideoRecordSetStopFunc(RecordStopCallbackFunc recordCallback)

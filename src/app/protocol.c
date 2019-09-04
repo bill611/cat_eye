@@ -24,6 +24,7 @@
 #include <arpa/inet.h>
 #include "my_http.h"
 #include "my_mqtt.h"
+#include "my_update.h"
 #include "json_dec.h"
 #include "udp_server.h"
 #include "tcp_client.h"
@@ -31,6 +32,7 @@
 #include "externfunc.h"
 #include "protocol.h"
 #include "qrenc.h"
+#include "my_video.h"
 #include "config.h"
 #include "timer.h"
 
@@ -147,6 +149,11 @@ typedef struct
     char Addition[20];      //附加信息
 } TRetDeviceInfo;
 
+typedef struct
+{
+	char ip[64];            //升级的文件
+	char file[256];               //提示信息
+} TUpdateRevertFile;
 #pragma pack (1)
 typedef struct
 {
@@ -267,7 +274,21 @@ static void udpLocalgetMsg(SocketHandle *ABinding,SocketPacket *AData)
 		printf("Get Local ID From %s\n",ABinding->IP);
 	}
 }
+static void udpUpdateProc(SocketHandle *ABinding,SocketPacket *AData)
+{
+	printf("TP_RETUPDATEMSG:UpdateProc()\n");
+	TUpdateRevertFile *cBuf = NULL;
+	char *Packet = (char *)&AData->Data[sizeof(COMMUNICATION)];
 
+	cBuf = (TUpdateRevertFile *)malloc(sizeof(TUpdateRevertFile));
+	sprintf(cBuf->ip,"%s",ABinding->IP);
+	sprintf(cBuf->file,"%s",Packet);
+	if (my_video)
+		my_video->update(UPDATE_TYPE_CENTER,ABinding->IP,0,Packet);
+
+	if (cBuf)
+		free(cBuf);
+}
 static unsigned long long htonll(unsigned long long val)
 {
 #if 1
@@ -447,6 +468,7 @@ static UdpCmdRead udp_cmd_handle[] = {
 	{TP_DEVCHECK,		udpLocalgetMsg},
 	{TP_LOCALDEVID,     udpLocalGetIMEI},
 	{TP_LOCALHARDCODE,  udpLocalGetHardCode},
+	{TP_RETUPDATEMSG,  	udpUpdateProc},
 	{0,NULL},
 };
 

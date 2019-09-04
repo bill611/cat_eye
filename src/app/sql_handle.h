@@ -94,6 +94,9 @@ extern "C" {
 	extern int sqlGetPicInfoStart(uint64_t picture_id);
 	extern void sqlGetPicInfos(char *url);
 	extern void sqlGetPicInfoEnd(void);
+	extern int sqlGetRecordInfoStart(uint64_t picture_id);
+	extern void sqlGetRecordInfos(char *url);
+	extern void sqlGetRecordInfoEnd(void);
 	extern void sqlInsertRecordAlarm(
 			char *date_time,
 			int type,
@@ -112,6 +115,7 @@ extern "C" {
 			int answered,
 			int talk_time,
 			uint64_t picture_id);
+	extern void sqlDeleteDeviceUseTypeNoBack(int type);
 
 #ifdef __cplusplus
 }
