@@ -455,7 +455,7 @@ static void *threadCallOutAll(void *arg)
 			continue;
 		}
 #endif
-		sqlGetUserInfosUseScopeIndex(user_id,talk_peer_dev.peer_nick_name,DEV_TYPE_HOUSEHOLDAPP,index++);
+		sqlGetUserInfosUseScopeIndex(user_id,DEV_TYPE_HOUSEHOLDAPP,index++);
 		my_video->videoCallOut(user_id);
 		printf("[%s]id:%s,name:%s\n", __func__,user_id,talk_peer_dev.peer_nick_name);
 		int wait_times = 300;

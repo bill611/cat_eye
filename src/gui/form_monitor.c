@@ -230,7 +230,7 @@ static void iconviewNotify(HWND hwnd, int id, int nc, DWORD add_data)
 
     if (user_id) {
 		ShowWindow(hwnd,SW_HIDE);
-		createFormVideo(0,FORM_VIDEO_TYPE_MONITOR,NULL,0); 
+		// createFormVideo(0,FORM_VIDEO_TYPE_MONITOR,NULL,0); 
 		my_video->videoCallOut(user_id);
     }
 }

@@ -210,7 +210,6 @@ void sqlGetUserInfosUseScope(
 
 void sqlGetUserInfosUseScopeIndex(
 		char *user_id,
-		char *nick_name,
 		int scope,
 		int index)
 {
@@ -224,8 +223,6 @@ void sqlGetUserInfosUseScopeIndex(
 	}
 	if (user_id)
 		LocalQueryOfChar(dbase.sql,"userId",user_id,32);
-	if (nick_name)
-		LocalQueryOfChar(dbase.sql,"nickName",nick_name,128);
 	pthread_mutex_unlock(&mutex);
 }
 

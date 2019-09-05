@@ -119,12 +119,8 @@ static void deal(IpcData *ipc_data)
 			break;
 		case IPC_UART_DOORBELL:
 			{
-#ifdef USE_UDPTALK
 				formVideoLayerScreenOn();
-#endif
-#ifdef USE_UCPAAS
 				my_video->videoCallOutAll();
-#endif
 			}
 			break;
 		case IPC_UART_CAPTURE:

@@ -51,7 +51,6 @@ extern "C" {
 			char *nick_name);
 	extern void sqlGetUserInfosUseScopeIndex(
 			char *user_id,
-			char *nick_name,
 			int scope,
 			int index);
 	extern void sqlGetUserInfos(

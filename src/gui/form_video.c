@@ -247,10 +247,10 @@ static void updateDisplay(HWND hDlg)
 			break;
 		case FORM_VIDEO_TYPE_TALK :
 			button_status[IDC_BUTTON_UNLOCK - button_num] = 1;
-			button_status[IDC_BUTTON_ANSWER - button_num] = 1;
+			// button_status[IDC_BUTTON_ANSWER - button_num] = 1;
 			button_status[IDC_BUTTON_HANGUP - button_num] = 1;
 			myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_UNLOCK), 208,451);
-			myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_ANSWER), 467,451);
+			// myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_ANSWER), 467,451);
 			myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_HANGUP), 726,451);
 			break;
 		case FORM_VIDEO_TYPE_OUTDOOR:
