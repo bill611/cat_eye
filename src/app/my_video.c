@@ -416,6 +416,8 @@ static int stmDoTalkCallout(void *data,MyVideo *arg)
 	talk_peer_dev.type = data_temp->type;
 	talk_peer_dev.call_time = TIME_CALLING;
 	protocol_talk->dial(data_temp->usr_id,dialCallBack);
+	if (talk_peer_dev.type == DEV_TYPE_ENTRANCEMACHINE)
+		my_video->showPeerVideo();	
 	// 保存通话记录到内存
 	strcpy(talk_data.nick_name,data_temp->nick_name);
 	talk_data.call_dir = CALL_DIR_OUT;
@@ -531,11 +533,11 @@ static int stmDoTalkAnswer(void *data,MyVideo *arg)
 	}
 	memset(ui_title,0,sizeof(ui_title));
 	StmData *data_temp = (StmData *)data;
-	if (data_temp->type == DEV_TYPE_HOUSEHOLDAPP) {
-		sprintf(ui_title,"%s 正在监视猫眼",talk_peer_dev.peer_nick_name);
-	} else {
-		sprintf(ui_title,"%s 正在与猫眼通话",talk_peer_dev.peer_nick_name);
-	}
+	// if (data_temp->type == DEV_TYPE_HOUSEHOLDAPP) {
+	sprintf(ui_title,"正在与 %s 通话",talk_peer_dev.peer_nick_name);
+	// } else {
+		// sprintf(ui_title,"%s 正在与猫眼通话",talk_peer_dev.peer_nick_name);
+	// }
 	protocol_talk->answer();
 	if (protocol_talk->uiAnswer)
 		protocol_talk->uiAnswer(ui_title);
@@ -952,10 +954,12 @@ static void recordWriteCallback(char *data,int size)
 
 static void videoCallOut(char *user_id)
 {
+	int scope = 0;
 	st_data = (StmData *)stm->initPara(stm,
 			        sizeof(StmData));
 	strcpy(st_data->usr_id,user_id);
 	stm->msgPost(stm,EV_TALK_CALLOUT,st_data);
+	sqlGetUserInfoUseUserId(user_id,talk_peer_dev.peer_nick_name,&scope);
 	talk_peer_dev.call_out_result = CALL_RESULT_NO;
 }
 static int videoGetCallTime(void)

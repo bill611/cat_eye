@@ -56,7 +56,7 @@ int halBatteryGetEle(void)
 	int real_value = atoi(data);
 	// 为保持有最低安全电量，当实际电量低于SAVE_ELE时，显示设置为0
 	if (real_value <= SAVE_ELE) {
-		disp_value = SAVE_ELE;
+		disp_value = 0;
 	} else {
 		disp_value = 100 * (real_value  - SAVE_ELE)/ (100 - SAVE_ELE) ;
 	}
