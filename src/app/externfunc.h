@@ -49,7 +49,7 @@ int getWifiConfig(int *qual);
 void wifiConnectStart(void);
 void wifiConnect(void);
 void wifiDisConnect(void);
-int screensaverStart(int state);
+int screensaverSet(int state);
 void getFileName(char *file_name,char *date);
 void getCpuId(char *hardcode);
 uint64_t MyGetTickCount(void);

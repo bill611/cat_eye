@@ -87,7 +87,7 @@ static FormBase* form_base = NULL;
 static void interfaceUiUpdateStart(void)
 {
 	my_video->hideVideo();
-	screensaverStart(1);
+	screensaverSet(1);
 	screenAutoCloseStop();
 	createFormUpdate(0);
 }

@@ -60,7 +60,7 @@ ProtocolSinglechip *protocol_singlechip;
 static int pir_act_count = 0; 	 // PIR传感器连续触发倒计时，若3s内没有再次触发，则进入未触发倒计时
 static int pir_act_timer = 0; // PIR传感器触发倒计时，10秒内没有触发，清零
 static int pir_disact_timer = 0; // PIR传感器触发倒计时，10秒内没有触发，清零
-static int pir_cycle_end = 0; // PIR触发周期结束,一个周期内，只触发一次人脸或门铃
+static int pir_cycle_end = 0; // PIR触发周期结束,一个周期内，只触发一次人脸或抓拍
 static uint64_t picture_id = 0;
 
 static void cmdSleep(void)
@@ -96,32 +96,18 @@ static void* threadPirTimer(void *arg)
 	}
 	return NULL;
 }
-static void* threadCapture(void *arg)
-{
-	prctl(PR_SET_NAME, __func__, 0, 0, 0);
-	uint64_t picture_id = *(uint64_t *)arg;
-	protocol_hardcloud->uploadPic(FAST_PIC_PATH,picture_id);
-	protocol_hardcloud->reportCapture(picture_id);
-	return NULL;
-}
 
 static void deal(IpcData *ipc_data)
 {
 	switch(ipc_data->cmd)
 	{
 		case IPC_UART_KEY_POWER:
-			screensaverStart(0);
+			screensaverSet(0);
 			screenAutoCloseStop();
 			Screen.ReturnMain();
 			break;
 		case IPC_UART_KEYHOME:
 			formVideoLayerScreenOn();
-			break;
-		case IPC_UART_DOORBELL:
-			{
-				formVideoLayerScreenOn();
-				my_video->videoCallOutAll();
-			}
 			break;
 		case IPC_UART_CAPTURE:
 			{
@@ -133,8 +119,19 @@ static void deal(IpcData *ipc_data)
 				sprintf(url,"%s/%s_%s_0.jpg",QINIU_URL,g_config.imei,ipc_data->data.file.name);
 				sqlInsertRecordCapNoBack(ipc_data->data.file.date,picture_id);
 				sqlInsertPicUrlNoBack(picture_id,url);
-				createThread(threadCapture,&picture_id);
-			} break;
+				protocol_hardcloud->uploadPic(FAST_PIC_PATH,picture_id);
+				protocol_hardcloud->reportCapture(picture_id);
+			} 
+		case IPC_UART_DOORBELL:
+			{
+				formVideoLayerScreenOn();
+				my_video->videoCallOutAll();
+				if (pir_cycle_end == 1)
+					break;
+				pir_cycle_end = 1;
+				my_video->capture(CAP_TYPE_DOORBELL,g_config.cap.count,NULL,NULL);
+			}
+			break;
 		case IPC_UART_POWEROFF:
 			formVideoLayerGotoPoweroff();
 			break;

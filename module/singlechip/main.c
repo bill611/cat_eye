@@ -255,7 +255,18 @@ static void uartDeal(void)
 					playVoice("/data/dingdong.wav");
 
 					if (access(IPC_MAIN,0) != 0) {
-						createThread(threadCapture,NULL);
+						IpcData ipc_data;
+						cap_statue = 1;
+						getFileName(ipc_data.data.file.name,ipc_data.data.file.date);
+						char count[5];
+						sprintf(count,"%d",getCapCount());
+						char file_name[32];
+						sprintf(file_name,"%s_%s",getCapImei(),ipc_data.data.file.name);
+						excuteCmd("/data/cammer_cap",file_name,count,NULL);
+						ipc_data.cmd = IPC_UART_CAPTURE;
+						main_queue->post(main_queue,&ipc_data);
+						cap_statue = 0;
+						// createThread(threadCapture,NULL);
 					}
 
 					ipc_data.cmd = IPC_UART_DOORBELL;

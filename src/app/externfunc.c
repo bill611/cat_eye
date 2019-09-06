@@ -640,7 +640,7 @@ void wifiDisConnect(void)
 	excuteCmd("wifi/wifi_station.sh","stop",NULL);
 #endif
 }
-int screensaverStart(int state)
+int screensaverSet(int state)
 {
 #ifndef X86
 	static int state_old = 0;

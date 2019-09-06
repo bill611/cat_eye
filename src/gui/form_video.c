@@ -352,7 +352,7 @@ static int formVideoProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 		case MSG_LBUTTONDOWN:
 			{
                 // if (Public.LCDLight == 0) {
-                    // screensaverStart(LCD_ON);
+                    // screensaverSet(LCD_ON);
                     // return;
                 // }
 			} break;
@@ -402,7 +402,7 @@ static void interfaceCreateFormVideoDirect(int type,char *name)
 			break;
 		case DEV_TYPE_ENTRANCEMACHINE:
 		case DEV_TYPE_HOUSEENTRANCEMACHINE:
-			screensaverStart(1);
+			screensaverSet(1);
 			if (protocol_talk->type == PROTOCOL_TALK_3000)
 				createFormVideo(0,FORM_VIDEO_TYPE_OUTDOOR,NULL,0); 
 			else

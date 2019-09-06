@@ -156,7 +156,7 @@ void screenAutoCloseStop(void)
 /* ---------------------------------------------------------------------------*/
 void formVideoLayerScreenOn(void)
 {
-	screensaverStart(1);
+	screensaverSet(1);
 	setAutoCloseLcdTime(AUTO_CLOSE_LCD);
 }
 /* ---------------------------------------------------------------------------*/
@@ -167,7 +167,7 @@ void formVideoLayerScreenOn(void)
 void formVideoLayerGotoPoweroff(void)
 {
 	my_video->hideVideo();
-	screensaverStart(1);
+	screensaverSet(1);
 	screenAutoCloseStop();
 	createFormPowerOff(0);
 }
@@ -175,7 +175,7 @@ void formVideoLayerGotoPoweroff(void)
 static void interfaceLowPowerToPowerOff(void)
 {
 	my_video->hideVideo();
-	screensaverStart(1);
+	screensaverSet(1);
 	screenAutoCloseStop();
 	createFormPowerOffLowPower();
 	auto_close_lcd = 0;
@@ -193,13 +193,13 @@ static void formVideoLayerTimerProc1s(HWND hwnd)
 	if (auto_close_lcd) {
 		// printf("auto_close_ld:%d\n",auto_close_lcd );
 		if (--auto_close_lcd == 0) {
-			screensaverStart(0);
+			screensaverSet(0);
 			if(sleep_timer < SLEEP_TIMER)
 				sleep_timer = SLEEP_TIMER;
 		}
 	}
 	if (sleep_timer && auto_close_lcd == 0) {
-		// printf("sleep:%d\n", sleep_timer);
+		printf("sleep:%d\n", sleep_timer);
 		if (--sleep_timer == 0) {
 			protocol_singlechip->cmdSleep();
 		}
@@ -254,7 +254,7 @@ static int formVideoLayerProc(HWND hWnd, int message, WPARAM wParam, LPARAM lPar
 				Screen.setCurrent("TFrmVL");
 				my_video->showLocalVideo();
 				formVideoInitInterface();
-				screensaverStart(1);
+				screensaverSet(1);
 				if (sensor) {
 					sensor->interface->uiLowPowerToPowerOff = interfaceLowPowerToPowerOff;
 				}
@@ -291,7 +291,7 @@ static int formVideoLayerProc(HWND hWnd, int message, WPARAM wParam, LPARAM lPar
                 createFormMain(hWnd,enableAutoClose);
 			} break;
 		case MSG_LBUTTONDOWN:
-			if (screensaverStart(1)) {
+			if (screensaverSet(1)) {
 				screen_on = 1;
 			}
 			setAutoCloseLcdTime(AUTO_CLOSE_LCD);

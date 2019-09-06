@@ -233,7 +233,7 @@ static TalkPeerDev talk_peer_dev;
 static pthread_mutex_t mutex;
 static ShareMemory *share_mem = NULL;  //共享内存
 static int send_video_start = 0;
-static int rec_video_start = 0;
+static int record_state = 0;
 
 static StateTable state_table[] =
 {
@@ -285,9 +285,12 @@ static StateTable state_table[] =
 
 	{EV_RECORD_STOP_FINISHED,	ST_RECORD_STOPPING,	ST_FACE,	DO_FACE_ON},
 
-	{EV_CAPTURE,	ST_IDLE,			ST_IDLE,		DO_CAPTURE},
-	{EV_CAPTURE,	ST_FACE,			ST_FACE,		DO_CAPTURE},
-	{EV_CAPTURE,	ST_TALK_TALKING,	ST_TALK_TALKING,DO_CAPTURE_NO_UI},
+	{EV_CAPTURE,	ST_IDLE,			ST_IDLE,			DO_CAPTURE},
+	{EV_CAPTURE,	ST_FACE,			ST_FACE,			DO_CAPTURE},
+	{EV_CAPTURE,	ST_TALK_TALKING,	ST_TALK_TALKING,	DO_CAPTURE_NO_UI},
+	{EV_CAPTURE,	ST_TALK_CALLOUT,	ST_TALK_CALLOUT,	DO_CAPTURE_NO_UI},
+	{EV_CAPTURE,	ST_TALK_CALLOUTALL,	ST_TALK_CALLOUTALL,	DO_CAPTURE_NO_UI},
+	{EV_CAPTURE,	ST_TALK_CALLIN,		ST_TALK_CALLIN,		DO_CAPTURE_NO_UI},
 	
 	{EV_DELAY_SLEEP,ST_IDLE,	ST_IDLE,	DO_DELAY_SLEEP},
 	{EV_DELAY_SLEEP,ST_FACE,	ST_FACE,	DO_DELAY_SLEEP},
@@ -533,31 +536,15 @@ static int stmDoTalkAnswer(void *data,MyVideo *arg)
 	}
 	memset(ui_title,0,sizeof(ui_title));
 	StmData *data_temp = (StmData *)data;
-	// if (data_temp->type == DEV_TYPE_HOUSEHOLDAPP) {
 	sprintf(ui_title,"正在与 %s 通话",talk_peer_dev.peer_nick_name);
-	// } else {
-		// sprintf(ui_title,"%s 正在与猫眼通话",talk_peer_dev.peer_nick_name);
-	// }
+	if (talk_peer_dev.type == DEV_TYPE_HOUSEHOLDAPP) {
+		screensaverSet(0);
+	}
 	protocol_talk->answer();
 	if (protocol_talk->uiAnswer)
 		protocol_talk->uiAnswer(ui_title);
 	talk_peer_dev.call_time = TIME_TALKING;
 	talk_data.answered = 1;
-}
-
-static void* threadRecordTalk(void *arg)
-{
-	prctl(PR_SET_NAME, __func__, 0, 0, 0);
-	sqlInsertRecordTalkNoBack(talk_data.date,
-			talk_data.nick_name,
-			talk_data.call_dir,
-			talk_data.answered,
-			talk_data.talk_time,
-			talk_data.picture_id);
-	protocol_hardcloud->uploadPic(FAST_PIC_PATH,talk_data.picture_id);
-	protocol_hardcloud->reportTalk(&talk_data);
-	memset(&talk_data,0,sizeof(talk_data));
-	return NULL;
 }
 
 static int stmDoTalkHangupAll(void *data,MyVideo *arg)
@@ -578,7 +565,15 @@ static int stmDoTalkHangup(void *data,MyVideo *arg)
 	} else {
 		talk_data.talk_time = TIME_CALLING - talk_peer_dev.call_time;
 	}
-	createThread(threadRecordTalk,NULL);
+	sqlInsertRecordTalkNoBack(talk_data.date,
+			talk_data.nick_name,
+			talk_data.call_dir,
+			talk_data.answered,
+			talk_data.talk_time,
+			talk_data.picture_id);
+	protocol_hardcloud->uploadPic(FAST_PIC_PATH,talk_data.picture_id);
+	protocol_hardcloud->reportTalk(&talk_data);
+	memset(&talk_data,0,sizeof(talk_data));
 	memset(&talk_peer_dev,0,sizeof(talk_peer_dev));
 }
 
@@ -716,6 +711,7 @@ static int stmDoCaptureNoUi(void *data,MyVideo *arg)
 	{
 		case CAP_TYPE_FORMMAIN :
 		case CAP_TYPE_TALK :
+		case CAP_TYPE_DOORBELL :
 			sqlInsertRecordCapNoBack(cap_data.file_date,cap_data.pic_id);
 			createThread(threadCapture,&cap_data);
 			break;
@@ -807,6 +803,9 @@ static void* threadAviReadAudio(void *arg)
 }
 static int stmDoRecordStart(void *data,MyVideo *arg)
 {
+	if (record_state == 1)
+		return 0;
+	record_state = 1;
 	StmData *data_temp = (StmData *)data;
 	memset(&cap_data,0,sizeof(CapData));
 	getFileName(cap_data.file_name,cap_data.file_date);
@@ -832,6 +831,8 @@ static int stmDoRecordStart(void *data,MyVideo *arg)
                     avi = Mpeg4_Create(w,h,file_path,WRITE_READ,0);
 					if (data_temp->cap_type == CAP_TYPE_FORMMAIN)
 						createThread(threadAviReadAudio,NULL);
+					else 
+						avi->InitAudio(avi,2,8000,0);
                 }
 #ifdef USE_VIDEO
                 rkVideoRecordStart(w,h,recordVideoCallbackFunc);
@@ -855,8 +856,14 @@ static int stmDoRecordStart(void *data,MyVideo *arg)
 }
 static int stmDoRecordStop(void *data,MyVideo *arg)
 {
+	if (record_state == 0)
+		return 0;
+	record_state = 0;
 #ifdef USE_VIDEO
     rkVideoRecordStop();
+	// 若正在通话，则不关闭h264编码
+	if (stm->getCurrentstate(stm) == ST_RECORD_STOPPING)
+		rkH264EncOff();
 #endif
 	stm->msgPost(stm,EV_RECORD_STOP_FINISHED,NULL);
 }
@@ -947,7 +954,6 @@ static void recordStop(void)
 static void recordWriteCallback(char *data,int size)
 {
 	if (avi) {
-		avi->InitAudio(avi,2,8000,size);
         avi->WriteAudio(avi,data,size);
 	}
 }

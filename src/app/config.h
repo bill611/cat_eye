@@ -45,8 +45,8 @@ extern "C" {
 #define QINIU_URL "http://img.cateye.taichuan.com"  // 七牛云存储地址
 
 #define AUTO_CLOSE_LCD 11
-#define SLEEP_TIMER 10
-#define SLEEP_LONG_TIMER 30
+#define SLEEP_TIMER 20
+#define SLEEP_LONG_TIMER 50
 
 	typedef struct _EtcValueChar {
 		const char* section;	

@@ -218,7 +218,7 @@ void RKVideo::recordSetStopFunc(RecordStopCallbackFunc recordStopCallback)
 void RKVideo::recordStop(void)
 {
     encode_process->recordStop();
-	h264EncOnOff(false,0,0,NULL);
+	// h264EncOnOff(false,0,0,NULL);
 }
 
 static void* threadVideoInit(void *arg)

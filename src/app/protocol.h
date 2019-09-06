@@ -70,10 +70,11 @@ extern "C" {
 	};
 
 	enum {
-		CAP_TYPE_FORMMAIN = 0,
-		CAP_TYPE_TALK,
-		CAP_TYPE_ALARM,
-		CAP_TYPE_FACE,
+		CAP_TYPE_FORMMAIN = 0,	// 主界面按抓拍键
+		CAP_TYPE_TALK,			// 通话时按抓拍
+		CAP_TYPE_ALARM,			// 徘徊报警抓拍
+		CAP_TYPE_FACE,          // 人脸识别抓拍
+		CAP_TYPE_DOORBELL,      // 进入主程序后抓拍
 	};
 
 	typedef enum _AlarmType{
