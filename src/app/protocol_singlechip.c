@@ -139,6 +139,8 @@ static void deal(IpcData *ipc_data)
 			my_video->delaySleepTime(0);
 			pir_act_timer = PIR_TIMER_INTERVAL;
 			pir_disact_timer = 0;
+			if (my_video->isVideoOn())
+				break;
 			if (pir_cycle_end == 1)
 				break;
 			if (++pir_act_count == PIR_ACTIVE_COUNT) {

@@ -272,13 +272,15 @@ static uint8_t WriteAviHead(struct _CMPEG4Head *This)
 	return bRet;
 }
 //---------------------------------------------------------------------------------------
-static uint8_t WriteVideo(struct _CMPEG4Head *This, const void *pData,uint64_t dwSize)
+static uint8_t WriteVideo(struct _CMPEG4Head *This, const void *pData,uint32_t dwSize)
 {
-        pthread_mutex_lock(&This->mutex);
-		StartTimer(This);
-		AVI_write_frame(This->avi_lib,pData,dwSize,1);
-		This->dwFrameCnt++;
-        pthread_mutex_unlock(&This->mutex);
+	if (dwSize == 0)
+		return 0;
+	pthread_mutex_lock(&This->mutex);
+	StartTimer(This);
+	AVI_write_frame(This->avi_lib,pData,dwSize,1);
+	This->dwFrameCnt++;
+	pthread_mutex_unlock(&This->mutex);
 		/*
 	uint8_t bRet = 0;
 	unsigned char *p = (unsigned char *)pData;
@@ -318,11 +320,13 @@ static uint8_t WriteVideo(struct _CMPEG4Head *This, const void *pData,uint64_t d
 	*/
 }
 //---------------------------------------------------------------------------------------
-static uint8_t WriteAudio(struct _CMPEG4Head *This, const void *pData,uint64_t dwSize)
+static uint8_t WriteAudio(struct _CMPEG4Head *This, const void *pData,uint32_t dwSize)
 {
-        pthread_mutex_lock(&This->mutex);
-		AVI_write_audio(This->avi_lib,pData,dwSize);
-        pthread_mutex_unlock(&This->mutex);
+	if (dwSize == 0)
+		return 0;
+	pthread_mutex_lock(&This->mutex);
+	AVI_write_audio(This->avi_lib,pData,dwSize);
+	pthread_mutex_unlock(&This->mutex);
 		/*
 	int i;
 	uint8_t bRet = 0;
@@ -524,6 +528,12 @@ MPEG4Head* Mpeg4_Create(int Width,int Height,const char *FileName, int ReadWrite
 		This->dwFrameCnt = 0;
 		This->m_Width = Width;
 		This->m_Height = Height;
+		This->FirstFrame = 1;
+        pthread_mutexattr_t mutexattr;
+        pthread_mutexattr_init(&mutexattr);
+        pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE_NP);
+        pthread_mutex_init(&This->mutex, &mutexattr);
+		pthread_mutexattr_destroy(&mutexattr);
 	}
 	/*
 	if(access(FileName,F_OK) == -1) { //判断文件是否存在存在与否
@@ -550,15 +560,9 @@ MPEG4Head* Mpeg4_Create(int Width,int Height,const char *FileName, int ReadWrite
 		This->bWriteAudio = 0;
 		This->InitVideoFrame = 0;
 		This->InitAudioFrame = 0;
-		This->FirstFrame = 1;
 		This->ReadFirstFrame = 0;
 		This->m_ReadWrite = ReadWrite;
 		This->m_VideoType = VideoType;
-        pthread_mutexattr_t mutexattr;
-        pthread_mutexattr_init(&mutexattr);
-        pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE_NP);
-        pthread_mutex_init(&This->mutex, &mutexattr);
-		pthread_mutexattr_destroy(&mutexattr);
 	}
 	*/
 

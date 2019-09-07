@@ -48,6 +48,8 @@ extern "C" {
 
 		int (*update)(int type,char *ip,int port,char *file_path); // 升级
 		int (*delaySleepTime)(int type); // 延长睡眠时间0短 1长
+
+		int (*isVideoOn)(void);
 	}MyVideo;
 	extern MyVideo *my_video;
 	void myVideoInit(void);

@@ -753,6 +753,7 @@ static void recordVideoCallbackFunc(void *data,int size,int fram_type)
 
 static void recordStopCallbackFunc(void)
 {
+	printf("[%s]\n", __func__);
     pthread_mutex_lock(&mutex);
     if (avi) 
         avi->DestoryMPEG4(&avi);
@@ -953,7 +954,7 @@ static void recordStop(void)
 }
 static void recordWriteCallback(char *data,int size)
 {
-	if (avi) {
+	if (avi && avi->FirstFrame == 0) {
         avi->WriteAudio(avi,data,size);
 	}
 }
@@ -1078,6 +1079,16 @@ static int update(int type,char *ip,int port,char *file_path)
 	strcpy(st_data->file_path,file_path);
     stm->msgPost(stm,EV_UPDATE,st_data);
 }
+static int isVideoOn(void)
+{
+	if (stm->getCurrentstate(stm) == ST_TALK_CALLOUT
+			|| stm->getCurrentstate(stm) == ST_TALK_CALLOUTALL
+			|| stm->getCurrentstate(stm) == ST_TALK_CALLIN
+			|| stm->getCurrentstate(stm) == ST_TALK_TALKING)	
+		return 1;
+	else
+		return 0;
+}
 
 static void* threadVideoTimer(void *arg)
 {
@@ -1115,6 +1126,7 @@ void myVideoInit(void)
 
     my_video->delaySleepTime = delaySleepTime;
     my_video->update = update;
+    my_video->isVideoOn = isVideoOn;
 
 	memset(&talk_data,0,sizeof(talk_data));
     pthread_mutexattr_t mutexattr;

@@ -134,9 +134,9 @@ typedef struct _CMPEG4Head
 	avi_t *avi_lib;
 	char filename[64];				//文件名，含路径
     pthread_mutex_t mutex;
-	uint64_t dwFrameCnt;			//视频流帧数
-	uint64_t dwAudioFrame;			//音频流帧数
-	uint64_t dwStreamSize;			//视频流大小
+	uint32_t dwFrameCnt;			//视频流帧数
+	uint32_t dwAudioFrame;			//音频流帧数
+	uint32_t dwStreamSize;			//视频流大小
 	uint64_t dwStartTick;
 	uint64_t dwEndTick;
 	int FirstFrame;		//是否是第一帧数据
@@ -155,8 +155,8 @@ typedef struct _CMPEG4Head
 	int  m_VideoType;  // 视频类型 =0H264 =1divx
 
 	void (*InitAudio)(struct _CMPEG4Head *This, uint32_t Channels,uint64_t Sample,uint64_t dwBlockSize);		//通道数，位率，块大小
-	uint8_t (*WriteVideo)(struct _CMPEG4Head *This, const void *pData,uint64_t dwSize);
-	uint8_t (*WriteAudio)(struct _CMPEG4Head *This, const void *pData,uint64_t dwSize);
+	uint8_t (*WriteVideo)(struct _CMPEG4Head *This, const void *pData,uint32_t dwSize);
+	uint8_t (*WriteAudio)(struct _CMPEG4Head *This, const void *pData,uint32_t dwSize);
 	int (*GetAviTotalTime)(struct _CMPEG4Head *This);
 	int (*GetAviFileFrameRate)(struct _CMPEG4Head *This);
 	int (*ReadAviData)(struct _CMPEG4Head *This, void *pData,uint64_t *dwSize,int *InCameraWidth,int *InCameraHeight);

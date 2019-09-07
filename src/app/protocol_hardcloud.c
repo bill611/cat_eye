@@ -927,6 +927,8 @@ static void* threadUpload(void *arg)
 			char buf[64];
 			sprintf(buf,"%s%s",up_data.file_path,dirp->d_name);
 			printf("%s\n",buf);
+			if (GetFileSize(buf) == 0)
+				continue;
 			http->qiniuUpload("http://upload-z2.qiniup.com",
 					NULL,qiniu_server_token,
 					buf,

@@ -188,7 +188,7 @@ static MPP_RET test_mpp_setup(MpiEncTestData *p)
 
     /* setup default parameter */
     p->fps = 30;
-    p->gop = 60;
+    p->gop = 10;
     p->bps = p->width * p->height / 8 * p->fps;
 
     prep_cfg->change        = MPP_ENC_PREP_CFG_CHANGE_INPUT |
