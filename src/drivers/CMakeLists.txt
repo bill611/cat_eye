@@ -6,6 +6,7 @@ STRING( REGEX REPLACE ".*/(.*)" "\\1" CURRENT_FOLDER_DRIVERS ${CMAKE_CURRENT_SOU
 set(SUB_DIRS_DRIVERS 
 	iniparser 
 	avilib 
+	mp4_muxer
 	)
 foreach(sub ${SUB_DIRS_DRIVERS})
 	add_subdirectory(${sub})

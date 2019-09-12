@@ -23,7 +23,7 @@
 #include <unistd.h>
 #include "debug.h"
 #include "jpeg_enc_dec.h"
-#include "avi_encode.h"
+#include "media_muxer.h"
 #include "my_face.h"
 #include "state_machine.h"
 #include "ucpaas/ucpaas.h"
@@ -61,6 +61,7 @@ extern int formCreateCaputure(int count);
 
 #define TIME_TALKING 180
 #define TIME_CALLING 30
+#define TIME_RECORD 30
 enum {
 	EV_FACE_ON,			// 打开人脸识别功能
 	EV_FACE_OFF_FINISH,	// 关闭人脸识别功能结束
@@ -229,11 +230,12 @@ static CapData cap_data;
 static MPEG4Head* avi = NULL;
 static ReportTalkData talk_data;
 
-static TalkPeerDev talk_peer_dev;
+static TalkPeerDev talk_peer_dev;	// 对讲对方信息
 static pthread_mutex_t mutex;
 static ShareMemory *share_mem = NULL;  //共享内存
 static int send_video_start = 0;
-static int record_state = 0;
+static int record_state = 0;	// 1录像状态 0非录像状态
+static int record_time = 0;		// 录像倒计时时间
 
 static StateTable state_table[] =
 {
@@ -415,7 +417,7 @@ static int stmDoTalkCallout(void *data,MyVideo *arg)
 	}
 	sprintf(ui_title,"正在呼叫 %s",data_temp->nick_name);
 	if (protocol_talk->uiShowFormVideo)
-		protocol_talk->uiShowFormVideo(data_temp->type,ui_title);
+		protocol_talk->uiShowFormVideo(data_temp->type,ui_title,CALL_DIR_OUT);
 	talk_peer_dev.type = data_temp->type;
 	talk_peer_dev.call_time = TIME_CALLING;
 	protocol_talk->dial(data_temp->usr_id,dialCallBack);
@@ -431,7 +433,7 @@ static int stmDoTalkCallout(void *data,MyVideo *arg)
 	talk_peer_dev.type = DEV_TYPE_ENTRANCEMACHINE;
 	talk_peer_dev.call_time = TIME_CALLING;
 	if (protocol_talk->uiShowFormVideo)
-		protocol_talk->uiShowFormVideo(DEV_TYPE_ENTRANCEMACHINE,ui_title);
+		protocol_talk->uiShowFormVideo(DEV_TYPE_ENTRANCEMACHINE,ui_title,CALL_DIR_OUT);
 	protocol_talk->dial(data_temp->usr_id,dialCallBack);
 	my_video->showPeerVideo();	
 #endif
@@ -508,7 +510,7 @@ static int stmDoTalkCallin(void *data,MyVideo *arg)
 	}
 
 	if (protocol_talk->uiShowFormVideo)
-		protocol_talk->uiShowFormVideo(data_temp->type,ui_title);
+		protocol_talk->uiShowFormVideo(data_temp->type,ui_title,CALL_DIR_OUT);
 
 	// 保存通话记录到内存
 	strcpy(talk_data.nick_name,data_temp->nick_name);
@@ -575,6 +577,7 @@ static int stmDoTalkHangup(void *data,MyVideo *arg)
 	protocol_hardcloud->reportTalk(&talk_data);
 	memset(&talk_data,0,sizeof(talk_data));
 	memset(&talk_peer_dev,0,sizeof(talk_peer_dev));
+	record_time = 0;
 }
 
 static void* threadCapture(void *arg)
@@ -758,8 +761,8 @@ static void recordStopCallbackFunc(void)
     if (avi) 
         avi->DestoryMPEG4(&avi);
     pthread_mutex_unlock(&mutex);
-	protocol_hardcloud->uploadPic(FAST_PIC_PATH,cap_data.pic_id);
-	protocol_hardcloud->reportCapture(cap_data.pic_id);
+	// protocol_hardcloud->uploadPic(FAST_PIC_PATH,cap_data.pic_id);
+	// protocol_hardcloud->reportCapture(cap_data.pic_id);
 }
 
 #if (defined X86)
@@ -812,6 +815,7 @@ static int stmDoRecordStart(void *data,MyVideo *arg)
 	getFileName(cap_data.file_name,cap_data.file_date);
 	cap_data.pic_id = atoll(cap_data.file_name);
 	int w = 320,h = 240;
+	record_time = TIME_RECORD;
 	switch(data_temp->cap_type)
 	{
 		case CAP_TYPE_FORMMAIN :
@@ -825,11 +829,11 @@ static int stmDoRecordStart(void *data,MyVideo *arg)
                 char url[256] = {0};
 				char jpg_name[64] = {0};
                 sqlInsertRecordCapNoBack(cap_data.file_date,cap_data.pic_id);
-				sprintf(jpg_name,"%s_%s.avi",g_config.imei,cap_data.file_name);
+				sprintf(jpg_name,"%s_%s.mp4",g_config.imei,cap_data.file_name);
 				// sprintf(file_path,"/temp/%s",jpg_name);
 				sprintf(file_path,"%s%s",FAST_PIC_PATH,jpg_name);
                 if (avi == NULL) {
-                    avi = Mpeg4_Create(w,h,file_path,WRITE_READ,0);
+                    avi = Mpeg4_Create(w,h,file_path,WRITE_READ);
 					if (data_temp->cap_type == CAP_TYPE_FORMMAIN)
 						createThread(threadAviReadAudio,NULL);
 					else 
@@ -863,8 +867,11 @@ static int stmDoRecordStop(void *data,MyVideo *arg)
 #ifdef USE_VIDEO
     rkVideoRecordStop();
 	// 若正在通话，则不关闭h264编码
-	if (stm->getCurrentstate(stm) == ST_RECORD_STOPPING)
+	if (stm->getCurrentstate(stm) == ST_RECORD_STOPPING) {
 		rkH264EncOff();
+		if (protocol_talk->uiHangup)
+			protocol_talk->uiHangup();
+	}
 #endif
 	stm->msgPost(stm,EV_RECORD_STOP_FINISHED,NULL);
 }
@@ -972,6 +979,11 @@ static void videoCallOut(char *user_id)
 static int videoGetCallTime(void)
 {
 	return talk_peer_dev.call_time;
+}
+
+static int videoGetRecordTime(void)
+{
+	return record_time;
 }
 
 static void videoCallOutAll(void)
@@ -1100,6 +1112,11 @@ static void* threadVideoTimer(void *arg)
 				stm->msgPost(stm,EV_TALK_HANGUP,NULL);
 			}
 		}
+		if (record_time) {
+			if (--record_time == 0) {
+				stm->msgPost(stm,EV_RECORD_STOP,NULL);
+			}
+		}
 		sleep(1);
 	}
 	return NULL;
@@ -1122,6 +1139,7 @@ void myVideoInit(void)
 	my_video->videoHangup = videoHangup;
 	my_video->videoAnswer = videoAnswer;
 	my_video->videoGetCallTime = videoGetCallTime;
+	my_video->videoGetRecordTime = videoGetRecordTime;
     my_video->recordWriteCallback = recordWriteCallback;
 
     my_video->delaySleepTime = delaySleepTime;

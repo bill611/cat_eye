@@ -155,8 +155,13 @@ static int window_show_status = 0;
 static void formVideoTimerProc1s(HWND hwnd)
 {
 	static int call_time_old = 0;
+	int call_time = 0;
 	// 更新时间
-	int call_time = my_video->videoGetCallTime();
+	if (form_type == FORM_VIDEO_TYPE_RECORD) {
+		call_time = my_video->videoGetRecordTime();
+	} else {
+		call_time = my_video->videoGetCallTime();
+	}
 	if (call_time != call_time_old) {
 		char buf[32] = {0};
 		sprintf(buf,"剩余时间: %d s",call_time);
@@ -245,12 +250,13 @@ static void updateDisplay(HWND hDlg)
 			button_status[IDC_BUTTON_HANGUP - button_num] = 1;
 			myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_HANGUP), 467,451);
 			break;
-		case FORM_VIDEO_TYPE_TALK :
-			button_status[IDC_BUTTON_UNLOCK - button_num] = 1;
+		case FORM_VIDEO_TYPE_TALK_IN :
 			button_status[IDC_BUTTON_ANSWER - button_num] = 1;
+			myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_ANSWER), 467,451);
+		case FORM_VIDEO_TYPE_TALK_OUT :
+			button_status[IDC_BUTTON_UNLOCK - button_num] = 1;
 			button_status[IDC_BUTTON_HANGUP - button_num] = 1;
 			myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_UNLOCK), 208,451);
-			myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_ANSWER), 467,451);
 			myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_HANGUP), 726,451);
 			break;
 		case FORM_VIDEO_TYPE_OUTDOOR:
@@ -375,6 +381,9 @@ int createFormVideo(HWND hMainWnd,int type,void (*callback)(void),int count)
 	auto_close_time = count;
 	if(Form) {
 		screenAutoCloseStop();
+		SendMessage(GetDlgItem (form_base->hDlg, IDC_MYSTATIC_TIME),
+				MSG_MYSTATIC_SET_TITLE,(WPARAM)"",0);
+		updateTitle("");
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
         if (bmp_load_finished == 0) {
@@ -390,7 +399,7 @@ int createFormVideo(HWND hMainWnd,int type,void (*callback)(void),int count)
 	return 0;
 }
 
-static void interfaceCreateFormVideoDirect(int type,char *name)
+static void interfaceCreateFormVideoDirect(int type,char *name,int dir)
 {
 	switch (type) 
 	{
@@ -405,8 +414,12 @@ static void interfaceCreateFormVideoDirect(int type,char *name)
 			screensaverSet(1);
 			if (protocol_talk->type == PROTOCOL_TALK_3000)
 				createFormVideo(0,FORM_VIDEO_TYPE_OUTDOOR,NULL,0); 
-			else
-				createFormVideo(0,FORM_VIDEO_TYPE_TALK,NULL,0); 
+			else {
+				if (dir == CALL_DIR_OUT)	
+					createFormVideo(0,FORM_VIDEO_TYPE_TALK_OUT,NULL,0); 
+				else
+					createFormVideo(0,FORM_VIDEO_TYPE_TALK_IN,NULL,0); 
+			}
 			break;
 		default:
 			break;

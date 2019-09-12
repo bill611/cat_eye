@@ -89,6 +89,7 @@ func_include_sub_directories_recursively(${PROJECT_SOURCE_DIR}/module)
 include_directories(
 	${PROJECT_SOURCE_DIR}/include
 	${PROJECT_SOURCE_DIR}/include/mqtt
+	${PROJECT_SOURCE_DIR}/include/ffmpeg
 	)
 if (PLATFORM_RV1108)
 	include_directories(
@@ -103,6 +104,7 @@ if (PLATFORM_RV1108)
 		${PROJECT_SOURCE_DIR}/lib/arm/sdk_system_lib
 		${PROJECT_SOURCE_DIR}/lib/arm/sdk_rootfs_lib
 		${PROJECT_SOURCE_DIR}/lib/arm/sdk_ucpaas_lib
+		${PROJECT_SOURCE_DIR}/lib/arm/ffmpeg_lib
 		)
 else()
 	link_directories(

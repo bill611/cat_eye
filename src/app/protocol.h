@@ -159,7 +159,7 @@ extern "C" {
 		void (*reconnect)(void);
 		void (*unlock)(void);
 
-		void (*uiShowFormVideo)(int type,char *name);
+		void (*uiShowFormVideo)(int type,char *name,int dir);
 		void (*uiHangup)(void);
 		void (*uiAnswer)(char *name);
 

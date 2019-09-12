@@ -24,7 +24,8 @@ extern "C" {
 	enum {
 		FORM_VIDEO_TYPE_CAPTURE, 	// 抓拍
 		FORM_VIDEO_TYPE_RECORD,  	// 录像
-		FORM_VIDEO_TYPE_TALK,  		// 门口机通话
+		FORM_VIDEO_TYPE_TALK_IN,  		// 门口机呼入
+		FORM_VIDEO_TYPE_TALK_OUT,  		// 门口机呼出
 		FORM_VIDEO_TYPE_MONITOR,  	// APP监视
 		FORM_VIDEO_TYPE_OUTDOOR,  	// 监视门口
 	};
