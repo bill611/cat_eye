@@ -8,5 +8,5 @@ set(SRCS_MP4MUXERLIB
 add_library (mp4_muxer ${SRCS_MP4MUXERLIB})
 
 target_link_libraries(mp4_muxer
-	mp4v2
+	mp4v2 faac
 	)

@@ -761,8 +761,8 @@ static void recordStopCallbackFunc(void)
     if (avi) 
         avi->DestoryMPEG4(&avi);
     pthread_mutex_unlock(&mutex);
-	// protocol_hardcloud->uploadPic(FAST_PIC_PATH,cap_data.pic_id);
-	// protocol_hardcloud->reportCapture(cap_data.pic_id);
+	protocol_hardcloud->uploadPic(FAST_PIC_PATH,cap_data.pic_id);
+	protocol_hardcloud->reportCapture(cap_data.pic_id);
 }
 
 #if (defined X86)
