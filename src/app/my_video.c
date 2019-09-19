@@ -154,6 +154,7 @@ typedef struct _CapData {
 	char file_name[32];
 	char nick_name[128];
 	char usr_id[128];
+	int type;	//抓拍类型
 }CapData;
 
 typedef struct _CammerData {
@@ -607,8 +608,12 @@ static void* threadCapture(void *arg)
 		usleep(500000);
 	}
 	sleep(1);
-	protocol_hardcloud->uploadPic(FAST_PIC_PATH,cap_data_temp.pic_id);
-	protocol_hardcloud->reportCapture(cap_data_temp.pic_id);
+	if (cap_data_temp.type == CAP_TYPE_TALK)
+		talk_data.picture_id = cap_data_temp.pic_id;
+	else {
+		protocol_hardcloud->uploadPic(FAST_PIC_PATH,cap_data_temp.pic_id);
+		protocol_hardcloud->reportCapture(cap_data_temp.pic_id);
+	}
 	return NULL;
 }
 
@@ -710,12 +715,13 @@ static int stmDoCaptureNoUi(void *data,MyVideo *arg)
 	getFileName(cap_data.file_name,cap_data.file_date);
 	cap_data.pic_id = atoll(cap_data.file_name);
 	cap_data.count = data_temp->cap_count;
+	cap_data.type = data_temp->cap_type;
 	switch(data_temp->cap_type)
 	{
 		case CAP_TYPE_FORMMAIN :
-		case CAP_TYPE_TALK :
 		case CAP_TYPE_DOORBELL :
 			sqlInsertRecordCapNoBack(cap_data.file_date,cap_data.pic_id);
+		case CAP_TYPE_TALK :
 			createThread(threadCapture,&cap_data);
 			break;
 		case CAP_TYPE_ALARM :
@@ -1107,7 +1113,7 @@ static void* threadVideoTimer(void *arg)
 	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	while (1) {
 		if (talk_peer_dev.call_time) {
-			printf("call time:%d\n", talk_peer_dev.call_time);
+			// printf("call time:%d\n", talk_peer_dev.call_time);
 			if (--talk_peer_dev.call_time == 0) {
 				stm->msgPost(stm,EV_TALK_HANGUP,NULL);
 			}

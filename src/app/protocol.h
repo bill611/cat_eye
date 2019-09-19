@@ -105,7 +105,7 @@ extern "C" {
 
 	typedef struct _ReportTalkData{
 		char date[32];		// 日期
-		uint64_t picture_id;// 抓拍图片
+		uint64_t picture_id;// 抓拍图片或录像
 		CalLDir call_dir;	// 0呼入 1呼出
 		int answered;		// true 接听 false未接听
 		int talk_time;		// 通话时间
