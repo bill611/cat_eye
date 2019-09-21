@@ -27,6 +27,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <linux/prctl.h>
 
 #include "state_machine.h"
 #include "udp_talk_protocol.h"

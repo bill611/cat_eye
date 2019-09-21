@@ -42,6 +42,7 @@
 #include <sys/time.h>
 #include <dirent.h>
 #include <pthread.h>
+#include <linux/prctl.h>
 
 #include "udp_talk_protocol.h"
 #include "udp_talk_transport.h"
@@ -181,7 +182,7 @@ static int rtpGetVideo(Rtp* This,void *data)
 
 	}
 	memcpy(data,pbody->sdata,pbody->slen);
-	// printf("[%s]%d\n", __func__,pbody->slen);
+	printf("[%s,%d]%d\n", __func__,pbody->seq,pbody->slen);
 	RtpDcMem->GetEnd(RtpDcMem);
 	return pbody->slen;
 }

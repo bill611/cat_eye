@@ -3,9 +3,9 @@
 #define _ENCODER_PROCESS_H
 
 #include <CameraHal/StrmPUBase.h>
-#include <rkmedia/encoder.h>
-#include <rkmedia/buffer.h>
-#include <rkmedia/image.h>
+#include <easymedia/encoder.h>
+#include <easymedia/buffer.h>
+#include <easymedia/image.h>
 #include <adk/mm/buffer.h>
 
 typedef void (*EncCallbackFunc)(void *data,int size,int frame_type);
