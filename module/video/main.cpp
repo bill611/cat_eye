@@ -7,12 +7,15 @@
 #include "process/md_encoder_process.h"
 #include "protocol.h"
 #include "config.h"
+#include "ipc_server.h"
 #include "queue.h"
 
 #define COLOR_KEY_R 0x0
 #define COLOR_KEY_G 0x0
 #define COLOR_KEY_B 0x1
 
+static IpcServer* ipc_video = NULL;
+static Queue *main_queue = NULL;
 
 class RKVideo {
  public:
@@ -170,10 +173,6 @@ void RKVideo::recordStop(void)
 }
 
 
-static int rkVideoDisplayLocal(void)
-{
-}
-
 
 static int rkH264EncOn(int w,int h,EncCallbackFunc encCallback)
 {
@@ -240,6 +239,50 @@ static void callbackEncode(void *data,int size,int fram_type)
 }
 
 
+static void callbackCapture(void)
+{
+	IpcData ipc_cap;
+	ipc_cap.cmd = IPC_VIDEO_CAPTURE_END;
+	main_queue->post(main_queue,&ipc_cap);
+}
+
+static void callbackIpc(char *data,int size )
+{
+	IpcData ipc_data;
+	memcpy(&ipc_data,data,sizeof(IpcData));
+	switch(ipc_data.cmd)
+	{
+		case IPC_VIDEO_ENCODE_ON:
+			rkH264EncOn(320,240,callbackEncode);
+			break;
+		case IPC_VIDEO_ENCODE_OFF:
+			rkH264EncOff();
+			break;
+		case IPC_VIDEO_CAPTURE:
+			rkVideoCapture(ipc_data.data.cap_path);
+			break;
+		case IPC_VIDEO_RECORD_START:
+			break;
+		case IPC_VIDEO_RECORD_STOP:
+			break;
+		default:
+			break;
+	}
+}
+static void* threadIpcSendMain(void *arg)
+{
+	Queue * queue = (Queue *)arg;
+	waitIpcOpen(IPC_MAIN);
+	IpcData ipc_data;
+	while (1) {
+		queue->get(queue,&ipc_data);	
+		ipc_data.dev_type = IPC_DEV_TYPE_VIDEO;
+		if (ipc_video)
+			ipc_video->sendData(ipc_video,IPC_MAIN,&ipc_data,sizeof(IpcData));
+	}
+	return NULL;
+}
+
 int main(int argc, char *argv[])
 {
 	rk_fb_init(FB_FORMAT_BGRA_8888);
@@ -248,17 +291,13 @@ int main(int argc, char *argv[])
 	rkvideo = new RKVideo();
 	if (rkvideo)
 		rkvideo->displayLocal();
-	if (argc < 2)	
-		goto process_end;
-	if (strcmp(argv[1],"cap") == 0) {
-		printf("cap:%s\n",argv[2]);
-		rkVideoCapture(argv[2]);
-	} else if (strcmp(argv[1],"record") == 0) {
-		printf("record:%s\n",argv[2]);
-		rkH264EncOn(320,240,callbackEncode);
+	main_queue = queueCreate("main_queue",QUEUE_BLOCK,sizeof(IpcData));
+	createThread(threadIpcSendMain,main_queue);
+	ipc_video = ipcCreate(IPC_CAMMER,callbackIpc);
+	while (access(IPC_MAIN,0) != 0) {
+		usleep(100000);	
 	}
-	pause();
-process_end:
+	remove(IPC_CAMMER);
 	delete rkvideo;
 	return 0;
 }

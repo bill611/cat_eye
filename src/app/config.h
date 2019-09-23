@@ -41,6 +41,7 @@ extern "C" {
 
 #define IPC_MAIN "/tmp/ipc_main"				// 主进程
 #define IPC_UART "/tmp/ipc_uart"				// 串口处理进程
+#define IPC_CAMMER "/tmp/ipc_cammer"			// 摄像头处理进程
 
 #define QINIU_URL "http://img.cateye.taichuan.com"  // 七牛云存储地址
 

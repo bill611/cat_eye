@@ -47,6 +47,7 @@ extern int getCapType(void);
 extern int getCapCount(void);
 extern int getCapTimer(void);
 extern char * getCapImei(void);
+extern int screensaverSet(int state);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -117,6 +118,7 @@ typedef struct _ProtocolComm{
  *                      variables define
  *----------------------------------------------------------------------------*/
 static IpcServer* ipc_uart = NULL;
+static Queue *video_queue = NULL;
 static Queue *main_queue = NULL;
 static int timer_interval = 0; // 按键时间间隔
 static int cap_statue = 0; // 是否正在抓拍
@@ -184,23 +186,6 @@ static void* threadCmdSleep(void *arg)
 	}
 	return NULL;
 }
-static void* threadCapture(void *arg)
-{
-	prctl(PR_SET_NAME, __func__, 0, 0, 0);
-	IpcData ipc_data;
-	cap_statue = 1;
-	getFileName(ipc_data.data.file.name,ipc_data.data.file.date);
-	char count[5];
-	sprintf(count,"%d",getCapCount());
-	char file_name[32];
-	sprintf(file_name,"%s_%s",getCapImei(),ipc_data.data.file.name);
-	excuteCmd("/data/cammer_cap",ipc_data.data.file.name,count,NULL);
-	ipc_data.cmd = IPC_UART_CAPTURE;
-	main_queue->post(main_queue,&ipc_data);
-	cap_statue = 0;
-	return NULL;	
-}
-
 static void uartDeal(void)
 {
 	uint8_t buff[512]={0};
@@ -245,28 +230,26 @@ static void uartDeal(void)
 				main_queue->post(main_queue,&ipc_data);
             } 
 			if (data[0] & CHECK_KEY_HOM) {
+				if (access(IPC_MAIN,0) != 0)
+					screensaverSet(1);
 				ipc_data.cmd = IPC_UART_KEYHOME;
 				main_queue->post(main_queue,&ipc_data);
             } 
 			if (data[0] & CHECK_KEY_DOORBELL) {
-				if (timer_interval == 0 && cap_statue == 0) {
+				if (timer_interval == 0) {
 					timer_interval = 3;
 					excuteCmd("busybox","killall","aplay",NULL);
 					playVoice("/data/dingdong.wav");
 
 					if (access(IPC_MAIN,0) != 0) {
 						IpcData ipc_data;
-						cap_statue = 1;
 						getFileName(ipc_data.data.file.name,ipc_data.data.file.date);
-						char count[5];
-						sprintf(count,"%d",getCapCount());
-						char file_name[32];
-						sprintf(file_name,"%s_%s",getCapImei(),ipc_data.data.file.name);
-						excuteCmd("/data/cammer_cap",file_name,count,NULL);
+						ipc_data.count = getCapCount();
+						sprintf(ipc_data.data.file.path,"%s_%s",getCapImei(),ipc_data.data.file.name);
+						ipc_data.cmd = IPC_UART_CAPTURE;
+						video_queue->post(video_queue,&ipc_data);
 						ipc_data.cmd = IPC_UART_CAPTURE;
 						main_queue->post(main_queue,&ipc_data);
-						cap_statue = 0;
-						// createThread(threadCapture,NULL);
 					}
 
 					ipc_data.cmd = IPC_UART_DOORBELL;
@@ -315,6 +298,19 @@ static void ipcCallback(char *data,int size )
 	}
 }
 
+static void* threadIpcSendVideo(void *arg)
+{
+	Queue * queue = (Queue *)arg;
+	waitIpcOpen(IPC_CAMMER);
+	IpcData ipc_data;
+	while (1) {
+		queue->get(queue,&ipc_data);	
+		ipc_data.dev_type = IPC_DEV_TYPE_UART;
+		if (ipc_uart)
+			ipc_uart->sendData(ipc_uart,IPC_CAMMER,&ipc_data,sizeof(IpcData));
+	}
+	return NULL;
+}
 static void* threadIpcSendMain(void *arg)
 {
 	prctl(PR_SET_NAME, __func__, 0, 0, 0);
@@ -347,8 +343,10 @@ int main(int argc, char *argv[])
 
 	mkdir(FAST_PIC_PATH, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
+	video_queue = queueCreate("video_queue",QUEUE_BLOCK,sizeof(IpcData));
 	main_queue = queueCreate("main_queue",QUEUE_BLOCK,sizeof(IpcData));
 	ipc_uart = ipcCreate(IPC_UART,ipcCallback);
+	createThread(threadIpcSendVideo,video_queue);
 	createThread(threadIpcSendMain,main_queue);
 	createThread(threadTimer,NULL);
 	pause();

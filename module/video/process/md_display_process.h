@@ -13,6 +13,7 @@ class DisplayProcess : public StreamPUBase {
 
     bool processFrame(std::shared_ptr<BufferBase> input,
                             std::shared_ptr<BufferBase> output) override;
+	void showLocalVideo(void);
 	void capture(char *file_name);
     
 	int getWidth(void) const {

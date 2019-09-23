@@ -121,9 +121,10 @@ extern "C" {
 		int cmd;
 		int dev_type;
 		int leng;
+		int count;
         union {
-            char array_buf[64];
-			char cap_path[64];
+            char array_buf[128];
+			char cap_path[128];
 			struct {
 				char path[64];
 				char date[32];	

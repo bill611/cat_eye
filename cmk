@@ -58,6 +58,7 @@ if [ $? == 0 ]; then
 			cp $cmake_dir/singlechip $RV1108_SDK_PATH/common/userdata/
 		fi
 		cp $cmake_dir/cat_eye ~/arm_share/cat_eye/
+		cp $cmake_dir/singlechip ~/arm_share/cat_eye/
 		tar czf Update.tar.gz update/
 		mv Update.tar.gz $cmake_dir/update.cab
 	fi
