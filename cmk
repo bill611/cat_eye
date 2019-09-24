@@ -59,6 +59,7 @@ if [ $? == 0 ]; then
 		fi
 		cp $cmake_dir/cat_eye ~/arm_share/cat_eye/
 		cp $cmake_dir/singlechip ~/arm_share/cat_eye/
+		cp $cmake_dir/cammer_video ~/arm_share/cat_eye/
 		tar czf Update.tar.gz update/
 		mv Update.tar.gz $cmake_dir/update.cab
 	fi

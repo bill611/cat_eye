@@ -931,13 +931,21 @@ static int stmHandle(StMachine *This,int result,void *data,void *arg)
 	}
 }
 
+static void* threadVideoInit(void *arg)
+{
+	while (access(IPC_CAMMER,0) == 0) {
+		usleep(10000);
+	}
+#ifdef USE_VIDEO
+	rkVideoInit();
+#endif
+	return NULL;
+}
 static void init(void)
 {
 	jpegIncDecInit();
 	myFaceInit();
-#ifdef USE_VIDEO
-	rkVideoInit();
-#endif
+	createThread(threadVideoInit,NULL);
 }
 
 static void capture(int type,int count,char *nick_name,char *user_id)

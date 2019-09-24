@@ -15,7 +15,7 @@ typedef struct _IpcServerPriv {
 	IpcCallback callbackFunc;
 }IpcServerPriv;
 
-void waitIpcOpen(char *path)
+void waitIpcOpen(const char *path)
 {
 	int fd = -1;
 	while (1) {
@@ -29,7 +29,7 @@ void waitIpcOpen(char *path)
 		return;
 	}
 }
-static int sendData(struct _IpcServer *This,char *path,void *data,int size)
+static int sendData(struct _IpcServer *This,const char *path,void *data,int size)
 {
 	static struct sockaddr_un srv_addr;
 	This->priv->send_fd = socket(PF_UNIX, SOCK_STREAM, 0);

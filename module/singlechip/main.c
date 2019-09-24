@@ -47,7 +47,6 @@ extern int getCapType(void);
 extern int getCapCount(void);
 extern int getCapTimer(void);
 extern char * getCapImei(void);
-extern int screensaverSet(int state);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -124,6 +123,21 @@ static int timer_interval = 0; // 按键时间间隔
 static int cap_statue = 0; // 是否正在抓拍
 static uint8_t id = 0;
 
+static int screensaverSet(int state)
+{
+#ifndef X86
+	static int state_old = 0;
+	if (state == state_old)
+		return 0;
+	state_old = state;
+	if (state) {
+		excuteCmd("echo","160",">","/sys/class/backlight/rk28_bl/brightness ",NULL);
+	} else {
+		excuteCmd("echo","0",">","/sys/class/backlight/rk28_bl/brightness ",NULL);
+	}
+#endif
+	return 1;
+}
 static void getFileName(char *file_name,char *date)
 {
 	if (!file_name || !date)
@@ -341,6 +355,8 @@ int main(int argc, char *argv[])
 	uartInit(uartDeal);
 	cmdCheckStatus();
 
+	screensaverSet(1);
+	screensaverSet(0);
 	mkdir(FAST_PIC_PATH, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
 	video_queue = queueCreate("video_queue",QUEUE_BLOCK,sizeof(IpcData));

@@ -25,10 +25,10 @@ extern "C" {
 	struct _IpcServerPriv;
 	typedef struct _IpcServer{
 		struct _IpcServerPriv *priv;
-		int (*sendData)(struct _IpcServer *,char *path,void *data,int size);
+		int (*sendData)(struct _IpcServer *,const char *path,void *data,int size);
 
 	}IpcServer;
-	void waitIpcOpen(char *path);
+	void waitIpcOpen(const char *path);
 
 	IpcServer* ipcCreate(const char *path,IpcCallback func);
 #ifdef __cplusplus

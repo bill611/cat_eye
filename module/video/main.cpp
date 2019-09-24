@@ -83,6 +83,7 @@ RKVideo::RKVideo()
 
 RKVideo::~RKVideo()
 {
+	disconnect(cam_dev->mpath(), display_process);
 	if (cam_dev)
 		cam_dev->stop();
 	init_ok = 0;
@@ -295,9 +296,9 @@ int main(int argc, char *argv[])
 	createThread(threadIpcSendMain,main_queue);
 	ipc_video = ipcCreate(IPC_CAMMER,callbackIpc);
 	while (access(IPC_MAIN,0) != 0) {
-		usleep(100000);	
+		usleep(10000);	
 	}
-	remove(IPC_CAMMER);
 	delete rkvideo;
+	remove(IPC_CAMMER);
 	return 0;
 }

@@ -246,11 +246,19 @@ int rkVideoInit(void)
 	rkvideo = new RKVideo();
 }
 
+static void *threadDisplayLocal(void *arg)
+{
+	while (!rkvideo) {
+		usleep(10000);
+	}
+	if (rkvideo)
+		rkvideo->displayLocal();
+	return NULL;
+}
 extern "C" 
 int rkVideoDisplayLocal(void)
 {
-	if (rkvideo)
-		rkvideo->displayLocal();
+	createThread(threadDisplayLocal,NULL);
 }
 
 extern "C" 
