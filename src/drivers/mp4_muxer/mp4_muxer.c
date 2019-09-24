@@ -291,6 +291,8 @@ int mp4MuxerStop(void)
 	if (faac_fd)
 		faacEncClose(faac_fd);
 	MP4Close(mp4_fd, 0);
+	video = MP4_INVALID_TRACK_ID;
+	audio = MP4_INVALID_TRACK_ID;
 	mp4_fd = NULL;
 	muxerQueueUninit();
 

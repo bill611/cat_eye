@@ -251,6 +251,7 @@ static void callbackIpc(char *data,int size )
 {
 	IpcData ipc_data;
 	memcpy(&ipc_data,data,sizeof(IpcData));
+	printf("[%s]%d\n",__func__,ipc_data.cmd);
 	switch(ipc_data.cmd)
 	{
 		case IPC_VIDEO_ENCODE_ON:
@@ -259,8 +260,13 @@ static void callbackIpc(char *data,int size )
 		case IPC_VIDEO_ENCODE_OFF:
 			rkH264EncOff();
 			break;
-		case IPC_VIDEO_CAPTURE:
-			rkVideoCapture(ipc_data.data.cap_path);
+		case IPC_UART_CAPTURE:
+			for (int i = 0; i < ipc_data.count; ++i) {
+				char path[128];
+				sprintf(path,"%s%s_%d.jpg",FAST_PIC_PATH,ipc_data.data.file.path,i);
+				rkVideoCapture(path);
+				usleep(500000);
+			}
 			break;
 		case IPC_VIDEO_RECORD_START:
 			break;

@@ -262,7 +262,6 @@ static void uartDeal(void)
 						sprintf(ipc_data.data.file.path,"%s_%s",getCapImei(),ipc_data.data.file.name);
 						ipc_data.cmd = IPC_UART_CAPTURE;
 						video_queue->post(video_queue,&ipc_data);
-						ipc_data.cmd = IPC_UART_CAPTURE;
 						main_queue->post(main_queue,&ipc_data);
 					}
 
