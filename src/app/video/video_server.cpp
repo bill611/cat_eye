@@ -221,20 +221,10 @@ void RKVideo::recordStop(void)
 	// h264EncOnOff(false,0,0,NULL);
 }
 
-static void* threadVideoInit(void *arg)
+static void* threadVideoMonitor(void *arg)
 {
-	RKVideo* p_video = NULL;
 	while (1) {
-		p_video = new RKVideo();
-		if (init_ok == 0) {
-			printf("[%s,%d]\n", __func__,__LINE__);
-			delete p_video;
-		} else {
-			printf("[%s,%d]\n", __func__,__LINE__);
-			rkvideo = p_video;
-			break;
-		}
-		sleep(1);
+		sleep(5);
 	}
 	return NULL;
 }
@@ -242,8 +232,8 @@ static void* threadVideoInit(void *arg)
 extern "C" 
 int rkVideoInit(void)
 {
-	// createThread(threadVideoInit,NULL);
 	rkvideo = new RKVideo();
+	createThread(threadVideoMonitor,NULL);
 }
 
 static void *threadDisplayLocal(void *arg)

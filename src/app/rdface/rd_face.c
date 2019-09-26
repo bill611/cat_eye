@@ -207,6 +207,7 @@ void rdfaceUninit(void)
 {
 	thread_start = 0;
 	while(thread_end == 0) {
+		thread_start = 0;
 		usleep(10000);
 	}
 	close(dsp_fd);

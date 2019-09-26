@@ -17,10 +17,9 @@ elif [ $1 == "debug" ]; then
 	cd $cmake_dir
 	cmake \
 		-DCMAKE_BUILD_TYPE=Debug \
-		-DMODE_UCPAAS=OFF \
+		-DMODE_UDPTALK=OFF \
 		-DMODE_UART=OFF \
 		-DAUTO_SLEEP=OFF \
-		-DMODE_FACE=OFF \
 		..
 elif [ $1 == "x86" ]; then
 	cmake_dir=x86

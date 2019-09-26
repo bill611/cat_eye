@@ -926,9 +926,11 @@ static void* threadUpload(void *arg)
 			}
 			char buf[64];
 			sprintf(buf,"%s%s",up_data.file_path,dirp->d_name);
-			printf("%s\n",buf);
-			if (GetFileSize(buf) == 0)
+			printf("[%s]%s\n",__func__,buf);
+			if (GetFileSize(buf) == 0) {
+				printf("[%s]file size == 0\n",__func__);
 				continue;
+			}
 			http->qiniuUpload("http://upload-z2.qiniup.com",
 					NULL,qiniu_server_token,
 					buf,
@@ -951,6 +953,7 @@ static void* threadUpload(void *arg)
 }
 static void uploadPic(char *path,uint64_t pic_id)
 {
+	printf("[%s]pic_id:%lld\n", __func__,pic_id);
 	if (pic_id == 0)
 		return;
 	UpLoadData up_data;

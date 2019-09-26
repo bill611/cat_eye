@@ -86,6 +86,7 @@ enum {
 enum {
 	ST_IDLE,		// 空闲状态
 	ST_FACE,		// 人脸识别开启状态
+	ST_FACEOFF_RECORD,		// 人脸识别关闭过程，之后开始录像
 	ST_TALK_CALLOUT,// 对讲呼出状态
 	ST_TALK_CALLOUTALL,// 遍历对讲呼出状态
 	ST_TALK_CALLIN,	// 对讲呼入状态
@@ -191,6 +192,7 @@ static char *st_debug_ev[] = {
 static char *st_debug_st[] = {
 	"ST_IDLE",
 	"ST_FACE",
+	"ST_FACEOFF_RECORD",		// 人脸识别关闭过程，之后开始录像
 	"ST_TALK_CALLOUT",
 	"ST_TALK_CALLOUTALL",
 	"ST_TALK_CALLIN",
@@ -249,7 +251,7 @@ static StateTable state_table[] =
 	{EV_FACE_OFF_FINISH,ST_TALK_CALLOUT,	ST_TALK_CALLOUT,	DO_TALK_CALLOUT},
 	{EV_FACE_OFF_FINISH,ST_TALK_CALLOUTALL,	ST_TALK_CALLOUTALL,	DO_TALK_CALLOUTALL},
 	{EV_FACE_OFF_FINISH,ST_TALK_CALLIN,		ST_TALK_CALLIN,		DO_TALK_CALLIN},
-	{EV_FACE_OFF_FINISH,ST_RECORDING,		ST_RECORDING,		DO_RECORD_START},
+	{EV_FACE_OFF_FINISH,ST_FACEOFF_RECORD,	ST_RECORDING,		DO_RECORD_START},
 	{EV_FACE_OFF_FINISH,ST_UPDATE,			ST_UPDATE,			DO_UPDATE},
 
 	{EV_TALK_CALLOUT,	ST_IDLE,			ST_TALK_CALLOUT,	DO_TALK_CALLOUT},
@@ -276,7 +278,7 @@ static StateTable state_table[] =
 	{EV_TALK_HANGUPALL,	ST_TALK_CALLOUTALL,	ST_IDLE,			DO_TALK_HANGUP},
 
 	{EV_RECORD_START,	ST_IDLE,			ST_RECORDING,		DO_RECORD_START},
-	{EV_RECORD_START,	ST_FACE,			ST_RECORDING,		DO_FACE_OFF},
+	{EV_RECORD_START,	ST_FACE,			ST_FACEOFF_RECORD,	DO_FACE_OFF},
 	{EV_RECORD_START,	ST_TALK_CALLIN,		ST_TALK_CALLIN,		DO_RECORD_START},
 	{EV_RECORD_START,	ST_TALK_CALLOUT,	ST_TALK_CALLOUT,	DO_RECORD_START},
 	{EV_RECORD_START,	ST_TALK_TALKING,	ST_TALK_TALKING,	DO_RECORD_START},
@@ -331,7 +333,10 @@ static int stmDoFaceOn(void *data,MyVideo *arg)
 static int stmDoFaceOff(void *data,MyVideo *arg)
 {
 #ifdef USE_VIDEO
+	printf("face off\n");
     rkVideoFaceOnOff(0);
+	printf("face off end\n");
+
 #endif
 	st_data = (StmData *)stm->initPara(stm,
 			        sizeof(StmData));
@@ -797,8 +802,10 @@ static void* threadAviReadAudio(void *arg)
 	if (my_mixer)
 		my_mixer->InitPlayAndRec(my_mixer,&audio_fp,8000,2);
     while (avi) {
+		int real_size = 0;
         char audio_buff[1024] = {0};
-		int real_size = my_mixer->Read(my_mixer,audio_buff,sizeof(audio_buff));
+		if (my_mixer)
+			real_size = my_mixer->Read(my_mixer,audio_buff,sizeof(audio_buff));
         pthread_mutex_lock(&mutex);
         if (avi)
             avi->WriteAudio(avi,audio_buff,real_size);
@@ -879,6 +886,7 @@ static int stmDoRecordStop(void *data,MyVideo *arg)
 			protocol_talk->uiHangup();
 	}
 #endif
+	record_time = 0;
 	stm->msgPost(stm,EV_RECORD_STOP_FINISHED,NULL);
 }
 

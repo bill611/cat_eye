@@ -387,7 +387,6 @@ static int mpiH264EncEncode(H264Encode *This,
 	MpiEncTestData *p = This->priv->p;
     *frame_type = 0;
 	if (NULL == p) {
-		printf("%s()%d\n", __func__,__LINE__);
         return 0;
 	}
 
@@ -504,11 +503,11 @@ static void mpiH264EncUnInit(H264Encode *This)
         p->frm_buf = NULL;
     }
 
-    if (MPP_OK == ret)
-        mpp_log("%s()success total frame %d bps %lld\n",__func__,
-                p->frame_count, (RK_U64)((p->stream_size * 8 * p->fps) / p->frame_count));
-    else
-        mpp_err("%s() failed ret %d\n",__func__, ret);
+    // if (MPP_OK == ret)
+        // mpp_log("%s()success total frame %d bps %lld\n",__func__,
+                // p->frame_count, (RK_U64)((p->stream_size * 8 * p->fps) / p->frame_count));
+    // else
+        // mpp_err("%s() failed ret %d\n",__func__, ret);
 
     test_ctx_deinit(&This->priv->p);
 }

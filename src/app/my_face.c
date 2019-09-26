@@ -77,7 +77,18 @@ static void* threadInit(void *arg)
 }
 static int init(void)
 {
-    createThread(threadInit,NULL);
+    // createThread(threadInit,NULL);
+	pthread_mutex_lock(&mutex);
+	face_init_finished = 0;
+	if(rdfaceInit() < 0) {
+		rdfaceUninit();
+		DPRINT("rdfaceInit error!");
+		pthread_mutex_unlock(&mutex);
+		return 0;
+		// return NULL;
+	}
+	face_init_finished = 1;
+	pthread_mutex_unlock(&mutex);
 	return 0;
 }
 
