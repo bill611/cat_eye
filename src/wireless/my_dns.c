@@ -74,10 +74,17 @@ int dnsGetIp(char *domain_name,char *ip)
 	const char *addr;
 	char abuf[INET_ADDRSTRLEN];
 	int succ=0,i=0;
+	if (strncmp("http://",domain_name,strlen("http://")) == 0) {
+		domain_name += strlen("http://");
+	} else if (strncmp("https://",domain_name,strlen("https://")) == 0) {
+		domain_name += strlen("https://");
+	}
 	if (inet_pton(AF_INET, ip, &addr1) <= 0) {
 		succ = getaddrinfo(domain_name, NULL, NULL, &res);
-		if(succ != 0)
+		if(succ != 0) {
+			printf("dns fail,%s\n",domain_name );
 			return -1;
+		}
 	
 
 		for(pt=res, i=0; pt != NULL; pt=pt->ai_next, i++){
