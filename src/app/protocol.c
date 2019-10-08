@@ -192,6 +192,20 @@ static Timer *timer_getimei_5s = NULL; // 获取机身码5s定时器
 static void (*getImeiCallback)(int result); // 机身码获取回调函数
 IpcServer* ipc_main = NULL;
 
+static unsigned long long htonll(unsigned long long val)
+{
+#if 1
+    if (__BYTE_ORDER == __LITTLE_ENDIAN)
+    {
+           return (((unsigned long long)htonl((int)((val << 32) >> 32))) << 32) | (unsigned int)htonl((int)(val >> 32));
+    }
+    else if (__BYTE_ORDER == __BIG_ENDIAN)
+    {
+           return val;
+    }
+#endif
+
+}
 static void udpLocalGetIMEI(SocketHandle *ABinding,SocketPacket *AData)
 {
 	if(AData->Size != sizeof(TResDeviceInf)) {
@@ -200,8 +214,8 @@ static void udpLocalGetIMEI(SocketHandle *ABinding,SocketPacket *AData)
 	TResDeviceInf *GetPacket = (TResDeviceInf*)AData->Data;
 	if(GetPacket->Cmd == RESPONSESERVERINF && GetPacket->ReqType==TYPE_DEVID_SRV) {
 		get_imie_end = 1;
-		printf("[%s]imei:%llx\n",__func__,GetPacket->DevID);
-		sprintf(g_config.imei,"%llx",GetPacket->DevID);
+		printf("[%s]imei:%llX\n",__func__,htonll(GetPacket->DevID));
+		sprintf(g_config.imei,"%llX",htonll(GetPacket->DevID));
 
 	}
 }
@@ -288,20 +302,6 @@ static void udpUpdateProc(SocketHandle *ABinding,SocketPacket *AData)
 
 	if (cBuf)
 		free(cBuf);
-}
-static unsigned long long htonll(unsigned long long val)
-{
-#if 1
-    if (__BYTE_ORDER == __LITTLE_ENDIAN)
-    {
-           return (((unsigned long long)htonl((int)((val << 32) >> 32))) << 32) | (unsigned int)htonl((int)(val >> 32));
-    }
-    else if (__BYTE_ORDER == __BIG_ENDIAN)
-    {
-           return val;
-    }
-#endif
-
 }
 static void getIMEI(void)
 {

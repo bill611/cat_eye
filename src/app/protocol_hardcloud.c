@@ -54,8 +54,9 @@
  *----------------------------------------------------------------------------*/
 #define TOPIC_NUM 6
 // 正式地址
-// #define HARD_COULD_API "http://iot.taichuan.net/v1/Mqtt"
-#define HARD_COULD_API "http://84.internal.taichuan.net:8080/v1"
+#define HARD_COULD_API "https://iot.taichuan.net/v1"
+// 测试地址
+// #define HARD_COULD_API "http://84.internal.taichuan.net:8080/v1"
 enum {
 	MODE_SEND_NEED_REPLY = 1,
 	MODE_SEND_NONEED_REPLY = 2,
