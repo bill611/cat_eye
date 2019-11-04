@@ -66,7 +66,7 @@ int MiniGUIMain(int argc, const char* argv[])
 {
 	printf("stat--->%s,%s\n",DEVICE_SVERSION,DEVICE_KVERSION);
 	configLoad();
-    sqlInit();
+	sqlInit();
 	gpioInit();
 	myMixerInit();
 	myVideoInit();
@@ -74,5 +74,5 @@ int MiniGUIMain(int argc, const char* argv[])
 	protocolInit();
 	sensorDetectorInit();
 	formVideoLayerCreate();
-    return 0;
+	return 0;
 }

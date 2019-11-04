@@ -2971,10 +2971,10 @@ void rvMixerCaptureInit(void)
 {
 }
 
-int rvMixerCaptureOpen(void)
+int rvMixerCaptureOpen(int channel)
 {
-	printf("[%s],%d\n", __func__,__LINE__);
-	if (record(8000,2,16) > 0) {
+	printf("[%s]channel:%d\n", __func__,channel);
+	if (record(8000,channel,16) > 0) {
 		set_params();
 		init_raw_data();
 		pbrec_count = calc_count();
@@ -2995,10 +2995,10 @@ void rvMixerCaptureClose(void)
 	handle = NULL;
 	// free(audiobuf);
 }
-int rvMixerCaptureRead(void *data,int size)
+int rvMixerCaptureRead(void *data,int size,int channel)
 {
 	if (!handle) {
-		rvMixerCaptureOpen();
+		rvMixerCaptureOpen(channel);
 		return 0;
 	}
 	int l = size * 8 / bits_per_frame;

@@ -52,6 +52,7 @@ typedef struct _TRTPObject
 	void (* Destroy)(struct _TRTPObject *This);
 	int (* RecvBuffer)(struct _TRTPObject *This,void *buf,int count,int TimeOut);
 	int (* SendBuffer)(struct _TRTPObject *This,void *buf,int count);
+	int (* test)(struct _TRTPObject *This,void *buf,int count);
 	void (*SetPeerPort)(struct _TRTPObject *This,int PeerPort);
 	int (*SendPortNumber)(struct _TRTPObject *This,const char *IP,int Port,
 		const char *SrvIP,unsigned int UserID);

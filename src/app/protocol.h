@@ -52,8 +52,8 @@ extern "C" {
 		IPC_UART_CAPTURE,			// 开机前抓拍图片
 	};
 	enum {
-		PROTOCOL_TALK_3000,
-		PROTOCOL_TALK_OTHER,
+		PROTOCOL_TALK_LAN,  // 局域网对讲
+		PROTOCOL_TALK_CLOUD, // 云对讲
 	};
 
 	enum {

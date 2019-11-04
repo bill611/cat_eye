@@ -159,13 +159,13 @@ static int mixerClose(TMixer *This,int *Handle)
  * @returns 实际读取字节数据
  */
 /* ----------------------------------------------------------------*/
-static int mixerRead(TMixer *This,void *pBuffer,int Size)
+static int mixerRead(TMixer *This,void *pBuffer,int Size,int channel)
 {
     int ret = 0;
 	if (This->Priv->audiofp1 == -1)
-		This->Priv->audiofp1 = rvMixerCaptureOpen();
+		This->Priv->audiofp1 = rvMixerCaptureOpen(channel);
 	if (This->Priv->audiofp1 != -1) {
-		ret = rvMixerCaptureRead(pBuffer,Size);
+		ret = rvMixerCaptureRead(pBuffer,Size,channel);
 	}
 
 	return ret;
@@ -182,9 +182,9 @@ static int mixerRead(TMixer *This,void *pBuffer,int Size)
  * @returns 实际读取字节数据
  */
 /* ----------------------------------------------------------------*/
-static int mixerReadBuffer(TMixer *This, void *AudioBuf, int NeedSize)
+static int mixerReadBuffer(TMixer *This, void *AudioBuf, int NeedSize,int channel)
 {
-	int RealSize = This->Read(This,AudioBuf,NeedSize);
+	int RealSize = This->Read(This,AudioBuf,NeedSize,channel);
 
 	return RealSize;
 }
@@ -406,7 +406,7 @@ static void mixerClearRecBuffer(TMixer *This)
 	if(pBuf && buffersize > 0) {
 		for(i=0; i<8; i++) {
 			memset(pBuf,0,buffersize);
-			ret = This->Read(This,pBuf,buffersize);
+			ret = This->Read(This,pBuf,buffersize,1);
 			printf("ClearRecBuffer[%d]Rec buffersize :%d,real:%d\n", i,buffersize,ret);
 		}
 	}

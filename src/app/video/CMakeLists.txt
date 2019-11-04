@@ -4,6 +4,7 @@ STRING( REGEX REPLACE ".*/(.*)" "\\1" CURRENT_FOLDER_APP_VIDEO ${CMAKE_CURRENT_S
 set(SRC_APP_VIDEO
     video_server.cpp
 	h264_enc_dec/mpi_dec_api.c
+	h264_enc_dec/mpp_dec_test.cpp
 	h264_enc_dec/mpi_enc_api.c
 	h264_enc_dec/h264_split.c
 	camera/camerahal.cpp
@@ -18,6 +19,7 @@ add_definitions(
 	-DLINUX -DSUPPORT_ION -DENABLE_ASSERT -DDEBUG
 )
 
+add_definitions(-DLIBION)
 add_library (${CURRENT_FOLDER_APP_VIDEO} ${SRC_APP_VIDEO}) 
 
 target_link_libraries(${CURRENT_FOLDER_APP_VIDEO}

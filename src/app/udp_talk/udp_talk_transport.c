@@ -42,8 +42,9 @@
 #include <sys/time.h>
 #include <dirent.h>
 #include <pthread.h>
-#include <linux/prctl.h>
+#include <sys/prctl.h>
 
+#include "udp_server.h"
 #include "udp_talk_protocol.h"
 #include "udp_talk_transport.h"
 #include "udp_talk_parse.h"
@@ -182,7 +183,6 @@ static int rtpGetVideo(Rtp* This,void *data)
 
 	}
 	memcpy(data,pbody->sdata,pbody->slen);
-	printf("[%s,%d]%d\n", __func__,pbody->seq,pbody->slen);
 	RtpDcMem->GetEnd(RtpDcMem);
 	return pbody->slen;
 }
@@ -221,7 +221,8 @@ static void * rtpThreadExecute(void *ThreadData)
 			if(RtpDcMem) {
 				RtpDcMem->SaveEnd(RtpDcMem,0);
 			}
-			This->interface->abortCallBack(This);
+			if (This->interface->abortCallBack)
+				This->interface->abortCallBack(This);
 			break;
 		} else if(Size > 0) {
 			rec_body *pbody = (rec_body*)pData;
@@ -304,6 +305,13 @@ static int spiAudio(Rtp* This,
 	pAudioPack->alen = packsize;
 	pAudioPack->tlen = RECHEADSIZE+pAudioPack->alen;
 	if(RTPObject) {
+		// if (   (short)(pAudioPack->sdata[1] * 256 + pAudioPack->sdata[0]) > 6024        
+				// || (short)(pAudioPack->sdata[1] * 256 + pAudioPack->sdata[0]) < -1024 ) {
+			// printf("--------------------------------------->get voice!!!\n");  
+			// udp_server->SendBuffer(udp_server,"172.16.100.102",1221, 		//返回信息
+					// (char *)&pAudioPack,pAudioPack->tlen);
+
+		// }                                                                     
 		RTPObject->SendBuffer(RTPObject,pAudioPack,pAudioPack->tlen);
 	}
 	return 1;
@@ -446,7 +454,6 @@ static void rtpBuildConnect(Rtp *This)
 /* ---------------------------------------------------------------------------*/
 static void rtpStartAudio(Rtp *This)
 {
-	return;
 	This->bTransAudio = TRUE;
 }
 

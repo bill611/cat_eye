@@ -440,11 +440,12 @@ static int mpiH264DecUnInit(H264Decode *This)
 	memset(h264_sps_pps,0,sizeof(h264_sps_pps));
 	return 0;
 }
+#if 0
 void myH264DecInit(void)
 {
 	my_h264dec = (H264Decode *)calloc(1,sizeof(H264Decode));
-	// my_h264dec->priv = (H264DecodePriv *)calloc(1,sizeof(H264DecodePriv));
 	my_h264dec->init = mpiH264DecInit;
 	my_h264dec->unInit = mpiH264DecUnInit;
 	my_h264dec->decode = mpiH264Decode;
 }
+#endif

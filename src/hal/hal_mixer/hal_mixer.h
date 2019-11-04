@@ -26,9 +26,9 @@ extern "C" {
 	int rvMixerPlayWrite(void *data,int size);
 	void rvMixerPlayInit(void);
 
-	int rvMixerCaptureOpen(void);
+	int rvMixerCaptureOpen(int channel);
 	void rvMixerCaptureClose(void);
-	int rvMixerCaptureRead(void *data,int size);
+	int rvMixerCaptureRead(void *data,int size,int channel);
 	void rvMixerCaptureInit(void);
 
 	int rvMixerSetPlayVolume(int value);

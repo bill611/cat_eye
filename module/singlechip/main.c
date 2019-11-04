@@ -355,7 +355,7 @@ int main(int argc, char *argv[])
 	cmdCheckStatus();
 
 	screensaverSet(1);
-	screensaverSet(0);
+	// screensaverSet(0);
 	mkdir(FAST_PIC_PATH, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
 	video_queue = queueCreate("video_queue",QUEUE_BLOCK,sizeof(IpcData));

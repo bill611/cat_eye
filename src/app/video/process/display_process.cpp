@@ -6,13 +6,13 @@
 
 static FILE *fp = NULL;
 int NV12Scale(unsigned char *psrc_buf, int psrc_w, int psrc_h, unsigned char **pdst_buf, int pdst_w, int pdst_h);
-static void writePicture(unsigned char *data)
+static void writePicture(unsigned char *data,int w,int h)
 {
 	if (fp == NULL)
 		return;
 	unsigned char *jpeg_buf = NULL;
 	int size = 0;
-	yuv420spToJpeg(data,1280,720,&jpeg_buf,&size);
+	yuv420spToJpeg(data,w,h,&jpeg_buf,&size);
 	if (jpeg_buf) {
 		fwrite(jpeg_buf,1,size,fp);
 		fflush(fp);
@@ -46,16 +46,16 @@ bool DisplayProcess::processFrame(std::shared_ptr<BufferBase> inBuf,
     int vir_h = src_h;
     int src_fmt = RGA_FORMAT_YCBCR_420_SP;
 
-    int disp_width = 0, disp_height = 0;
+    int screen_width = 0, screen_height = 0;
     struct win* video_win = rk_fb_getvideowin();
 
-    int out_device = rk_fb_get_out_device(&disp_width, &disp_height);
+    int out_device = rk_fb_get_out_device(&screen_width, &screen_height);
 
     int dst_fd = video_win->video_ion.fd;
     int dst_fmt = RGA_FORMAT_YCBCR_420_SP;
 
-    int dst_w = disp_width;
-    int dst_h = disp_height;
+    int dst_w = screen_width;
+    int dst_h = screen_height;
 	int rotate_angle = (out_device == OUT_DEVICE_HDMI ? 0 : 0);
 
     int ret = rk_rga_ionfd_to_ionfd_rotate(rga_fd,
@@ -66,7 +66,7 @@ bool DisplayProcess::processFrame(std::shared_ptr<BufferBase> inBuf,
         printf("rk_rga_ionfd_to_ionfd_rotate failed\n");
         return false;
     }
-	writePicture((unsigned char *)inBuf->getVirtAddr());
+	writePicture((unsigned char *)inBuf->getVirtAddr(),1280,720);
 
     if (rk_fb_video_disp(video_win) < -1){
 		printf("rk_fb_video_disp failed\n");
@@ -77,12 +77,12 @@ bool DisplayProcess::processFrame(std::shared_ptr<BufferBase> inBuf,
 
 void DisplayProcess::setVideoBlack()
 {
-    int disp_width = 0, disp_height = 0;
+    int screen_width = 0, screen_height = 0;
     struct win* video_win = rk_fb_getvideowin();
 
-    int out_device = rk_fb_get_out_device(&disp_width, &disp_height);
+    int out_device = rk_fb_get_out_device(&screen_width, &screen_height);
 
-	int screen_size = disp_width*disp_height;
+	int screen_size = screen_width*screen_height;
 	memset(video_win->buffer,0,screen_size);
 	memset(video_win->buffer + screen_size,0x80,screen_size/2);
 
@@ -100,12 +100,16 @@ static void* threadH264Dec(void *arg)
 	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	DisplayProcess *process = (DisplayProcess *)arg;
 	struct win* video_win = rk_fb_getvideowin();
-	unsigned char data_in[1024*50];
-	unsigned char data_out[640*480*3/2];
+	unsigned char data_in[1024*200];
+	unsigned char data_out[1280*720*3/2];
 	int out_w = 0,out_h = 0;
-    int disp_width = 0, disp_height = 0;
-    int out_device = rk_fb_get_out_device(&disp_width, &disp_height);
+    int screen_width = 0, screen_height = 0;
+    int out_device = rk_fb_get_out_device(&screen_width, &screen_height);
 
+#ifdef USE_UDPTALK
+	if (my_h264dec)
+		my_h264dec->init(my_h264dec,process->getWidth(),process->getHeight());
+#endif
     while (process->start_dec() == true) {
         int size_in = 0;
         int size_out = 0;
@@ -118,9 +122,33 @@ static void* threadH264Dec(void *arg)
 			if (my_h264dec)
 				size_out = my_h264dec->decode(my_h264dec,data_in,size_in,data_out,&out_w,&out_h);
 			if (out_w != 0 && out_h != 0 && size_out > 0) {
-				NV12Scale(data_out, out_w, out_h, &nv12_scale_data, disp_width, disp_height);
-				memcpy(video_win->buffer,nv12_scale_data,disp_width*disp_height*3/2);
-				writePicture(nv12_scale_data);
+
+				int disp_width = out_w * screen_height / out_h;
+				if (disp_width < 600)
+					disp_width = 600;
+				else if (disp_width > 1024)
+					disp_width = 1024;
+				NV12Scale(data_out, out_w, out_h, &nv12_scale_data, disp_width, screen_height);
+				int y_size = disp_width*screen_height;
+				int i;
+				// Y 
+				// 居中显示，图像起点
+				int disp_start_x = (screen_width - disp_width) / 2;
+				int data_index = 0;
+				for (i = 0; i < screen_height; ++i) {
+					memset(video_win->buffer + i*screen_width,0,disp_start_x);
+					memcpy(video_win->buffer + i*screen_width + disp_start_x,&nv12_scale_data[disp_width * data_index++],disp_width);
+					memset(video_win->buffer + i*screen_width + disp_start_x + disp_width,0,disp_start_x);
+				}
+				// uv
+				int k ;
+				for (k = 0; k < screen_height / 2; ++k,++i) {
+					memset(video_win->buffer + i*screen_width,0x80,disp_start_x);
+					memcpy(video_win->buffer + i*screen_width + disp_start_x,&nv12_scale_data[disp_width * data_index++],disp_width);
+					memset(video_win->buffer + i*screen_width + disp_start_x + disp_width,0x80,disp_start_x);
+				}
+
+				writePicture(nv12_scale_data,disp_width,screen_height);
 				if (rk_fb_video_disp(video_win) < -1){
 					printf("rk_fb_video_disp failed\n");
 				}
@@ -143,8 +171,6 @@ void DisplayProcess::showPeerVideo(int w,int h,DecCallbackFunc decCallback)
 	decCallback_ = decCallback;
 	start_dec_ = true;
 	setVideoBlack();
-	// if (my_h264dec)
-		// my_h264dec->init(my_h264dec,w,h);
 	createThread(threadH264Dec,this);
 }
 

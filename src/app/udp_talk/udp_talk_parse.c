@@ -39,7 +39,7 @@ static void TRTPObject_Destroy(TRTPObject *This)
 void DelayMs(int ms);
 #define PACKETHEAD ((int)(sizeof(rec_body)-MAXENCODEPACKET))
 
-//·Ö°ü·¢ËÍ·½Ê½£¬½«Êı¾İ·ÖÎªMAXMTU+PACKETHEAD³¤¶ÈµÄ°ü½øĞĞ·¢ËÍ
+//åˆ†åŒ…å‘é€æ–¹å¼ï¼Œå°†æ•°æ®åˆ†ä¸ºMAXMTU+PACKETHEADé•¿åº¦çš„åŒ…è¿›è¡Œå‘é€
 static int TRTPObject_SendBuffer(TRTPObject *This,void *pBuf,int size)
 {
 	int i,Cnt,Pos,Len;
@@ -54,14 +54,14 @@ static int TRTPObject_SendBuffer(TRTPObject *This,void *pBuf,int size)
 	rec_body *pbody = (rec_body*)pBuf;
 	pbody->packet_cnt = Cnt;
 	pbody->packet_size = MAXMTU;
-	pbody->dead = 0;			//²»Í¨¹ı·şÎñÆ÷×ª·¢
+	pbody->dead = 0;			//ä¸é€šè¿‡æœåŠ¡å™¨è½¬å‘
 	Pos = PACKETHEAD;
 	for(i=0;i<Cnt;i++) {
 		pbody->packet_idx = i;
 		if(i) {
 			memcpy(&pData[Pos-PACKETHEAD],pData,PACKETHEAD);
 		}
-		//·¢ËÍÊı¾İ³¤¶È
+		//å‘é€æ•°æ®é•¿åº¦
 		Len = ((size-Pos)>MAXMTU?MAXMTU:(size-Pos))+PACKETHEAD;
 		This->udp->SendBuffer(This->udp,This->cPeerIP,PeerPort,
 				&pData[Pos-PACKETHEAD],Len);
@@ -70,11 +70,12 @@ static int TRTPObject_SendBuffer(TRTPObject *This,void *pBuf,int size)
 	return size;
 }
 //---------------------------------------------------------------------------
-//·Ö°ü½ÓÊÕ·½Ê½,ÔÚ±¾º¯ÊıÖĞ´¦Àí½ÓÊÕËùÓĞ·Ö°ü¼°Æ´°üµÄ¹ı³Ì
+//åˆ†åŒ…æ¥æ”¶æ–¹å¼,åœ¨æœ¬å‡½æ•°ä¸­å¤„ç†æ¥æ”¶æ‰€æœ‰åˆ†åŒ…åŠæ‹¼åŒ…çš„è¿‡ç¨‹
 //---------------------------------------------------------------------------
 static int TRTPObject_RecvBuffer(TRTPObject *This,void *pBuf,int size,int TimeOut)
 {
-	int i,j,Cnt,Pos,Len;
+	unsigned int i,j,Cnt,Len;
+	int Pos;
     unsigned int PackID;
 	char cTmpBuf[MAXMTU+PACKETHEAD],*pData;
 	rec_body *pbody = (rec_body*)pBuf;
@@ -85,7 +86,7 @@ static int TRTPObject_RecvBuffer(TRTPObject *This,void *pBuf,int size,int TimeOu
 	int PackSize = 0;
 
 #if 0
-	int count = 0;
+	unsigned int count = 0;
 	Pos = This->udp->RecvBuffer(This->udp,pBuf,size,TimeOut,sockaddr,&Size);
 	if (pbody->slen)
 		printf("[00]p_cnt:%02d,p_size:%d,p_idx:%02d,alen:%04d,atype:%d,tlen:%06d,dead:%d,seq:%04d,slen:%06d,vtype:%d,start\n",
@@ -120,14 +121,14 @@ static int TRTPObject_RecvBuffer(TRTPObject *This,void *pBuf,int size,int TimeOu
 	}
 	return 0;
 #endif
-	//Èç¹ûIP²»¶Ô£¬¶ªÆú¸Ã°ü
+	//å¦‚æœIPä¸å¯¹ï¼Œä¸¢å¼ƒè¯¥åŒ…
 	for(i=0; i<10; i++) {
 		Pos = This->udp->RecvBuffer(This->udp,pBuf,size,TimeOut,sockaddr,&Size);
 		// printf("[start %d]p_cnt:%02d,p_size:%d,p_idx:%02d,alen:%04d,atype:%d,tlen:%06d,dead:%d,seq:%04d,slen:%06d,vtype:%d\n",
 				// i,pbody->packet_cnt,pbody->packet_size,pbody->packet_idx,
 				// pbody->alen,pbody->atype,pbody->tlen,pbody->dead,pbody->seq,pbody->slen,pbody->vtype );
 		if(Pos <= 0) {
-			//½ÓÊÕ´íÎó£¬ÓÉÏÂÃæ¹ı³Ì´¦Àí
+			//æ¥æ”¶é”™è¯¯ï¼Œç”±ä¸‹é¢è¿‡ç¨‹å¤„ç†
 			break;
 		}
 		RecvIP = GetIPBySockAddr(sockaddr);
@@ -139,7 +140,7 @@ static int TRTPObject_RecvBuffer(TRTPObject *This,void *pBuf,int size,int TimeOu
 		return 0;
 	}
 
-	//½ÓÊÕ´íÎó´¦Àí
+	//æ¥æ”¶é”™è¯¯å¤„ç†
 	if(Pos<PACKETHEAD) {
 		if(Pos<=0) {
 			This->RecvTimeOut++;
@@ -152,23 +153,23 @@ static int TRTPObject_RecvBuffer(TRTPObject *This,void *pBuf,int size,int TimeOu
 		}
 	}
 	This->RecvTimeOut=0;
-	//Ê×°üË÷Òı±ØĞëÎª0
+	//é¦–åŒ…ç´¢å¼•å¿…é¡»ä¸º0
 	if(pbody->packet_idx!=0) {
 		return 0;
 	}
 
 
-	//±£´æÓĞ¶àÉÙ¸öÊı¾İ°ü
+	//ä¿å­˜æœ‰å¤šå°‘ä¸ªæ•°æ®åŒ…
 	Cnt = pbody->packet_cnt;
 	PackID = pbody->seq;
 	PackSize = pbody->packet_size;
 	if(Cnt==1) {
 		return Pos;
 	}
-	//½ÓÊÕÊ£ÓàµÄ·Ö°ü
+	//æ¥æ”¶å‰©ä½™çš„åˆ†åŒ…
 	pbody = (rec_body*)cTmpBuf;
 	for(i=1;i<Cnt;i++) {
-		//Èç¹ûIP²»¶Ô£¬¶ªÆú¸Ã°ü
+		//å¦‚æœIPä¸å¯¹ï¼Œä¸¢å¼ƒè¯¥åŒ…
 		for(j=0;j<10;j++) {
 			Len = This->udp->RecvBuffer(This->udp,cTmpBuf,MAXMTU+PACKETHEAD,TimeOut,sockaddr,&Size);
 			// printf("[continue %02d]p_cnt:%02d,p_size:%d,p_idx:%02d,alen:%04d,atype:%d,tlen:%06d,dead:%d,seq:%04d,slen:%06d,vtype:%d\n",
@@ -194,17 +195,17 @@ static int TRTPObject_RecvBuffer(TRTPObject *This,void *pBuf,int size,int TimeOu
 			return -1;
 		}
 
-		if(pbody->seq!=PackID) {				//Ö¡ºÅ´íÎó
+		if(pbody->seq!=PackID) {				//å¸§å·é”™è¯¯
 			printf("[%s]%d,pbody->seq:%d,pckid:%d\n", 
 					__FUNCTION__,__LINE__,
 					pbody->seq,PackID );
 			return 0;
 		}
-		if(pbody->packet_idx>=Cnt) {			//·Ö°üË÷Òı´íÎó
+		if(pbody->packet_idx>=Cnt) {			//åˆ†åŒ…ç´¢å¼•é”™è¯¯
 			printf("[%s]%d\n", __FUNCTION__,__LINE__);
 			return 0;
 		}
-		// ÖĞÍ¾½ÓÊÕ·Ö°üÒÅÂ©£¬Ôò½ÓÊÕÍêÊ£Óà·Ö°üºóÍË³ö£¬¶ªÆú¸ÃÖ¡
+		// ä¸­é€”æ¥æ”¶åˆ†åŒ…é—æ¼ï¼Œåˆ™æ¥æ”¶å®Œå‰©ä½™åˆ†åŒ…åé€€å‡ºï¼Œä¸¢å¼ƒè¯¥å¸§
 		if ((pbody->packet_idx+1 == pbody->packet_cnt)
 				&& (i != pbody->packet_idx)) {
 			return 0;
@@ -218,7 +219,7 @@ static int TRTPObject_RecvBuffer(TRTPObject *This,void *pBuf,int size,int TimeOu
 	return Pos;
 }
 //---------------------------------------------------------------------------
-//  ´´½¨Ò»¸öUDP¿Í»§¶Ë£¬PortÎª0Ôò²»°ó¶¨¶Ë¿Ú
+//  åˆ›å»ºä¸€ä¸ªUDPå®¢æˆ·ç«¯ï¼ŒPortä¸º0åˆ™ä¸ç»‘å®šç«¯å£
 //---------------------------------------------------------------------------
 TRTPObject* TRTPObject_Create(
 	const char *PeerIP,

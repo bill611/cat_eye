@@ -414,35 +414,34 @@ static int stmDoTalkCallout(void *data,MyVideo *arg)
 {
 	StmData *data_temp = (StmData *)data;
 	char ui_title[128] = {0};
-#ifdef USE_UCPAAS
-	int ret = sqlGetUserInfoUseUserId(data_temp->usr_id,data_temp->nick_name,&data_temp->type);
-	if (ret == 0) {
-		printf("can't find usr_id:%s\n", data_temp->usr_id);
-		stm->msgPost(stm,EV_TALK_HANGUP,NULL);
-		return -1;
-	}
-	sprintf(ui_title,"正在呼叫 %s",data_temp->nick_name);
-	if (protocol_talk->uiShowFormVideo)
-		protocol_talk->uiShowFormVideo(data_temp->type,ui_title,CALL_DIR_OUT);
-	talk_peer_dev.type = data_temp->type;
-	talk_peer_dev.call_time = TIME_CALLING;
-	protocol_talk->dial(data_temp->usr_id,dialCallBack);
-	if (talk_peer_dev.type == DEV_TYPE_ENTRANCEMACHINE)
+	if (strcmp(data_temp->usr_id,"172.16.5.3")) {
+		int ret = sqlGetUserInfoUseUserId(data_temp->usr_id,data_temp->nick_name,&data_temp->type);
+		if (ret == 0) {
+			printf("can't find usr_id:%s\n", data_temp->usr_id);
+			stm->msgPost(stm,EV_TALK_HANGUP,NULL);
+			return -1;
+		}
+		sprintf(ui_title,"正在呼叫 %s",data_temp->nick_name);
+		talk_data.call_dir = CALL_DIR_OUT;
+		if (protocol_talk->uiShowFormVideo)
+			protocol_talk->uiShowFormVideo(data_temp->type,ui_title,talk_data.call_dir);
+		talk_peer_dev.type = data_temp->type;
+		talk_peer_dev.call_time = TIME_CALLING;
+		protocol_talk->dial(data_temp->usr_id,dialCallBack);
+		if (talk_peer_dev.type == DEV_TYPE_ENTRANCEMACHINE)
+			my_video->showPeerVideo();	
+	} else {
+		sprintf(ui_title,"正在呼叫 门口机");
+		talk_peer_dev.type = DEV_TYPE_ENTRANCEMACHINE;
+		talk_peer_dev.call_time = TIME_CALLING;
+		if (protocol_talk->uiShowFormVideo)
+			protocol_talk->uiShowFormVideo(DEV_TYPE_ENTRANCEMACHINE,ui_title,talk_data.call_dir);
+		protocol_talk->dial(data_temp->usr_id,dialCallBack);
 		my_video->showPeerVideo();	
+	}
 	// 保存通话记录到内存
 	strcpy(talk_data.nick_name,data_temp->nick_name);
-	talk_data.call_dir = CALL_DIR_OUT;
 	getDate(talk_data.date,sizeof(talk_data.date));
-#endif
-#ifdef USE_UDPTALK
-	sprintf(ui_title,"正在呼叫 门口机");
-	talk_peer_dev.type = DEV_TYPE_ENTRANCEMACHINE;
-	talk_peer_dev.call_time = TIME_CALLING;
-	if (protocol_talk->uiShowFormVideo)
-		protocol_talk->uiShowFormVideo(DEV_TYPE_ENTRANCEMACHINE,ui_title,CALL_DIR_OUT);
-	protocol_talk->dial(data_temp->usr_id,dialCallBack);
-	my_video->showPeerVideo();	
-#endif
 }
 
 static void *threadCallOutAll(void *arg)
@@ -453,6 +452,7 @@ static void *threadCallOutAll(void *arg)
 	int talk_online_times = 10 * 10; // 判断云对讲是否连上服务，超过10S未连上服务，则不呼叫
 	int user_num = sqlGetUserInfoUseScopeStart(DEV_TYPE_HOUSEHOLDAPP);
 	sqlGetUserInfoEnd();
+	protocol_talk->type = PROTOCOL_TALK_CLOUD;
 	while (user_num) {
 #ifdef USE_UCPAAS
 		if (ucsConnectState() == 0) {
@@ -511,16 +511,16 @@ static int stmDoTalkCallin(void *data,MyVideo *arg)
 
 	sprintf(ui_title,"%s 正在呼叫",talk_peer_dev.peer_nick_name);
 	// 3000局域网对讲默认为门口机
-	if (protocol_talk->type == PROTOCOL_TALK_3000) {
+	if (protocol_talk->type == PROTOCOL_TALK_LAN) {
 		data_temp->type = DEV_TYPE_ENTRANCEMACHINE;
 	}
 
+	talk_data.call_dir = CALL_DIR_IN;
 	if (protocol_talk->uiShowFormVideo)
-		protocol_talk->uiShowFormVideo(data_temp->type,ui_title,CALL_DIR_OUT);
+		protocol_talk->uiShowFormVideo(data_temp->type,ui_title,talk_data.call_dir);
 
 	// 保存通话记录到内存
 	strcpy(talk_data.nick_name,data_temp->nick_name);
-	talk_data.call_dir = CALL_DIR_IN;
 	getDate(talk_data.date,sizeof(talk_data.date));
 
 	talk_peer_dev.type = data_temp->type;
@@ -805,7 +805,7 @@ static void* threadAviReadAudio(void *arg)
 		int real_size = 0;
         char audio_buff[1024] = {0};
 		if (my_mixer)
-			real_size = my_mixer->Read(my_mixer,audio_buff,sizeof(audio_buff));
+			real_size = my_mixer->Read(my_mixer,audio_buff,sizeof(audio_buff),2);
         pthread_mutex_lock(&mutex);
         if (avi)
             avi->WriteAudio(avi,audio_buff,real_size);

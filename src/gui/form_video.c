@@ -256,11 +256,11 @@ static void updateDisplay(HWND hDlg)
 		case FORM_VIDEO_TYPE_TALK_OUT :
 			button_status[IDC_BUTTON_UNLOCK - button_num] = 1;
 			button_status[IDC_BUTTON_HANGUP - button_num] = 1;
-			myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_UNLOCK), 208,451);
-			myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_HANGUP), 726,451);
+			myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_UNLOCK), 258,451);
+			myMoveWindow(GetDlgItem(hDlg,IDC_BUTTON_HANGUP), 676,451);
 			break;
 		case FORM_VIDEO_TYPE_OUTDOOR:
-			if (protocol_talk->type == PROTOCOL_TALK_3000) {
+			if (protocol_talk->type == PROTOCOL_TALK_LAN) {
 				button_status[IDC_BUTTON_UNLOCK - button_num] = 1;
 				button_status[IDC_BUTTON_ANSWER - button_num] = 1;
 				button_status[IDC_BUTTON_HANGUP - button_num] = 1;
@@ -412,7 +412,7 @@ static void interfaceCreateFormVideoDirect(int type,char *name,int dir)
 		case DEV_TYPE_ENTRANCEMACHINE:
 		case DEV_TYPE_HOUSEENTRANCEMACHINE:
 			screensaverSet(1);
-			if (protocol_talk->type == PROTOCOL_TALK_3000)
+			if (protocol_talk->type == PROTOCOL_TALK_LAN)
 				createFormVideo(0,FORM_VIDEO_TYPE_OUTDOOR,NULL,0); 
 			else {
 				if (dir == CALL_DIR_OUT)	

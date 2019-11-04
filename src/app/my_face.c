@@ -77,6 +77,7 @@ static void* threadInit(void *arg)
 }
 static int init(void)
 {
+#ifdef USE_FACE
     // createThread(threadInit,NULL);
 	pthread_mutex_lock(&mutex);
 	face_init_finished = 0;
@@ -89,6 +90,7 @@ static int init(void)
 	}
 	face_init_finished = 1;
 	pthread_mutex_unlock(&mutex);
+#endif
 	return 0;
 }
 

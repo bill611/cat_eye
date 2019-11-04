@@ -7,7 +7,6 @@ if [ $# == 0 ]; then
 	cd $cmake_dir
 	cmake \
 		-DCMAKE_BUILD_TYPE=Release \
-		-DMODE_UDPTALK=OFF \
 		-DMODE_UART=OFF \
 		\
 		..
@@ -17,7 +16,6 @@ elif [ $1 == "debug" ]; then
 	cd $cmake_dir
 	cmake \
 		-DCMAKE_BUILD_TYPE=Debug \
-		-DMODE_UDPTALK=OFF \
 		-DMODE_UART=OFF \
 		-DAUTO_SLEEP=OFF \
 		..

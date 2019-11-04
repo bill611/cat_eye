@@ -48,8 +48,8 @@ extern "C" {
 		void (*Destroy)(struct _TMixer *);
 		int (*Open)(struct _TMixer *,int Sample,int CH);
 		int (*Close)(struct _TMixer *,int *Handle);
-		int (*Read)(struct _TMixer *,void *pBuffer,int Size);
-		int (*ReadBuf)(struct _TMixer *,void *AudioBuf,int NeedSize);
+		int (*Read)(struct _TMixer *,void *pBuffer,int Size,int channel);
+		int (*ReadBuf)(struct _TMixer *,void *AudioBuf,int NeedSize,int channel);
 		int (*WriteBuffer)(struct _TMixer *,int Handle,const void *pBuffer,int Size);
 		int (*Write)(struct _TMixer *,int Handle,const void *pBuffer,int Size);
 		void (*InitVolume)(struct _TMixer *,int Volume,int bSlience);	//≥ı ºªØ“Ù¡ø
