@@ -166,6 +166,11 @@ static int stmGetCurRun(StMachine *This)
 	return This->priv->status_run;
 }
 
+static void stmSetCurrentState(StMachine *This,int state)
+{
+	This->priv->cur_state = state;	
+}
+
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief stmDestroy 销毁状态机
@@ -257,6 +262,7 @@ StMachine* stateMachineCreate(int init_state,
 	This->handle = handle;
 	This->initPara = stmInitPara;
 	This->getCurrentstate = stmGetCurrentState;
+	This->setCurrentstate = stmSetCurrentState;
 	This->getCurRun = stmGetCurRun;
 	This->destroy = stmDestroy;
 	createThread(stmThread,This);

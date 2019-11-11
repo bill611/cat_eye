@@ -96,62 +96,64 @@ static void reloadLocalTalk(void)
 }
 static void dial(char *user_id,void (*callBack)(int result))
 {
-#ifdef USE_UCPAAS
-	ucsDial(user_id);
-    memset(&peer_user,0,sizeof(UserStruct));
-	strcpy(peer_user.id,user_id);
-#endif
-	dialCallBack = callBack;
-#ifdef USE_UDPTALK
-	if (protocol_video && protocol_talk->type == PROTOCOL_TALK_LAN)
+	if (protocol_video && protocol_talk->type == PROTOCOL_TALK_LAN) {
 		protocol_video->call(protocol_video,user_id);
+	} else {
+		if (protocol_video)
+			protocol_video->setStatusBusy(protocol_video);
+#ifdef USE_UCPAAS
+		ucsDial(user_id);
+		memset(&peer_user,0,sizeof(UserStruct));
+		strcpy(peer_user.id,user_id);
+		dialCallBack = callBack;
 #endif
+	}
 }
 
 static void hangup(void)
 {
-#ifdef USE_UCPAAS
-	ucsHangup();
-#endif
-#ifdef USE_UDPTALK
 	if (protocol_talk->type == PROTOCOL_TALK_LAN) {
 		myAudioStopPlay();
 		if (protocol_video)
 			protocol_video->hangup(protocol_video);
 		if (udp_talk_trans)
 			udp_talk_trans->close(udp_talk_trans);
-	}
+	} else {
+#ifdef USE_UCPAAS
+		ucsHangup();
+		if (protocol_video)
+			protocol_video->setStatusIdle(protocol_video);
 #endif
+	}
 }
 static void unlock(void)
 {
-#ifdef USE_UDPTALK
-	if (protocol_video && protocol_talk->type == PROTOCOL_TALK_LAN)
+	if (protocol_video && protocol_talk->type == PROTOCOL_TALK_LAN) {
 		protocol_video->unlock(protocol_video);
-#endif
+	} else {
 #ifdef USE_UCPAAS
-	char send_buff[256];
-	sprintf(send_buff,"{\\\"messageType\\\":%d,\\\"deviceType\\\":%d,\\\"deviceNumber\\\":\\\"%s\\\",\\\"fromId\\\":\\\"%s\\\",\\\"messageContent\\\":\\\"\\\"}",
-			MSG_TYPE_UNLOCK,DEV_TYPE_CATEYE,g_config.imei,local_user.id);
-	ucsSendCmd(send_buff,peer_user.id);
-	printf("send:%s,id:%s\n",send_buff,peer_user.id );
+		char send_buff[256];
+		sprintf(send_buff,"{\\\"messageType\\\":%d,\\\"deviceType\\\":%d,\\\"deviceNumber\\\":\\\"%s\\\",\\\"fromId\\\":\\\"%s\\\",\\\"messageContent\\\":\\\"\\\"}",
+				MSG_TYPE_UNLOCK,DEV_TYPE_CATEYE,g_config.imei,local_user.id);
+		ucsSendCmd(send_buff,peer_user.id);
+		printf("send:%s,id:%s\n",send_buff,peer_user.id );
 #endif
+	}
 }
 
 static void answer(void)
 {
-#ifdef USE_UCPAAS
-	ucsAnswer();
-#endif
 	myAudioStopPlay();
-#ifdef USE_UDPTALK
 	if (protocol_talk->type == PROTOCOL_TALK_LAN) {
 		if (protocol_video)
 			protocol_video->answer(protocol_video);
 		if (udp_talk_trans)
 			udp_talk_trans->startAudio(udp_talk_trans);
-	}
+	} else {
+#ifdef USE_UCPAAS
+		ucsAnswer();
 #endif
+	}
 }
 
 static void talkConnect(void)
@@ -178,28 +180,37 @@ static void sendVideo(void *data,int size)
 }
 static void receiveVideo(void *data,int *size)
 {
-#ifdef USE_UCPAAS
-	// long long timeStamp = 0;
-	// int frameType = 0;
-	// ucsReceiveVideo(data, size, &timeStamp, &frameType);
-#endif
-#ifdef USE_UDPTALK
-	if (udp_talk_trans && protocol_talk->type == PROTOCOL_TALK_LAN)
+	if (udp_talk_trans && protocol_talk->type == PROTOCOL_TALK_LAN) {
 		*size = udp_talk_trans->getVideo(udp_talk_trans,data);
+	} else {
+#ifdef USE_UCPAAS
+		long long timeStamp = 0;
+		int frameType = 0;
+		ucsReceiveVideo(data, size, &timeStamp, &frameType);
 #endif
+	}
 }
 static void cbDialFail(void *arg)
 {
+	if (protocol_talk->type == PROTOCOL_TALK_LAN)
+		return;
+
 	if (dialCallBack)
 		dialCallBack(0);
 }
 static void cbAnswer(void *arg)
 {
+	if (protocol_talk->type == PROTOCOL_TALK_LAN)
+		return;
+
 	if (my_video)
 		my_video->videoAnswer(1,DEV_TYPE_ENTRANCEMACHINE);
 }
 static void cbHangup(void *arg)
 {
+	if (protocol_talk->type == PROTOCOL_TALK_LAN)
+		return;
+
 	if (my_video)
 		my_video->videoHangup();
 	if (my_mixer) {
@@ -216,7 +227,15 @@ static void cbDialRet(void *arg)
 }
 static void cblIncomingCall(void *arg)
 {
+	if (protocol_video && protocol_video->getIdleStatus(protocol_video) == 0) {
+		ucsHangup();
+		return;
+	}
+	printf("[%s]%d\n", __func__,protocol_video->getIdleStatus(protocol_video));
+
 	protocol_talk->type = PROTOCOL_TALK_CLOUD;
+	if (protocol_video)
+		protocol_video->setStatusBusy(protocol_video);
 	if (my_video)
 		my_video->videoCallIn((char *)arg);
 	strcpy(peer_user.id,(char *)arg);
@@ -227,6 +246,9 @@ static void cbSendCmd(void *arg)
 }
 static void cbReceivedCmd(const char *user_id,void *arg)
 {
+	if (protocol_talk->type == PROTOCOL_TALK_LAN)
+		return;
+
 	printf("%s\n", (char *)arg);
 	char *data = (char *)arg;
 	char *j_data = (char *)calloc(1,strlen(data));
@@ -276,6 +298,9 @@ static void cbReceivedCmd(const char *user_id,void *arg)
 }
 static void cbInitAudio(unsigned int rate,unsigned int bytes_per_sample,unsigned int channle)
 {
+	if (protocol_talk->type == PROTOCOL_TALK_LAN)
+		return;
+
 	gpio->SetValue(gpio,ENUM_GPIO_MICKEY,IO_ACTIVE);
 	mic_open = 1;
 	if (my_mixer)
@@ -287,11 +312,14 @@ static void cbStartRecord(unsigned int rate,unsigned int bytes_per_sample,unsign
 }
 static void cbRecording(char *data,unsigned int size)
 {
+	if (protocol_talk->type == PROTOCOL_TALK_LAN)
+		return;
+
     char audio_buff[1024] = {0};
 	if (my_mixer ) {
 		int real_size = my_mixer->Read(my_mixer,audio_buff,size,2);
 		if (mic_open) {
-            memcpy(data,audio_buff,real_size); 
+            memcpy(data,audio_buff,real_size);
 		}
         if (my_video)
             my_video->recordWriteCallback(audio_buff,real_size);
@@ -299,6 +327,9 @@ static void cbRecording(char *data,unsigned int size)
 }
 static void cbPlayAudio(const char *data,unsigned int size)
 {
+	if (protocol_talk->type == PROTOCOL_TALK_LAN)
+		return;
+
 	if (my_mixer) {
 		my_mixer->Write(my_mixer,audio_fp,data,size);
 	}
@@ -318,7 +349,6 @@ static Callbacks interface = {
 	.playAudio = cbPlayAudio,
 };
 
-#ifdef USE_UDPTALK
 static void videoCallbackOvertime(int ret,void *CallBackData)
 {
 	if(ret != MSG_SENDTIMEOUT) {
@@ -347,6 +377,7 @@ static void videoSendMessageStatus(VideoTrans *This,VideoUiStatus status)
 		case VIDEOTRANS_UI_NONE:				// 不做处理
 			break;
 		case VIDEOTRANS_UI_SHAKEHANDS:		// 3000握手命令
+			protocol_talk->type = PROTOCOL_TALK_LAN;
 			break;
 		case VIDEOTRANS_UI_CALLIP:			// 呼出
 			break;
@@ -389,7 +420,7 @@ static void videoSendMessageStatus(VideoTrans *This,VideoUiStatus status)
 			break;
 		default:
 			break;
-	}	
+	}
 }
 
 static VideoInterface video_interface = {
@@ -436,7 +467,6 @@ static UdpTalkTransInterface rtp_interface = {
 	.sendAudio = udpSendAudio,
 	.start = udpStart,
 };
-#endif
 
 void registTalk(void)
 {
@@ -457,12 +487,10 @@ void registTalk(void)
 	protocol_talk->connect();
 #endif
 
-#ifdef USE_UDPTALK
 	protocol_talk->udpCmd = udpCmd;
 	protocol_video = videoTransCreate(&video_interface,
 			        7800,0,3,VIDEOTRANS_PROTOCOL_3000,"","123","0101");
 	protocol_video->enable(protocol_video);
 	udp_talk_trans = createRtp(&rtp_interface,protocol_video);
-#endif
 	rkEchoInit();
 }

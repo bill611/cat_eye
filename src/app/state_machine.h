@@ -42,6 +42,7 @@ extern "C" {
 
 		void  *(*initPara)(struct _StMachine *,int size);
 		int  (*getCurrentstate)(struct _StMachine *);
+		void  (*setCurrentstate)(struct _StMachine *,int state);
 		int  (*getCurRun)(struct _StMachine *);
         /* ---------------------------------------------------------------------------*/
         /**

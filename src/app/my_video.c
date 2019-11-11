@@ -414,6 +414,7 @@ static int stmDoTalkCallout(void *data,MyVideo *arg)
 {
 	StmData *data_temp = (StmData *)data;
 	char ui_title[128] = {0};
+	// TODO 临时写死门口机Ip
 	if (strcmp(data_temp->usr_id,"172.16.5.3")) {
 		int ret = sqlGetUserInfoUseUserId(data_temp->usr_id,data_temp->nick_name,&data_temp->type);
 		if (ret == 0) {

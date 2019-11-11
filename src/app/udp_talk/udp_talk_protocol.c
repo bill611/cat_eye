@@ -27,7 +27,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <linux/prctl.h>
+#include <sys/prctl.h>
 
 #include "state_machine.h"
 #include "udp_talk_protocol.h"
@@ -552,7 +552,40 @@ void callbackRtp(void)
 
 /* ---------------------------------------------------------------------------*/
 /**
- * @brief videoTransDoNothing 不做任何事，只改变状态
+ * @brief videoTransMulitDevSendOver 挂断分机
+ *
+ * @param This
+ * @param bTalkOver 1 分机接听，挂断其他分机 0 挂断所有分机
+ */
+/* ---------------------------------------------------------------------------*/
+static void videoTransMulitDevSendOver(VideoTrans *This,int bTalkOver)
+{
+	int i;
+	if(This->priv->master_ip[0] != 0)
+		return;
+
+	struct _TCALLFJ TransCall;
+
+	memset(&TransCall,0,sizeof(TCALLFJ));
+	TransCall.ID = This->priv->packet_id++;
+	TransCall.Size = sizeof(TCALLFJ);
+	TransCall.Type = This->priv->call_cmd;
+	TransCall.Cmd = CMD_TRANSOVER;
+	strncpy(TransCall.CallIP,This->priv->cPeerIP,15);
+	TransCall.CallPort = This->priv->PeerPort;
+	for(i=0;i<MAXFJCOUNT;i++) {
+		if(This->priv->RegDev[i].bCalling && (!bTalkOver || !This->priv->RegDev[i].bTalk)) {
+			This->priv->RegDev[i].bCalling = FALSE;
+			This->priv->RegDev[i].bTalk = FALSE;
+			// DBG_P("[%s]:over:%d,%s\n", __FUNCTION__,bTalkOver,This->priv->RegDev[i].IP);
+			This->interface->udpSend(This,This->priv->RegDev[i].IP,This->priv->RegDev[i].Port,
+					&TransCall,sizeof(TCALLFJ),0);
+		}
+	}
+}
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief stmDoNothing 不做任何事，只改变状态
  *
  * @param This
  * @param st_data
@@ -560,13 +593,13 @@ void callbackRtp(void)
  * @returns
  */
 /* ---------------------------------------------------------------------------*/
-static int videoTransDoNothing(VideoTrans * This,STMData *st_data)
+static int stmDoNothing(VideoTrans * This,STMData *st_data)
 {
 	return CALL_OK;
 }
 /* ---------------------------------------------------------------------------*/
 /**
- * @brief videoTransJudgeType 判断呼叫来源类型，门口机或室内机
+ * @brief stmJudgeType 判断呼叫来源类型，门口机或室内机
  *
  * @param This
  * @param st_data
@@ -574,7 +607,7 @@ static int videoTransDoNothing(VideoTrans * This,STMData *st_data)
  * @returns
  */
 /* ---------------------------------------------------------------------------*/
-static int videoTransJudgeType(VideoTrans * This,STMData *st_data)
+static int stmJudgeType(VideoTrans * This,STMData *st_data)
 {
 	DBG_P("STMDO:JudgeType()\n");
 	char *IP = st_data->ip;
@@ -610,40 +643,7 @@ judge_end:
 
 /* ---------------------------------------------------------------------------*/
 /**
- * @brief videoTransMulitDevSendOver 挂断分机
- *
- * @param This
- * @param bTalkOver 1 分机接听，挂断其他分机 0 挂断所有分机
- */
-/* ---------------------------------------------------------------------------*/
-static void videoTransMulitDevSendOver(VideoTrans *This,int bTalkOver)
-{
-	int i;
-	if(This->priv->master_ip[0] != 0)
-		return;
-
-	struct _TCALLFJ TransCall;
-
-	memset(&TransCall,0,sizeof(TCALLFJ));
-	TransCall.ID = This->priv->packet_id++;
-	TransCall.Size = sizeof(TCALLFJ);
-	TransCall.Type = This->priv->call_cmd;
-	TransCall.Cmd = CMD_TRANSOVER;
-	strncpy(TransCall.CallIP,This->priv->cPeerIP,15);
-	TransCall.CallPort = This->priv->PeerPort;
-	for(i=0;i<MAXFJCOUNT;i++) {
-		if(This->priv->RegDev[i].bCalling && (!bTalkOver || !This->priv->RegDev[i].bTalk)) {
-			This->priv->RegDev[i].bCalling = FALSE;
-			This->priv->RegDev[i].bTalk = FALSE;
-			// DBG_P("[%s]:over:%d,%s\n", __FUNCTION__,bTalkOver,This->priv->RegDev[i].IP);
-			This->interface->udpSend(This,This->priv->RegDev[i].IP,This->priv->RegDev[i].Port,
-					&TransCall,sizeof(TCALLFJ),0);
-		}
-	}
-}
-/* ---------------------------------------------------------------------------*/
-/**
- * @brief videoTransCallIP 直接呼叫IP
+ * @brief stmCallIP 直接呼叫IP
  * 如果成功，视设置需要转输音频至对方，但不传输音频
  * @param This
  * @param IP 对方IP
@@ -652,7 +652,7 @@ static void videoTransMulitDevSendOver(VideoTrans *This,int bTalkOver)
  * @returns
  */
 /* ---------------------------------------------------------------------------*/
-static int videoTransCallIP(VideoTrans * This,STMData *st_data)
+static int stmCallIP(VideoTrans * This,STMData *st_data)
 {
 	DBG_P("STMDO:CallIP():%s\n",st_data->mCallIP);
 	This->priv->PeerPort = This->priv->port;
@@ -665,7 +665,7 @@ static int videoTransCallIP(VideoTrans * This,STMData *st_data)
 
 /* ---------------------------------------------------------------------------*/
 /**
- * @brief videoTransShakeHands 呼叫对讲前的握手命令
+ * @brief stmShakeHands 呼叫对讲前的握手命令
  * 在使用3000协议对讲时需要增加握手协议，以区别U9协议，2者互不能通信
  * 在呼叫管理中心时，需要先发握手，不需等回应，再发呼叫
  *
@@ -676,7 +676,7 @@ static int videoTransCallIP(VideoTrans * This,STMData *st_data)
  * @returns
  */
 /* ---------------------------------------------------------------------------*/
-static int videoTransShakeHands(VideoTrans * This,STMData *st_data)
+static int stmShakeHands(VideoTrans * This,STMData *st_data)
 {
 	DBG_P("STMDO:ShakeHands()\n");
 	strcpy(This->priv->cPeerIP,st_data->mCallIP);
@@ -688,7 +688,7 @@ static int videoTransShakeHands(VideoTrans * This,STMData *st_data)
 
 /* ---------------------------------------------------------------------------*/
 /**
- * @brief videoTransShakeHandsRet 呼叫对讲前的握手命令返回
+ * @brief stmShakeHandsRet 呼叫对讲前的握手命令返回
  * 在使用3000协议对讲时需要增加握手协议，以区别U9协议，2者互不能通信
  *
  * @param This
@@ -698,7 +698,7 @@ static int videoTransShakeHands(VideoTrans * This,STMData *st_data)
  * @returns
  */
 /* ---------------------------------------------------------------------------*/
-static int videoTransShakeHandsRet(VideoTrans * This,STMData *st_data)
+static int stmShakeHandsRet(VideoTrans * This,STMData *st_data)
 {
 	DBG_P("STMDO:ShakeHandsRet()\n");
 	sendCmdRevert(This,st_data->ip,st_data->port,CMD_SHAKEHANDS_ASW);
@@ -708,7 +708,7 @@ static int videoTransShakeHandsRet(VideoTrans * This,STMData *st_data)
 
 /* ---------------------------------------------------------------------------*/
 /**
- * @brief videoTransRetCall 返回呼叫的结果
+ * @brief stmRetCall 返回呼叫的结果
  *
  * @param This
  * @param RetCode ASW_OK 呼叫成功，开始建立RTP连接传输音频，但不传输
@@ -716,7 +716,7 @@ static int videoTransShakeHandsRet(VideoTrans * This,STMData *st_data)
  *				  ASW_FAIL 呼叫失败，说明对方在线，但出于正忙状态
  */
 /* ---------------------------------------------------------------------------*/
-static int videoTransRetCall(VideoTrans *This,STMData *st_data)
+static int stmRetCall(VideoTrans *This,STMData *st_data)
 {
 	DBG_P("STMDO:RetIP():w:%d,h:%d\n",
 			st_data->p_call.VideoWidth,st_data->p_call.VideoHeight);
@@ -755,7 +755,7 @@ ret_call_end:
 
 /* ---------------------------------------------------------------------------*/
 /**
- * @brief videoTransRing 对方主动呼叫,振铃，并显示IP地址，如果对方
+ * @brief stmRing 对方主动呼叫,振铃，并显示IP地址，如果对方
  * 传输视频，须显示。
  * 当为3000系统时，如果是室内机呼叫，需要先接受过握手协议，才响应，
  * 如果是管理中心，先回握手协议，再响应
@@ -770,7 +770,7 @@ ret_call_end:
 // 如果成功，返回非0,失败返回0
  */
 /* ---------------------------------------------------------------------------*/
-static int videoTransRing(VideoTrans * This,STMData *st_data)
+static int stmRing(VideoTrans * This,STMData *st_data)
 {
 	int i;
 	char *IP = st_data->ip;
@@ -839,7 +839,7 @@ static int videoTransRing(VideoTrans * This,STMData *st_data)
 
 /* ---------------------------------------------------------------------------*/
 /**
- * @brief videoTransAnswer 对方接听，进行通话(传输音频或音视频同时传输)
+ * @brief stmAnswer 对方接听，进行通话(传输音频或音视频同时传输)
  *
  * @param This
  * @param IP 对方IP
@@ -848,7 +848,7 @@ static int videoTransRing(VideoTrans * This,STMData *st_data)
  * @returns
  */
 /* ---------------------------------------------------------------------------*/
-static int videoTransAnswer(VideoTrans * This,STMData *st_data)
+static int stmAnswer(VideoTrans * This,STMData *st_data)
 {
 	DBG_P("STMDO:Answer()\n");
 	This->priv->PeerPort = This->priv->port;
@@ -880,7 +880,7 @@ static int videoTransAnswer(VideoTrans * This,STMData *st_data)
 	return TRUE;
 }
 
-static int videoTransAnswerEx(VideoTrans * This,STMData *st_data)
+static int stmAnswerEx(VideoTrans * This,STMData *st_data)
 {
 	DBG_P("STMDO:AnswerEx()\n");
 	int i;
@@ -908,7 +908,7 @@ static int videoTransAnswerEx(VideoTrans * This,STMData *st_data)
 
 /* ---------------------------------------------------------------------------*/
 /**
- * @brief videoTransRetFail 通话中有被监视，返回失败
+ * @brief stmRetFail 通话中有被监视，返回失败
  *
  * @param This
  * @param st_data
@@ -916,7 +916,7 @@ static int videoTransAnswerEx(VideoTrans * This,STMData *st_data)
  * @returns
  */
 /* ---------------------------------------------------------------------------*/
-static int videoTransRetFail(VideoTrans * This,STMData *st_data)
+static int stmRetFail(VideoTrans * This,STMData *st_data)
 {
 	DBG_P("STMDO:RetFail()\n");
 	sendCmdRevert(This,st_data->ip,st_data->port,ASW_FAIL);
@@ -925,13 +925,13 @@ static int videoTransRetFail(VideoTrans * This,STMData *st_data)
 
 /* ---------------------------------------------------------------------------*/
 /**
- * @brief videoTransOver 结束对讲
+ * @brief stmOver 结束对讲
  *
  * @param This
  * @param ByMyself 2超时或非正常挂机（对方返回忙或通话过程断线) 1本机主动按键挂机，0远程发起命令结束
  */
 /* ---------------------------------------------------------------------------*/
-static int videoTransOver(VideoTrans * This,STMData *st_data)
+static int stmOver(VideoTrans * This,STMData *st_data)
 {
 	DBG_P("STMDO:Over():ByMyself:%d\n",st_data->flag);
 	int ByMyself = st_data->flag;
@@ -952,13 +952,13 @@ static int videoTransOver(VideoTrans * This,STMData *st_data)
 	This->priv->cPeerIP[0] = 0;
 	This->priv->PeerPort = 0;
 	This->interface->sendMessageStatus(This,VIDEOTRANS_UI_OVER);
-	DBG_P("videoTransOver\n");
+	DBG_P("stmOver\n");
 	return CALL_OK;
 }
 
 /* ---------------------------------------------------------------------------*/
 /**
- * @brief videoTransFail 返回失败
+ * @brief stmFail 返回失败
  *
  * @param This
  * @param st_data
@@ -966,7 +966,7 @@ static int videoTransOver(VideoTrans * This,STMData *st_data)
  * @returns
  */
 /* ---------------------------------------------------------------------------*/
-static int videoTransFail(VideoTrans * This,STMData *st_data)
+static int stmFail(VideoTrans * This,STMData *st_data)
 {
 	DBG_P("STMDO:Fail(),type:%d\n",st_data->flag);
 	int type = st_data->flag;
@@ -978,7 +978,7 @@ static int videoTransFail(VideoTrans * This,STMData *st_data)
 		This->interface->sendMessageStatus(This,VIDEOTRANS_UI_FAILBUSY);
 	} else if (type == 3) {
 		st_data->flag = 1;
-		videoTransOver(This,st_data);
+		stmOver(This,st_data);
 		This->interface->sendMessageStatus(This,VIDEOTRANS_UI_FAILABORT);
 	}
 
@@ -1083,6 +1083,17 @@ static int videoGetTalkStatus(VideoTrans *This)
 	else
 		return 0;
 }
+
+static void videosetStatusBusy(VideoTrans *This)
+{
+	This->priv->st_machine->setCurrentstate(This->priv->st_machine,ST_TALK);
+}
+
+static void videosetStatusIdle(VideoTrans *This)
+{
+	This->priv->st_machine->setCurrentstate(This->priv->st_machine,ST_IDLE);
+}
+
 static void videoUnlock(VideoTrans * This)
 {
 	if (This->priv->st_machine->getCurrentstate(This->priv->st_machine) == ST_IDLE)
@@ -1419,21 +1430,21 @@ static void udpCallDenied(VideoTrans * This,char *ip,int port,char *data)
  */
 /* ---------------------------------------------------------------------------*/
 static STMDo stm_video_state_do[] = {
-	{DO_NO,				videoTransDoNothing},
-	{DO_SHAKEHANDS,		videoTransShakeHands},
-	{DO_SHAKEHANDS_ASW,	videoTransShakeHandsRet},
-	{DO_JUDGE_TYPE,		videoTransJudgeType},
-	{DO_DIAL,			videoTransCallIP},
-	{DO_CALL,			videoTransRetCall},
-	{DO_TALK,			videoTransAnswer},
-	{DO_TALK_EX,		videoTransAnswerEx},
-	{DO_RING,			videoTransRing},
-	{DO_FAIL_COMM,		videoTransFail},
-	{DO_FAIL_SHAKE,		videoTransFail},
-	{DO_FAIL_BUSY,		videoTransFail},
-	{DO_FAIL_ABORT,		videoTransFail},
-	{DO_RET_FAIL,		videoTransRetFail},
-	{DO_HANGUP,			videoTransOver},
+	{DO_NO,				stmDoNothing},
+	{DO_SHAKEHANDS,		stmShakeHands},
+	{DO_SHAKEHANDS_ASW,	stmShakeHandsRet},
+	{DO_JUDGE_TYPE,		stmJudgeType},
+	{DO_DIAL,			stmCallIP},
+	{DO_CALL,			stmRetCall},
+	{DO_TALK,			stmAnswer},
+	{DO_TALK_EX,		stmAnswerEx},
+	{DO_RING,			stmRing},
+	{DO_FAIL_COMM,		stmFail},
+	{DO_FAIL_SHAKE,		stmFail},
+	{DO_FAIL_BUSY,		stmFail},
+	{DO_FAIL_ABORT,		stmFail},
+	{DO_RET_FAIL,		stmRetFail},
+	{DO_HANGUP,			stmOver},
 };
 
 /* ---------------------------------------------------------------------------*/
@@ -1777,6 +1788,8 @@ VideoTrans * videoTransCreate(VideoInterface *interface,
 	This->unlock = videoUnlock;
 	This->getIdleStatus = videoGetIdleStatus;
 	This->getTalkStatus = videoGetTalkStatus;
+	This->setStatusBusy = videosetStatusBusy;
+	This->setStatusIdle = videosetStatusIdle;
 	This->getTalkPort = videoGetTalkPort;
 	This->resetProtocol = videoTransResetProtocol;
 	This->hasUnreadLeaveWord = videoGetLeaveWord;

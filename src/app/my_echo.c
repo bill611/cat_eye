@@ -299,11 +299,11 @@ void RK_VOICE_SetPara(short int *pshwPara, short int  shwLen)
 
 void rkEchoInit(void)
 {
-	// short int ashwPara[500] = {0};
+	short int ashwPara[500] = {0};
 
-	// RK_VOICE_SetPara(ashwPara, 500);
+	RK_VOICE_SetPara(ashwPara, 500);
 
-	// [> 初始化 <]
+	/* 初始化 */
 	// VOICE_Init(ashwPara);
 }
 void rkEchoUnInit(void)

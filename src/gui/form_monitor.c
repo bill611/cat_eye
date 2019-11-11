@@ -230,9 +230,9 @@ static void iconviewNotify(HWND hwnd, int id, int nc, DWORD add_data)
 
     if (user_id) {
 		ShowWindow(hwnd,SW_HIDE);
-		// createFormVideo(0,FORM_VIDEO_TYPE_MONITOR,NULL,0); 
-		my_video->videoCallOut("172.16.1.2");
-		// my_video->videoCallOut(user_id);
+		createFormVideo(0,FORM_VIDEO_TYPE_MONITOR,NULL,0); 
+		// my_video->videoCallOut("172.16.1.2");
+		my_video->videoCallOut(user_id);
     }
 }
 static void iconviewAddItem(int count,char *name,char *user_id)

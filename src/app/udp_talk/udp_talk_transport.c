@@ -356,8 +356,10 @@ static void * spiThreadExecute(void *ThreadData)
 	while(!SPITerminate) {
 		if (spiAudio(This,pAudioPack) == 0) {
 			spiHeart(pAudioPack);
+			sleep(1);
+			continue;
 		}
-		usleep(5000);
+		usleep(10000);
 	}
 	seq = 0;
 	cnt_test = 0;
