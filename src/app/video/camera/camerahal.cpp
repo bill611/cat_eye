@@ -61,4 +61,6 @@ void RKCameraHal::stop(void)
         mpath()->stop();
         mpath()->releaseBuffers();
     }
+	camdev->deInitHw();
+	camdev.reset();
 }

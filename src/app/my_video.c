@@ -606,7 +606,8 @@ static void* threadCapture(void *arg)
 		rkVideoCapture(file_path);
 #ifdef X86
 		FILE *fp = fopen(file_path,"wb");
-		fclose(fp);
+		if (fp)
+			fclose(fp);
 #endif
 #endif
 		sprintf(url,"%s/%s",QINIU_URL,jpg_name);
@@ -637,28 +638,31 @@ static void* threadAlarm(void *arg)
 	alarm_data.type = ALARM_TYPE_PEOPLES;
 	alarm_data.picture_id = cap_data_temp.pic_id;
 	alarm_data.has_people = 0;
+	FILE *fp = NULL;
 	for (i=0; i<cap_data_temp.count; i++) {
 		sprintf(jpg_name,"%s_%s_%d.jpg",g_config.imei,cap_data_temp.file_name,i);
 		sprintf(file_path,"%s%s",FAST_PIC_PATH,jpg_name);
 #ifdef USE_VIDEO
 		rkVideoCapture(file_path);
 #endif
-		sprintf(url,"%s/%s",QINIU_URL,jpg_name);
-		sqlInsertPicUrlNoBack(cap_data_temp.pic_id,url);
-
 		// wait for write file
 		usleep(500000);
 
 		char pic_buf_jpg[100 * 1024] = {0};
 		unsigned char *pic_buf_yuv = NULL;
 		int yuv_len = 0;
-		int w,h;
-		FILE *fp = fopen(file_path,"rb");
-		int leng = fread(pic_buf_jpg,1,sizeof(pic_buf_jpg),fp);
-		fclose(fp);
-		jpegToYuv420sp((unsigned char *)pic_buf_jpg, leng,&w,&h, &pic_buf_yuv, &yuv_len);
-		if (my_video->faceRecognizer(pic_buf_yuv,w,h,&alarm_data.age,&alarm_data.sex) == 0)
-			alarm_data.has_people = 1;
+		int w = 0,h = 0;
+		int leng = 0;
+		fp = fopen(file_path,"rb");
+		if (fp) {
+			leng = fread(pic_buf_jpg,1,sizeof(pic_buf_jpg),fp);
+			fclose(fp);
+			jpegToYuv420sp((unsigned char *)pic_buf_jpg, leng,&w,&h, &pic_buf_yuv, &yuv_len);
+			if (my_video->faceRecognizer(pic_buf_yuv,w,h,&alarm_data.age,&alarm_data.sex) == 0)
+				alarm_data.has_people = 1;
+			sprintf(url,"%s/%s",QINIU_URL,jpg_name);
+			sqlInsertPicUrlNoBack(cap_data_temp.pic_id,url);
+		}
 		if (pic_buf_yuv)
 			free(pic_buf_yuv);
 	}

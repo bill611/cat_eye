@@ -13,11 +13,11 @@ class RKVideo {
     RKVideo();
     ~RKVideo();
 
-	int connect(std::shared_ptr<CamHwItf::PathBase> mpath, 
+	int connect(std::shared_ptr<CamHwItf::PathBase> mpath,
 		            std::shared_ptr<StreamPUBase> next,
-                    frm_info_t& frmFmt, const uint32_t num, 
+                    frm_info_t& frmFmt, const uint32_t num,
                     std::shared_ptr<RKCameraBufferAllocator> allocator);
-    void disconnect(std::shared_ptr<CamHwItf::PathBase> mpath, 
+    void disconnect(std::shared_ptr<CamHwItf::PathBase> mpath,
 		                 std::shared_ptr<StreamPUBase> next);
 
 	void displayPeer(int w,int h,void* decCallback);
@@ -29,9 +29,10 @@ class RKVideo {
 	void recordStart(int w,int h,EncCallbackFunc recordCallback);
 	void recordSetStopFunc(RecordStopCallbackFunc recordCallback);
 	void recordStop(void);
+	int getCammerState(void);
 
  private:
- 	
+
     int display_state_; // 0关闭 1本地视频 2远程视频
     bool face_state_;
     bool h264enc_state_;
@@ -64,7 +65,7 @@ RKVideo::RKVideo()
 	cam_dev = ((shared_ptr<RKCameraHal>)
 			new RKCameraHal(new_dev, cam_info.cam[0]->index,  cam_info.cam[0]->type));
 	cam_dev->init(1280, 720, 25);
-	
+
     ptr_allocator = shared_ptr<RKCameraBufferAllocator>(new RKCameraBufferAllocator());
 	cam_dev->start(5, ptr_allocator);
 
@@ -89,14 +90,19 @@ RKVideo::~RKVideo()
 	disconnect(cam_dev->mpath(), face_process);
 	if (cam_dev)
 		cam_dev->stop();
+	cam_dev = NULL;
+	ptr_allocator = NULL;
+	display_process = NULL;
+	face_process = NULL;
+	encode_process = NULL;
 	init_ok = 0;
 }
 
-int RKVideo::connect(std::shared_ptr<CamHwItf::PathBase> mpath, 
+int RKVideo::connect(std::shared_ptr<CamHwItf::PathBase> mpath,
 				std::shared_ptr<StreamPUBase> next,
-				frm_info_t& frmFmt, const uint32_t num, 
+				frm_info_t& frmFmt, const uint32_t num,
 				std::shared_ptr<RKCameraBufferAllocator> allocator)
-{			
+{
 	if (!mpath.get() || !next.get()) {
 		printf("[rv_video:%s]PathBase,PU is NULL\n",__func__);
 	}
@@ -111,7 +117,7 @@ int RKVideo::connect(std::shared_ptr<CamHwItf::PathBase> mpath,
 }
 
 
-void RKVideo::disconnect(std::shared_ptr<CamHwItf::PathBase> mpath, 
+void RKVideo::disconnect(std::shared_ptr<CamHwItf::PathBase> mpath,
 					 std::shared_ptr<StreamPUBase> next)
 {
 	if (!mpath.get() || !next.get()) {
@@ -143,7 +149,7 @@ void RKVideo::displayPeer(int w,int h,void* decCallback)
 		disconnect(cam_dev->mpath(), display_process);
 		display_process->showPeerVideo(w,h,(DecCallbackFunc)decCallback);
 	}
-} 
+}
 
 void RKVideo::displayOff(void)
 {
@@ -154,7 +160,7 @@ void RKVideo::displayOff(void)
 		disconnect(cam_dev->mpath(), display_process);
 		display_process->setVideoBlack();
 	}
-} 
+}
 void RKVideo::faceOnOff(bool type)
 {
 	if (cam_info.num_camers <= 0)
@@ -194,7 +200,7 @@ void RKVideo::h264EncOnOff(bool type,int w,int h,EncCallbackFunc encCallback)
 void RKVideo::capture(char *file_name)
 {
 	if (display_state_ == 0)
-		return;	
+		return;
 	if (h264enc_state_ == true) {
 		encode_process->capture(file_name);
 	} else {
@@ -221,15 +227,30 @@ void RKVideo::recordStop(void)
 	// h264EncOnOff(false,0,0,NULL);
 }
 
+int RKVideo::getCammerState(void)
+{
+    return display_process->getCammerState();
+	// h264EncOnOff(false,0,0,NULL);
+}
+
 static void* threadVideoMonitor(void *arg)
 {
 	while (1) {
-		sleep(5);
+		sleep(3);
+		if (rkvideo) {
+			if (rkvideo->getCammerState() == 0) {
+				RKVideo* rkvideo_tmp = rkvideo;
+				rkvideo = NULL;
+				delete rkvideo_tmp;
+				sleep(1);
+				rkvideo = new RKVideo();
+			}
+		}
 	}
 	return NULL;
 }
 
-extern "C" 
+extern "C"
 int rkVideoInit(void)
 {
 	rkvideo = new RKVideo();
@@ -245,25 +266,25 @@ static void *threadDisplayLocal(void *arg)
 		rkvideo->displayLocal();
 	return NULL;
 }
-extern "C" 
+extern "C"
 int rkVideoDisplayLocal(void)
 {
 	createThread(threadDisplayLocal,NULL);
 }
 
-extern "C" 
+extern "C"
 int rkVideoDisplayPeer(int w,int h,void * decCallBack)
 {
 	if (rkvideo)
 		rkvideo->displayPeer(w,h,decCallBack);
 }
-extern "C" 
+extern "C"
 int rkVideoDisplayOff(void)
 {
 	if (rkvideo)
 		rkvideo->displayOff();
 }
-extern "C" 
+extern "C"
 int rkVideoFaceOnOff(int type)
 {
 	if (rkvideo == NULL)
@@ -274,39 +295,39 @@ int rkVideoFaceOnOff(int type)
 		rkvideo->faceOnOff(false);
 }
 
-extern "C" 
+extern "C"
 int rkH264EncOn(int w,int h,EncCallbackFunc encCallback)
 {
 	if (rkvideo)
 		rkvideo->h264EncOnOff(true,w,h,encCallback);
 }
 
-extern "C" 
+extern "C"
 int rkH264EncOff(void)
 {
 	if (rkvideo)
 		rkvideo->h264EncOnOff(false,0,0,NULL);
 }
 
-extern "C" 
+extern "C"
 int rkVideoCapture(char *file_name)
 {
 	if (rkvideo)
 		rkvideo->capture(file_name);
 }
-extern "C" 
+extern "C"
 int rkVideoRecordStart(int w,int h,EncCallbackFunc recordCallback)
 {
 	if (rkvideo)
 		rkvideo->recordStart(w,h,recordCallback);
 }
-extern "C" 
+extern "C"
 int rkVideoRecordSetStopFunc(RecordStopCallbackFunc recordCallback)
 {
 	if (rkvideo)
 		rkvideo->recordSetStopFunc(recordCallback);
 }
-extern "C" 
+extern "C"
 int rkVideoRecordStop(void)
 {
 	if (rkvideo)

@@ -30,6 +30,12 @@ class DisplayProcess : public StreamPUBase {
 	int getHeight(void) const {
 		return height_;
 	}
+	int getCammerState(void) const {
+		return cammer_state_;
+	}
+	void setCammerState(int state) {
+		cammer_state_ = state;
+	}
 
 	DecCallbackFunc decCallback(void) const {
 		return decCallback_;
@@ -40,6 +46,7 @@ class DisplayProcess : public StreamPUBase {
     bool start_dec_;
 	int width_;
 	int height_;
+	int cammer_state_; // 摄像头状态 1正常 0异常
 	DecCallbackFunc decCallback_;
 };
 

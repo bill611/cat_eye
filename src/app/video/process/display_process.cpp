@@ -5,6 +5,8 @@
 #include "libyuv.h"
 
 static FILE *fp = NULL;
+static int cammer_tick = 5;  // 摄像头正常连接计数，当计数为0，判断摄像头接线异常
+static bool cammer_check_thread = false;
 int NV12Scale(unsigned char *psrc_buf, int psrc_w, int psrc_h, unsigned char **pdst_buf, int pdst_w, int pdst_h);
 static void writePicture(unsigned char *data,int w,int h)
 {
@@ -21,23 +23,49 @@ static void writePicture(unsigned char *data,int w,int h)
 	}
 	fp = NULL;
 }
+static void* threadCheckCammer(void *arg)
+{
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
+	cammer_check_thread = true;
+	DisplayProcess *process = (DisplayProcess *)arg;
+	while (1) {
+		// printf("dec:%d,tick:%d\n",process->start_dec(),cammer_tick );
+		if (process->start_dec() == false && cammer_tick > 0) {
+			if (--cammer_tick == 0) {
+				process->setCammerState(0);
+				break;
+			}
+		}
+		sleep(1);
+	}
+	cammer_check_thread = false;
+	return NULL;
+}
+
 DisplayProcess::DisplayProcess()
      : StreamPUBase("DisplayProcess", true, true)
 {
     rga_fd = rk_rga_open();
     if (rga_fd < 0)
 		printf("rk_rga_open failed\n");
+
+	cammer_state_ = 1;
+	cammer_tick = 5;
 	myH264DecInit();
+	if (cammer_check_thread == false)
+		createThread(threadCheckCammer,this);
 }
 
 DisplayProcess::~DisplayProcess()
 {
     rk_rga_close(rga_fd);
+	cammer_state_ = 0;
 }
 
 bool DisplayProcess::processFrame(std::shared_ptr<BufferBase> inBuf,
                                         std::shared_ptr<BufferBase> outBuf)
 {
+	cammer_tick = 5;
     int src_w = inBuf->getWidth();
     int src_h = inBuf->getHeight();
     int src_fd = (int)(inBuf->getFd());
@@ -93,8 +121,8 @@ void DisplayProcess::setVideoBlack()
 void DisplayProcess::showLocalVideo(void)
 {
 	start_dec_ = false;
-
 }
+
 static void* threadH264Dec(void *arg)
 {
 	prctl(PR_SET_NAME, __func__, 0, 0, 0);
@@ -131,7 +159,7 @@ static void* threadH264Dec(void *arg)
 				NV12Scale(data_out, out_w, out_h, &nv12_scale_data, disp_width, screen_height);
 				int y_size = disp_width*screen_height;
 				int i;
-				// Y 
+				// Y
 				// 居中显示，图像起点
 				int disp_start_x = (screen_width - disp_width) / 2;
 				int data_index = 0;
@@ -177,7 +205,7 @@ void DisplayProcess::showPeerVideo(int w,int h,DecCallbackFunc decCallback)
 void DisplayProcess::capture(char *file_name)
 {
 	while (fp != NULL) {
-		usleep(10000);	
+		usleep(10000);
 	}
 	if (fp == NULL)
 		fp = fopen(file_name,"wb");

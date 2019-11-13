@@ -142,6 +142,7 @@ static int mpiH264Decode(H264Decode *This,unsigned char *in_data,int in_size,uns
 
 static int mpiH264DecInit(H264Decode *This,int width,int height)
 {
+	printf("[%s]\n", __func__);
 	int split_mode = 0;//= input_dir_path.empty() ? 1 : 0;
 	int timeout = -1;
 	std::string param;
@@ -164,6 +165,7 @@ static int mpiH264DecInit(H264Decode *This,int width,int height)
 
 static int mpiH264DecUnInit(H264Decode *This)
 {
+	printf("[%s]\n", __func__);
 	g_mpp_dec = NULL;
 	memset(h264_sps_pps,0,sizeof(h264_sps_pps));
 	return 0;
