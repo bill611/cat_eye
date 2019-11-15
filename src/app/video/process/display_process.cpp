@@ -152,7 +152,6 @@ static void* threadH264Dec(void *arg)
 			if (my_h264dec)
 				size_out = my_h264dec->decode(my_h264dec,data_in,size_in,data_out,&out_w,&out_h);
 			if (out_w != 0 && out_h != 0 && size_out > 0) {
-
 				int disp_width = out_w * screen_height / out_h;
 				if (disp_width < 600)
 					disp_width = 600;

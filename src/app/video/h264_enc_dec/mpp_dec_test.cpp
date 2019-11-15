@@ -52,6 +52,8 @@ int split_h264_separate(const uint8_t *buffer, size_t length,int *sps_length,int
 static std::shared_ptr<easymedia::VideoDecoder> g_mpp_dec;
 static struct SpsPpsTemp sps_pps_tmp;
 static char h264_sps_pps[64];
+static std::string param;
+static std::string mpp_codec = "rkmpp";
 
 static void dump_output(const std::shared_ptr<easymedia::MediaBuffer> &out,int *out_size,unsigned char *out_data,int *out_w,int *out_h) 
 {
@@ -67,8 +69,8 @@ static void dump_output(const std::shared_ptr<easymedia::MediaBuffer> &out,int *
 			// info.vir_width, info.vir_height);
 	*out_size = CalPixFmtSize(out_image->GetPixelFormat(), out_image->GetVirWidth(),
 			out_image->GetVirHeight());
-	*out_w = info.width;
-	*out_h = info.height;
+	*out_w = info.vir_width;
+	*out_h = info.vir_height;
 	if (*out_size) 
 		memcpy(out_data,out_image->GetPtr(),*out_size);
 }
@@ -143,17 +145,6 @@ static int mpiH264Decode(H264Decode *This,unsigned char *in_data,int in_size,uns
 static int mpiH264DecInit(H264Decode *This,int width,int height)
 {
 	printf("[%s]\n", __func__);
-	int split_mode = 0;//= input_dir_path.empty() ? 1 : 0;
-	int timeout = -1;
-	std::string param;
-	PARAM_STRING_APPEND(param, KEY_INPUTDATATYPE, VIDEO_H264);
-	// PARAM_STRING_APPEND_TO(param, KEY_MPP_GROUP_MAX_FRAMES, 4);
-
-	PARAM_STRING_APPEND_TO(param, KEY_MPP_SPLIT_MODE, split_mode);
-	PARAM_STRING_APPEND_TO(param, KEY_OUTPUT_TIMEOUT, timeout);
-
-	easymedia::REFLECTOR(Decoder)::DumpFactories();
-	std::string mpp_codec = "rkmpp";
 	g_mpp_dec = easymedia::REFLECTOR(Decoder)::Create<easymedia::VideoDecoder>(
 			mpp_codec.c_str(), param.c_str());
 	if (!g_mpp_dec) {
@@ -173,9 +164,19 @@ static int mpiH264DecUnInit(H264Decode *This)
 #if 1
 void myH264DecInit(void)
 {
+	int split_mode = 0;//= input_dir_path.empty() ? 1 : 0;
+	int timeout = -1;
 	my_h264dec = (H264Decode *)calloc(1,sizeof(H264Decode));
 	my_h264dec->init = mpiH264DecInit;
 	my_h264dec->unInit = mpiH264DecUnInit;
 	my_h264dec->decode = mpiH264Decode;
+
+	PARAM_STRING_APPEND(param, KEY_INPUTDATATYPE, VIDEO_H264);
+	// PARAM_STRING_APPEND_TO(param, KEY_MPP_GROUP_MAX_FRAMES, 4);
+
+	PARAM_STRING_APPEND_TO(param, KEY_MPP_SPLIT_MODE, split_mode);
+	PARAM_STRING_APPEND_TO(param, KEY_OUTPUT_TIMEOUT, timeout);
+
+	easymedia::REFLECTOR(Decoder)::DumpFactories();
 }
 #endif
