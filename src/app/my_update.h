@@ -22,6 +22,12 @@ extern "C" {
 #endif  /* __cplusplus */
 
 	enum {
+		UPDATE_FAIL,
+		UPDATE_SUCCESS,
+		UPDATE_POSITION
+	};
+
+	enum {
 		UPDATE_TYPE_SERVER,
 		UPDATE_TYPE_SDCARD,
 		UPDATE_TYPE_CENTER,

@@ -55,6 +55,7 @@ enum {
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
+static int auto_close = 0;
 
 static MY_CTRLDATA ChildCtrls [] = {
     STATIC_LB(0,280,1024,40,IDC_CONTTENT,WORD_DOWNLOAD,&font22,0xffffff),
@@ -86,6 +87,7 @@ static FormBase* form_base = NULL;
 
 static void interfaceUiUpdateStart(void)
 {
+	auto_close = 0;
 	my_video->hideVideo();
 	screensaverSet(1);
 	screenAutoCloseStop();
@@ -100,6 +102,8 @@ static void interfaceUiUpdateStop(void)
 static void interfaceUiUpdateFail(void)
 {
 	SendMessage(GetDlgItem(form_base->hDlg,IDC_CONTTENT),MSG_SETTEXT,0,(LPARAM)"更新失败..");
+	auto_close = 1;
+	// ShowWindow(form_base->hDlg,SW_HIDE);
 }
 
 static void interfaceUiUpdateSuccess(void)
@@ -159,7 +163,7 @@ static int formUpdateProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 	{
 		case MSG_TIMER:
 			{
-				if (wParam == IDC_TIMER_1S) {
+				if (wParam == IDC_TIMER_1S && auto_close == 0) {
 					return 0;
 				}
 			} break;

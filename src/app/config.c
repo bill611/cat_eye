@@ -6,7 +6,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <errno.h>
-#include "iniparser/iniparser.h"
 #include "externfunc.h"
 #include "thread_helper.h"
 #include "config.h"
@@ -48,7 +47,6 @@ static EtcValueChar etc_private_char[]={
 {"face",		"license",	SIZE_CONFIG(g_config.f_license),			"0"},
 
 };
-
 
 void configSync(void)
 {
@@ -95,7 +93,7 @@ static void configLoadEtcInt(dictionary *cfg_ini, EtcValueInt *etc_file,
  * @param length 数组长度
  */
 /* ---------------------------------------------------------------------------*/
-static void configLoadEtcChar(dictionary *cfg_ini, EtcValueChar *etc_file,
+void configLoadEtcChar(dictionary *cfg_ini, EtcValueChar *etc_file,
 		unsigned int length)
 {
 	unsigned int i;

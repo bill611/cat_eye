@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <time.h>
+#include "iniparser/iniparser.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -12,20 +13,21 @@ extern "C" {
 
 
 #define DEVICE_TYPE	"TC-U9MY-A"
-#define DEVICE_SVERSION	"V1.0.0"
-#define DEVICE_KVERSION	"V1.0.0"
+#define DEVICE_SVERSION	"1.0.0"
+#define DEVICE_KVERSION	"1.0.0"
 
 #if (defined X86)
 #define SDCARD_PATH "./"
 #define AUDIO_PATH "./res/wav/"
 #define CONFIG_FILE_PATH "./"
+#define UPDATE_INI_PATH	"./"
 #else
 #define SDCARD_PATH "/mnt/sdcard/"
 #define AUDIO_PATH "/root/usr/res/wav/"
 #define CONFIG_FILE_PATH "/data/"
+#define UPDATE_INI_PATH	"/tmp/"
 #endif
 
-#define UPDATE_FILE	"/tmp/Update.cab"
 #define DATABSE_PATH "./"						// 数据库文件路径
 #define QRCODE_IMIE "./imei.png"				// 机身码二维码路径
 #define QRCODE_APP "./app_url.png"				// app地址二维码路径
@@ -44,6 +46,9 @@ extern "C" {
 #define IPC_CAMMER "/tmp/ipc_cammer"			// 摄像头处理进程
 
 #define QINIU_URL "http://img.cateye.taichuan.com"  // 七牛云存储地址
+#define UPDATE_FILE	"/tmp/Update.cab"	// LAN升级时，升级包存放位置
+#define UPDATE_URL	"http://img.cateye.taichuan.com/update.ini" // 七牛云存储升级包配置文件地址
+#define UPDATE_INI	UPDATE_INI_PATH"update.ini" // 七牛云存储升级配置文件地址
 
 #define AUTO_CLOSE_LCD 11
 #define SLEEP_TIMER 20
@@ -161,6 +166,8 @@ extern "C" {
 	void ConfigSavePrivateCallback(configCallback func);
 
 	void createSdcardDirs(void);
+	void configLoadEtcChar(dictionary *cfg_ini, EtcValueChar *etc_file,
+			unsigned int length);
 	extern Config g_config;
 
 #ifdef __cplusplus

@@ -59,13 +59,13 @@ static void configLoadEtcInt(dictionary *cfg_ini, EtcValueInt *etc_file,
 
 /* ---------------------------------------------------------------------------*/
 /**
- * @brief configLoadEtcChar 加载char型配置文件
+ * @brief sconfigLoadEtcChar 加载char型配置文件
  *
  * @param etc_file 文件数组地址
  * @param length 数组长度
  */
 /* ---------------------------------------------------------------------------*/
-static void configLoadEtcChar(dictionary *cfg_ini, EtcValueChar *etc_file,
+static void sconfigLoadEtcChar(dictionary *cfg_ini, EtcValueChar *etc_file,
 		unsigned int length)
 {
 	unsigned int i;
@@ -127,7 +127,7 @@ void sconfigLoad(void)
 
 	loadIniFile(&cfg_private_ini,CONFIG_FILENAME,sec_private);
 	configLoadEtcInt(cfg_private_ini,etc_private_int,NELEMENTS(etc_private_int));
-	configLoadEtcChar(cfg_private_ini,etc_private_char,NELEMENTS(etc_private_char));
+	sconfigLoadEtcChar(cfg_private_ini,etc_private_char,NELEMENTS(etc_private_char));
 	iniparser_freedict(cfg_private_ini);
 }
 

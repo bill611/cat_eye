@@ -4,8 +4,9 @@
 #include "jpeg_enc_dec.h"
 #include "libyuv.h"
 
+#define CAMMER_TICK_NUM 5
 static FILE *fp = NULL;
-static int cammer_tick = 5;  // 摄像头正常连接计数，当计数为0，判断摄像头接线异常
+static int cammer_tick = CAMMER_TICK_NUM;  // 摄像头正常连接计数，当计数为0，判断摄像头接线异常
 static bool cammer_check_thread = false;
 int NV12Scale(unsigned char *psrc_buf, int psrc_w, int psrc_h, unsigned char **pdst_buf, int pdst_w, int pdst_h);
 static void writePicture(unsigned char *data,int w,int h)
@@ -50,7 +51,7 @@ DisplayProcess::DisplayProcess()
 		printf("rk_rga_open failed\n");
 
 	cammer_state_ = 1;
-	cammer_tick = 5;
+	cammer_tick = CAMMER_TICK_NUM;
 	myH264DecInit();
 	if (cammer_check_thread == false)
 		createThread(threadCheckCammer,this);
@@ -65,7 +66,7 @@ DisplayProcess::~DisplayProcess()
 bool DisplayProcess::processFrame(std::shared_ptr<BufferBase> inBuf,
                                         std::shared_ptr<BufferBase> outBuf)
 {
-	cammer_tick = 5;
+	cammer_tick = CAMMER_TICK_NUM;
     int src_w = inBuf->getWidth();
     int src_h = inBuf->getHeight();
     int src_fd = (int)(inBuf->getFd());
@@ -117,6 +118,7 @@ void DisplayProcess::setVideoBlack()
     if (rk_fb_video_disp(video_win) < -1){
 		printf("rk_fb_video_disp failed\n");
 	}
+	cammer_tick = 0;
 }
 void DisplayProcess::showLocalVideo(void)
 {

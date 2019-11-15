@@ -19,12 +19,16 @@
  *----------------------------------------------------------------------------*/
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "iniparser/iniparser.h"
 #include "thread_helper.h"
 #include "externfunc.h"
 #include "my_update.h"
+#include "my_http.h"
 #include "remotefile.h"
+#include "config.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
@@ -37,6 +41,25 @@
 /* ---------------------------------------------------------------------------*
  *                        macro define
  *----------------------------------------------------------------------------*/
+#define SIZE_CONFIG(x)  x,sizeof(x) - 1
+#define NELEMENTS(array)  (sizeof (array) / sizeof ((array) [0]))
+
+struct VersionType{
+	int major;   // 主版本，区分设备类型及方案平台
+	int minor;   // 次版本，有功能更新时增加
+	int release; // 发布版本，修改bug时增加
+};
+typedef struct _UpdateFileInfo {
+	char dev_type[64];         // 设备类型
+	char version[16];      // 升级包软件版本
+	char start_version[16];      // 升级包升级软件起始版本
+	char end_version[16];      // 升级包升级软件结束版本
+	char force[8];      // 是否强制升级，0否 1是
+	char url[128];     // 升级包地址 
+	char readme[256];     // 升级包地址 
+	int need_update;     // 是否需要升级，0不需要，1需要，强制升级时，直接进入升级界面
+} UpdateFileInfo;
+
 struct _MyUpdatePrivate {
 	char ip[16];
 	char file_path[512];
@@ -50,46 +73,161 @@ struct _MyUpdatePrivate {
  *                      variables define
  *----------------------------------------------------------------------------*/
 MyUpdate *my_update = NULL;
+static MyHttp *http = NULL;
+static UpdateFileInfo update_info;
+static dictionary* update_ini = NULL;
 
+static EtcValueChar etc_update_char[]={
+{"VersionInfo",		"DevType",	    SIZE_CONFIG(update_info.dev_type),		"0"},
+{"VersionInfo",		"Version",	    SIZE_CONFIG(update_info.version),		"0"},
+{"VersionInfo",		"StartVersion",	SIZE_CONFIG(update_info.start_version),	"0"},
+{"VersionInfo",		"EndVersion",	SIZE_CONFIG(update_info.end_version),	"0"},
+{"VersionInfo",		"Force",	    SIZE_CONFIG(update_info.force),			"0"},
+{"VersionInfo",		"Url",	    	SIZE_CONFIG(update_info.url),			"0"},
+{"VersionInfo",		"Readme",	    SIZE_CONFIG(update_info.readme),		"0"},
+};
+
+
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief tarUpdateFiles 
+ * 解压升级包
+ * 判断升级包完整新
+ * 执行升级
+ * 退出程序重启
+ */
+/* ---------------------------------------------------------------------------*/
+static void tarUpdateFiles(void)
+{
+	char update_buf[64] = {0};
+	sprintf(update_buf,"tar xzf %supdate.tar.gz -C %s",UPDATE_INI_PATH,UPDATE_INI_PATH);
+	int ret = system(update_buf);
+	if (ret == 0 && fileexists(UPDATE_INI_PATH"update/go.sh")) {
+		system(UPDATE_INI_PATH"update/go.sh");
+		if (my_update->interface->uiUpdateSuccess)	
+			my_update->interface->uiUpdateSuccess();
+		sync();
+		sleep(1);
+		exit(0);
+	} else {
+		if (my_update->interface->uiUpdateFail)
+			my_update->interface->uiUpdateFail();
+	}
+}
 static int init(struct _MyUpdate * This,int type,char *ip,int port,char *file_path,UpdateFunc callbackFunc)
 {
 	This->priv->type = type;	
-	This->priv->port = port;	
-	if (ip)
-		strcpy(This->priv->ip,ip);
-	if (file_path)
-		strcpy(This->priv->file_path,file_path);
 	This->priv->callbackFunc = callbackFunc;	
-	This->priv->remote =  CreateRemoteFile(ip,"Update1.cab");
+	if (This->priv->type == UPDATE_TYPE_CENTER) {
+		This->priv->port = port;	
+		if (ip)
+			strcpy(This->priv->ip,ip);
+		if (file_path)
+			strcpy(This->priv->file_path,file_path);
+		This->priv->remote =  CreateRemoteFile(ip,"Update1.cab");
+	}
 	return 0;
 }
 static int download(struct _MyUpdate *This)
 {
 	if (my_update->priv->type == UPDATE_TYPE_CENTER) {
 		This->priv->remote->Download(This->priv->remote,
-				0,This->priv->file_path,"/tmp/update.tar.gz",FALSE,This->priv->callbackFunc);
-		int ret = system("tar xzf /tmp/update.tar.gz -C /tmp");
-		if (ret == 0 && fileexists("/tmp/update/go.sh")) {
-			system("/tmp/update/go.sh");
-			if (my_update->interface->uiUpdateSuccess)	
-				my_update->interface->uiUpdateSuccess();
-			sync();
-			sleep(1);
-			exit(0);
-		} else {
-			if (my_update->interface->uiUpdateFail)
-				my_update->interface->uiUpdateFail();
-		}
+				0,This->priv->file_path,UPDATE_INI_PATH"update.tar.gz",FALSE,This->priv->callbackFunc);
+		tarUpdateFiles();
+		
 	} else if (my_update->priv->type == UPDATE_TYPE_SDCARD) {
 	} else if (my_update->priv->type == UPDATE_TYPE_SERVER) {
-		
+		int leng = 0;
+		if (update_info.url[0]) {
+			leng = http->download(update_info.url,NULL,UPDATE_INI_PATH"update.tar.gz",This->priv->callbackFunc);
+			tarUpdateFiles();
+		}
 	}
+	return 0;
 }
 
 static int uninit(struct _MyUpdate *This)
 {
-	This->priv->remote->Destroy(This->priv->remote);
+	if (my_update->priv->type == UPDATE_TYPE_CENTER) {
+		if (This->priv->remote)
+			This->priv->remote->Destroy(This->priv->remote);
+	} else if (my_update->priv->type == UPDATE_TYPE_SDCARD) {
+	} else if (my_update->priv->type == UPDATE_TYPE_SERVER) {
+	}
 	return 0;
+}
+
+static int loadIniFile(dictionary **d,char *file_path,char *sec[])
+{
+	int ret = 0;
+	int i;
+    *d = iniparser_load(file_path);
+    if (*d == NULL) {
+        *d = dictionary_new(0);
+        assert(*d);
+		ret++;
+		for (i=0; sec[i] != NULL; i++)
+			iniparser_set(*d, sec[i], NULL);
+	} else {
+		int nsec = iniparser_getnsec(*d);
+		int j;
+		const char *  secname;
+		for (i=0; sec[i] != NULL; i++) {
+			for (j=0; j<nsec; j++) {
+				secname = iniparser_getsecname(*d, j);
+				if (strcasecmp(secname,sec[i]) == 0)
+					break;
+			}
+			if (j == nsec)  {
+				ret++;
+				iniparser_set(*d, sec[i], NULL);
+			}
+		}
+	}
+	return ret;
+}
+
+static void* threadCheckUpdatInfo(void *arg)
+{
+	http = myHttpCreate();
+	memset(&update_info,0,sizeof(UpdateFileInfo));
+	while (1) {
+		sleep(10);
+		int leng = http->download(UPDATE_URL,NULL,UPDATE_INI,NULL);
+		if (leng <= 0) {
+			sleep(60);
+			continue;
+		} else {
+			char *sec_private[] = {"VersionInfo",NULL};
+			loadIniFile(&update_ini,UPDATE_INI,sec_private);
+			if (update_ini) {
+				configLoadEtcChar(update_ini,etc_update_char,NELEMENTS(etc_update_char));
+				printf("url:%s\n", update_info.url);
+				// 判断是否为同一型号产品
+				if (strcmp(DEVICE_TYPE,update_info.dev_type))
+					break;
+				struct VersionType ver_start,ver_end,ver_now;
+				getVersionInfo(update_info.start_version,&ver_start.major,&ver_start.minor,&ver_start.release);
+				getVersionInfo(update_info.end_version,&ver_end.major,&ver_end.minor,&ver_end.release);
+				getVersionInfo(DEVICE_SVERSION,&ver_now.major,&ver_now.minor,&ver_now.release);
+				// 判断当前版本是否在要升级的软件版本范围之内
+				if (ver_now.major != ver_start.major || ver_now.major != ver_end.major)
+					break;
+				int start_ver_int = ver_start.minor * 10 + ver_start.release;
+				int end_ver_int = ver_end.minor * 10 + ver_end.release;
+				int now_ver_int = ver_now.minor * 10 + ver_now.release;
+				if (now_ver_int < start_ver_int || now_ver_int > end_ver_int)
+					break;
+				// 判断是否要强制升级
+				if (atoi(update_info.force) == 1) {
+					myUpdateStart(UPDATE_TYPE_SERVER,NULL,0,NULL);
+				} else
+					update_info.need_update = 1;
+			}
+			break;
+		}
+	}
+	return NULL;
 }
 
 void myUpdateInit(void)
@@ -100,6 +238,7 @@ void myUpdateInit(void)
 	my_update->init = init;
 	my_update->download = download;
 	my_update->uninit = uninit;
+	createThread(threadCheckUpdatInfo,NULL);	
 }
 
 static void updateCallback(int result,int reason)

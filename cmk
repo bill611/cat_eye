@@ -27,10 +27,10 @@ elif [ $1 == "x86" ]; then
 	cmake \
 		-DCMAKE_BUILD_TYPE=Debug \
 		-DPLATFORM_RV1108=OFF \
-		-DMODE_UDPTALK=OFF \
 		-DMODE_VIDEO=OFF \
 		-DMODE_FACE=OFF \
 		-DMODE_UCPAAS=OFF \
+		-DAUTO_SLEEP=OFF \
 		..
 fi
 make
@@ -59,7 +59,8 @@ if [ $? == 0 ]; then
 		cp $cmake_dir/singlechip ~/arm_share/cat_eye/
 		cp $cmake_dir/cammer_video ~/arm_share/cat_eye/
 		tar czf Update.tar.gz update/
-		mv Update.tar.gz $cmake_dir/update.cab
+		cp Update.tar.gz $cmake_dir/update.cab
+		mv Update.tar.gz $cmake_dir/update_cateye_v.tgz
 	fi
 fi
 

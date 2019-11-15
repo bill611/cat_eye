@@ -228,7 +228,9 @@ static void cbDialRet(void *arg)
 static void cblIncomingCall(void *arg)
 {
 	if (protocol_video && protocol_video->getIdleStatus(protocol_video) == 0) {
+#ifdef USE_UCPAAS
 		ucsHangup();
+#endif
 		return;
 	}
 	printf("[%s]%d\n", __func__,protocol_video->getIdleStatus(protocol_video));

@@ -27,11 +27,7 @@ extern "C" {
 #define BOOL int
 #endif
 
-	enum {
-		UPDATE_FAIL,
-		UPDATE_SUCCESS,
-		UPDATE_POSITION
-	};
+#include "my_update.h"
 	enum {
 		UPDATE_FAIL_REASON_CREATE,
 		UPDATE_FAIL_REASON_CONNECT,
@@ -55,8 +51,6 @@ extern "C" {
 	};
 	//---------------------------------------------------------------------------
 	struct RemoteFilePrivate;        //私有数据
-
-	typedef void (*UpdateFunc)(int result,int reason);
 
 	typedef struct _TRemoteFile
 	{

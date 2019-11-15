@@ -44,9 +44,31 @@ struct MemoryStruct {
  *                      variables define
  *----------------------------------------------------------------------------*/
 MyHttp *my_http = NULL;
+static long download_size = 0;  // 当前下载文件大小
+static long download_total_size = 0; // 下载文件总大小
+static UpdateFunc downloadCallback = NULL; // 下载文件回调函数，用于UI显示
+
+static long getDownloadFileLenth(CURL *handle,const char *url)
+{
+	double downloadFileLenth = 0;
+	curl_easy_setopt(handle, CURLOPT_URL, url);
+	curl_easy_setopt(handle, CURLOPT_HEADER, 1);    //只需要header头
+	curl_easy_setopt(handle, CURLOPT_NOBODY, 1);    //不需要body
+	if (curl_easy_perform(handle) == CURLE_OK) {
+		curl_easy_getinfo(handle, CURLINFO_CONTENT_LENGTH_DOWNLOAD, &downloadFileLenth);
+	}
+	curl_easy_reset(handle);
+	return downloadFileLenth;
+}
 
 static size_t downloadCallBackData(void *buffer, size_t size, size_t nmemb, void *user_p)
 {
+	int	pos = 0;
+	download_size += nmemb;
+	if (download_total_size)
+		pos = download_size * 100 / download_total_size;
+	if (downloadCallback)
+		downloadCallback(UPDATE_POSITION,pos);
 	return	fwrite(buffer, size, nmemb, user_p);
 }
 static size_t postCallBackData(void *buffer, size_t size, size_t nmemb, void *user_p)
@@ -87,7 +109,7 @@ static size_t qiniuPostCallBackData(void *buffer, size_t size, size_t nmemb, voi
 }
 
 
-static int download(char *url, char *para, char *file_path)
+static int download(char *url, char *para, char *file_path,UpdateFunc callback)
 {
 	if (!url) {
 		printf("NULL url!!\n");
@@ -99,16 +121,19 @@ static int download(char *url, char *para, char *file_path)
 		printf("NULL easy_handle!!\n");
 		return -1;
 	}
+	downloadCallback = callback;
+	download_total_size = getDownloadFileLenth(easy_handle,url);
 	curl_easy_setopt(easy_handle,CURLOPT_URL,url);
 	// curl_easy_setopt(easy_handle, CURLOPT_POST, 1);
 	if (para)
 		curl_easy_setopt(easy_handle, CURLOPT_POSTFIELDS, para);
 
+	 download_size = 0;
 	 FILE *fd = NULL;
 	 fd = fopen(file_path, "wb");
      if (fd == NULL)
 		goto EXIT;
-	 curl_easy_setopt(easy_handle, CURLOPT_WRITEDATA, file_path);
+	 curl_easy_setopt(easy_handle, CURLOPT_WRITEDATA, fd);
 	 curl_easy_setopt(easy_handle, CURLOPT_WRITEFUNCTION, &downloadCallBackData);
 	 curl_easy_setopt(easy_handle, CURLOPT_SSL_VERIFYHOST, 0L);
 	 r = curl_easy_setopt(easy_handle, CURLOPT_SSL_VERIFYPEER, 0L);
@@ -129,7 +154,8 @@ CLOSE_FD_EXIT:
     sync();
 EXIT:
 	curl_easy_cleanup(easy_handle);
-	return 0;
+	downloadCallback = NULL;
+	return download_size;
 }
 static int post(char *url, char *para, char **out_data)
 {
@@ -176,7 +202,7 @@ EXIT:
 	return chunk.size;
 }
 
-static int qiniuUpload(char *url, 
+static int qiniuUpload(char *url,
 		char *para,
 		char *token,
 		char *file_path,
@@ -195,14 +221,14 @@ static int qiniuUpload(char *url,
 		printf("NULL easy_handle!!\n");
 		return 0;
 	}
-	curl_formadd(&formpost, &lastptr, 
-			CURLFORM_COPYNAME, "key", 
+	curl_formadd(&formpost, &lastptr,
+			CURLFORM_COPYNAME, "key",
 			CURLFORM_COPYCONTENTS, file_name, CURLFORM_END);
-	curl_formadd(&formpost, &lastptr, 
-			CURLFORM_COPYNAME, "token", 
+	curl_formadd(&formpost, &lastptr,
+			CURLFORM_COPYNAME, "token",
 			CURLFORM_COPYCONTENTS, token, CURLFORM_END);
-	curl_formadd(&formpost, &lastptr, 
-			CURLFORM_COPYNAME, "file", 
+	curl_formadd(&formpost, &lastptr,
+			CURLFORM_COPYNAME, "file",
 			CURLFORM_FILE, file_path, CURLFORM_END);
 	// 设置表单参数
 	curl_easy_setopt(easy_handle, CURLOPT_HTTPPOST, formpost);

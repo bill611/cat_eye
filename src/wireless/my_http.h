@@ -21,9 +21,10 @@
 extern "C" {
 #endif  /* __cplusplus */
 
+#include "my_update.h"
 	typedef struct _MyHttp {
 		int (*post)(char *url, char *para, char **out_data);
-		int (*download)(char *url, char *para, char *file_path);
+		int (*download)(char *url, char *para, char *file_path,UpdateFunc callback);
 		int (*upload)(char *url, char *para, char **out_data);
 		int (*qiniuUpload)(char *url, 
 				char *para,

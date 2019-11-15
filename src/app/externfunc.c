@@ -496,79 +496,6 @@ int GetFilesNum(char *pPathDir,void (*func)(void *))
 	// return i;
 }
 
-/* ---------------------------------------------------------------------------*/
-/**
- * @brief JudgeMonth 判断当月多少天
- *
- * @param year 年份
- * @param month 月份
- *
- * @returns 天数
- */
-/* ---------------------------------------------------------------------------*/
-int JudgeMonth(int year,int month)
-{
-	if ((month == 1)
-		|| (month == 3)
-		|| (month == 5)
-		|| (month == 7)
-		|| (month == 8)
-		|| (month == 10)
-		|| (month == 12)) {
-		return 31;	//大月
-	} else if ((month == 4)
-		|| (month == 6)
-		|| (month == 9)
-		|| (month == 11)) {
-		return 30;
-	} else if (month == 2) {
-		if ((year % 4) == 0) {
-			return 28;
-		} else {
-			return 29;
-		}
-	}
-}
-
-/* ---------------------------------------------------------------------------*/
-/**
- * @brief hexToChar  16进制字符串转成n进制字符串
- *
- * @param num 待转换数
- * @param d_str 输出字符串
- * @param radix 进制(1-52)
- */
-/* ---------------------------------------------------------------------------*/
-void hexToChar( unsigned long long int num, char* d_str, unsigned int radix)
-{
-	const char a[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-
-	char *ptr = d_str;
-	if(num == 0) {
-		*ptr++ = 0;
-		*ptr = '\0';
-		return;
-
-	}
-
-	while(num) {
-		*ptr++ = a[num % (unsigned long long int)radix];
-		num /= (unsigned long long int)radix;
-
-	}
-
-	*ptr = '\0';
-	ptr--;
-	char *start = d_str;
-	while(start < ptr) {
-		char tmp = *ptr;
-		*ptr = *start;
-		*start = tmp;
-		ptr--;
-		start++;
-
-	}
-}
 
 /* ---------------------------------------------------------------------------*/
 /**
@@ -695,4 +622,16 @@ int getSdMem(char *total,char *residue,char *used)
 	char *ret = excuteCmd("df","-h","|","grep","sda1",NULL);
 #endif
 	sscanf(ret, "%*s %s %*s %s %s",total,residue,used);
+}
+
+void getVersionInfo(char *ver,int *major,int *minor,int *release)
+{
+    char buf[16] = {0};
+    char* save_ptr;
+    if (ver[0] == 0)
+        return;
+    strcpy(buf,ver);
+    *major = atoi(strtok_r(buf, ".", &save_ptr));
+    *minor = atoi(strtok_r(NULL, ".", &save_ptr));
+    *release = atoi(strtok_r(NULL, ".", &save_ptr));
 }
