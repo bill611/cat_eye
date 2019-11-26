@@ -381,11 +381,7 @@ static void getImei(void (*callBack)(int result))
 
 static int isNeedToUpdate(char *version,char *content)
 {
-	strcpy(version,"V8.8.8");
-	strcpy(content,"更新内容：\n\
-			1.修复了XX问题 \n\
-			2.增加XX功能");
-	return 0;
+	return my_update->needUpdate(my_update,version,content);
 }
 /* ---------------------------------------------------------------------------*/
 /**

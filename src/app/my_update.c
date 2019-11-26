@@ -56,7 +56,7 @@ typedef struct _UpdateFileInfo {
 	char end_version[16];      // 升级包升级软件结束版本
 	char force[8];      // 是否强制升级，0否 1是
 	char url[128];     // 升级包地址 
-	char readme[256];     // 升级包地址 
+	char readme[256];     // 升级内容
 	int need_update;     // 是否需要升级，0不需要，1需要，强制升级时，直接进入升级界面
 } UpdateFileInfo;
 
@@ -65,6 +65,7 @@ struct _MyUpdatePrivate {
 	char file_path[512];
 	int port;
 	int type;
+	int check_update;
 	TRemoteFile * remote;
 	UpdateFunc callbackFunc;
 };
@@ -130,13 +131,13 @@ static int init(struct _MyUpdate * This,int type,char *ip,int port,char *file_pa
 }
 static int download(struct _MyUpdate *This)
 {
-	if (my_update->priv->type == UPDATE_TYPE_CENTER) {
+	if (This->priv->type == UPDATE_TYPE_CENTER) {
 		This->priv->remote->Download(This->priv->remote,
 				0,This->priv->file_path,UPDATE_INI_PATH"update.tar.gz",FALSE,This->priv->callbackFunc);
 		tarUpdateFiles();
 		
-	} else if (my_update->priv->type == UPDATE_TYPE_SDCARD) {
-	} else if (my_update->priv->type == UPDATE_TYPE_SERVER) {
+	} else if (This->priv->type == UPDATE_TYPE_SDCARD) {
+	} else if (This->priv->type == UPDATE_TYPE_SERVER) {
 		int leng = 0;
 		if (update_info.url[0]) {
 			leng = http->download(update_info.url,NULL,UPDATE_INI_PATH"update.tar.gz",This->priv->callbackFunc);
@@ -148,11 +149,11 @@ static int download(struct _MyUpdate *This)
 
 static int uninit(struct _MyUpdate *This)
 {
-	if (my_update->priv->type == UPDATE_TYPE_CENTER) {
+	if (This->priv->type == UPDATE_TYPE_CENTER) {
 		if (This->priv->remote)
 			This->priv->remote->Destroy(This->priv->remote);
-	} else if (my_update->priv->type == UPDATE_TYPE_SDCARD) {
-	} else if (my_update->priv->type == UPDATE_TYPE_SERVER) {
+	} else if (This->priv->type == UPDATE_TYPE_SDCARD) {
+	} else if (This->priv->type == UPDATE_TYPE_SERVER) {
 	}
 	return 0;
 }
@@ -191,14 +192,20 @@ static void* threadCheckUpdatInfo(void *arg)
 {
 	http = myHttpCreate();
 	memset(&update_info,0,sizeof(UpdateFileInfo));
+	int check_tick = 10; // 启动等待UI10秒后拉取升级数据
 	while (1) {
-		sleep(10);
+		if (my_update->priv->check_update == 0 && check_tick) {
+			check_tick--;
+			sleep(1);
+			continue;
+		}
 		int leng = http->download(UPDATE_URL,NULL,UPDATE_INI,NULL);
 		if (leng <= 0) {
 			sleep(60);
 			continue;
 		} else {
 			char *sec_private[] = {"VersionInfo",NULL};
+			my_update->priv->check_update = 0;
 			loadIniFile(&update_ini,UPDATE_INI,sec_private);
 			if (update_ini) {
 				configLoadEtcChar(update_ini,etc_update_char,NELEMENTS(etc_update_char));
@@ -222,12 +229,28 @@ static void* threadCheckUpdatInfo(void *arg)
 				if (atoi(update_info.force) == 1) {
 					myUpdateStart(UPDATE_TYPE_SERVER,NULL,0,NULL);
 				} else
-					update_info.need_update = 1;
+					update_info.need_update = UPDATE_TYPE_SERVER;
 			}
 			break;
 		}
 	}
 	return NULL;
+}
+
+static int needUpdate(struct _MyUpdate *This,char *version,char *content)
+{
+	This->priv->check_update = 1;	
+	if (update_info.need_update == 0)
+		goto need_update_out;
+
+	if (version) {
+		strcpy(version,update_info.version);
+	}
+	if (content) {
+		strcpy(content,update_info.readme);
+	}
+need_update_out:
+	return update_info.need_update;	
 }
 
 void myUpdateInit(void)
@@ -238,6 +261,7 @@ void myUpdateInit(void)
 	my_update->init = init;
 	my_update->download = download;
 	my_update->uninit = uninit;
+	my_update->needUpdate = needUpdate;
 	createThread(threadCheckUpdatInfo,NULL);	
 }
 

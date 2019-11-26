@@ -25,6 +25,7 @@
 #include "my_title.h"
 #include "config.h"
 #include "protocol.h"
+#include "my_update.h"
 
 #include "form_base.h"
 
@@ -169,17 +170,46 @@ static void buttonUpdateLocal(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
-	// flag_timer_stop = 1;
+	if (protocol->isNeedToUpdate(NULL,NULL) == UPDATE_TYPE_SDCARD) {
+		flag_timer_stop = 1;
+		myUpdateStart(UPDATE_TYPE_SDCARD,NULL,0,NULL);
+	}
 }
 static void buttonUpdateNetwork(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
-	// flag_timer_stop = 1;
+	if (protocol->isNeedToUpdate(NULL,NULL) == UPDATE_TYPE_SERVER) {
+		flag_timer_stop = 1;
+		myUpdateStart(UPDATE_TYPE_SERVER,NULL,0,NULL);
+	}
 }
 void formSettingUpdateLoadBmp(void)
 {
     bmpsLoad(bmp_load);
+}
+static void updateInfo(HWND hDlg)
+{
+	char version[16] = {0},content[256] = {0};
+	if (protocol->isNeedToUpdate(version,content)) {
+		ShowWindow(GetDlgItem(hDlg,IDC_STATIC_IMAGE_WARNING),SW_HIDE);
+		ShowWindow(GetDlgItem(hDlg,IDC_STATIC_TEXT_NOTFIND),SW_HIDE);
+		ShowWindow(GetDlgItem(hDlg,IDC_STATIC_IMAGE_UPDATE),SW_SHOWNORMAL);
+		ShowWindow(GetDlgItem(hDlg,IDC_STATIC_TEXT_FIND),SW_SHOWNORMAL);
+		ShowWindow(GetDlgItem(hDlg,IDC_STATIC_TEXT_VERSION),SW_SHOWNORMAL);
+		ShowWindow(GetDlgItem(hDlg,IDC_STATIC_TEXT_CONTTENT),SW_SHOWNORMAL);
+		SendMessage(GetDlgItem(hDlg,IDC_STATIC_TEXT_VERSION),
+				MSG_SETTEXT,0,(LPARAM)version);
+		SendMessage(GetDlgItem(hDlg,IDC_STATIC_TEXT_CONTTENT),
+				MSG_SETTEXT,0,(LPARAM)content);
+	} else {
+		ShowWindow(GetDlgItem(hDlg,IDC_STATIC_IMAGE_WARNING),SW_SHOWNORMAL);
+		ShowWindow(GetDlgItem(hDlg,IDC_STATIC_TEXT_NOTFIND),SW_SHOWNORMAL);
+		ShowWindow(GetDlgItem(hDlg,IDC_STATIC_IMAGE_UPDATE),SW_HIDE);
+		ShowWindow(GetDlgItem(hDlg,IDC_STATIC_TEXT_FIND),SW_HIDE);
+		ShowWindow(GetDlgItem(hDlg,IDC_STATIC_TEXT_VERSION),SW_HIDE);
+		ShowWindow(GetDlgItem(hDlg,IDC_STATIC_TEXT_CONTTENT),SW_HIDE);
+	}
 }
 
 /* ----------------------------------------------------------------*/
@@ -203,27 +233,7 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
         ctrls_button[i].font = font22;
         createMyButton(hDlg,&ctrls_button[i]);
     }
-	char version[16] = {0},content[128] = {0};
-	if (protocol->isNeedToUpdate(version,content)) {
-		ShowWindow(GetDlgItem(hDlg,IDC_STATIC_IMAGE_WARNING),SW_HIDE);
-		ShowWindow(GetDlgItem(hDlg,IDC_STATIC_TEXT_NOTFIND),SW_HIDE);
-		ShowWindow(GetDlgItem(hDlg,IDC_STATIC_IMAGE_UPDATE),SW_SHOWNORMAL);
-		ShowWindow(GetDlgItem(hDlg,IDC_STATIC_TEXT_FIND),SW_SHOWNORMAL);
-		ShowWindow(GetDlgItem(hDlg,IDC_STATIC_TEXT_VERSION),SW_SHOWNORMAL);
-		ShowWindow(GetDlgItem(hDlg,IDC_STATIC_TEXT_CONTTENT),SW_SHOWNORMAL);
-		SendMessage(GetDlgItem(hDlg,IDC_STATIC_TEXT_VERSION),
-				MSG_SETTEXT,0,(LPARAM)version);
-		SendMessage(GetDlgItem(hDlg,IDC_STATIC_TEXT_CONTTENT),
-				MSG_SETTEXT,0,(LPARAM)content);
-	} else {
-		ShowWindow(GetDlgItem(hDlg,IDC_STATIC_IMAGE_WARNING),SW_SHOWNORMAL);
-		ShowWindow(GetDlgItem(hDlg,IDC_STATIC_TEXT_NOTFIND),SW_SHOWNORMAL);
-		ShowWindow(GetDlgItem(hDlg,IDC_STATIC_IMAGE_UPDATE),SW_HIDE);
-		ShowWindow(GetDlgItem(hDlg,IDC_STATIC_TEXT_FIND),SW_HIDE);
-		ShowWindow(GetDlgItem(hDlg,IDC_STATIC_TEXT_VERSION),SW_HIDE);
-		ShowWindow(GetDlgItem(hDlg,IDC_STATIC_TEXT_CONTTENT),SW_HIDE);
-
-	}
+	updateInfo(hDlg);
 }
 
 /* ----------------------------------------------------------------*/
@@ -268,6 +278,7 @@ int createFormSettingUpdate(HWND hMainWnd,void (*callback)(void))
 	HWND Form = Screen.Find(form_base_priv.name);
 	if(Form) {
 		Screen.setCurrent(form_base_priv.name);
+		updateInfo(form_base->hDlg);
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
 		form_base_priv.callBack = callback;

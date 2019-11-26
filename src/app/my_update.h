@@ -22,15 +22,16 @@ extern "C" {
 #endif  /* __cplusplus */
 
 	enum {
-		UPDATE_FAIL,
-		UPDATE_SUCCESS,
-		UPDATE_POSITION
+		UPDATE_FAIL,	 // 升级失败
+		UPDATE_SUCCESS,  // 升级成功
+		UPDATE_POSITION  // 升级百分比
 	};
 
 	enum {
-		UPDATE_TYPE_SERVER,
-		UPDATE_TYPE_SDCARD,
-		UPDATE_TYPE_CENTER,
+		UPDATE_TYPE_NONE,   // 无需升级
+		UPDATE_TYPE_SERVER, // 网络升级
+		UPDATE_TYPE_SDCARD, // sd卡升级
+		UPDATE_TYPE_CENTER, // 管理中心升级
 	};
 
 	typedef void (*UpdateFunc)(int result,int reason);
@@ -50,6 +51,16 @@ extern "C" {
 		int (*init)(struct _MyUpdate *,int type,char *ip,int port,char *file_path,UpdateFunc callbackFunc);
 		int (*download)(struct _MyUpdate *);
 		int (*uninit)(struct _MyUpdate *);
+		/* ---------------------------------------------------------------------------*/
+		/**
+		 * @brief int 是否需要升级 1是，0否
+		 *
+		 * @param 
+		 * @param version 需要升级时，升级后版本
+		 * @param content 升级内容
+		 */
+		/* ---------------------------------------------------------------------------*/
+		int (*needUpdate)(struct _MyUpdate *,char *version,char *content);
 	}MyUpdate;
 
 	void myUpdateInit(void);
