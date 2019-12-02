@@ -76,10 +76,10 @@ typedef struct _MyGpioPriv {
 
 static MyGpioTable gpio_normal_tbl[]={
 	{ENUM_GPIO_MICKEY, "mickey",0,IO_ACTIVE},
-	{ENUM_GPIO_SPKL,   "spkctl",0,IO_ACTIVE},
-	{ENUM_GPIO_SPKR,   "spkctr",0,IO_ACTIVE},
-	{ENUM_GPIO_KEYLED1,"keyled1",0,IO_ACTIVE},
-	{ENUM_GPIO_KEYLED2,"keyled2",0,IO_ACTIVE},
+	{ENUM_GPIO_SPKL,   "spkctl",1,IO_ACTIVE},
+	{ENUM_GPIO_SPKR,   "spkctr",1,IO_ACTIVE},
+	{ENUM_GPIO_KEYLED_BLUE,"keyled1",1,IO_INACTIVE},
+	{ENUM_GPIO_KEYLED_RED,"keyled2",1,IO_INACTIVE},
 	{ENUM_GPIO_IRLEDEN,"irleden",1,IO_ACTIVE},
 	{ENUM_GPIO_ASNKEY, "asnkey",0,IO_ACTIVE},
 	{ENUM_GPIO_MICEN,  "micen", 0,IO_ACTIVE},

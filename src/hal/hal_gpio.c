@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
+#include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -38,7 +39,7 @@
  *                        macro define
  *----------------------------------------------------------------------------*/
 typedef struct {
-    char *ioname;
+    char ioname[16];
     int iovalue;
 } TioLevelCtrl;
 
@@ -46,16 +47,18 @@ typedef struct {
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
-static int fd;
+static int fd = -1;
 
 void halGpioSetMode(int port_id,char* port_name,int dir)
 {
 	if (fd < 0) {
+#ifndef X86
+		fd = open("/dev/rv1108gpio",O_RDWR);
+#endif
+	} else {
 		return;
 	}
-#ifdef X86
 	return;
-#endif
 }
 
 void halGpioOut(int port_id,char *port_name,int value)
@@ -63,13 +66,13 @@ void halGpioOut(int port_id,char *port_name,int value)
 	if (fd < 0) {
 		return;
 	}
-#ifdef X86
+#ifndef X86
     TioLevelCtrl sbuf;
-	sbuf.ioname = port_name;
+	strcpy(sbuf.ioname,port_name);
     sbuf.iovalue = value;
 	int ret = ioctl(fd, RV1108_IOCGPIO_CTRL, &sbuf);
-	if(ret >= 0)
-		printf("success\n");
+	if(ret < 0)
+		printf("[%s]name:%s,v:%d\n",__func__,port_name,value);
 	return;
 #endif
 }

@@ -125,5 +125,15 @@ int createFormPowerOff(HWND hMainWnd)
 int createFormPowerOffLowPower(void)
 {
 	createFormPowerOff(0);
-	SendMessage(GetDlgItem(form_base->hDlg,IDC_CONTTENT),MSG_SETTEXT,0,(LPARAM)"电量过低，正在关机，请及时充电...");
+	SendMessage(GetDlgItem(form_base->hDlg,IDC_CONTTENT),MSG_SETTEXT,0,(LPARAM)"电量过低，即将关机，请及时充电...");
+}
+int createFormPowerOffCammerError(void)
+{
+	createFormPowerOff(0);
+	SendMessage(GetDlgItem(form_base->hDlg,IDC_CONTTENT),MSG_SETTEXT,0,(LPARAM)"镜头接线异常，即将关机，请接好后再重新开机...");
+}
+int createFormPowerOffCammerErrorSleep(void)
+{
+	createFormPowerOff(0);
+	SendMessage(GetDlgItem(form_base->hDlg,IDC_CONTTENT),MSG_SETTEXT,0,(LPARAM)"镜头接线异常，即将进入休眠，请断开电源并接好镜头后再重新开机...");
 }

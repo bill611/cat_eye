@@ -39,6 +39,7 @@
 #include "video/video_server.h"
 #include "share_memory.h"
 #include "my_update.h"
+#include "form_videolayer.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
@@ -547,7 +548,7 @@ static int stmDoTalkAnswer(void *data,MyVideo *arg)
 	StmData *data_temp = (StmData *)data;
 	sprintf(ui_title,"正在与 %s 通话",talk_peer_dev.peer_nick_name);
 	if (talk_peer_dev.type == DEV_TYPE_HOUSEHOLDAPP) {
-		screensaverSet(0);
+		formVideoLayerScreenOff();
 	}
 	protocol_talk->answer();
 	if (protocol_talk->uiAnswer)

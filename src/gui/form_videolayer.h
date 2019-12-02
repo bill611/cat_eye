@@ -1,7 +1,7 @@
 /*
  * =====================================================================================
  *
- *       Filename:  FormMain.h
+ *       Filename:  FormVideoLayer.h
  *
  *    Description:  主窗口
  *
@@ -14,8 +14,8 @@
  *
  * =====================================================================================
  */
-#ifndef _FORM_MAIN_H
-#define _FORM_MAIN_H
+#ifndef _FORM_VIDEOLAYER_H
+#define _FORM_VIDEOLAYER_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,6 +25,7 @@ extern "C" {
 
 	void formVideoLayerCreate(void);
     void formVideoLayerScreenOn(void);
+	void formVideoLayerScreenOff(void);
 	void formVideoLayerGotoPoweroff(void);
 
 #ifdef __cplusplus

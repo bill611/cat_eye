@@ -8,6 +8,9 @@
 #include "process/encoder_process.h"
 
 
+extern "C"
+void cammerErrorToPowerOff(void);
+
 class RKVideo {
  public:
     RKVideo();
@@ -229,7 +232,10 @@ void RKVideo::recordStop(void)
 
 int RKVideo::getCammerState(void)
 {
-    return display_process->getCammerState();
+	if (display_process)
+		return display_process->getCammerState();
+	else
+		return 0;
 	// h264EncOnOff(false,0,0,NULL);
 }
 
@@ -237,13 +243,19 @@ static void* threadVideoMonitor(void *arg)
 {
 	while (1) {
 		sleep(3);
+		// 如果初始化没找到摄像头，则退出视频处理
+		if (init_ok == 0)
+			break;
 		if (rkvideo) {
+			// 中途摄像头数据出错的话，直接关机
 			if (rkvideo->getCammerState() == 0) {
-				RKVideo* rkvideo_tmp = rkvideo;
-				rkvideo = NULL;
-				delete rkvideo_tmp;
-				sleep(1);
-				rkvideo = new RKVideo();
+				cammerErrorToPowerOff();
+				break;
+				// RKVideo* rkvideo_tmp = rkvideo;
+				// rkvideo = NULL;
+				// delete rkvideo_tmp;
+				// sleep(1);
+				// rkvideo = new RKVideo();
 			}
 		}
 	}

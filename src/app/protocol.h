@@ -47,6 +47,7 @@ extern "C" {
 		IPC_UART_DOORBELL,			// 门铃按键触发
 		IPC_UART_PIR,				// 门外pir触发
 		IPC_UART_WIFI_WAKE,			// wifi唤醒触发
+		IPC_UART_WIFI_RESET,		// wifi复位
 		IPC_UART_POWEROFF,			// 室内机电源键长按关机
 		IPC_UART_REMOVE_CAP,		// 当识别到为熟人后删除门铃拍照
 		IPC_UART_CAPTURE,			// 开机前抓拍图片
@@ -193,6 +194,8 @@ extern "C" {
 	typedef struct _ProtocolSinglechip {
 		void (*deal)(IpcData *ipc_data);	// 处理单片机协议
 		void (*cmdSleep)(void);				// 发送进入睡眠模式
+		void (*cmdPowerOff)(void);			// 发送进入关机
+		void (*cmdWifiReset)(void);			// 复位wifi
 		void (*hasPeople)(char *nick_name,char *user_id);// 人脸识别到熟人
 	}ProtocolSinglechip;
 	extern ProtocolSinglechip *protocol_singlechip;

@@ -32,7 +32,7 @@
 #include "my_video.h"
 #include "my_mixer.h"
 #include "sensor_detector.h"
-#include "form_videlayer.h"
+#include "form_videolayer.h"
 
 
 /* ---------------------------------------------------------------------------*

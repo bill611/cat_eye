@@ -13,7 +13,7 @@ extern "C" {
 
 
 #define DEVICE_TYPE	"TC-U9MY-A"
-#define DEVICE_SVERSION	"1.0.1"
+#define DEVICE_SVERSION	"1.0.3"
 #define DEVICE_KVERSION	"1.0.0"
 
 #if (defined X86)
@@ -53,6 +53,7 @@ extern "C" {
 #define AUTO_CLOSE_LCD 11
 #define SLEEP_TIMER 20
 #define SLEEP_LONG_TIMER 50
+#define POWEROFF_TIMER 2
 
 	typedef struct _EtcValueChar {
 		const char* section;	

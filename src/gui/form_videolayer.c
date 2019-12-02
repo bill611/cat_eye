@@ -1,3 +1,20 @@
+/*
+ * =============================================================================
+ *
+ *       Filename:  form_videolayer.c
+ *
+ *    Description:  初始化主窗口
+ *
+ *        Version:  1.0
+ *        Created:  2019-04-19 16:47:01
+ *       Revision:  none
+ *
+ *         Author:  xubin
+ *        Company:  Taichuan
+ *
+ * =============================================================================
+ */
+
 /* ---------------------------------------------------------------------------*
  *                      include head files
  *----------------------------------------------------------------------------*/
@@ -24,6 +41,8 @@
 extern void createFormMain(HWND hMainWnd,void (*callback)(void));
 extern int createFormPowerOff(HWND hMainWnd);
 extern int createFormPowerOffLowPower(void);
+extern int createFormPowerOffCammerError(void);
+extern int createFormPowerOffCammerErrorSleep(void);
 extern int createFormUpdate(HWND hMainWnd);
 extern void formMainLoadBmp(void);
 extern void formSettingLoadBmp(void);
@@ -111,6 +130,7 @@ static HWND hwnd_videolayer = HWND_INVALID;
 static int flag_timer_stop = 0;
 static int auto_close_lcd = AUTO_CLOSE_LCD;
 static int sleep_timer = 0; // 进入睡眠倒计时
+static int poweroff_timer = 0; // 进入关机倒计时
 static int screen_on = 0;
 static BmpLocation base_bmps[] = {
 	{NULL},
@@ -159,6 +179,17 @@ void formVideoLayerScreenOn(void)
 	screensaverSet(1);
 	setAutoCloseLcdTime(AUTO_CLOSE_LCD);
 }
+
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief formVideoLayerScreenOff 关闭屏幕 
+ */
+/* ---------------------------------------------------------------------------*/
+void formVideoLayerScreenOff(void)
+{
+	screensaverSet(0);
+	screenAutoCloseStop();
+}
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief formVideoLayerGotoPoweroff 关机时调用
@@ -179,7 +210,21 @@ static void interfaceLowPowerToPowerOff(void)
 	screenAutoCloseStop();
 	createFormPowerOffLowPower();
 	auto_close_lcd = 0;
-	sleep_timer = SLEEP_TIMER;
+	poweroff_timer = POWEROFF_TIMER;
+}
+
+void cammerErrorToPowerOff(void)
+{
+	my_video->hideVideo();
+	screensaverSet(1);
+	screenAutoCloseStop();
+	if (sensor->getEleState()) {
+		createFormPowerOffCammerErrorSleep();
+	} else {
+		createFormPowerOffCammerError();
+	}
+	auto_close_lcd = 0;
+	poweroff_timer = POWEROFF_TIMER;
 }
 /* ---------------------------------------------------------------------------*/
 /**
@@ -198,11 +243,15 @@ static void formVideoLayerTimerProc1s(HWND hwnd)
 				sleep_timer = SLEEP_TIMER;
 		}
 	}
-	if (sleep_timer && auto_close_lcd == 0) {
+
+	if (poweroff_timer) {
+		printf("power:%d\n", poweroff_timer);
+		if (--poweroff_timer == 0)
+			protocol_singlechip->cmdPowerOff();
+	} else if (sleep_timer && auto_close_lcd == 0) {
 		printf("sleep:%d\n", sleep_timer);
-		if (--sleep_timer == 0) {
+		if (--sleep_timer == 0)
 			protocol_singlechip->cmdSleep();
-		}
 	}
 }
 

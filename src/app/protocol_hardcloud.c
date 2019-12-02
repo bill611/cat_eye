@@ -906,12 +906,16 @@ static void* threadUpload(void *arg)
 	char *qiniu_upload= NULL;
 	DIR *dir;
 	struct dirent *dirp;
-	queue_list.upload = queueCreate("upload",QUEUE_BLOCK,sizeof(UpLoadData));
 	while (!qiniu_server_token) {
 		sleep(1);
 	}
 	while (1) {
-		queue_list.upload->get(queue_list.upload,&up_data);
+		if (queue_list.upload) {
+			queue_list.upload->get(queue_list.upload,&up_data);
+		} else {
+			sleep(1);
+			continue;
+		}
 		char file_name[64] = {0};
 		sprintf(file_name,"%s_%lld",g_config.imei,up_data.picture_id);
 		int file_len = strlen(file_name);
@@ -960,8 +964,10 @@ static void uploadPic(char *path,uint64_t pic_id)
 	UpLoadData up_data;
 	strcpy(up_data.file_path,path);
 	up_data.picture_id = pic_id;
-	if (queue_list.upload)
-		queue_list.upload->post(queue_list.upload,&up_data);
+	if (!queue_list.upload) {
+		queue_list.upload = queueCreate("upload",QUEUE_BLOCK,sizeof(UpLoadData));
+	}
+	queue_list.upload->post(queue_list.upload,&up_data);
 }
 
 static void* threadReportCapture(void *arg)
@@ -971,10 +977,14 @@ static void* threadReportCapture(void *arg)
 	char date[64] = {0};
 	int i;
 	char *send_buff;
-	Queue * queue = queue_list.report_capture = queueCreate("re_cap",QUEUE_BLOCK,sizeof(picture_id));
 	waitConnectService();
 	while (1) {
-		queue->get(queue,&picture_id);
+		if (queue_list.report_capture) {
+			queue_list.report_capture->get(queue_list.report_capture,&picture_id);
+		} else {
+			sleep(1);
+			continue;
+		}
 		int ret = sqlGetCapInfo(picture_id,date);
 		// 封装jcson信息
 		cJSON *root = packData(CE_Report,MODE_SEND_NONEED_REPLY,++g_id);
@@ -1019,8 +1029,9 @@ static void* threadReportCapture(void *arg)
 static void reportCapture(uint64_t pic_id)
 {
 	uint64_t data = pic_id;
-	if (queue_list.report_capture)
-		queue_list.report_capture->post(queue_list.report_capture,&data);
+	if (!queue_list.report_capture)
+		queue_list.report_capture = queueCreate("re_cap",QUEUE_BLOCK,sizeof(uint64_t));
+	queue_list.report_capture->post(queue_list.report_capture,&data);
 }
 static void* threadReportAlarm(void *arg)
 {
@@ -1028,10 +1039,14 @@ static void* threadReportAlarm(void *arg)
 	ReportAlarmData alarm_data;
 	int i;
 	char *send_buff;
-	Queue * queue = queue_list.report_alarm = queueCreate("re_alarm",QUEUE_BLOCK,sizeof(alarm_data));
 	waitConnectService();
 	while (1) {
-		queue->get(queue,&alarm_data);
+		if (queue_list.report_alarm) {
+			queue_list.report_alarm->get(queue_list.report_alarm,&alarm_data);
+		} else {
+			sleep(1);
+			continue;
+		}
 
 		// 封装jcson信息
 		cJSON *root = packData(CE_Report,MODE_SEND_NONEED_REPLY,++g_id);
@@ -1068,8 +1083,9 @@ static void* threadReportAlarm(void *arg)
 }
 static void reportAlarm(ReportAlarmData *data)
 {
-	if (queue_list.report_alarm)
-		queue_list.report_alarm->post(queue_list.report_alarm,data);
+	if (!queue_list.report_alarm)
+		queue_list.report_alarm = queueCreate("re_alarm",QUEUE_BLOCK,sizeof(ReportAlarmData));
+	queue_list.report_alarm->post(queue_list.report_alarm,data);
 }
 static void* threadReportFace(void *arg)
 {
@@ -1077,10 +1093,14 @@ static void* threadReportFace(void *arg)
 	ReportFaceData face_data;
 	int i;
 	char *send_buff;
-	Queue * queue = queue_list.report_face = queueCreate("re_face",QUEUE_BLOCK,sizeof(face_data));
 	waitConnectService();
 	while (1) {
-		queue->get(queue,&face_data);
+		if (queue_list.report_face) {
+			queue_list.report_face->get(queue_list.report_face,&face_data);
+		} else {
+			sleep(1);
+			continue;
+		}
 
 		// 封装jcson信息
 		cJSON *root = packData(CE_Report,MODE_SEND_NONEED_REPLY,++g_id);
@@ -1112,8 +1132,9 @@ static void* threadReportFace(void *arg)
 
 static void reportFace(ReportFaceData *data)
 {
-	if (queue_list.report_face)
-		queue_list.report_face->post(queue_list.report_face,data);
+	if (!queue_list.report_face)
+		queue_list.report_face = queueCreate("re_face",QUEUE_BLOCK,sizeof(ReportFaceData));
+	queue_list.report_face->post(queue_list.report_face,data);
 }
 
 static void* threadReportTalk(void *arg)
@@ -1122,10 +1143,14 @@ static void* threadReportTalk(void *arg)
 	ReportTalkData talk_data;
 	int i;
 	char *send_buff;
-	Queue * queue = queue_list.report_talk = queueCreate("re_talk",QUEUE_BLOCK,sizeof(talk_data));
 	waitConnectService();
 	while (1) {
-		queue->get(queue,&talk_data);
+		if (queue_list.report_talk) {
+			queue_list.report_talk->get(queue_list.report_talk,&talk_data);
+		} else {
+			sleep(1);
+			continue;
+		}
 
 		// 封装jcson信息
 		cJSON *root = packData(CE_Report,MODE_SEND_NONEED_REPLY,++g_id);
@@ -1164,8 +1189,9 @@ static void* threadReportTalk(void *arg)
 }
 static void reportTalk(ReportTalkData *data)
 {
-	if (queue_list.report_talk)
-		queue_list.report_talk->post(queue_list.report_talk,data);
+	if (!queue_list.report_talk)
+		queue_list.report_talk = queueCreate("re_talk",QUEUE_BLOCK,sizeof(ReportTalkData));
+	queue_list.report_talk->post(queue_list.report_talk,data);
 }
 /* ---------------------------------------------------------------------------*/
 /**

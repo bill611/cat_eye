@@ -27,8 +27,8 @@ extern "C" {
 		ENUM_GPIO_MICKEY,   // MIC: H外L内
 		ENUM_GPIO_SPKL,		// SPK:机内 高开低关
 		ENUM_GPIO_SPKR,     // SPK:机外 高开低关
-		ENUM_GPIO_KEYLED1,  // 红灯 高开低关
-		ENUM_GPIO_KEYLED2,  // 白灯 高开低关
+		ENUM_GPIO_KEYLED_BLUE,  // 红灯 高开低关,LED1
+		ENUM_GPIO_KEYLED_RED,  // 白灯 高开低关,LED2
 		ENUM_GPIO_IRLEDEN,  // 红外灯 高开低关
 		ENUM_GPIO_ASNKEY,   // 消回音 H外L内
 		ENUM_GPIO_MICEN,    // 模拟电子开关电源使能脚 高关低开

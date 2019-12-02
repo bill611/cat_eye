@@ -66,6 +66,7 @@ enum {
     CHECK_KEY_WIFI = (1 << 4),
 };
 enum{
+	CMD_GET_VERSION = 0X00, 		// ARM→单片机	0X00	NBYTE	查询版本号
 	CMD_HEART = 0X01, 				// ARM→单片机	0X01	NBYTE	关机或休眠时，发送心跳到单片机
 	CMD_POWER = 0X02, 				// ARM→单片机	0X02	1BYTE	0 关机 1进入低功耗模式 2 复位WIFI
 	CMD_WIFI_PWD = 0X03,			// ARM→单片机	0X03	32BYTE	设置WIFI连接，数据格式： SSID：[0~15]BYTE； PASSWORD：[16~31]BYTE；
@@ -299,6 +300,14 @@ static void ipcCallback(char *data,int size )
 	memcpy(&ipc_data,data,sizeof(IpcData));
 	switch(ipc_data.cmd)
 	{
+		case IPC_UART_POWEROFF:
+			 {
+				uint8_t data = 0;
+				cmdPacket(CMD_POWER,id++,&data,1);
+				createThread(threadCmdSleep,NULL);
+			 }
+			 break;
+
 		case IPC_UART_SLEEP:
 			{
 				uint8_t data = 1;
@@ -306,6 +315,13 @@ static void ipcCallback(char *data,int size )
 				createThread(threadCmdSleep,NULL);
 			}
 			break;
+
+		case IPC_UART_WIFI_RESET:
+			 {
+				uint8_t data = 2;
+				cmdPacket(CMD_POWER,id++,&data,1);
+			 }
+			 break;
 		default:
 			break;
 	}

@@ -28,6 +28,7 @@
 #include "sql_handle.h"
 #include "protocol.h"
 #include "my_video.h"
+#include "my_gpio.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
@@ -66,6 +67,7 @@ static void* theadProximity(void *arg)
 	};
 	return NULL;
 }
+
 static void* theadEle(void *arg)
 {
 	prctl(PR_SET_NAME, __func__, 0, 0, 0);
@@ -77,6 +79,14 @@ static void* theadEle(void *arg)
 		int power_state = halBatteryGetState();
 		if (power_state_old != power_state) {
 			power_state_old = power_state;
+			if (power_state) {
+				gpio->FlashStop(gpio,ENUM_GPIO_KEYLED_RED);
+				gpio->SetValue(gpio,ENUM_GPIO_KEYLED_BLUE,IO_ACTIVE);
+				gpio->SetValue(gpio,ENUM_GPIO_KEYLED_RED,IO_INACTIVE);
+			} else {
+				gpio->SetValue(gpio,ENUM_GPIO_KEYLED_BLUE,IO_INACTIVE);
+				report_low_power = 0;
+			}
 			if (sensor->interface->uiUpadteEleState)
 				sensor->interface->uiUpadteEleState(power_state);
 		}
@@ -93,19 +103,22 @@ static void* theadEle(void *arg)
 			power_old = power;
 			if (sensor->interface->uiUpadteElePower)
 				sensor->interface->uiUpadteElePower(power);
-			if (power < 20) {
-				if ( 	power_state == BATTERY_NORMAL
+		}
+		if (power < 20) {
+			if ( 	power_state == BATTERY_NORMAL
 					&& 	report_low_power == 0) {
-					report_low_power = 1;
-					ReportAlarmData alarm_data;
-					alarm_data.type = ALARM_TYPE_LOWPOWER;
-					getDate(alarm_data.date,sizeof(alarm_data.date));
-					sqlInsertRecordAlarm(alarm_data.date,alarm_data.type,0,0,0,0);
-					protocol_hardcloud->reportAlarm(&alarm_data);
-				}
-			} else {
-				report_low_power = 0;
+				report_low_power = 1;
+				ReportAlarmData alarm_data;
+				alarm_data.type = ALARM_TYPE_LOWPOWER;
+				getDate(alarm_data.date,sizeof(alarm_data.date));
+				sqlInsertRecordAlarm(alarm_data.date,alarm_data.type,0,0,0,0);
+				protocol_hardcloud->reportAlarm(&alarm_data);
+				gpio->FlashStart(gpio,ENUM_GPIO_KEYLED_RED,FLASH_SLOW,FLASH_FOREVER);
 			}
+		} else {
+			report_low_power = 0;
+			gpio->FlashStop(gpio,ENUM_GPIO_KEYLED_RED);
+			gpio->SetValue(gpio,ENUM_GPIO_KEYLED_RED,IO_INACTIVE);
 		}
 		sleep(1);
 	}

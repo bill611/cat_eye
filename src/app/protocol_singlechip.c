@@ -33,8 +33,9 @@
 #include "gui/screen.h"
 #include "jpeg_enc_dec.h"
 #include "thread_helper.h"
-#include "form_videlayer.h"
+#include "form_videolayer.h"
 #include "ipc_server.h"
+#include "sensor_detector.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
@@ -73,6 +74,28 @@ static void cmdSleep(void)
 	if (ipc_main)
 		ipc_main->sendData(ipc_main,IPC_UART,&ipc_data,sizeof(ipc_data));
 #endif
+}
+
+static void cmdPowerOff(void)
+{
+	if (sensor->getEleState()) {
+		cmdSleep();
+	} else {
+		IpcData ipc_data;
+		ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
+		ipc_data.cmd = IPC_UART_POWEROFF;
+		if (ipc_main)
+			ipc_main->sendData(ipc_main,IPC_UART,&ipc_data,sizeof(ipc_data));
+	}
+}
+
+static void cmdWifiReset(void)
+{
+	IpcData ipc_data;
+	ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
+	ipc_data.cmd = IPC_UART_WIFI_RESET;
+	if (ipc_main)
+		ipc_main->sendData(ipc_main,IPC_UART,&ipc_data,sizeof(ipc_data));
 }
 
 static void* threadPirTimer(void *arg)
@@ -169,6 +192,8 @@ void registSingleChip(void)
 {
 	protocol_singlechip = (ProtocolSinglechip *) calloc(1,sizeof(ProtocolSinglechip));
 	protocol_singlechip->cmdSleep = cmdSleep;
+	protocol_singlechip->cmdPowerOff = cmdPowerOff;
+	protocol_singlechip->cmdWifiReset = cmdWifiReset;
 	protocol_singlechip->deal = deal;
 	protocol_singlechip->hasPeople = hasPeople;
 	createThread(threadPirTimer,NULL);
