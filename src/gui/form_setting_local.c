@@ -89,8 +89,7 @@ struct MemData mem_data;
 // TEST
 static struct ScrollviewItem locoal_list[] = {
 	{"设备型号",DEVICE_TYPE,NULL},
-	{"软件版本",DEVICE_SVERSION,createFormSettingUpdate},
-	{"固件版本",DEVICE_KVERSION,createFormSettingUpdate},
+	{"软件版本",DEVICE_SVERSION"/"DEVICE_KVERSION,createFormSettingUpdate},
 	{"二维码",  "扫描添加设备",createFormSettingQrcode},
 	{"本地存储","",NULL},
 	{0},
@@ -222,7 +221,8 @@ static void myDrawItem (HWND hWnd, HSVITEM hsvi, HDC hdc, RECT *rcDraw)
 	SetBkMode (hdc, BM_TRANSPARENT);
 	SetTextColor (hdc, PIXEL_lightwhite);
 	SelectFont (hdc, font20);
-	FILL_BMP_STRUCT(rcDraw->left + 968,rcDraw->top + 15,bmp_enter);
+	if (p_item->callback)
+		FILL_BMP_STRUCT(rcDraw->left + 968,rcDraw->top + 15,bmp_enter);
 	// 绘制表格
 	DRAW_TABLE(rcDraw,0,0xCCCCCC);
 	// 输出文字

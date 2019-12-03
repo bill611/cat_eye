@@ -499,7 +499,7 @@ static void paint (HWND hWnd, HDC hdc)
 	}
 	if (wifi_list_title.strength < 3)
 		FILL_BMP_STRUCT(rcDraw.left + 919,rcDraw.top + 15,bmp_wifi[wifi_list_title.strength]);
-	FILL_BMP_STRUCT(rcDraw.left + 968,rcDraw.top + 15,bmp_enter);
+	// FILL_BMP_STRUCT(rcDraw.left + 968,rcDraw.top + 15,bmp_enter);
 	TextOut (hdc, rcDraw.left + 83, rcDraw.top + 15, wifi_list_title.text);
 
 	MoveTo (hdc, 0, 151);

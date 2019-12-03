@@ -113,6 +113,7 @@ static void paint(HWND hWnd,HDC hdc)
 	sprintf(power_lever,"%d%%",pInfo->ele_quantity);
     DrawText (hdc,power_lever, -1, &rc_text,
             DT_LEFT | DT_VCENTER | DT_WORDBREAK  | DT_SINGLELINE);
+	SetBkMode(hdc,BM_OPAQUE);
 	if (pInfo->state == 0) {
 		// 正常状态
 		rc_bmp.left = 64;
@@ -122,11 +123,11 @@ static void paint(HWND hWnd,HDC hdc)
 		FillBoxWithBitmap(hdc,60,10,image_normal.bmWidth,image_normal.bmHeight,&image_normal);
 		// 绘制电量
 		if (pInfo->ele_quantity <= 10) {
-			SetBrushColor (hdc, 0xFE3B31);
+			SetBrushColor (hdc, RGBA2Pixel (hdc, 0xFF, 0x00, 0x00, 0xFF));
 		} else if (pInfo->ele_quantity <= 20) {
-			SetBrushColor (hdc, 0xFF6900);
+			SetBrushColor (hdc, RGBA2Pixel (hdc, 0xFF, 0x69, 0x00, 0xFF));
 		} else {
-			SetBrushColor (hdc, 0xffffff);
+			SetBrushColor (hdc, RGBA2Pixel (hdc, 0xFF, 0xFF, 0xFF, 0xFF));
 		}
 		FillBox (hdc, rc_bmp.left, rc_bmp.top, RECTW(rc_bmp),RECTH(rc_bmp));
 		// myFillBox(hdc,&rc_bmp,0xffffff);
