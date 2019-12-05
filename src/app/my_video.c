@@ -429,7 +429,8 @@ static int stmDoTalkCallout(void *data,MyVideo *arg)
 	talk_peer_dev.type = data_temp->type;
 	talk_peer_dev.call_time = TIME_CALLING;
 	protocol_talk->dial(data_temp->usr_id,dialCallBack);
-	if (talk_peer_dev.type == DEV_TYPE_ENTRANCEMACHINE)
+	if (talk_peer_dev.type == DEV_TYPE_ENTRANCEMACHINE
+			|| talk_peer_dev.type == DEV_TYPE_HOUSEENTRANCEMACHINE)
 		my_video->showPeerVideo();	
 	// 保存通话记录到内存
 	strcpy(talk_data.nick_name,data_temp->nick_name);
