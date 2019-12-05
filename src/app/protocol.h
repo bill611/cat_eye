@@ -51,6 +51,7 @@ extern "C" {
 		IPC_UART_POWEROFF,			// 室内机电源键长按关机
 		IPC_UART_REMOVE_CAP,		// 当识别到为熟人后删除门铃拍照
 		IPC_UART_CAPTURE,			// 开机前抓拍图片
+		IPC_UART_GETVERSION,		// 获取单片机版本信息
 	};
 	enum {
 		PROTOCOL_TALK_LAN,  // 局域网对讲
@@ -196,6 +197,7 @@ extern "C" {
 		void (*cmdSleep)(void);				// 发送进入睡眠模式
 		void (*cmdPowerOff)(void);			// 发送进入关机
 		void (*cmdWifiReset)(void);			// 复位wifi
+		void (*cmdGetVersion)(void);		// 获取单片机版本号
 		void (*hasPeople)(char *nick_name,char *user_id);// 人脸识别到熟人
 	}ProtocolSinglechip;
 	extern ProtocolSinglechip *protocol_singlechip;

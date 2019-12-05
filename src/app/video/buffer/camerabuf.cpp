@@ -142,8 +142,11 @@ void RKCameraBufferAllocator::free(CameraBuffer* buffer) {
     int ret;
     if (buffer) {
         RKCameraBuffer* camBuff = static_cast<RKCameraBuffer*>(buffer);
-        munmap(camBuff->mVaddr, camBuff->mBufferSize);
-        close(camBuff->mShareFd);
+		if (camBuff->mVaddr)
+			munmap(camBuff->mVaddr, camBuff->mBufferSize);
+		if (camBuff->mShareFd)
+			close(camBuff->mShareFd);
+		camBuff->mShareFd = -1;
         ret = ion_free(mIonClient, camBuff->mHandle);
         if (ret != 0) {
             printf("%s: ion free buffer failed (error %d)", __func__, ret);

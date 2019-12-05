@@ -37,6 +37,7 @@ static EtcValueInt etc_private_int[]={
 static EtcValueChar etc_private_char[]={
 {"device",		"imei",	    SIZE_CONFIG(g_config.imei),		"0"},
 {"device",		"version",	SIZE_CONFIG(g_config.version),	DEVICE_SVERSION},
+{"device",		"s_version",SIZE_CONFIG(g_config.s_version),"0"},
 {"cloud",		"app_url",	SIZE_CONFIG(g_config.app_url),	"123"},
 
 {"wireless",	"ssid",	    SIZE_CONFIG(g_config.net_config.ssid),		"MINI"},

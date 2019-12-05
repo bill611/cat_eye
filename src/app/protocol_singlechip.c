@@ -98,6 +98,15 @@ static void cmdWifiReset(void)
 		ipc_main->sendData(ipc_main,IPC_UART,&ipc_data,sizeof(ipc_data));
 }
 
+static void cmdGetVersion(void)
+{
+	IpcData ipc_data;
+	ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
+	ipc_data.cmd = IPC_UART_GETVERSION;
+	if (ipc_main)
+		ipc_main->sendData(ipc_main,IPC_UART,&ipc_data,sizeof(ipc_data));
+}
+
 static void* threadPirTimer(void *arg)
 {
 	prctl(PR_SET_NAME, __func__, 0, 0, 0);
@@ -175,6 +184,8 @@ static void deal(IpcData *ipc_data)
 				}
 			}
 			break;
+		case IPC_UART_GETVERSION:
+			break;
 		default:
 			break;
 	}
@@ -194,7 +205,9 @@ void registSingleChip(void)
 	protocol_singlechip->cmdSleep = cmdSleep;
 	protocol_singlechip->cmdPowerOff = cmdPowerOff;
 	protocol_singlechip->cmdWifiReset = cmdWifiReset;
+	protocol_singlechip->cmdGetVersion = cmdGetVersion;
 	protocol_singlechip->deal = deal;
 	protocol_singlechip->hasPeople = hasPeople;
 	createThread(threadPirTimer,NULL);
+	protocol_singlechip->cmdGetVersion();
 }

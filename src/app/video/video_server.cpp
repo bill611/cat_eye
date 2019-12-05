@@ -6,8 +6,21 @@
 #include "process/display_process.h"
 #include "process/face_process.h"
 #include "process/encoder_process.h"
+#include "queue.h"
 
+enum {
+	MSG_DISPLAY_LOCAL,
+	MSG_DISPLAY_PEER,
+	MSG_DISPLAY_OFF,
+};
+struct StVideoServer{
+	int msg;
+	long p_data_addr;
+	int w,h;
+	int type;
+};
 
+static Queue *queue = NULL; // 显示本地或远程视频消息队列
 extern "C"
 void cammerErrorToPowerOff(void);
 
@@ -262,39 +275,78 @@ static void* threadVideoMonitor(void *arg)
 	return NULL;
 }
 
+static void *threadVideoMsgDeal(void *arg)
+{
+	while (!rkvideo) {
+		usleep(10000);
+	}
+	struct StVideoServer queue_data;
+	while (1) {
+		if (queue) {
+			queue->get(queue,&queue_data);
+		} else {
+			sleep(1);
+			continue;
+		}
+		switch(queue_data.msg)
+		{
+			case MSG_DISPLAY_LOCAL:
+				rkvideo->displayLocal();
+				break;
+			case MSG_DISPLAY_PEER:
+				rkvideo->displayPeer(queue_data.w,queue_data.h,(void *)queue_data.p_data_addr);
+				break;
+			case MSG_DISPLAY_OFF:
+				rkvideo->displayOff();
+				break;
+			default:
+				break;
+		}
+	}
+	return NULL;
+}
 extern "C"
 int rkVideoInit(void)
 {
 	rkvideo = new RKVideo();
 	createThread(threadVideoMonitor,NULL);
+	createThread(threadVideoMsgDeal,NULL);
 }
 
-static void *threadDisplayLocal(void *arg)
-{
-	while (!rkvideo) {
-		usleep(10000);
-	}
-	if (rkvideo)
-		rkvideo->displayLocal();
-	return NULL;
-}
 extern "C"
 int rkVideoDisplayLocal(void)
 {
-	createThread(threadDisplayLocal,NULL);
+	struct StVideoServer queue_data;
+	if (!queue) {
+		queue = queueCreate("v_server",QUEUE_BLOCK,sizeof(queue_data));	
+	}
+	queue_data.msg = MSG_DISPLAY_LOCAL;
+	queue->post(queue,&queue_data);
 }
 
 extern "C"
 int rkVideoDisplayPeer(int w,int h,void * decCallBack)
 {
-	if (rkvideo)
-		rkvideo->displayPeer(w,h,decCallBack);
+	struct StVideoServer queue_data;
+	if (!queue) {
+		queue = queueCreate("v_server",QUEUE_BLOCK,sizeof(queue_data));	
+	}
+	queue_data.msg = MSG_DISPLAY_PEER;
+	queue_data.p_data_addr = (long)decCallBack;
+	queue_data.w = w;
+	queue_data.h = h;
+
+	queue->post(queue,&queue_data);
 }
 extern "C"
 int rkVideoDisplayOff(void)
 {
-	if (rkvideo)
-		rkvideo->displayOff();
+	struct StVideoServer queue_data;
+	if (!queue) {
+		queue = queueCreate("v_server",QUEUE_BLOCK,sizeof(queue_data));	
+	}
+	queue_data.msg = MSG_DISPLAY_OFF;
+	queue->post(queue,&queue_data);
 }
 extern "C"
 int rkVideoFaceOnOff(int type)

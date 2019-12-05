@@ -204,7 +204,7 @@ static void cbAnswer(void *arg)
 		return;
 
 	if (my_video)
-		my_video->videoAnswer(1,DEV_TYPE_ENTRANCEMACHINE);
+		my_video->videoAnswer(CALL_DIR_OUT,DEV_TYPE_ENTRANCEMACHINE);
 }
 static void cbHangup(void *arg)
 {

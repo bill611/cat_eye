@@ -257,6 +257,8 @@ static void loadLocoalData(void)
 				sprintf(plist->text,"剩余:%s",mem_data.residue);
 				plist->callback = createFormSettingStore;
 			}
+		}else if (strcmp("软件版本",plist->title) == 0) {
+			sprintf(plist->text,"%s/%s/%s",DEVICE_SVERSION,DEVICE_KVERSION,g_config.s_version);
 		}
 		SendMessage (hScrollView, SVM_ADDITEM, 0, (LPARAM)&svii);
 		SendMessage (hScrollView, SVM_SETITEMADDDATA, i, (DWORD)plist);

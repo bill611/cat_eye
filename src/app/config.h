@@ -150,9 +150,10 @@ extern "C" {
 		int timer; // 录像时间长短
 	};
 	typedef struct _Config {
-        char imei[64 + 1];         // 太川设备机身码
-        char hardcode[64 + 1];     // 太川设备硬件码
-        char version[16 + 1];      // 太川软件版本
+        char imei[64 + 1];         // 设备机身码
+        char hardcode[64 + 1];     // 设备硬件码
+        char version[16 + 1];      // 软件版本
+        char s_version[16 + 1];    // 单片机版本
         char app_url[128 + 1];     // app地址 
 		int  timestamp;        // 启动时间戳
         TcWifiConfig net_config;  // 网络设置

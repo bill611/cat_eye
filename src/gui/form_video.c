@@ -200,7 +200,7 @@ static void buttonAnswerPress(HWND hwnd, int id, int nc, DWORD add_data)
 	if (nc != BN_CLICKED)
 		return;
 	if (my_video)
-		my_video->videoAnswer(0,DEV_TYPE_ENTRANCEMACHINE);
+		my_video->videoAnswer(CALL_DIR_IN,DEV_TYPE_ENTRANCEMACHINE);
 }
 
 /* ---------------------------------------------------------------------------*/
@@ -343,10 +343,10 @@ static int formVideoProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 		case MSG_SHOWWINDOW:
 			{
 				if (wParam == SW_SHOWNORMAL) {
+					updateDisplay(hDlg);
 					if (window_show_status == 1)
 						return 0;
 					window_show_status = 1;
-					updateDisplay(hDlg);
 					SendMessage(Screen.getCurrent(),MSG_DISABLE_WINDOW,0,0);	
 				} else if (wParam == SW_HIDE) {
 					if (window_show_status == 0)

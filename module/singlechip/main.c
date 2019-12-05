@@ -186,21 +186,104 @@ static void cmdPacket(uint8_t cmd,uint8_t id,uint8_t *data,int data_len)
 	free(send_buff);
 }
 
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief cmdReportResponse 回复单片机发送的消息
+ */
+/* ---------------------------------------------------------------------------*/
+static void cmdReportResponse(void)
+{
+	cmdPacket(CMD_REPORT,0,NULL,0);
+}
+
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief cmdCheckStatus 查询单片机之前的状态
+ */
+/* ---------------------------------------------------------------------------*/
 static void cmdCheckStatus(void)
 {
 	cmdPacket(CMD_GET_CHECK,id++,NULL,0);
 }
 
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief cmdSendHeart 关机或休眠前，不断发送心跳包，告诉单片机是否已经关机成功
+ */
+/* ---------------------------------------------------------------------------*/
+static void cmdSendHeart(void)
+{
+	uint8_t data = 1;
+	cmdPacket(CMD_HEART,id++,&data,0);
+}
+
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief cmdPowerOff 关机
+ */
+/* ---------------------------------------------------------------------------*/
+static void cmdPowerOff(void)
+{
+	uint8_t data = 0;
+	cmdPacket(CMD_POWER,id++,&data,1);
+}
+
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief cmdSleep 休眠
+ */
+/* ---------------------------------------------------------------------------*/
+static void cmdSleep(void)
+{
+	uint8_t data = 1;
+	cmdPacket(CMD_POWER,id++,&data,1);
+}
+
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief cmdWifiReset 复位wifi
+ */
+/* ---------------------------------------------------------------------------*/
+static void cmdWifiReset(void)
+{
+	uint8_t data = 1;
+	cmdPacket(CMD_POWER,id++,&data,1);
+}
+
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief cmdGetVesion 获取单片机版本号
+ */
+/* ---------------------------------------------------------------------------*/
+static void cmdGetVesion(void)
+{
+	cmdPacket(CMD_GET_VERSION,id++,NULL,0);
+}
+
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief threadCmdSleep 休眠或者关机线程不断发送心跳
+ *
+ * @param arg
+ *
+ * @returns 
+ */
+/* ---------------------------------------------------------------------------*/
 static void* threadCmdSleep(void *arg)
 {
 	prctl(PR_SET_NAME, __func__, 0, 0, 0);
-	uint8_t data = 1;
 	while (1) {
-		cmdPacket(CMD_HEART,id++,&data,0);
+		cmdSendHeart();
 		sleep(1);
 	}
 	return NULL;
 }
+
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief uartDeal 单片机协议处理
+ */
+/* ---------------------------------------------------------------------------*/
 static void uartDeal(void)
 {
 	uint8_t buff[512]={0};
@@ -237,9 +320,11 @@ static void uartDeal(void)
 	{
 		case CMD_SET_PIR_RESPONSE:
 			break;
+		case CMD_GET_VERSION:
+			break;
 		case CMD_GET_CHECK_RESPONSE:
 		case CMD_REPORT_RESPONSE:
-			cmdPacket(CMD_REPORT,0,NULL,0);
+			cmdReportResponse();
 			if (data[0] & CHECK_POWER) {
 				ipc_data.cmd = IPC_UART_KEY_POWER;
 				main_queue->post(main_queue,&ipc_data);
@@ -293,6 +378,14 @@ static void uartDeal(void)
 	}
 }
 
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief ipcCallback 主APP发送消息处理
+ *
+ * @param data
+ * @param size
+ */
+/* ---------------------------------------------------------------------------*/
 static void ipcCallback(char *data,int size )
 {
 	prctl(PR_SET_NAME, __func__, 0, 0, 0);
@@ -301,27 +394,30 @@ static void ipcCallback(char *data,int size )
 	switch(ipc_data.cmd)
 	{
 		case IPC_UART_POWEROFF:
-			 {
-				uint8_t data = 0;
-				cmdPacket(CMD_POWER,id++,&data,1);
+			{
+				cmdPowerOff();
 				createThread(threadCmdSleep,NULL);
-			 }
-			 break;
+			}
+			break;
 
 		case IPC_UART_SLEEP:
 			{
-				uint8_t data = 1;
-				cmdPacket(CMD_POWER,id++,&data,1);
+				cmdSleep();
 				createThread(threadCmdSleep,NULL);
 			}
 			break;
 
 		case IPC_UART_WIFI_RESET:
-			 {
-				uint8_t data = 2;
-				cmdPacket(CMD_POWER,id++,&data,1);
-			 }
-			 break;
+			{
+				cmdWifiReset();
+			}
+			break;
+
+		case IPC_UART_GETVERSION:
+			{
+				cmdGetVesion();
+			}
+			break;
 		default:
 			break;
 	}

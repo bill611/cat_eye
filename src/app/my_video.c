@@ -415,32 +415,22 @@ static int stmDoTalkCallout(void *data,MyVideo *arg)
 {
 	StmData *data_temp = (StmData *)data;
 	char ui_title[128] = {0};
-	// TODO 临时写死门口机Ip
-	if (strcmp(data_temp->usr_id,"172.16.5.3")) {
-		int ret = sqlGetUserInfoUseUserId(data_temp->usr_id,data_temp->nick_name,&data_temp->type);
-		if (ret == 0) {
-			printf("can't find usr_id:%s\n", data_temp->usr_id);
-			stm->msgPost(stm,EV_TALK_HANGUP,NULL);
-			return -1;
-		}
-		sprintf(ui_title,"正在呼叫 %s",data_temp->nick_name);
-		talk_data.call_dir = CALL_DIR_OUT;
-		if (protocol_talk->uiShowFormVideo)
-			protocol_talk->uiShowFormVideo(data_temp->type,ui_title,talk_data.call_dir);
-		talk_peer_dev.type = data_temp->type;
-		talk_peer_dev.call_time = TIME_CALLING;
-		protocol_talk->dial(data_temp->usr_id,dialCallBack);
-		if (talk_peer_dev.type == DEV_TYPE_ENTRANCEMACHINE)
-			my_video->showPeerVideo();	
-	} else {
-		sprintf(ui_title,"正在呼叫 门口机");
-		talk_peer_dev.type = DEV_TYPE_ENTRANCEMACHINE;
-		talk_peer_dev.call_time = TIME_CALLING;
-		if (protocol_talk->uiShowFormVideo)
-			protocol_talk->uiShowFormVideo(DEV_TYPE_ENTRANCEMACHINE,ui_title,talk_data.call_dir);
-		protocol_talk->dial(data_temp->usr_id,dialCallBack);
-		my_video->showPeerVideo();	
+	int ret = sqlGetUserInfoUseUserId(data_temp->usr_id,data_temp->nick_name,&data_temp->type);
+	if (ret == 0) {
+		printf("can't find usr_id:%s\n", data_temp->usr_id);
+		stm->msgPost(stm,EV_TALK_HANGUP,NULL);
+		return -1;
 	}
+	sprintf(ui_title,"正在呼叫 %s",data_temp->nick_name);
+	strcpy(talk_peer_dev.peer_nick_name,data_temp->nick_name);
+	talk_data.call_dir = CALL_DIR_OUT;
+	if (protocol_talk->uiShowFormVideo)
+		protocol_talk->uiShowFormVideo(data_temp->type,ui_title,talk_data.call_dir);
+	talk_peer_dev.type = data_temp->type;
+	talk_peer_dev.call_time = TIME_CALLING;
+	protocol_talk->dial(data_temp->usr_id,dialCallBack);
+	if (talk_peer_dev.type == DEV_TYPE_ENTRANCEMACHINE)
+		my_video->showPeerVideo();	
 	// 保存通话记录到内存
 	strcpy(talk_data.nick_name,data_temp->nick_name);
 	getDate(talk_data.date,sizeof(talk_data.date));
@@ -528,7 +518,7 @@ static int stmDoTalkCallin(void *data,MyVideo *arg)
 	talk_peer_dev.type = data_temp->type;
 	talk_peer_dev.call_time = TIME_CALLING;
 	if (data_temp->type == DEV_TYPE_HOUSEHOLDAPP) {
-		my_video->videoAnswer(0,data_temp->type);
+		my_video->videoAnswer(CALL_DIR_OUT,data_temp->type);
 	} else {
 		myAudioPlayRing();
 		my_video->showPeerVideo();	
@@ -996,12 +986,12 @@ static void recordWriteCallback(char *data,int size)
 
 static void videoCallOut(char *user_id)
 {
-	int scope = 0;
+	// int scope = 0;
 	st_data = (StmData *)stm->initPara(stm,
 			        sizeof(StmData));
 	strcpy(st_data->usr_id,user_id);
 	stm->msgPost(stm,EV_TALK_CALLOUT,st_data);
-	sqlGetUserInfoUseUserId(user_id,talk_peer_dev.peer_nick_name,&scope);
+	// sqlGetUserInfoUseUserId(user_id,talk_peer_dev.peer_nick_name,&scope);
 	talk_peer_dev.call_out_result = CALL_RESULT_NO;
 }
 static int videoGetCallTime(void)

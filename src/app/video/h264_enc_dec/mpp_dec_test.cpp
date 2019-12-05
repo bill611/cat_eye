@@ -94,16 +94,35 @@ static bool get_output_and_process(easymedia::VideoDecoder *mpp_dec,int *out_siz
 	return true;
 }
 
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief mpiH264Decode h264视频解码，由于云之讯传过来的视频格式问题，需要过滤
+ * 0x00 0x00 0x00 0x00 0x01 0x06 0x05这个非视频信息
+ * 而云之讯传视频sps和pps时，会将这hal分开传输，先传sps，再传pps，再传i帧数据
+ * 需要自己组合
+ *
+ * @param This
+ * @param in_data
+ * @param in_size
+ * @param out_data
+ * @param out_w
+ * @param out_h
+ *
+ * @returns 
+ */
+/* ---------------------------------------------------------------------------*/
 static int mpiH264Decode(H264Decode *This,unsigned char *in_data,int in_size,unsigned char *out_data,int *out_w,int *out_h)
 {
 	int sps_length = 0,pps_length = 0;
 	unsigned char *i_frame = NULL;
 	unsigned char *frame = in_data;
 	int frame_size = in_size;
+	// 过滤非视频信息
 	if (in_data[0] == 0 && in_data[1] == 0 && in_data[2] == 0 && in_data[3] == 1
 			&& in_data[4] == 0x6 && in_data[5] == 0x5) {
 		return 0;
 	}
+	// 判断是否是sps或pps，若是则添加到缓存中
 	int frame_type = split_h264_separate(in_data,in_size,&sps_length,&pps_length);
 	if (frame_type == 7 || frame_type == 8) {
 		if (frame_type == 7) {
@@ -112,13 +131,17 @@ static int mpiH264Decode(H264Decode *This,unsigned char *in_data,int in_size,uns
 				my_h264dec->init(my_h264dec,1024,600);
 				memcpy(h264_sps_pps,in_data,sps_length);
 			}
+			memset(&sps_pps_tmp,0,sizeof(sps_pps_tmp));
 		}
-		memcpy(&sps_pps_tmp.buf[sps_pps_tmp.size],in_data,in_size);
-		sps_pps_tmp.size += in_size;
+		if (sps_pps_tmp.size >= 0) {
+			memcpy(&sps_pps_tmp.buf[sps_pps_tmp.size],in_data,in_size);
+			sps_pps_tmp.size += in_size;
+		}
 		return 0;
 	}
 
-	if (sps_pps_tmp.size) {
+	// 非sps和pps时，重新组包组合成sps+pps+i帧
+	if (sps_pps_tmp.size > 0) {
 		i_frame = (unsigned char *) calloc(1,in_size + sps_pps_tmp.size);
 		memcpy(i_frame,sps_pps_tmp.buf,sps_pps_tmp.size);
 		memcpy(i_frame + sps_pps_tmp.size,in_data,in_size);

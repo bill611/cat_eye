@@ -120,7 +120,7 @@ static MyCtrlTitle ctrls_title[] = {
         MYTITLE_LEFT_EXIT,
         MYTITLE_RIGHT_NULL,
         0,0,1024,40,
-        "软件/固件版本",
+        "软件/固件/单片机版本",
         "",
         0xffffff, 0x333333FF,
         buttonNotify,

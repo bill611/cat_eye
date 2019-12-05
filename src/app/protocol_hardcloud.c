@@ -549,7 +549,9 @@ static int mqttConnectCallBack(void* context, char* topicName, int topicLen, voi
        printf("dealWithSubscription cjsonDecCreate fail!\n");
 	   return -1;
 	}
-	dec->print(dec);
+	// dec->print(dec);
+	if (my_video)
+		my_video->delaySleepTime(1);
 	char send_buff[128] = {0};
 	int id = dec->getValueInt(dec, "id");
 	int mode = dec->getValueInt(dec, "mode");
@@ -595,6 +597,8 @@ static int mqttConnectCallBack(void* context, char* topicName, int topicLen, voi
 		case CE_Report :
 			break;
 		case CE_Reset :
+			break;
+		default:
 			break;
 	}
 
