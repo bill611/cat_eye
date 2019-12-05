@@ -30,6 +30,7 @@
  *----------------------------------------------------------------------------*/
 extern int createFormSettingWifi(HWND hMainWnd,void (*callback)(void));
 extern int createFormSettingLocoal(HWND hMainWnd,void (*callback)(void));
+extern int createFormSettingDoorbell(HWND hMainWnd,void (*callback)(void));
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -112,7 +113,7 @@ static FormBasePriv form_base_priv= {
 };
 
 static MyCtrlButton ctrls_button[] = {
-#if 0
+#if 1
 	{IDC_BUTTON_WIFI,	 MYBUTTON_TYPE_TWO_STATE,"wifi设置",99,	129,buttonWifiPress},
 	{IDC_BUTTON_SCREEN,	 MYBUTTON_TYPE_TWO_STATE,"屏幕设置",338,129,buttonScreenPress},
 	{IDC_BUTTON_DOORBELL,MYBUTTON_TYPE_TWO_STATE,"门铃设置",577,129,buttonDoorBellPress},
@@ -174,6 +175,7 @@ static void buttonDoorBellPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
+    createFormSettingDoorbell(GetParent(hwnd),enableAutoClose);
 }
 static void buttonTimerPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
