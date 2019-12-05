@@ -158,6 +158,8 @@ extern "C" {
 		int  timestamp;        // 启动时间戳
         TcWifiConfig net_config;  // 网络设置
         char f_license[128 + 1];     // 阅面人脸
+		int  ring_num;        // 铃声编号
+		int  ring_voluem;     // 铃声音量
 
 		struct wifiLowPower wifi_lowpower; // 低功耗wifi参数
 		struct CapType cap;		// 抓拍或录像

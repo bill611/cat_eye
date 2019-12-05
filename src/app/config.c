@@ -32,6 +32,8 @@ static EtcValueInt etc_private_int[]={
 {"cap",			"type",			&g_config.cap.type,			0},
 {"cap",			"count",		&g_config.cap.count,		1},
 {"cap",			"timer",		&g_config.cap.timer,		5},
+{"device",		"ring_num",		&g_config.ring_num,			0},
+{"device",		"ring_voluem",	&g_config.ring_voluem,		80},
 };
 
 static EtcValueChar etc_private_char[]={

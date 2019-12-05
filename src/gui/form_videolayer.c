@@ -55,6 +55,7 @@ extern void formSettingStoreLoadBmp(void);
 extern void formSettingQrcodeLoadBmp(void);
 extern void formSettingUpdateLoadBmp(void);
 extern void formSettingDoorbellLoadBmp(void);
+extern void formSettingRingsLoadBmp(void);
 
 extern void formVideoInitInterface(void);
 /* ---------------------------------------------------------------------------*
@@ -125,6 +126,7 @@ static InitBmpFunc load_bmps_func[] = {
 	formSettingQrcodeLoadBmp,
 	formSettingUpdateLoadBmp,
 	formSettingDoorbellLoadBmp,
+	formSettingRingsLoadBmp,
 	NULL,
 };
 

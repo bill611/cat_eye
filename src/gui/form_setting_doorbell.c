@@ -30,6 +30,7 @@
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
+int createFormSettingRings(HWND hMainWnd,void (*callback)(void));
 int createFormSettingStore(HWND hMainWnd,void (*callback)(void));
 int createFormSettingQrcode(HWND hMainWnd,void (*callback)(void));
 int createFormSettingUpdate(HWND hMainWnd,void (*callback)(void));
@@ -88,9 +89,9 @@ struct MemData mem_data;
 // static struct ScrollviewItem *locoal_list;
 // TEST
 static struct ScrollviewItem locoal_list[] = {
-	{"铃声设置",DEVICE_TYPE,NULL},
-	{"门铃音量",DEVICE_SVERSION"/"DEVICE_KVERSION,createFormSettingUpdate},
-	{"抓拍图像设置",  "扫描添加设备",createFormSettingQrcode},
+	{"铃声设置",	"",createFormSettingRings},
+	{"门铃音量",	"",createFormSettingUpdate},
+	{"抓拍图像设置","",createFormSettingQrcode},
 	{0},
 };
 
@@ -243,18 +244,16 @@ static void loadDoorbellData(void)
 		svii.nItemHeight = 60;
 		svii.addData = (DWORD)plist;
 		svii.nItem = i;
-		if (strcmp("本地存储",plist->title) == 0) {
-			if (checkSD() == -1) {
-				strcpy(plist->text,"未检测到SD卡");
-				plist->callback = NULL;
+		if (strcmp("铃声设置",plist->title) == 0) {
+			sprintf(plist->text,"铃声%d",g_config.ring_num + 1);
+		} else if (strcmp("门铃音量",plist->title) == 0) {
+			sprintf(plist->text,"%d%%",g_config.ring_voluem);
+		} else if (strcmp("抓拍图像设置",plist->title) == 0) {
+			if (g_config.cap.type == 0) {
+				sprintf(plist->text,"拍照%d张",g_config.cap.count);
 			} else {
-				memset(&mem_data,0,sizeof(mem_data));
-				getSdMem(mem_data.total,mem_data.residue,mem_data.used);
-				sprintf(plist->text,"剩余:%s",mem_data.residue);
-				plist->callback = createFormSettingStore;
+				sprintf(plist->text,"录像%d秒",g_config.cap.timer);
 			}
-		}else if (strcmp("软件版本",plist->title) == 0) {
-			sprintf(plist->text,"%s/%s/%s",DEVICE_SVERSION,DEVICE_KVERSION,g_config.s_version);
 		}
 		SendMessage (hScrollView, SVM_ADDITEM, 0, (LPARAM)&svii);
 		SendMessage (hScrollView, SVM_SETITEMADDDATA, i, (DWORD)plist);
