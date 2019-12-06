@@ -164,6 +164,18 @@ static void getFileName(char *file_name,char *date)
 			tm1->tm_min,
 			tm1->tm_sec);
 }
+
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief cmdPacket 封装发送给单片机的指令
+ * 5A leng id cmd data[N] checkout 5B
+ *
+ * @param cmd
+ * @param id
+ * @param data
+ * @param data_len
+ */
+/* ---------------------------------------------------------------------------*/
 static void cmdPacket(uint8_t cmd,uint8_t id,uint8_t *data,int data_len)
 {
 	uint8_t *send_buff = NULL;
@@ -321,6 +333,11 @@ static void uartDeal(void)
 		case CMD_SET_PIR_RESPONSE:
 			break;
 		case CMD_GET_VERSION:
+			ipc_data.cmd = IPC_UART_GETVERSION;
+			ipc_data.s_version[0] = data[0];
+			ipc_data.s_version[1] = data[1];
+			ipc_data.s_version[2] = '\0';
+			main_queue->post(main_queue,&ipc_data);
 			break;
 		case CMD_GET_CHECK_RESPONSE:
 		case CMD_REPORT_RESPONSE:

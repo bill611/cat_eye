@@ -124,6 +124,7 @@ extern "C" {
 		int dev_type;
 		int leng;
 		int count;
+		char s_version[3];
         union {
             char array_buf[128];
 			char cap_path[128];

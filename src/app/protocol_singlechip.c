@@ -185,6 +185,7 @@ static void deal(IpcData *ipc_data)
 			}
 			break;
 		case IPC_UART_GETVERSION:
+			strcpy(g_config.s_version,ipc_data->s_version);
 			break;
 		default:
 			break;

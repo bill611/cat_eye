@@ -504,9 +504,9 @@ void protocolInit(void)
 	protocol->getImei = getImei;
 	protocol->isNeedToUpdate = isNeedToUpdate;
 
+	ipc_main = ipcCreate(IPC_MAIN,ipcCallback);
 	registHardCloud();
 	registTalk();
 	registSingleChip();
-	ipc_main = ipcCreate(IPC_MAIN,ipcCallback);
 }
 
