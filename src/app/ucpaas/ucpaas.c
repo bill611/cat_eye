@@ -173,6 +173,8 @@ static void on_hangup_cb(const char* callid, int reason)
 	int type = 0;
 	if (reason == eUCS_REASON_HANGUP_MYSELF)
 		type = 1;
+	else if (reason == eUCS_REASON_HANGUP_BYPEER)
+		type = 2;
 	if (call_backs.hangup)
 		call_backs.hangup(&type);
 }

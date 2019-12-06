@@ -216,14 +216,15 @@ static void cbAnswer(void *arg)
 }
 static void cbHangup(void *arg)
 {
-	if (protocol_talk->type == PROTOCOL_TALK_LAN)
-		return;
 	int type = *(int *)arg;
+	if (protocol_talk->type == PROTOCOL_TALK_LAN
+			|| type == 0)
+		return;
 
 	if (my_video) {
-		if (type == 0)
+		if (type == 2)
 			my_video->videoHangup(HANGUP_TYPE_PEER);
-		else
+		else if (type == 1)
 			my_video->videoHangup(HANGUP_TYPE_BUTTON);
 	}
 	if (my_mixer) {
@@ -242,7 +243,7 @@ static void cblIncomingCall(void *arg)
 {
 	if (protocol_video && protocol_video->getIdleStatus(protocol_video) == 0) {
 #ifdef USE_UCPAAS
-		ucsHangup();
+		// ucsHangup();
 #endif
 		return;
 	}

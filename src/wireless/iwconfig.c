@@ -1928,7 +1928,7 @@ iwconfig(int	argc,
 {
   int skfd;		/* generic raw socket desc.	*/
   int goterr = 0;
-  g_connect = -1;
+  // g_connect = -1;
   /* Create a channel to the NET kernel. */
   if((skfd = iw_sockets_open()) < 0)
     {
