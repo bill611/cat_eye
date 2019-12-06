@@ -3,7 +3,7 @@
  *
  *       Filename:  playwav.h
  *
- *    Description:  .wav文件播放驱动
+ *    Description:  .wav鏂囦欢鎾斁椹卞姩
  *
  *        Version:  1.0
  *        Created:  2015-11-24 14:23:39 

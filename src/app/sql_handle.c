@@ -640,7 +640,7 @@ int sqlGetAlarmInfoUseDateType(
 
 static void* threadSqlUpload(void *arg)
 {
-    
+
 }
 
 void sqlInit(void)

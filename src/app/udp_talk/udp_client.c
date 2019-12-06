@@ -76,7 +76,7 @@ static int TUDPClient_RecvBuffer(TUDPClient *This,void *pBuf,int size,int TimeOu
     }
 }
 //---------------------------------------------------------------------------
-//  ´´½¨Ò»¸öUDP¿Í»§¶Ë£¬PortÎª0Ôò²»°ó¶¨¶Ë¿Ú
+//  åˆ›å»ºä¸€ä¸ªUDPå®¢æˆ·ç«¯ï¼ŒPortä¸º0åˆ™ä¸ç»‘å®šç«¯å£
 //---------------------------------------------------------------------------
 TUDPClient* TUDPClient_Create(int Port)
 {

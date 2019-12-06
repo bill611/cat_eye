@@ -635,3 +635,12 @@ void getVersionInfo(char *ver,int *major,int *minor,int *release)
     *minor = atoi(strtok_r(NULL, ".", &save_ptr));
     *release = atoi(strtok_r(NULL, ".", &save_ptr));
 }
+
+void setSysVolume(int volume)
+{
+#ifndef X86
+	char buf[64] = {0};
+	sprintf(buf, "amixer cset numid=4 %d",volume);
+	system(buf);
+#endif
+}

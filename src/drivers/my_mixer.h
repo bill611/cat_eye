@@ -3,7 +3,7 @@
  *
  *       Filename:  Mixer.h
  *
- *    Description:  ´´½¨»ìÒôÆ÷½Ó¿Ú
+ *    Description:  åˆ›å»ºæ··éŸ³å™¨æ¥å£
  *
  *        Version:  1.0
  *        Created:  2015-12-22 10:32:49 
@@ -52,12 +52,12 @@ extern "C" {
 		int (*ReadBuf)(struct _TMixer *,void *AudioBuf,int NeedSize,int channel);
 		int (*WriteBuffer)(struct _TMixer *,int Handle,const void *pBuffer,int Size);
 		int (*Write)(struct _TMixer *,int Handle,const void *pBuffer,int Size);
-		void (*InitVolume)(struct _TMixer *,int Volume,int bSlience);	//³õÊ¼»¯ÒôÁ¿
-		int (*GetVolume)(struct _TMixer *,int type);					//·µ»ØÒôÁ¿
-		int (*SetVolume)(struct _TMixer *,int Volume,int type);			//ÉèÖÃÒôÁ¿
-		int (*SetVolumeEx)(struct _TMixer *,int Volume);				//ÓÃÍâ²¿º¯ÊıÉèÖÃÒôÁ¿
-		void (*SetSlience)(struct _TMixer *,int bSlience);				//ÉèÖÃÊÇ·ñ¾²Òô
-		int (*GetSlience)(struct _TMixer *);							//·µ»ØÊÇ·ñ¾²Òô
+		void (*InitVolume)(struct _TMixer *,int Volume,int bSlience);	//åˆå§‹åŒ–éŸ³é‡
+		int (*GetVolume)(struct _TMixer *,int type);					//è¿”å›éŸ³é‡
+		int (*SetVolume)(struct _TMixer *,int Volume,int type);			//è®¾ç½®éŸ³é‡
+		int (*SetVolumeEx)(struct _TMixer *,int Volume);				//ç”¨å¤–éƒ¨å‡½æ•°è®¾ç½®éŸ³é‡
+		void (*SetSlience)(struct _TMixer *,int bSlience);				//è®¾ç½®æ˜¯å¦é™éŸ³
+		int (*GetSlience)(struct _TMixer *);							//è¿”å›æ˜¯å¦é™éŸ³
 		void (*ClearRecBuffer)(struct _TMixer *);
 		void (*ClearPlayBuffer)(struct _TMixer *);
 		void (*InitPlayAndRec)(struct _TMixer *, int *handle,int sample,int channle);
@@ -66,7 +66,7 @@ extern "C" {
 		void (*DeInitPlay8K)(struct _TMixer *, int *handle);
 	} TMixer;
 
-	//´´½¨Ò»¸ö»ìÒôÆ÷
+	//åˆ›å»ºä¸€ä¸ªæ··éŸ³å™¨
 	TMixer* mixerCreate(void);
 
 	void myMixerInit(void);

@@ -796,8 +796,10 @@ static void* threadAviReadAudio(void *arg)
 	prctl(PR_SET_NAME, __func__, 0, 0, 0);
     int audio_fp = -1;
     avi->InitAudio(avi,2,8000,1024);
-	if (my_mixer)
+	if (my_mixer) {
+		my_mixer->SetVolumeEx(my_mixer,g_config.talk_volume);
 		my_mixer->InitPlayAndRec(my_mixer,&audio_fp,8000,2);
+	}
     while (avi) {
 		int real_size = 0;
         char audio_buff[1024] = {0};

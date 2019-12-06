@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include "playwav.h"
 #include "config.h"
+#include "my_mixer.h"
 #include "externfunc.h"
 #include "thread_helper.h"
 
@@ -59,6 +60,8 @@ static void* loopPlay(void *arg)
 {
 	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	char *path = (char *)arg;
+	if (my_mixer)
+		my_mixer->SetVolumeEx(my_mixer,g_config.ring_volume);
 	loop_end = 0;
 	while (loop_start){
 		playwavfile(path);		
@@ -78,11 +81,31 @@ void myAudioPlayRing(void)
 	}
 	loop_start = 1;
 	char *path = (char *) calloc(1,64);
-	sprintf(path,"%sring.wav",AUDIO_PATH);	
+	sprintf(path,"%sring%d.wav",AUDIO_PATH,g_config.ring_num);	
 	createThread(loopPlay,path);
+}
+static void* oncePlay(void *arg)
+{
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
+	char *path = (char *)arg;
+	if (my_mixer)
+		my_mixer->SetVolumeEx(my_mixer,g_config.ring_volume);
+	playwavfile(path);		
+	if (path)
+		free(path);
+	return NULL;
+}
+void myAudioPlayRingOnce(void)
+{
+	char *path = (char *) calloc(1,64);
+	myAudioStopPlay();
+	sprintf(path,"%sring%d.wav",AUDIO_PATH,g_config.ring_num);	
+	createThread(oncePlay,path);
 }
 void myAudioPlayAlarm(void)
 {
+	if (my_mixer)
+		my_mixer->SetVolumeEx(my_mixer,g_config.alarm_volume);
 	char path[64];
 	sprintf(path,"%salarm.wav",AUDIO_PATH);	
 	playwavfile(path);		

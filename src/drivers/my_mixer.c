@@ -3,7 +3,7 @@
  *
  *       Filename:  Mixer.c
  *
- *    Description:  »ìÒôÆ÷½Ó¿Ú´¦Àí
+ *    Description:  æ··éŸ³å™¨æ¥å£å¤„ç†
  *
  *        Version:  1.0
  *        Created:  2015-12-21 15:28:18
@@ -36,6 +36,7 @@
 
 #include "hal_mixer.h"
 #include "my_mixer.h"
+#include "externfunc.h"
 
 /* ----------------------------------------------------------------*
  *                  extern variables declare
@@ -59,20 +60,20 @@ typedef struct _TMixerPriv
 {
     pthread_mutex_t mutex;
 	void *aec_buf;
-	int Inited;					//ÊÇ·ñ³õÊ¼»¯³É¹¦
+	int Inited;					//æ˜¯å¦åˆå§‹åŒ–æˆåŠŸ
 
-	int audiofp;				//´ò¿ªÉù¿¨Çı¶¯  ·ÅÒô
-	int mixer_fd;				//»ìÒôÆ÷¾ä±ú    À®°È
+	int audiofp;				//æ‰“å¼€å£°å¡é©±åŠ¨  æ”¾éŸ³
+	int mixer_fd;				//æ··éŸ³å™¨å¥æŸ„    å–‡å­
 
-	int audiofp1;				//´ò¿ªÉù¿¨Çı¶¯  Â¼Òô
-	int mixer_fd1;				//»ìÒôÆ÷¾ä±ú	ßäÍ·
+	int audiofp1;				//æ‰“å¼€å£°å¡é©±åŠ¨  å½•éŸ³
+	int mixer_fd1;				//æ··éŸ³å™¨å¥æŸ„	å’ªå¤´
 
-	int channle;				// ÉùµÀÊıÁ¿
-	unsigned int MinVolume;		//×îĞ¡ÒôÁ¿
-	unsigned int MaxVolume;		//×î´óÒôÁ¿
-	unsigned int MicVolume;		//MICÒôÁ¿
-	unsigned int PlayVolume;	//²¥·ÅÒôÁ¿
-	int bSlience;				//ÊÇ·ñ¾²Òô 1¾²Òô 0·Ç¾²Òô
+	int channle;				// å£°é“æ•°é‡
+	unsigned int MinVolume;		//æœ€å°éŸ³é‡
+	unsigned int MaxVolume;		//æœ€å¤§éŸ³é‡
+	unsigned int MicVolume;		//MICéŸ³é‡
+	int PlayVolume;	//æ’­æ”¾éŸ³é‡
+	int bSlience;				//æ˜¯å¦é™éŸ³ 1é™éŸ³ 0éé™éŸ³
 }TMixerPriv;
 
 /* ----------------------------------------------------------------*
@@ -93,13 +94,13 @@ static int MonoToStereo(const void *pSrc,int Size,void *pDst)
 }
 /* ----------------------------------------------------------------*/
 /**
- * @brief mixerOpen ´ò¿ª·ÅÒôÉù¿¨
+ * @brief mixerOpen æ‰“å¼€æ”¾éŸ³å£°å¡
  *
  * @param This
- * @param Sample ÉèÖÃ²ÉÑùÂÊ
- * @param ch ÉèÖÃÍ¨µÀ
+ * @param Sample è®¾ç½®é‡‡æ ·ç‡
+ * @param ch è®¾ç½®é€šé“
  *
- * @returns 0Ê§°Ü
+ * @returns 0å¤±è´¥
  */
 /* ----------------------------------------------------------------*/
 static int mixerOpen(TMixer *This,int sample,int ch)
@@ -112,7 +113,7 @@ static int mixerOpen(TMixer *This,int sample,int ch)
 	}
 	err_times = 0;
 	This->Priv->channle = ch;
-	//´ò¿ªÉù¿¨·ÅÒô¾ä±ú È·±£ÊÓÆµÎÄ¼şÍ£Ö¹²¥·Å
+	//æ‰“å¼€å£°å¡æ”¾éŸ³å¥æŸ„ ç¡®ä¿è§†é¢‘æ–‡ä»¶åœæ­¢æ’­æ”¾
 	do {
 		printf("mixer open sample:%d,ch:%d\n", sample,ch);
 		This->Priv->audiofp = rvMixerPlayOpen(sample,ch,16);
@@ -130,10 +131,10 @@ mixer_open_end:
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief mixerClose ¹Ø±Õ·ÅÒôÉè±¸
+ * @brief mixerClose å…³é—­æ”¾éŸ³è®¾å¤‡
  *
  * @param This
- * @param Handle Éè±¸¾ä±ú
+ * @param Handle è®¾å¤‡å¥æŸ„
  *
  * @returns
  */
@@ -150,13 +151,13 @@ static int mixerClose(TMixer *This,int *Handle)
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief mixerRead ´ÓÉù¿¨¶ÁÉùÒô£¬Â¼Òô
+ * @brief mixerRead ä»å£°å¡è¯»å£°éŸ³ï¼Œå½•éŸ³
  *
  * @param This
- * @param pBuffer ±£´æÂ¼ÒôÊı¾İ
- * @param Size Ò»´Î¶ÁÈ¡×Ö½Ú´óĞ¡
+ * @param pBuffer ä¿å­˜å½•éŸ³æ•°æ®
+ * @param Size ä¸€æ¬¡è¯»å–å­—èŠ‚å¤§å°
  *
- * @returns Êµ¼Ê¶ÁÈ¡×Ö½ÚÊı¾İ
+ * @returns å®é™…è¯»å–å­—èŠ‚æ•°æ®
  */
 /* ----------------------------------------------------------------*/
 static int mixerRead(TMixer *This,void *pBuffer,int Size,int channel)
@@ -173,13 +174,13 @@ static int mixerRead(TMixer *This,void *pBuffer,int Size,int channel)
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief mixerReadBuffer ´ÓÉù¿¨¶ÁÉùÒô£¬Â¼Òô
+ * @brief mixerReadBuffer ä»å£°å¡è¯»å£°éŸ³ï¼Œå½•éŸ³
  *
  * @param This
- * @param AudioBuf ±£´æÂ¼ÒôÊı¾İ
- * @param NeedSize Ò»´Î¶ÁÈ¡×Ö½Ú´óĞ¡
+ * @param AudioBuf ä¿å­˜å½•éŸ³æ•°æ®
+ * @param NeedSize ä¸€æ¬¡è¯»å–å­—èŠ‚å¤§å°
  *
- * @returns Êµ¼Ê¶ÁÈ¡×Ö½ÚÊı¾İ
+ * @returns å®é™…è¯»å–å­—èŠ‚æ•°æ®
  */
 /* ----------------------------------------------------------------*/
 static int mixerReadBuffer(TMixer *This, void *AudioBuf, int NeedSize,int channel)
@@ -191,12 +192,12 @@ static int mixerReadBuffer(TMixer *This, void *AudioBuf, int NeedSize,int channe
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief mixerWrite Ğ´ÉùÒô»º´æ
+ * @brief mixerWrite å†™å£°éŸ³ç¼“å­˜
  *
  * @param This
- * @param Handle Í¨µÀ
- * @param pBuffer Êı¾İ
- * @param Size ´óĞ¡
+ * @param Handle é€šé“
+ * @param pBuffer æ•°æ®
+ * @param Size å¤§å°
  *
  * @returns
  */
@@ -225,12 +226,12 @@ mixer_write_end:
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief mixerWriteBuffer Ğ´ÉùÒô»º´æ¿é
+ * @brief mixerWriteBuffer å†™å£°éŸ³ç¼“å­˜å—
  *
  * @param This
- * @param Handle Í¨µÀ
- * @param pBuffer Êı¾İ
- * @param Size ´óĞ¡
+ * @param Handle é€šé“
+ * @param pBuffer æ•°æ®
+ * @param Size å¤§å°
  *
  * @returns
  */
@@ -254,12 +255,12 @@ static int mixerWriteBuffer(TMixer *This,int Handle,const void *pBuffer,int Size
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief mixerGetVolume »ñµÃÒôÁ¿
+ * @brief mixerGetVolume è·å¾—éŸ³é‡
  *
  * @param This
- * @param type ÒôÁ¿ÀàĞÍ 0·ÅÒô 1Â¼Òô
+ * @param type éŸ³é‡ç±»å‹ 0æ”¾éŸ³ 1å½•éŸ³
  *
- * @returns ÒôÁ¿Öµ
+ * @returns éŸ³é‡å€¼
  */
 /* ----------------------------------------------------------------*/
 static int mixerGetVolume(struct _TMixer *This,int type)
@@ -273,13 +274,13 @@ static int mixerGetVolume(struct _TMixer *This,int type)
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief mixerSetVolume ÉèÖÃÒôÁ¿
+ * @brief mixerSetVolume è®¾ç½®éŸ³é‡
  *
  * @param This
- * @param Volume ÒôÁ¿
- * @param type »ìÒôÆ÷ÀàĞÍ 0·ÅÒô 1Â¼Òô
+ * @param Volume éŸ³é‡
+ * @param type æ··éŸ³å™¨ç±»å‹ 0æ”¾éŸ³ 1å½•éŸ³
  *
- * @returns ÉèÖÃ½á¹û
+ * @returns è®¾ç½®ç»“æœ
  */
 /* ----------------------------------------------------------------*/
 static int mixerSetVolume(struct _TMixer *This,int type,int Volume)
@@ -325,27 +326,30 @@ mixer_set_voluem_end:
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief mixerSetVolumeEx Í¨¹ıÍâ²¿Ó¦ÓÃ³ÌĞòÉèÖÃÒôÁ¿
+ * @brief mixerSetVolumeEx é€šè¿‡å¤–éƒ¨åº”ç”¨ç¨‹åºè®¾ç½®éŸ³é‡
  *
  * @param This
- * @param Volume ÒôÁ¿
+ * @param Volume éŸ³é‡
  *
  * @returns
  */
 /* ----------------------------------------------------------------*/
 static int mixerSetVolumeEx(struct _TMixer *This,int Volume)
 {
-	// PcmOut_setGain(Volume);
+	if (This->Priv->PlayVolume == Volume)
+		return 0;
+	This->Priv->PlayVolume = Volume;
+	setSysVolume(Volume);
 	return 0;
 }
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief mixerInitVolume ³õÊ¼»¯ÒôÁ¿
+ * @brief mixerInitVolume åˆå§‹åŒ–éŸ³é‡
  *
  * @param This
- * @param Volume ÒôÁ¿
- * @param bSlience 0·Ç¾²Òô 1¾²Òô
+ * @param Volume éŸ³é‡
+ * @param bSlience 0éé™éŸ³ 1é™éŸ³
  *
  */
 /* ----------------------------------------------------------------*/
@@ -357,10 +361,10 @@ static void mixerInitVolume(struct _TMixer *This,int Volume,int bSlience)
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief mixerSetSlience ÉèÖÃ¾²Òô
+ * @brief mixerSetSlience è®¾ç½®é™éŸ³
  *
  * @param This
- * @param bSlience 1¾²Òô£¬0·Ç¾²Òô
+ * @param bSlience 1é™éŸ³ï¼Œ0éé™éŸ³
  */
 /* ----------------------------------------------------------------*/
 
@@ -371,11 +375,11 @@ static void mixerSetSlience(struct _TMixer *This,int bSlience)
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief mixerGetSlience ·µ»Ø¾²Òô×´Ì¬
+ * @brief mixerGetSlience è¿”å›é™éŸ³çŠ¶æ€
  *
  * @param This
  *
- * @returns  1¾²Òô£¬0·Ç¾²Òô
+ * @returns  1é™éŸ³ï¼Œ0éé™éŸ³
  */
 /* ----------------------------------------------------------------*/
 static int mixerGetSlience(struct _TMixer *This)
@@ -385,7 +389,7 @@ static int mixerGetSlience(struct _TMixer *This)
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief mixerClearRecBuffer Çå³ıÉùÒôÂ¼Òô»º³åÇø
+ * @brief mixerClearRecBuffer æ¸…é™¤å£°éŸ³å½•éŸ³ç¼“å†²åŒº
  *
  * @param This
  *
@@ -416,7 +420,7 @@ static void mixerClearRecBuffer(TMixer *This)
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief mixerClearPlayBuffer Çå³ıÉùÒô·ÅÒô»º³åÇø
+ * @brief mixerClearPlayBuffer æ¸…é™¤å£°éŸ³æ”¾éŸ³ç¼“å†²åŒº
  *
  * @param This
  *
@@ -430,12 +434,12 @@ static void mixerClearPlayBuffer(TMixer *This)
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief mixerInitPlayAndRec ³õÊ¼»¯Â¼ÒôºÍ·ÅÒô
+ * @brief mixerInitPlayAndRec åˆå§‹åŒ–å½•éŸ³å’Œæ”¾éŸ³
  *
  * @param This
- * @param handle ·µ»ØÉù¿¨¾ä±ú
- * @param type ENUM_MIXER_CLEAR_PLAY_BUFFER Çå³ı·ÅÒô¾ä±ú
- * 			   ENUM_MIXER_CLEAR_REC_BUFFER Çå³ıÂ¼Òô¾ä±ú
+ * @param handle è¿”å›å£°å¡å¥æŸ„
+ * @param type ENUM_MIXER_CLEAR_PLAY_BUFFER æ¸…é™¤æ”¾éŸ³å¥æŸ„
+ * 			   ENUM_MIXER_CLEAR_REC_BUFFER æ¸…é™¤å½•éŸ³å¥æŸ„
  */
 /* ----------------------------------------------------------------*/
 static void mixerInitPlayAndRec(TMixer *This,int *handle,int sample,int channle)
@@ -464,10 +468,10 @@ static void mixerInitPlay8K(TMixer *This,int *handle)
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief mixerDeInitPlay Çå³ı·ÅÒô»º´æ£¬ÊÍ·Å·ÅÒôÉè±¸
+ * @brief mixerDeInitPlay æ¸…é™¤æ”¾éŸ³ç¼“å­˜ï¼Œé‡Šæ”¾æ”¾éŸ³è®¾å¤‡
  *
  * @param This
- * @param handle ·ÅÒôÉè±¸¾ä±ú
+ * @param handle æ”¾éŸ³è®¾å¤‡å¥æŸ„
  */
 /* ----------------------------------------------------------------*/
 static void mixerDeInitPlay(TMixer *This,int *handle)
@@ -487,7 +491,7 @@ static void mixerDeInitPlay8K(TMixer *This,int *handle)
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief mixerDestroy Ïú»Ù»ìÒôÆ÷£¬ÊÍ·Å×ÊÔ´
+ * @brief mixerDestroy é”€æ¯æ··éŸ³å™¨ï¼Œé‡Šæ”¾èµ„æº
  *
  * @param This
  */
@@ -510,9 +514,9 @@ static void mixerDestroy(TMixer *This)
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief mixerCreate ´´½¨»ìÒôÆ÷½Ó¿Ú
+ * @brief mixerCreate åˆ›å»ºæ··éŸ³å™¨æ¥å£
  *
- * @returns »ìÒôÆ÷Ö¸Õë
+ * @returns æ··éŸ³å™¨æŒ‡é’ˆ
  */
 /* ----------------------------------------------------------------*/
 TMixer* mixerCreate(void)

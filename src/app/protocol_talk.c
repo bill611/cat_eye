@@ -446,8 +446,10 @@ static void udpStart(Rtp *This)
 {
 	gpio->SetValue(gpio,ENUM_GPIO_MICKEY,IO_ACTIVE);
 	printf("[%s]\n", __func__);
-	if (my_mixer)
+	if (my_mixer) {
+		my_mixer->SetVolumeEx(my_mixer,g_config.talk_volume);
 		my_mixer->InitPlayAndRec(my_mixer,&audio_fp,8000,1);
+	}
 
 }
 static void udpReceiveEnd(Rtp *This)

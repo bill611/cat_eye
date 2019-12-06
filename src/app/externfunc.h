@@ -61,5 +61,6 @@ int checkSD(void);
 int getSdMem(char *total,char *residue,char *used);
 int adjustdate(int year,int mon,int mday,int hour,int min,int sec);
 void getVersionInfo(char *ver,int *major,int *minor,int *release);
+void setSysVolume(int volume);
 #endif
 

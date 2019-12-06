@@ -23,6 +23,7 @@ extern "C" {
 
 	void myAudioPlayRecognizer(char *usr_name);
 	void myAudioPlayRing(void);
+	void myAudioPlayRingOnce(void);
 	void myAudioStopPlay(void);
 	void myAudioPlayAlarm(void);
 

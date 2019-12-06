@@ -170,32 +170,38 @@ static void buttonScreenPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
+	flag_timer_stop = 1;
 }
 static void buttonDoorBellPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
+	flag_timer_stop = 1;
     createFormSettingDoorbell(GetParent(hwnd),enableAutoClose);
 }
 static void buttonTimerPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
+	flag_timer_stop = 1;
 }
 static void buttonMutePress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
+	flag_timer_stop = 1;
 }
 static void buttonAlarmPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
+	flag_timer_stop = 1;
 }
 static void buttonFactoryPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
+	flag_timer_stop = 1;
 }
 static void buttonLocalPress(HWND hwnd, int id, int nc, DWORD add_data)
 {

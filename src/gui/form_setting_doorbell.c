@@ -31,14 +31,13 @@
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
 int createFormSettingRings(HWND hMainWnd,void (*callback)(void));
-int createFormSettingStore(HWND hMainWnd,void (*callback)(void));
-int createFormSettingQrcode(HWND hMainWnd,void (*callback)(void));
-int createFormSettingUpdate(HWND hMainWnd,void (*callback)(void));
+int createFormSettingRingsVolume(HWND hMainWnd,void (*callback)(void));
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
  *----------------------------------------------------------------------------*/
 static int formSettingDoorbellProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
+static void loadDoorbellData(void);
 
 static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data);
 
@@ -90,8 +89,8 @@ struct MemData mem_data;
 // TEST
 static struct ScrollviewItem locoal_list[] = {
 	{"铃声设置",	"",createFormSettingRings},
-	{"门铃音量",	"",createFormSettingUpdate},
-	{"抓拍图像设置","",createFormSettingQrcode},
+	{"门铃音量",	"",createFormSettingRingsVolume},
+	{"抓拍图像设置","",NULL},
 	{0},
 };
 
@@ -151,6 +150,7 @@ static void enableAutoClose(void)
 {
 	Screen.setCurrent(form_base_priv.name);
 	flag_timer_stop = 0;	
+	loadDoorbellData();
 }
 
 /* ----------------------------------------------------------------*/
@@ -247,7 +247,7 @@ static void loadDoorbellData(void)
 		if (strcmp("铃声设置",plist->title) == 0) {
 			sprintf(plist->text,"铃声%d",g_config.ring_num + 1);
 		} else if (strcmp("门铃音量",plist->title) == 0) {
-			sprintf(plist->text,"%d%%",g_config.ring_voluem);
+			sprintf(plist->text,"%d%%",g_config.ring_volume);
 		} else if (strcmp("抓拍图像设置",plist->title) == 0) {
 			if (g_config.cap.type == 0) {
 				sprintf(plist->text,"拍照%d张",g_config.cap.count);

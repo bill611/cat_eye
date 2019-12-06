@@ -55,6 +55,8 @@ extern "C" {
 #define SLEEP_LONG_TIMER 50
 #define POWEROFF_TIMER 2
 
+#define MAX_RINGS_NUM 5
+
 	typedef struct _EtcValueChar {
 		const char* section;	
 		const char* key;
@@ -159,7 +161,9 @@ extern "C" {
         TcWifiConfig net_config;  // 网络设置
         char f_license[128 + 1];     // 阅面人脸
 		int  ring_num;        // 铃声编号
-		int  ring_voluem;     // 铃声音量
+		int  ring_volume;     // 门铃音量
+		int  alarm_volume;    // 报警音量
+		int  talk_volume;     // 对讲音量
 
 		struct wifiLowPower wifi_lowpower; // 低功耗wifi参数
 		struct CapType cap;		// 抓拍或录像
