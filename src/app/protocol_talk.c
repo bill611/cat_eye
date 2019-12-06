@@ -57,6 +57,7 @@ enum {
 	MSG_TYPE_CAPTURE,
 	MSG_TYPE_RECORD_START,
 	MSG_TYPE_RECORD_STOP,
+	MSG_TYPE_NEED_CALL_APP,
 };
 enum {
 	DEV_TYPE_APP = 0,
@@ -110,8 +111,9 @@ static void dial(char *user_id,void (*callBack)(int result))
 	}
 }
 
-static void hangup(void)
+static void hangup(int need_transfer)
 {
+	printf("need:%d\n",need_transfer );
 	if (protocol_talk->type == PROTOCOL_TALK_LAN) {
 		myAudioStopPlay();
 		if (protocol_video)
@@ -121,6 +123,12 @@ static void hangup(void)
 	} else {
 #ifdef USE_UCPAAS
 		ucsHangup();
+		if (need_transfer) {
+			char send_buff[256];
+			sprintf(send_buff,"{\\\"messageType\\\":%d,\\\"deviceType\\\":%d,\\\"deviceNumber\\\":\\\"%s\\\",\\\"fromId\\\":\\\"%s\\\",\\\"messageContent\\\":\\\"\\\"}",
+					MSG_TYPE_NEED_CALL_APP,DEV_TYPE_CATEYE,g_config.imei,local_user.id);
+			ucsSendCmd(send_buff,peer_user.id);
+		}
 		if (protocol_video)
 			protocol_video->setStatusIdle(protocol_video);
 #endif
@@ -210,9 +218,14 @@ static void cbHangup(void *arg)
 {
 	if (protocol_talk->type == PROTOCOL_TALK_LAN)
 		return;
+	int type = *(int *)arg;
 
-	if (my_video)
-		my_video->videoHangup();
+	if (my_video) {
+		if (type == 0)
+			my_video->videoHangup(HANGUP_TYPE_PEER);
+		else
+			my_video->videoHangup(HANGUP_TYPE_BUTTON);
+	}
 	if (my_mixer) {
 		if (audio_fp > 0)
 			my_mixer->DeInitPlay(my_mixer,&audio_fp);
@@ -418,7 +431,7 @@ static void videoSendMessageStatus(VideoTrans *This,VideoUiStatus status)
 			break;
 		case VIDEOTRANS_UI_OVER:				// 挂机
 			if (my_video)
-				my_video->videoHangup();
+				my_video->videoHangup(1);
 			break;
 		default:
 			break;

@@ -255,17 +255,17 @@ display_info(struct wireless_info *	info,
       tokens +=6;
 
       /* Oups ! No Access Point in Ad-Hoc mode */
-      if((info->b.has_mode) && (info->b.mode == IW_MODE_ADHOC))
-	IWCONFIG_INFO("Cell:");
-      else
-	IWCONFIG_INFO("Access Point:");
+	  if((info->b.has_mode) && (info->b.mode == IW_MODE_ADHOC))
+		  IWCONFIG_INFO("Cell:");
+	  else
+		  IWCONFIG_INFO("Access Point:");
 	  if (iw_sawap_ntop(&info->ap_addr, buffer)) {
 		  g_connect = 0;
 		  IWCONFIG_INFO(" %s   ", buffer); 
 	  }
 	  else
 		  g_connect = -1;
-    }
+	}
 
   /* Display the currently used/set bit-rate */
   if(info->has_bitrate)
@@ -428,32 +428,34 @@ display_info(struct wireless_info *	info,
   /* Note : we display only one parameter, period or timeout. If a device
    * (such as HiperLan) has both, the user need to use iwlist... */
   if(info->has_power)	/* I hope the device has power ;-) */
-    { 
-      IWCONFIG_INFO("Power Management");
-      /* Disabled ? */
-      if(info->power.disabled)
-	IWCONFIG_INFO(":off");
-      else
-	{
-	  /* Let's check the value and its type */
-	  if(info->power.flags & IW_POWER_TYPE)
-	    {
-	      iw_print_pm_value(buffer, sizeof(buffer),
-				info->power.value, info->power.flags,
-				info->range.we_version_compiled);
-	      IWCONFIG_INFO("%s  ", buffer);
-	    }
+  { 
+	  IWCONFIG_INFO("Power Management");
+	  /* Disabled ? */
+	  if(info->power.disabled) {
+		  IWCONFIG_INFO(":off");
+		  g_connect = -1;
+	  }
+	  else
+	  {
+		  /* Let's check the value and its type */
+		  if(info->power.flags & IW_POWER_TYPE)
+		  {
+			  iw_print_pm_value(buffer, sizeof(buffer),
+					  info->power.value, info->power.flags,
+					  info->range.we_version_compiled);
+			  IWCONFIG_INFO("%s  ", buffer);
+		  }
 
-	  /* Let's check the mode */
-	  iw_print_pm_mode(buffer, sizeof(buffer), info->power.flags);
-	  IWCONFIG_INFO("%s", buffer);
+		  /* Let's check the mode */
+		  iw_print_pm_mode(buffer, sizeof(buffer), info->power.flags);
+		  IWCONFIG_INFO("%s", buffer);
 
-	  /* Let's check if nothing (simply on) */
-	  if(info->power.flags == IW_POWER_ON)
-	    IWCONFIG_INFO(":on");
- 	}
-      IWCONFIG_INFO("\n          ");
-    }
+		  /* Let's check if nothing (simply on) */
+		  if(info->power.flags == IW_POWER_ON)
+			  IWCONFIG_INFO(":on");
+	  }
+	  IWCONFIG_INFO("\n          ");
+  }
 
   /* Display statistics */
   if(info->has_stats)
@@ -1926,11 +1928,12 @@ iwconfig(int	argc,
 {
   int skfd;		/* generic raw socket desc.	*/
   int goterr = 0;
+  g_connect = -1;
   /* Create a channel to the NET kernel. */
   if((skfd = iw_sockets_open()) < 0)
     {
       perror("socket");
-      // exit(-1);
+	  return -1;
     }
 
   /* No argument : show the list of all device + info */

@@ -357,6 +357,7 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
         ctrls_button[i].font = font22;
         createMyButton(hDlg,&ctrls_button[i]);
     }
+	SendMessage (GetDlgItem(hDlg,IDC_EDIT_PASSWORD), EM_LIMITTEXT, 64, 0L);
 	initKeyboard();
     updateTitle();
 }

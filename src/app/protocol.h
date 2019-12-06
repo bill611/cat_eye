@@ -158,7 +158,7 @@ extern "C" {
 		void (*reload)(void);
 		void (*dial)(char *user_id,void (*callBack)(int result));
 		void (*answer)(void);
-		void (*hangup)(void);
+		void (*hangup)(int need_transfer); // 0不需要转呼APP，1需要转呼APP
 		void (*connect)(void);
 		void (*reconnect)(void);
 		void (*unlock)(void);

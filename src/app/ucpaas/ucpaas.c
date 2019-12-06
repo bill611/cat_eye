@@ -170,8 +170,11 @@ static void on_hangup_cb(const char* callid, int reason)
     DPRINT("callid[%s] reason[%s]\n", callid,ucDebugInfo(reason));
 	call_status = 0;
 	send_for_reciev_video = 0;
+	int type = 0;
+	if (reason == eUCS_REASON_HANGUP_MYSELF)
+		type = 1;
 	if (call_backs.hangup)
-		call_backs.hangup((void *)callid);
+		call_backs.hangup(&type);
 }
 
 // received dtmf

@@ -135,6 +135,7 @@ typedef struct _StmData {
 	char ip[16];
 	int port;
 	char file_path[512];
+	enum HangupType hangup_type; 
 }StmData;
 
 typedef struct _TalkPeerDev {
@@ -408,7 +409,11 @@ static void dialCallBack(int result)
 		}
 	} else {
 		talk_peer_dev.call_out_result = CALL_RESULT_FAIL;
-		stm->msgPost(stm,EV_TALK_HANGUP,NULL);
+		st_data = (StmData *)stm->initPara(stm,
+				sizeof(StmData));
+		st_data->hangup_type = HANGUP_TYPE_PEER;
+		printf("[%s,%d]%d\n", __func__,__LINE__,st_data->hangup_type);
+		stm->msgPost(stm,EV_TALK_HANGUP,st_data);
 	}
 }
 static int stmDoTalkCallout(void *data,MyVideo *arg)
@@ -418,7 +423,10 @@ static int stmDoTalkCallout(void *data,MyVideo *arg)
 	int ret = sqlGetUserInfoUseUserId(data_temp->usr_id,data_temp->nick_name,&data_temp->type);
 	if (ret == 0) {
 		printf("can't find usr_id:%s\n", data_temp->usr_id);
-		stm->msgPost(stm,EV_TALK_HANGUP,NULL);
+		st_data = (StmData *)stm->initPara(stm,
+				sizeof(StmData));
+		st_data->hangup_type = HANGUP_TYPE_BUTTON;
+		stm->msgPost(stm,EV_TALK_HANGUP,st_data);
 		return -1;
 	}
 	sprintf(ui_title,"正在呼叫 %s",data_temp->nick_name);
@@ -550,7 +558,8 @@ static int stmDoTalkAnswer(void *data,MyVideo *arg)
 
 static int stmDoTalkHangupAll(void *data,MyVideo *arg)
 {
-	protocol_talk->hangup();
+	printf("[%s,%d]\n", __func__,__LINE__);
+	protocol_talk->hangup(0);
 }
 
 static int stmDoTalkHangup(void *data,MyVideo *arg)
@@ -558,7 +567,14 @@ static int stmDoTalkHangup(void *data,MyVideo *arg)
 #ifdef USE_VIDEO
 	rkH264EncOff();
 #endif
-	protocol_talk->hangup();
+	StmData *data_temp = (StmData *)data;
+	if (data_temp->hangup_type == HANGUP_TYPE_OVERTIME_UNANSWER) {
+		printf("[%s,%d]\n", __func__,__LINE__);
+		protocol_talk->hangup(1);
+	} else {
+		printf("[%s,%d]\n", __func__,__LINE__);
+		protocol_talk->hangup(0);
+	}
 	if (protocol_talk->uiHangup)
 		protocol_talk->uiHangup();
 	if (talk_data.answered) {
@@ -1019,9 +1035,13 @@ static void videoCallIn(char *user_id)
 	strcpy(st_data->usr_id,user_id);
 	stm->msgPost(stm,EV_TALK_CALLIN,st_data);
 }
-static void videoHangup(void)
+static void videoHangup(enum HangupType hangup_type)
 {
-	stm->msgPost(stm,EV_TALK_HANGUP,NULL);
+	printf("[%s,%d]%d\n", __func__,__LINE__,hangup_type);
+	st_data = (StmData *)stm->initPara(stm,
+			sizeof(StmData));
+	st_data->hangup_type = hangup_type;
+	stm->msgPost(stm,EV_TALK_HANGUP,st_data);
 }
 static void videoAnswer(int dir,int dev_type)
 {
@@ -1130,7 +1150,14 @@ static void* threadVideoTimer(void *arg)
 		if (talk_peer_dev.call_time) {
 			// printf("call time:%d\n", talk_peer_dev.call_time);
 			if (--talk_peer_dev.call_time == 0) {
-				stm->msgPost(stm,EV_TALK_HANGUP,NULL);
+				st_data = (StmData *)stm->initPara(stm,
+						sizeof(StmData));
+				if (talk_data.answered)
+					st_data->hangup_type = HANGUP_TYPE_OVERTIME_ANSWER;
+				else
+					st_data->hangup_type = HANGUP_TYPE_OVERTIME_UNANSWER;
+				printf("[%s,%d]%d\n", __func__,__LINE__,st_data->hangup_type);
+				stm->msgPost(stm,EV_TALK_HANGUP,st_data);
 			}
 		}
 		if (record_time) {

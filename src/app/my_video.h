@@ -20,6 +20,12 @@
 #ifdef __cplusplus
 extern "C" {
 #endif  /* __cplusplus */
+	enum HangupType{ // 挂机方式
+		HANGUP_TYPE_BUTTON,   			// 手动点击挂机
+		HANGUP_TYPE_OVERTIME_ANSWER, 	// 接听后超时挂机
+		HANGUP_TYPE_OVERTIME_UNANSWER, 	// 未接听超时挂机
+		HANGUP_TYPE_PEER, 	// 对方挂机
+	};
 
 	typedef struct _MyVideo {
 		void (*showLocalVideo)(void);  // 显示本地视频
@@ -43,7 +49,7 @@ extern "C" {
 		void (*videoCallOutAll)(void);
 		void (*videoCallIn)(char *user_id);
 		void (*videoAnswer)(int dir,int dev_type); // dir 0本机接听 1对方接听
-		void (*videoHangup)(void);
+		void (*videoHangup)(enum HangupType hangup_type); // 0对方挂机 1本机挂机
 		int (*videoGetCallTime)(void);
 		int (*videoGetRecordTime)(void);
 

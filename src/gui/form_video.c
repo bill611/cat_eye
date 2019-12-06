@@ -184,7 +184,7 @@ static void buttonHangupPress(HWND hwnd, int id, int nc, DWORD add_data)
 		my_video->recordStop();
         ShowWindow(form_base->hDlg,SW_HIDE);
 	} else {
-		my_video->videoHangup();
+		my_video->videoHangup(HANGUP_TYPE_BUTTON);
 	}
 }
 static void buttonUnlockPress(HWND hwnd, int id, int nc, DWORD add_data)
