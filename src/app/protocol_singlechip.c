@@ -51,7 +51,6 @@ extern IpcServer* ipc_main;
  *                        macro define
  *----------------------------------------------------------------------------*/
 #define PIR_TIMER_INTERVAL 10
-#define PIR_ACTIVE_COUNT 10
 
 /* ---------------------------------------------------------------------------*
  *                      variables define
@@ -175,7 +174,7 @@ static void deal(IpcData *ipc_data)
 				break;
 			if (pir_cycle_end == 1)
 				break;
-			if (++pir_act_count == PIR_ACTIVE_COUNT) {
+			if (++pir_act_count == g_config.pir_active_times) {
 				pir_cycle_end = 1;
 				if (g_config.cap.type == 0)
 					my_video->capture(CAP_TYPE_ALARM,g_config.cap.count,NULL,NULL);

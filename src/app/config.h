@@ -164,6 +164,7 @@ extern "C" {
 		int  ring_volume;     // 门铃音量
 		int  alarm_volume;    // 报警音量
 		int  talk_volume;     // 对讲音量
+		int  pir_active_times;     // PIR触发报次数后报警
 
 		struct wifiLowPower wifi_lowpower; // 低功耗wifi参数
 		struct CapType cap;		// 抓拍或录像

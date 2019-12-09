@@ -390,7 +390,7 @@ int rdfaceRecognizer(unsigned char *image_buff,int w,int h,
 			continue;
 		}
 
-		if (track_id_last == pFaceALL[i].track_id) {
+		if ((track_id_last == pFaceALL[i].track_id) && (track_id_last != 0)) {
 			continue;
 		}
 		track_id_last = pFaceALL[i].track_id;

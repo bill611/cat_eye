@@ -32,10 +32,11 @@ static EtcValueInt etc_private_int[]={
 {"cap",			"type",			&g_config.cap.type,			0},
 {"cap",			"count",		&g_config.cap.count,		1},
 {"cap",			"timer",		&g_config.cap.timer,		5},
-{"device",		"ring_num",		&g_config.ring_num,			0},
-{"device",		"ring_volume",	&g_config.ring_volume,		80},
-{"device",		"alarm_volume",	&g_config.alarm_volume,		80},
-{"device",		"talk_volume",	&g_config.talk_volume,		80},
+{"rings",		"ring_num",		&g_config.ring_num,			0},
+{"rings",		"ring_volume",	&g_config.ring_volume,		80},
+{"rings",		"alarm_volume",	&g_config.alarm_volume,		80},
+{"rings",		"talk_volume",	&g_config.talk_volume,		80},
+{"others",		"pir_active_times",	&g_config.pir_active_times,		20},
 };
 
 static EtcValueChar etc_private_char[]={
@@ -243,7 +244,7 @@ void createSdcardDirs(void)
 }
 void configLoad(void)
 {
-	char *sec_private[] = {"device","wireless","cloud","face","cap",NULL};
+	char *sec_private[] = {"device","cloud","face","wireless","rings","cap","others",NULL};
 
 	int ret = loadIniFile(&cfg_private_ini,CONFIG_FILENAME,sec_private);
 	configLoadEtcInt(cfg_private_ini,etc_private_int,NELEMENTS(etc_private_int));
@@ -261,14 +262,12 @@ void configLoad(void)
 	}
 	getCpuId(g_config.hardcode);
 	printf("imei:%s,hard:%s\n", g_config.imei,g_config.hardcode);
-		// char buf[128] = {0};
-		// sprintf(buf,"%s/%s",g_config.imei,g_config.hardcode);
-		// qrcodeString(buf,QRCODE_IMIE);
-	// 判断是否APP地址图片
-	if (fileexists(QRCODE_APP) == 0) {
-
-	}
-	// mkdir(TEMP_PIC_PATH, 	S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#if 0
+	// 手动生成二维码图片
+	char buf[128] = {0};
+	sprintf(buf,"%s/%s",g_config.imei,g_config.hardcode);
+	qrcodeString(buf,QRCODE_IMIE);
+#endif
 	createSdcardDirs();
 }
 
