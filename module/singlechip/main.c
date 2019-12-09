@@ -65,6 +65,8 @@ enum {
     CHECK_KEY_PIR = (1 << 3),
     CHECK_KEY_WIFI = (1 << 4),
 };
+
+// 协议内容 [5A] [leng] [id] [cmd] data[N] [checkout] [5B]
 enum{
 	CMD_GET_VERSION = 0X00, 		// ARM→单片机	0X00	NBYTE	查询版本号
 	CMD_HEART = 0X01, 				// ARM→单片机	0X01	NBYTE	关机或休眠时，发送心跳到单片机
@@ -258,7 +260,7 @@ static void cmdSleep(void)
 /* ---------------------------------------------------------------------------*/
 static void cmdWifiReset(void)
 {
-	uint8_t data = 1;
+	uint8_t data = 2;
 	cmdPacket(CMD_POWER,id++,&data,1);
 }
 
@@ -462,6 +464,7 @@ static void* threadIpcSendMain(void *arg)
 	while (1) {
 		queue->get(queue,&ipc_data);	
 		ipc_data.dev_type = IPC_DEV_TYPE_UART;
+		// printf("post:%d\n",ipc_data.cmd );
 		if (ipc_uart)
 			ipc_uart->sendData(ipc_uart,IPC_MAIN,&ipc_data,sizeof(IpcData));
 	}
@@ -480,16 +483,19 @@ static void* threadTimer(void *arg)
 int main(int argc, char *argv[])
 {
 	sconfigLoad();
+
+	video_queue = queueCreate("video_queue",QUEUE_BLOCK,sizeof(IpcData));
+	main_queue = queueCreate("main_queue",QUEUE_BLOCK,sizeof(IpcData));
+	ipc_uart = ipcCreate(IPC_UART,ipcCallback);
+
 	uartInit(uartDeal);
 	cmdCheckStatus();
+	cmdWifiReset();
 
 	screensaverSet(1);
 	// screensaverSet(0);
 	mkdir(FAST_PIC_PATH, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
-	video_queue = queueCreate("video_queue",QUEUE_BLOCK,sizeof(IpcData));
-	main_queue = queueCreate("main_queue",QUEUE_BLOCK,sizeof(IpcData));
-	ipc_uart = ipcCreate(IPC_UART,ipcCallback);
 	createThread(threadIpcSendVideo,video_queue);
 	createThread(threadIpcSendMain,main_queue);
 	createThread(threadTimer,NULL);

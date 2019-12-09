@@ -877,6 +877,7 @@ loop_heart:
 	getGateWayMac(gateway,g_config.wifi_lowpower.dst_mac);
 	sprintf(imei,"\"%s\"",g_config.imei);	
 	sprintf(imei_len,"%ld",strlen(g_config.imei));	
+#if 1
 	excuteCmd("dhd_priv","wl","tcpka_conn_add","1",
 			g_config.wifi_lowpower.dst_mac,
 			g_config.wifi_lowpower.local_ip,
@@ -885,6 +886,15 @@ loop_heart:
 			g_config.wifi_lowpower.dst_port,
 			"1","0","1024","1062046","2130463","1",imei_len, imei,
 			NULL);
+#else
+	excuteCmd("dhd_priv","wl","tcpka_conn_add","1",
+			"6C:4B:90:0C:C9:9B",
+			"10.0.2.92",
+			"10.0.0.38",
+			"0","1223",
+			"1221",
+			"1","0","1024","1062046","2130463","1","14","CE191023000139",NULL);
+#endif
 	excuteCmd("dhd_priv","wl","tcpka_conn_enable","1","1","10","10","10",NULL);
 	excuteCmd("dhd_priv","setsuspendmode","1",NULL);
 	return NULL;

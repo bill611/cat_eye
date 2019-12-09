@@ -251,7 +251,6 @@ static void callbackIpc(char *data,int size )
 {
 	IpcData ipc_data;
 	memcpy(&ipc_data,data,sizeof(IpcData));
-	printf("[%s]%d\n",__func__,ipc_data.cmd);
 	switch(ipc_data.cmd)
 	{
 		case IPC_VIDEO_ENCODE_ON:

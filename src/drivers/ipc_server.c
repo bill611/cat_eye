@@ -26,6 +26,8 @@ void waitIpcOpen(const char *path)
 			continue;
 		}
 		close(fd);
+		// 等待主程序IPC初始化完成
+		sleep(3);
 		return;
 	}
 }

@@ -13,7 +13,7 @@ extern "C" {
 
 
 #define DEVICE_TYPE	"TC-U9MY-A"
-#define DEVICE_SVERSION	"1.0.3"
+#define DEVICE_SVERSION	"1.0.4"
 #define DEVICE_KVERSION	"1.0.0"
 
 #if (defined X86)

@@ -400,7 +400,8 @@ int rdfaceRecognizer(unsigned char *image_buff,int w,int h,
 			continue;
 		float sim = rdfaceGetFeatureSimilarity(feature_last,feature);
 		memcpy(feature_last,feature,sizeof(feature));
-		if (sim > SIMILAYRITY) {
+		printf("sim:%f,s:%f\n",sim , SIMILAYRITY );
+		if (sim > SIMILAYRITY || sim == 0) {
 			if (recognize_intaval == 0)
 				recognize_intaval = RECOGNIZE_INTAVAL;
 			else {
