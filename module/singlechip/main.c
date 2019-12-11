@@ -357,17 +357,20 @@ static void uartDeal(void)
 			if (data[0] & CHECK_KEY_DOORBELL) {
 				if (timer_interval == 0) {
 					timer_interval = 3;
-					excuteCmd("busybox","killall","aplay",NULL);
-					playVoice("/data/dingdong.wav");
+					ipc_data.need_ring = 1;
 
+					// 未启动主程序时
 					if (access(IPC_MAIN,0) != 0) {
-						IpcData ipc_data;
-						getFileName(ipc_data.data.file.name,ipc_data.data.file.date);
-						ipc_data.count = getCapCount();
-						sprintf(ipc_data.data.file.path,"%s_%s",getCapImei(),ipc_data.data.file.name);
-						ipc_data.cmd = IPC_UART_CAPTURE;
-						video_queue->post(video_queue,&ipc_data);
-						main_queue->post(main_queue,&ipc_data);
+						IpcData ipc_data_tmp;
+						getFileName(ipc_data_tmp.data.file.name,ipc_data_tmp.data.file.date);
+						ipc_data_tmp.count = getCapCount();
+						sprintf(ipc_data_tmp.data.file.path,"%s_%s",getCapImei(),ipc_data_tmp.data.file.name);
+						ipc_data_tmp.cmd = IPC_UART_CAPTURE;
+						video_queue->post(video_queue,&ipc_data_tmp);
+						main_queue->post(main_queue,&ipc_data_tmp);
+						excuteCmd("busybox","killall","aplay",NULL);
+						playVoice("/data/dingdong.wav");
+						ipc_data.need_ring = 0;
 					}
 
 					ipc_data.cmd = IPC_UART_DOORBELL;

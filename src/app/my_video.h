@@ -56,7 +56,8 @@ extern "C" {
 		int (*update)(int type,char *ip,int port,char *file_path); // 升级
 		int (*delaySleepTime)(int type); // 延长睡眠时间0短 1长
 
-		int (*isVideoOn)(void);
+		int (*isVideoOn)(void); // 是否在对讲过程，包括呼叫过程，对讲过程
+		int (*isTalking)(void); // 是否正在通话
 	}MyVideo;
 	extern MyVideo *my_video;
 	void myVideoInit(void);

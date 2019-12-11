@@ -1180,18 +1180,30 @@ static void* threadReportTalk(void *arg)
 			cJSON_AddFalseToObject(obj_data,"autoAnswer");
 		cJSON_AddNumberToObject(obj_data,"talkTime",talk_data.talk_time);
 
-		cJSON *arry = cJSON_CreateArray();
+		cJSON *arry_pic = cJSON_CreateArray();
+		cJSON *arry_record = cJSON_CreateArray();
 		int count = sqlGetPicInfoStart(talk_data.picture_id);
 		for (i=0; i<count; i++) {
 			char url[128] = {0};
 			cJSON *obj = cJSON_CreateObject();
 			sqlGetPicInfos(url);
 			cJSON_AddStringToObject(obj,"url",url);
-			cJSON_AddItemToArray(arry, obj);
+			cJSON_AddItemToArray(arry_pic, obj);
 		}
 		sqlGetPicInfoEnd();
 
-		cJSON_AddItemToObject(obj_data,"picture",arry);
+		count = sqlGetRecordInfoStart(talk_data.picture_id);
+		for (i=0; i<count; i++) {
+			char url[128] = {0};
+			cJSON *obj = cJSON_CreateObject();
+			sqlGetRecordInfos(url);
+			cJSON_AddStringToObject(obj,"url",url);
+			cJSON_AddItemToArray(arry_record, obj);
+		}
+		sqlGetRecordInfoEnd();
+
+		cJSON_AddItemToObject(obj_data,"picture",arry_pic);
+		cJSON_AddItemToObject(obj_data,"record",arry_record);
 		cJSON_AddItemToObject(obj_body,"data",obj_data);
 		cJSON_AddItemToObject(root,"body",obj_body);
 		send_buff = cJSON_PrintUnformatted(root);

@@ -157,7 +157,6 @@ typedef struct _CapData {
 	char file_name[32];
 	char nick_name[128];
 	char usr_id[128];
-	int type;	//抓拍类型
 }CapData;
 
 typedef struct _CammerData {
@@ -488,8 +487,12 @@ static void *threadCallOutAll(void *arg)
 		}
 		user_num--;
 	}
-	if (user_num == 0)
-		stm->msgPost(stm,EV_TALK_HANGUPALL,NULL);
+	if (user_num == 0) {
+		st_data = (StmData *)stm->initPara(stm,
+				sizeof(StmData));
+		st_data->hangup_type = HANGUP_TYPE_BUTTON;
+		stm->msgPost(stm,EV_TALK_HANGUPALL,st_data);
+	}
 
 	return NULL;
 }
@@ -623,12 +626,32 @@ static void* threadCapture(void *arg)
 		usleep(500000);
 	}
 	sleep(1);
-	if (cap_data_temp.type == CAP_TYPE_TALK)
-		talk_data.picture_id = cap_data_temp.pic_id;
-	else {
-		protocol_hardcloud->uploadPic(FAST_PIC_PATH,cap_data_temp.pic_id);
-		protocol_hardcloud->reportCapture(cap_data_temp.pic_id);
-	}
+	protocol_hardcloud->uploadPic(FAST_PIC_PATH,cap_data_temp.pic_id);
+	protocol_hardcloud->reportCapture(cap_data_temp.pic_id);
+	return NULL;
+}
+static void* threadCaptureOnce(void *arg)
+{
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
+	CapData cap_data_temp;
+	memcpy(&cap_data_temp,arg,sizeof(CapData));
+	char jpg_name[64] = {0};
+	char file_path[64] = {0};
+	char url[256] = {0};
+	sprintf(jpg_name,"%s_%s_%d.jpg",g_config.imei,cap_data_temp.file_name,cap_data_temp.count - 1);
+	sprintf(file_path,"%s%s",FAST_PIC_PATH,jpg_name);
+
+#ifdef USE_VIDEO
+	rkVideoCapture(file_path);
+#ifdef X86
+	FILE *fp = fopen(file_path,"wb");
+	if (fp)
+		fclose(fp);
+#endif
+#endif
+	sprintf(url,"%s/%s",QINIU_URL,jpg_name);
+	sqlInsertPicUrlNoBack(cap_data_temp.pic_id,url);
+	sleep(2);
 	return NULL;
 }
 
@@ -729,23 +752,38 @@ static void* threadFace(void *arg)
 static int stmDoCaptureNoUi(void *data,MyVideo *arg)
 {
 	StmData *data_temp = (StmData *)data;
-	memset(&cap_data,0,sizeof(CapData));
-	getFileName(cap_data.file_name,cap_data.file_date);
-	cap_data.pic_id = atoll(cap_data.file_name);
-	cap_data.count = data_temp->cap_count;
-	cap_data.type = data_temp->cap_type;
 	switch(data_temp->cap_type)
 	{
 		case CAP_TYPE_FORMMAIN :
 		case CAP_TYPE_DOORBELL :
+			memset(&cap_data,0,sizeof(CapData));
+			getFileName(cap_data.file_name,cap_data.file_date);
+			cap_data.pic_id = atoll(cap_data.file_name);
+			cap_data.count = data_temp->cap_count;
 			sqlInsertRecordCapNoBack(cap_data.file_date,cap_data.pic_id);
-		case CAP_TYPE_TALK :
 			createThread(threadCapture,&cap_data);
 			break;
+		case CAP_TYPE_TALK :
+			if (talk_data.picture_id == 0) {
+				memset(&cap_data,0,sizeof(CapData));
+				getFileName(cap_data.file_name,cap_data.file_date);
+				talk_data.picture_id = cap_data.pic_id = atoll(cap_data.file_name);
+			}
+			cap_data.count++;
+			createThread(threadCaptureOnce,&cap_data);
+			break;
 		case CAP_TYPE_ALARM :
+			memset(&cap_data,0,sizeof(CapData));
+			getFileName(cap_data.file_name,cap_data.file_date);
+			cap_data.pic_id = atoll(cap_data.file_name);
+			cap_data.count = data_temp->cap_count;
 			createThread(threadAlarm,&cap_data);
 			break;
 		case CAP_TYPE_FACE :
+			memset(&cap_data,0,sizeof(CapData));
+			getFileName(cap_data.file_name,cap_data.file_date);
+			cap_data.pic_id = atoll(cap_data.file_name);
+			cap_data.count = data_temp->cap_count;
 			if (data_temp->nick_name)
 				strcpy(cap_data.nick_name,data_temp->nick_name);
 			if (data_temp->usr_id)
@@ -787,6 +825,17 @@ static void recordStopCallbackFunc(void)
     pthread_mutex_unlock(&mutex);
 	protocol_hardcloud->uploadPic(FAST_PIC_PATH,cap_data.pic_id);
 	protocol_hardcloud->reportCapture(cap_data.pic_id);
+}
+
+static void recordStopCallbackFuncForTalk(void)
+{
+	printf("[%s]\n", __func__);
+    pthread_mutex_lock(&mutex);
+    if (avi) 
+        avi->DestoryMPEG4(&avi);
+    pthread_mutex_unlock(&mutex);
+	// protocol_hardcloud->uploadPic(FAST_PIC_PATH,cap_data.pic_id);
+	// protocol_hardcloud->reportCapture(cap_data.pic_id);
 }
 
 #if (defined X86)
@@ -835,37 +884,52 @@ static void* threadAviReadAudio(void *arg)
 }
 static int stmDoRecordStart(void *data,MyVideo *arg)
 {
+	int w = 0,h = 0;
+	char file_path[64] = {0};
+	char url[256] = {0};
+	char jpg_name[64] = {0};
 	if (record_state == 1)
 		return 0;
 	record_state = 1;
 	StmData *data_temp = (StmData *)data;
-	memset(&cap_data,0,sizeof(CapData));
-	getFileName(cap_data.file_name,cap_data.file_date);
-	cap_data.pic_id = atoll(cap_data.file_name);
-	int w = 320,h = 240;
 	record_time = TIME_RECORD;
 	switch(data_temp->cap_type)
 	{
-		case CAP_TYPE_FORMMAIN :
-			{
-				w = 640;
-				h = 480;
-			}
 		case CAP_TYPE_TALK :
-            {
-                char file_path[64] = {0};
-                char url[256] = {0};
-				char jpg_name[64] = {0};
+			{
+				w = 320; h = 240;
+				if (talk_data.picture_id == 0) {
+					memset(&cap_data,0,sizeof(CapData));
+					getFileName(cap_data.file_name,cap_data.file_date);
+					talk_data.picture_id = cap_data.pic_id = atoll(cap_data.file_name);
+				}
                 sqlInsertRecordCapNoBack(cap_data.file_date,cap_data.pic_id);
 				sprintf(jpg_name,"%s_%s.mp4",g_config.imei,cap_data.file_name);
-				// sprintf(file_path,"/temp/%s",jpg_name);
 				sprintf(file_path,"%s%s",FAST_PIC_PATH,jpg_name);
                 if (avi == NULL) {
                     avi = Mpeg4_Create(w,h,file_path,WRITE_READ);
-					if (data_temp->cap_type == CAP_TYPE_FORMMAIN)
-						createThread(threadAviReadAudio,NULL);
-					else 
-						avi->InitAudio(avi,2,8000,0);
+					avi->InitAudio(avi,2,8000,0);
+                }
+#ifdef USE_VIDEO
+                rkVideoRecordStart(w,h,recordVideoCallbackFunc);
+                rkVideoRecordSetStopFunc(recordStopCallbackFuncForTalk);
+#endif
+				sprintf(url,"%s/%s",QINIU_URL,jpg_name);
+                sqlInsertRecordUrlNoBack(cap_data.pic_id,url);
+			}
+			break;
+		case CAP_TYPE_FORMMAIN :
+			{
+				w = 640; h = 480;
+				memset(&cap_data,0,sizeof(CapData));
+				getFileName(cap_data.file_name,cap_data.file_date);
+				cap_data.pic_id = atoll(cap_data.file_name);
+                sqlInsertRecordCapNoBack(cap_data.file_date,cap_data.pic_id);
+				sprintf(jpg_name,"%s_%s.mp4",g_config.imei,cap_data.file_name);
+				sprintf(file_path,"%s%s",FAST_PIC_PATH,jpg_name);
+                if (avi == NULL) {
+                    avi = Mpeg4_Create(w,h,file_path,WRITE_READ);
+					createThread(threadAviReadAudio,NULL);
                 }
 #ifdef USE_VIDEO
                 rkVideoRecordStart(w,h,recordVideoCallbackFunc);
@@ -876,7 +940,7 @@ static int stmDoRecordStart(void *data,MyVideo *arg)
 #endif
 				sprintf(url,"%s/%s",QINIU_URL,jpg_name);
                 sqlInsertRecordUrlNoBack(cap_data.pic_id,url);
-            }
+			}
 			break;
 		case CAP_TYPE_ALARM :
 			{
@@ -1143,6 +1207,13 @@ static int isVideoOn(void)
 		return 0;
 }
 
+static int isTalking(void)
+{
+	if (stm->getCurrentstate(stm) == ST_TALK_TALKING)	
+		return 1;
+	else
+		return 0;
+}
 static void* threadVideoTimer(void *arg)
 {
 	prctl(PR_SET_NAME, __func__, 0, 0, 0);
@@ -1193,6 +1264,7 @@ void myVideoInit(void)
     my_video->delaySleepTime = delaySleepTime;
     my_video->update = update;
     my_video->isVideoOn = isVideoOn;
+    my_video->isTalking = isTalking;
 
 	memset(&talk_data,0,sizeof(talk_data));
     pthread_mutexattr_t mutexattr;

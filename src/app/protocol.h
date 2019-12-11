@@ -125,6 +125,7 @@ extern "C" {
 		int leng;
 		int count;
 		char s_version[3];
+		int need_ring; // 主程序是否需要响铃声,0否，1是
         union {
             char array_buf[128];
 			char cap_path[128];

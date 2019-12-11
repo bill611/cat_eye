@@ -54,6 +54,7 @@ extern "C" {
 		BITMAP *image_press;	// 按下状态图片
 		BITMAP *image_select;	// 选中图片
 		BITMAP *image_unselect;	// 非选中图片
+		unsigned int color_nor,color_press;// 文字颜色，正常颜色与按下颜色,默认为白色
 		int flag;  // 按扭类型
 		int state; //BUTTON状态
 		int check; // 选中状态
@@ -69,6 +70,7 @@ extern "C" {
 		BITMAP image_normal;	// 正常状态图片
 		BITMAP image_press;	// 按下状态图片
 		int16_t w,h;
+		unsigned  color_nor,color_press;// 文字颜色，正常颜色与按下颜色,默认为白色
 	}MyCtrlButton;
 
 	HWND createMyButton(HWND hWnd,MyCtrlButton *button);

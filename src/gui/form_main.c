@@ -124,16 +124,18 @@ static MyCtrlStatic ctrls_static[] = {
 };
 
 static MyCtrlButton ctrls_button[] = {
-	// {IDC_BUTTON_RECORD,	MYBUTTON_TYPE_TWO_STATE,"记录",80,451,buttonRecordPress},
-	// {IDC_BUTTON_CAPTURE,MYBUTTON_TYPE_TWO_STATE,"抓拍",273,451,buttonCapturePress},
-	// {IDC_BUTTON_ACCESS, MYBUTTON_TYPE_TWO_STATE,"门禁",467,451,buttonAccessPress},
-	// {IDC_BUTTON_VIDEO,	MYBUTTON_TYPE_TWO_STATE,"录像",662,451,buttonVideoPress},
-	// {IDC_BUTTON_SETTING,MYBUTTON_TYPE_TWO_STATE,"设置",855,451,buttonSettingPress},
-	// {IDC_BUTTON_RECORD,	MYBUTTON_TYPE_TWO_STATE,"记录",80,451,buttonRecordPress},
+#if 0
+	{IDC_BUTTON_RECORD,	MYBUTTON_TYPE_TWO_STATE,"记录",80,451,buttonRecordPress},
+	{IDC_BUTTON_CAPTURE,MYBUTTON_TYPE_TWO_STATE,"抓拍",273,451,buttonCapturePress},
+	{IDC_BUTTON_ACCESS, MYBUTTON_TYPE_TWO_STATE,"门禁",467,451,buttonAccessPress},
+	{IDC_BUTTON_VIDEO,	MYBUTTON_TYPE_TWO_STATE,"录像",662,451,buttonVideoPress},
+	{IDC_BUTTON_SETTING,MYBUTTON_TYPE_TWO_STATE,"设置",855,451,buttonSettingPress},
+#else
 	{IDC_BUTTON_CAPTURE,MYBUTTON_TYPE_TWO_STATE,"抓拍",80,451,buttonCapturePress},
 	{IDC_BUTTON_ACCESS, MYBUTTON_TYPE_TWO_STATE,"门禁",338,451,buttonAccessPress},
 	{IDC_BUTTON_VIDEO,	MYBUTTON_TYPE_TWO_STATE,"录像",596,451,buttonVideoPress},
 	{IDC_BUTTON_SETTING,MYBUTTON_TYPE_TWO_STATE,"设置",855,451,buttonSettingPress},
+#endif
 	{0},
 };
 
@@ -294,6 +296,7 @@ static void buttonRecordPress(HWND hwnd, int id, int nc, DWORD add_data)
 	if (nc != BN_CLICKED)
 		return;
 	flag_timer_stop = 1;
+	topMsgDoorbell();
 }
 
 static void buttonCapturePress(HWND hwnd, int id, int nc, DWORD add_data)

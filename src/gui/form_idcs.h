@@ -36,6 +36,7 @@ extern "C" {
 #define IDC_FORM_SETTING_DOORBELL 430
 #define IDC_FORM_SETTING_RINGS 440
 #define IDC_FORM_SETTING_RINGS_VOLUME 450
+#define IDC_FORM_TOPMESSAGE 460
 
 #ifdef __cplusplus
 }

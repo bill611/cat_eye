@@ -95,14 +95,16 @@ static void paint(HWND hWnd,HDC hdc)
 	GetClientRect (hWnd, &rc_bmp);
     rc_text = &rc_bmp;
 
+	MyButtonCtrlInfo* pInfo = (MyButtonCtrlInfo*)(pCtrl->dwAddData2);
 	if (!pCtrl->dwAddData2)
 		return;
-	MyButtonCtrlInfo* pInfo = (MyButtonCtrlInfo*)(pCtrl->dwAddData2);
 
 	if (pInfo->flag & MYBUTTON_TYPE_ONE_STATE) {
+		SetTextColor(hdc,pInfo->color_nor);
 		FillBoxWithBitmap(hdc,FILL_BMP_STRUCT(rc_bmp,pInfo->image_normal));
 	} else if (pInfo->flag & MYBUTTON_TYPE_TWO_STATE) {
 		if(pInfo->state == BUT_NORMAL) {
+			SetTextColor(hdc,pInfo->color_nor);
 			if (pInfo->flag & MYBUTTON_TYPE_PRESS_COLOR) {
 				SetBrushColor (hdc,0x333333);
 				FillBox (hdc, rc_bmp.left,rc_bmp.top,RECTW(rc_bmp),RECTH(rc_bmp));
@@ -111,6 +113,7 @@ static void paint(HWND hWnd,HDC hdc)
 				FillBoxWithBitmap(hdc, FILL_BMP_STRUCT(rc_bmp,pInfo->image_normal));
 			}
 		} else {
+			SetTextColor(hdc,pInfo->color_press);
 			if (pInfo->flag & MYBUTTON_TYPE_PRESS_COLOR) {
 				SetBrushColor (hdc,0x10B7F5);
 				FillBox (hdc, rc_bmp.left,rc_bmp.top,RECTW(rc_bmp),RECTH(rc_bmp));
@@ -120,14 +123,17 @@ static void paint(HWND hWnd,HDC hdc)
 			}
 		}
 	} else if (pInfo->flag & MYBUTTON_TYPE_CHECKBOX){
-		if(pInfo->check == MYBUTTON_STATE_UNCHECK)
+		if(pInfo->check == MYBUTTON_STATE_UNCHECK) {
+			SetTextColor(hdc,pInfo->color_press);
 			FillBoxWithBitmap(hdc, FILL_BMP_STRUCT(rc_bmp,pInfo->image_normal));
-		else
+		} else {
+			SetTextColor(hdc,pInfo->color_nor);
 			FillBoxWithBitmap(hdc, FILL_BMP_STRUCT(rc_bmp,pInfo->image_press));
+		}
 	}
 	if (!pInfo->text || (pInfo->flag & MYBUTTON_TYPE_TEXT_NULL))
 		return;
-	SetTextColor(hdc,COLOR_lightwhite);
+	// SetTextColor(hdc,COLOR_lightwhite);
 	SetBkMode(hdc,BM_TRANSPARENT);
 	SelectFont (hdc, pInfo->font);
 	if (pInfo->flag & MYBUTTON_TYPE_TEXT_CENTER) {
@@ -182,6 +188,8 @@ static int myButtonControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
 		pInfo->check = data->check;
 		pInfo->text = data->text;
 		pInfo->font = data->font;
+		pInfo->color_nor = data->color_nor;
+		pInfo->color_press = data->color_press;
 		pCtrl->dwAddData2 = (DWORD)pInfo;
 		return 0;
 	}
@@ -334,6 +342,12 @@ HWND createMyButton(HWND hWnd,MyCtrlButton *ctrl)
 	pInfo.flag = ctrl->flag;
 	pInfo.text = ctrl->img_name;
     pInfo.font = ctrl->font;
+	pInfo.color_nor = COLOR_lightwhite;
+	pInfo.color_press = COLOR_lightwhite;
+	if (ctrl->color_nor != 0)
+		pInfo.color_nor = ctrl->color_nor;
+	if (ctrl->color_press != 0)
+		pInfo.color_press = ctrl->color_press;
 	if ((pInfo.flag & MYBUTTON_TYPE_PRESS_COLOR)
 			|| (pInfo.flag & MYBUTTON_TYPE_PRESS_TRANSLATE)) {
 		ctrl_w = ctrl->w;

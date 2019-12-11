@@ -41,6 +41,7 @@
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
 extern void screenAutoCloseStop(void);
+extern void topMsgDoorbell(void);
 extern IpcServer* ipc_main;
 
 /* ---------------------------------------------------------------------------*
@@ -155,6 +156,12 @@ static void deal(IpcData *ipc_data)
 			} 
 		case IPC_UART_DOORBELL:
 			{
+				if (my_video->isTalking())
+					topMsgDoorbell();
+				else if (ipc_data->need_ring){
+					excuteCmd("busybox","killall","aplay",NULL);
+					excuteCmd("/data/play.sh","/data/dingdong.wav",NULL);
+				}
 				formVideoLayerScreenOn();
 				my_video->videoCallOutAll();
 				if (pir_cycle_end == 1)

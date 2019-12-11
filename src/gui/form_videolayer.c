@@ -44,6 +44,7 @@ extern int createFormPowerOffLowPower(void);
 extern int createFormPowerOffCammerError(void);
 extern int createFormPowerOffCammerErrorSleep(void);
 extern int createFormUpdate(HWND hMainWnd);
+extern int createFormTopmessage(HWND hMainWnd,char *title,char *content,void (*callback)(void));
 extern void formMainLoadBmp(void);
 extern void formSettingLoadBmp(void);
 extern void formVideoLoadBmp(void);
@@ -57,6 +58,7 @@ extern void formSettingUpdateLoadBmp(void);
 extern void formSettingDoorbellLoadBmp(void);
 extern void formSettingRingsLoadBmp(void);
 extern void formSettingRingsVolumeLoadBmp(void);
+extern void formTopmessageLoadBmp(void);
 
 extern void formVideoInitInterface(void);
 /* ---------------------------------------------------------------------------*
@@ -129,6 +131,7 @@ static InitBmpFunc load_bmps_func[] = {
 	formSettingDoorbellLoadBmp,
 	formSettingRingsLoadBmp,
 	formSettingRingsVolumeLoadBmp,
+	formTopmessageLoadBmp,
 	NULL,
 };
 
@@ -167,6 +170,7 @@ void resetAutoSleepTimerShort(void)
 
 static void enableAutoClose(void)
 {
+	Screen.setCurrent("TFrmVL");
 	flag_timer_stop = 0;	
 	setAutoCloseLcdTime(AUTO_CLOSE_LCD);
 	my_video->showLocalVideo();
@@ -302,6 +306,8 @@ static int formVideoLayerProc(HWND hWnd, int message, WPARAM wParam, LPARAM lPar
 				HWND form = createFormPowerOff(hWnd);
 				ShowWindow(form,SW_HIDE);
 				form = createFormUpdate(hWnd);
+				ShowWindow(form,SW_HIDE);
+				form = createFormTopmessage(hWnd,NULL,NULL,NULL);
 				ShowWindow(form,SW_HIDE);
 				form = createFormVideo(hWnd,FORM_VIDEO_TYPE_CAPTURE,NULL,0);
 				ShowWindow(form,SW_HIDE);
