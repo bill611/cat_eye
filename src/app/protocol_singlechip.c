@@ -103,6 +103,16 @@ static void cmdGetVersion(void)
 		ipc_main->sendData(ipc_main,IPC_UART,&ipc_data,sizeof(ipc_data));
 }
 
+static void cmdSetPirStrength(int strength)
+{
+	IpcData ipc_data;
+	ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
+	ipc_data.cmd = IPC_UART_SET_PIR;
+	ipc_data.pir_strength = strength;
+	if (ipc_main)
+		ipc_main->sendData(ipc_main,IPC_UART,&ipc_data,sizeof(ipc_data));
+}
+
 static void* threadPirTimer(void *arg)
 {
 	prctl(PR_SET_NAME, __func__, 0, 0, 0);
@@ -189,6 +199,9 @@ static void deal(IpcData *ipc_data)
 		case IPC_UART_GETVERSION:
 			strcpy(g_config.s_version,ipc_data->s_version);
 			break;
+		case IPC_UART_SET_PIR:
+			printf("set pir result:%d\n", ipc_data->pir_strength_result);
+			break;
 		default:
 			break;
 	}
@@ -209,8 +222,10 @@ void registSingleChip(void)
 	protocol_singlechip->cmdPowerOff = cmdPowerOff;
 	protocol_singlechip->cmdWifiReset = cmdWifiReset;
 	protocol_singlechip->cmdGetVersion = cmdGetVersion;
+	protocol_singlechip->cmdSetPirStrength = cmdSetPirStrength;
 	protocol_singlechip->deal = deal;
 	protocol_singlechip->hasPeople = hasPeople;
 	createThread(threadPirTimer,NULL);
 	protocol_singlechip->cmdGetVersion();
+	protocol_singlechip->cmdSetPirStrength(g_config.pir_strength);
 }

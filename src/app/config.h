@@ -13,7 +13,7 @@ extern "C" {
 
 
 #define DEVICE_TYPE	"TC-U9MY-A"
-#define DEVICE_SVERSION	"1.0.4"
+#define DEVICE_SVERSION	"1.0.5"
 #define DEVICE_KVERSION	"1.0.0"
 
 #if (defined X86)
@@ -50,7 +50,6 @@ extern "C" {
 #define UPDATE_URL	"http://img.cateye.taichuan.com/update.ini" // 七牛云存储升级包配置文件地址
 #define UPDATE_INI	UPDATE_INI_PATH"update.ini" // 七牛云存储升级配置文件地址
 
-#define AUTO_CLOSE_LCD 11
 #define SLEEP_TIMER 20
 #define SLEEP_LONG_TIMER 50
 #define POWEROFF_TIMER 2
@@ -165,6 +164,10 @@ extern "C" {
 		int  alarm_volume;    // 报警音量
 		int  talk_volume;     // 对讲音量
 		int  pir_active_times;     // PIR触发报次数后报警
+		int  pir_alarm;     // PIR触发是否发出报警音
+		int  pir_strength;   // PIR触发强度,0近，1中，2远
+		int  screensaver_time;   // 息屏时间
+		int  brightness;   // 屏幕亮度
 
 		struct wifiLowPower wifi_lowpower; // 低功耗wifi参数
 		struct CapType cap;		// 抓拍或录像

@@ -37,6 +37,10 @@ static EtcValueInt etc_private_int[]={
 {"rings",		"alarm_volume",	&g_config.alarm_volume,		80},
 {"rings",		"talk_volume",	&g_config.talk_volume,		80},
 {"others",		"pir_active_times",	&g_config.pir_active_times,		20},
+{"others",		"pir_alarm",	&g_config.pir_alarm,		0},
+{"others",		"pir_strength",	&g_config.pir_strength,		1},
+{"others",		"screensaver_time",	&g_config.screensaver_time,		11},
+{"others",		"brightness",	&g_config.brightness,		80},
 };
 
 static EtcValueChar etc_private_char[]={

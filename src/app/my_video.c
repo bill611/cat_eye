@@ -706,7 +706,8 @@ static void* threadAlarm(void *arg)
 	sleep(1);
 	protocol_hardcloud->uploadPic(FAST_PIC_PATH,alarm_data.picture_id);
 	protocol_hardcloud->reportAlarm(&alarm_data);
-	myAudioPlayAlarm();
+	if (g_config.pir_alarm)
+		myAudioPlayAlarm();
 	return NULL;
 }
 static void* threadFace(void *arg)

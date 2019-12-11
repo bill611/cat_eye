@@ -130,7 +130,7 @@ static InitBmpFunc load_bmps_func[] = {
 
 static HWND hwnd_videolayer = HWND_INVALID;
 static int flag_timer_stop = 0;
-static int auto_close_lcd = AUTO_CLOSE_LCD;
+static int auto_close_lcd = 0;
 static int sleep_timer = 0; // 进入睡眠倒计时
 static int poweroff_timer = 0; // 进入关机倒计时
 static int screen_on = 0;
@@ -165,7 +165,7 @@ static void enableAutoClose(void)
 {
 	Screen.setCurrent("TFrmVL");
 	flag_timer_stop = 0;	
-	setAutoCloseLcdTime(AUTO_CLOSE_LCD);
+	setAutoCloseLcdTime(g_config.screensaver_time);
 	my_video->showLocalVideo();
 }
 void screenAutoCloseStop(void)
@@ -180,7 +180,7 @@ void screenAutoCloseStop(void)
 void formVideoLayerScreenOn(void)
 {
 	screensaverSet(1);
-	setAutoCloseLcdTime(AUTO_CLOSE_LCD);
+	setAutoCloseLcdTime(g_config.screensaver_time);
 }
 
 /* ---------------------------------------------------------------------------*/
@@ -288,6 +288,7 @@ static int formVideoLayerProc(HWND hWnd, int message, WPARAM wParam, LPARAM lPar
 		case MSG_CREATE:
 			{
 				screenInit();
+				auto_close_lcd = g_config.screensaver_time; 
 				Screen.Add(hWnd,"TFrmVL");
 				hwnd_videolayer = hWnd;
                 bmpsLoad(base_bmps);
@@ -342,7 +343,7 @@ static int formVideoLayerProc(HWND hWnd, int message, WPARAM wParam, LPARAM lPar
 			if (screensaverSet(1)) {
 				screen_on = 1;
 			}
-			setAutoCloseLcdTime(AUTO_CLOSE_LCD);
+			setAutoCloseLcdTime(g_config.screensaver_time);
 			break;
 
 		case MSG_ENABLE_WINDOW:

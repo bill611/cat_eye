@@ -276,6 +276,19 @@ static void cmdGetVesion(void)
 
 /* ---------------------------------------------------------------------------*/
 /**
+ * @brief cmdPirStrength 设置PIR强度
+ *
+ * @param strength
+ */
+/* ---------------------------------------------------------------------------*/
+static void cmdPirStrength(int strength)
+{
+	uint8_t data = strength;
+	cmdPacket(CMD_SET_PIR,id++,&data,1);
+}
+
+/* ---------------------------------------------------------------------------*/
+/**
  * @brief threadCmdHeart 休眠或者关机线程不断发送心跳
  *
  * @param arg
@@ -333,6 +346,9 @@ static void uartDeal(void)
 	switch(cmd)
 	{
 		case CMD_SET_PIR_RESPONSE:
+			ipc_data.pir_strength_result = data[0];
+			ipc_data.cmd = IPC_UART_SET_PIR;
+			main_queue->post(main_queue,&ipc_data);
 			break;
 		case CMD_GET_VERSION:
 			ipc_data.cmd = IPC_UART_GETVERSION;
@@ -432,14 +448,17 @@ static void ipcCallback(char *data,int size )
 		case IPC_UART_WIFI_RESET:
 			{
 				cmdWifiReset();
-			}
-			break;
+			} break;
 
 		case IPC_UART_GETVERSION:
 			{
 				cmdGetVesion();
-			}
-			break;
+			} break;
+
+		case IPC_UART_SET_PIR:
+			{
+				cmdPirStrength(ipc_data.pir_strength);
+			}break;
 		default:
 			break;
 	}

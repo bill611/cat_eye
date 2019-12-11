@@ -52,6 +52,7 @@ extern "C" {
 		IPC_UART_REMOVE_CAP,		// 当识别到为熟人后删除门铃拍照
 		IPC_UART_CAPTURE,			// 开机前抓拍图片
 		IPC_UART_GETVERSION,		// 获取单片机版本信息
+		IPC_UART_SET_PIR,			// 设置PIR强度
 	};
 	enum {
 		PROTOCOL_TALK_LAN,  // 局域网对讲
@@ -126,6 +127,8 @@ extern "C" {
 		int count;
 		char s_version[3];
 		int need_ring; // 主程序是否需要响铃声,0否，1是
+		int pir_strength; // pir强度
+		int pir_strength_result; // pir强度设置结果
         union {
             char array_buf[128];
 			char cap_path[128];
@@ -200,6 +203,7 @@ extern "C" {
 		void (*cmdPowerOff)(void);			// 发送进入关机
 		void (*cmdWifiReset)(void);			// 复位wifi
 		void (*cmdGetVersion)(void);		// 获取单片机版本号
+		void (*cmdSetPirStrength)(int strength);	// 设置PIR信号强度
 		void (*hasPeople)(char *nick_name,char *user_id);// 人脸识别到熟人
 	}ProtocolSinglechip;
 	extern ProtocolSinglechip *protocol_singlechip;
