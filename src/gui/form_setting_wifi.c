@@ -106,6 +106,7 @@ struct ScrollviewOperation{
  *----------------------------------------------------------------------------*/
 static HWND hScrollView;
 static struct ScrollviewOperation scro_opt;
+static int bmp_load_finished = 0;
 static int flag_timer_stop = 0;
 static int connect_wifi_interval = 0; // 链接wifi间隔时间
 static int refresh_wifi_interval = 0; // 刷新列表wifi间隔时间
@@ -465,7 +466,12 @@ static void formSettingWifiTimerProc1s(HWND hwnd)
 }
 void formSettingWifiLoadBmp(void)
 {
+    if (bmp_load_finished == 1)
+        return;
+
+	printf("[%s]\n", __FUNCTION__);
     bmpsLoad(bmp_load);
+    bmp_load_finished = 1;
 }
 
 /* ---------------------------------------------------------------------------*/
@@ -743,6 +749,9 @@ int createFormSettingWifi(HWND hMainWnd,void (*callback)(void))
 		ShowWindow(Form,SW_SHOWNORMAL);
 		scrollviewInit();
 	} else {
+        if (bmp_load_finished == 0) {
+            return 0;
+        }
 		form_base_priv.callBack = callback;
 		form_base = formBaseCreate(&form_base_priv);
 		return CreateMyWindowIndirectParam(form_base->priv->dlgInitParam,

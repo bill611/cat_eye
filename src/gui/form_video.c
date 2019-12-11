@@ -139,7 +139,6 @@ static FormBasePriv form_base_priv = {
 	.initPara =  initPara,
 };
 
-static int bmp_load_finished = 0;
 static int form_type = FORM_VIDEO_TYPE_CAPTURE;
 static FormBase* form_base = NULL;
 static int auto_close_time = 0;
@@ -208,15 +207,12 @@ static void buttonAnswerPress(HWND hwnd, int id, int nc, DWORD add_data)
  * @brief formVideoLoadBmp 加载主界面图片
  */
 /* ---------------------------------------------------------------------------*/
-void formVideoLoadBmp(void)
+static void formVideoLoadBmp(void)
 {
-    if (bmp_load_finished == 1)
-        return;
 	printf("[%s]\n", __FUNCTION__);
     bmpsLoad(base_bmps);
     my_button->bmpsLoad(ctrls_button,BMP_LOCAL_PATH);
     my_status->bmpsLoad(ctrls_status,BMP_LOCAL_PATH);
-    bmp_load_finished = 1;
 }
 static void formVideoReleaseBmp(void)
 {
@@ -386,10 +382,7 @@ int createFormVideo(HWND hMainWnd,int type,void (*callback)(void),int count)
 		updateTitle("");
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
-        if (bmp_load_finished == 0) {
-            // topMessage(hVideoWnd,TOPBOX_ICON_LOADING,NULL );
-            return 0;
-        }
+		formVideoLoadBmp();
 		form_base_priv.callBack = callback;
 		form_base = formBaseCreate(&form_base_priv);
 		return CreateMyWindowIndirectParam(form_base->priv->dlgInitParam,

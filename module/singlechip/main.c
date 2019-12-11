@@ -276,14 +276,14 @@ static void cmdGetVesion(void)
 
 /* ---------------------------------------------------------------------------*/
 /**
- * @brief threadCmdSleep 休眠或者关机线程不断发送心跳
+ * @brief threadCmdHeart 休眠或者关机线程不断发送心跳
  *
  * @param arg
  *
  * @returns 
  */
 /* ---------------------------------------------------------------------------*/
-static void* threadCmdSleep(void *arg)
+static void* threadCmdHeart(void *arg)
 {
 	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	while (1) {
@@ -390,7 +390,7 @@ static void uartDeal(void)
 			{
 				ipc_data.cmd = IPC_UART_POWEROFF;
 				main_queue->post(main_queue,&ipc_data);
-				createThread(threadCmdSleep,NULL);
+				createThread(threadCmdHeart,NULL);
 			}
 			break;
 		case CMD_ERR_RESPONSE:
@@ -418,14 +418,14 @@ static void ipcCallback(char *data,int size )
 		case IPC_UART_POWEROFF:
 			{
 				cmdPowerOff();
-				createThread(threadCmdSleep,NULL);
+				createThread(threadCmdHeart,NULL);
 			}
 			break;
 
 		case IPC_UART_SLEEP:
 			{
 				cmdSleep();
-				createThread(threadCmdSleep,NULL);
+				createThread(threadCmdHeart,NULL);
 			}
 			break;
 

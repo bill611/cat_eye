@@ -83,6 +83,7 @@ struct MemData {
  *                      variables define
  *----------------------------------------------------------------------------*/
 static HWND hScrollView;
+static int bmp_load_finished = 0;
 static int flag_timer_stop = 0;
 struct MemData mem_data;
 // static struct ScrollviewItem *locoal_list;
@@ -196,7 +197,12 @@ static void scrollviewNotify(HWND hwnd, int id, int nc, DWORD add_data)
 
 void formSettingDoorbellLoadBmp(void)
 {
+    if (bmp_load_finished == 1)
+        return;
+
+	printf("[%s]\n", __FUNCTION__);
     bmpsLoad(bmp_load);
+    bmp_load_finished = 1;
 }
 static void myDrawItem (HWND hWnd, HSVITEM hsvi, HDC hdc, RECT *rcDraw)
 {
@@ -337,6 +343,9 @@ int createFormSettingDoorbell(HWND hMainWnd,void (*callback)(void))
 		loadDoorbellData();
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
+        if (bmp_load_finished == 0) {
+            return 0;
+        }
 		form_base_priv.callBack = callback;
 		form_base = formBaseCreate(&form_base_priv);
 		return CreateMyWindowIndirectParam(form_base->priv->dlgInitParam,

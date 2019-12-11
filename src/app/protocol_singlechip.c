@@ -78,15 +78,11 @@ static void cmdSleep(void)
 
 static void cmdPowerOff(void)
 {
-	if (sensor->getEleState()) {
-		cmdSleep();
-	} else {
-		IpcData ipc_data;
-		ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
-		ipc_data.cmd = IPC_UART_POWEROFF;
-		if (ipc_main)
-			ipc_main->sendData(ipc_main,IPC_UART,&ipc_data,sizeof(ipc_data));
-	}
+	IpcData ipc_data;
+	ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
+	ipc_data.cmd = IPC_UART_POWEROFF;
+	if (ipc_main)
+		ipc_main->sendData(ipc_main,IPC_UART,&ipc_data,sizeof(ipc_data));
 }
 
 static void cmdWifiReset(void)

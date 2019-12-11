@@ -296,7 +296,6 @@ static void buttonRecordPress(HWND hwnd, int id, int nc, DWORD add_data)
 	if (nc != BN_CLICKED)
 		return;
 	flag_timer_stop = 1;
-	topMsgDoorbell();
 }
 
 static void buttonCapturePress(HWND hwnd, int id, int nc, DWORD add_data)

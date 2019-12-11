@@ -44,10 +44,9 @@ extern int createFormPowerOffLowPower(void);
 extern int createFormPowerOffCammerError(void);
 extern int createFormPowerOffCammerErrorSleep(void);
 extern int createFormUpdate(HWND hMainWnd);
-extern int createFormTopmessage(HWND hMainWnd,char *title,char *content,void (*callback)(void));
+extern int createFormTopmessage(HWND hMainWnd,char *title,char *content,void (*fConfirm)(void),void (*fCancel)(void));
 extern void formMainLoadBmp(void);
 extern void formSettingLoadBmp(void);
-extern void formVideoLoadBmp(void);
 extern void formMonitorLoadBmp(void);
 extern void formSettingWifiLoadBmp(void);
 extern void formPasswordLoadBmp(void);
@@ -58,7 +57,6 @@ extern void formSettingUpdateLoadBmp(void);
 extern void formSettingDoorbellLoadBmp(void);
 extern void formSettingRingsLoadBmp(void);
 extern void formSettingRingsVolumeLoadBmp(void);
-extern void formTopmessageLoadBmp(void);
 
 extern void formVideoInitInterface(void);
 /* ---------------------------------------------------------------------------*
@@ -73,10 +71,6 @@ extern void formVideoInitInterface(void);
 #else
 	#define DBG_P( x... )
 #endif
-
-enum {
-	MSG_MAIN_LOAD_BMP = MSG_USER + 1,
-};
 
 typedef void (*InitBmpFunc)(void) ;
 typedef struct {
@@ -131,7 +125,6 @@ static InitBmpFunc load_bmps_func[] = {
 	formSettingDoorbellLoadBmp,
 	formSettingRingsLoadBmp,
 	formSettingRingsVolumeLoadBmp,
-	formTopmessageLoadBmp,
 	NULL,
 };
 
@@ -232,9 +225,9 @@ void cammerErrorToPowerOff(void)
 		createFormPowerOffCammerErrorSleep();
 	} else {
 		createFormPowerOffCammerError();
+		poweroff_timer = POWEROFF_TIMER;
 	}
 	auto_close_lcd = 0;
-	poweroff_timer = POWEROFF_TIMER;
 }
 /* ---------------------------------------------------------------------------*/
 /**
@@ -258,7 +251,7 @@ static void formVideoLayerTimerProc1s(HWND hwnd)
 		printf("power:%d\n", poweroff_timer);
 		if (--poweroff_timer == 0)
 			protocol_singlechip->cmdPowerOff();
-	} else if (sleep_timer && auto_close_lcd == 0) {
+	} else if (sleep_timer && auto_close_lcd == 0 && (sensor->getEleState() == 0)) {
 		printf("sleep:%d\n", sleep_timer);
 		if (--sleep_timer == 0)
 			protocol_singlechip->cmdSleep();
@@ -302,12 +295,11 @@ static int formVideoLayerProc(HWND hWnd, int message, WPARAM wParam, LPARAM lPar
                 fontsLoad(font_load);
 				SetTimer(hWnd, IDC_TIMER_1S, TIME_1S);
 
-				formVideoLoadBmp();
 				HWND form = createFormPowerOff(hWnd);
 				ShowWindow(form,SW_HIDE);
 				form = createFormUpdate(hWnd);
 				ShowWindow(form,SW_HIDE);
-				form = createFormTopmessage(hWnd,NULL,NULL,NULL);
+				form = createFormTopmessage(hWnd,NULL,NULL,NULL,NULL);
 				ShowWindow(form,SW_HIDE);
 				form = createFormVideo(hWnd,FORM_VIDEO_TYPE_CAPTURE,NULL,0);
 				ShowWindow(form,SW_HIDE);
@@ -326,11 +318,6 @@ static int formVideoLayerProc(HWND hWnd, int message, WPARAM wParam, LPARAM lPar
 						   (HDC)wParam,
 						   0,NULL,0);
 			 return 0;
-
-		case MSG_MAIN_LOAD_BMP:
-			{
-                createThread(loadBmpsThread,NULL);
-			} return 0;
 
 		case MSG_TIMER:
 			{

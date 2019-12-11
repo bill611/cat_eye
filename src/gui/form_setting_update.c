@@ -75,6 +75,7 @@ enum {
  *----------------------------------------------------------------------------*/
 static BITMAP bmp_warning; // 警告
 static BITMAP bmp_update; // 升级
+static int bmp_load_finished = 0;
 static int flag_timer_stop = 0;
 
 static BmpLocation bmp_load[] = {
@@ -187,7 +188,12 @@ static void buttonUpdateNetwork(HWND hwnd, int id, int nc, DWORD add_data)
 }
 void formSettingUpdateLoadBmp(void)
 {
+    if (bmp_load_finished == 1)
+        return;
+
+	printf("[%s]\n", __FUNCTION__);
     bmpsLoad(bmp_load);
+    bmp_load_finished = 1;
 }
 static void updateInfo(HWND hDlg)
 {
@@ -282,6 +288,9 @@ int createFormSettingUpdate(HWND hMainWnd,void (*callback)(void))
 		updateInfo(form_base->hDlg);
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
+        if (bmp_load_finished == 0) {
+            return 0;
+        }
 		form_base_priv.callBack = callback;
 		form_base = formBaseCreate(&form_base_priv);
 		return CreateMyWindowIndirectParam(form_base->priv->dlgInitParam,

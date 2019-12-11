@@ -68,6 +68,7 @@ enum {
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
+static int bmp_load_finished = 0;
 static int flag_timer_stop = 0;
 static BITMAP bmp_imei;
 static BITMAP bmp_app_url;
@@ -214,8 +215,13 @@ static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data)
 }
 void formSettingQrcodeLoadBmp(void)
 {
+    if (bmp_load_finished == 1)
+        return;
+
+	printf("[%s]\n", __FUNCTION__);
     bmpsLoad(bmp_load);
     my_button->bmpsLoad(ctrls_button,BMP_LOCAL_PATH);
+    bmp_load_finished = 1;
 }
 
 /* ----------------------------------------------------------------*/
@@ -306,6 +312,9 @@ int createFormSettingQrcode(HWND hMainWnd,void (*callback)(void))
 		Screen.setCurrent(form_base_priv.name);
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
+        if (bmp_load_finished == 0) {
+            return 0;
+        }
 		form_base_priv.callBack = callback;
 		form_base = formBaseCreate(&form_base_priv);
 		return CreateMyWindowIndirectParam(form_base->priv->dlgInitParam,
