@@ -66,6 +66,7 @@ struct _MyUpdatePrivate {
 	int port;
 	int type;
 	int check_update;
+	int is_updating;
 	TRemoteFile * remote;
 	UpdateFunc callbackFunc;
 };
@@ -253,6 +254,11 @@ need_update_out:
 	return update_info.need_update;	
 }
 
+static int isUpdating(struct _MyUpdate *This)
+{
+	return This->priv->is_updating;	
+}
+
 void myUpdateInit(void)
 {
 	my_update = (MyUpdate *) calloc (1,sizeof(MyUpdate));
@@ -262,6 +268,7 @@ void myUpdateInit(void)
 	my_update->download = download;
 	my_update->uninit = uninit;
 	my_update->needUpdate = needUpdate;
+	my_update->isUpdating = isUpdating;
 	createThread(threadCheckUpdatInfo,NULL);	
 }
 
@@ -288,12 +295,14 @@ static void updateCallback(int result,int reason)
 
 static void * threadUpdate(void *arg)
 {
+	my_update->priv->is_updating = 1;
 	if (my_update->interface->uiUpdateStart)
 		my_update->interface->uiUpdateStart();
 	my_update->download(my_update);
 	my_update->uninit(my_update);
 	if (my_update->interface->uiUpdateStop)
 		my_update->interface->uiUpdateStop();
+	my_update->priv->is_updating = 0;
 	return NULL;
 }
 

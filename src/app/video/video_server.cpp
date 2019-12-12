@@ -397,3 +397,11 @@ int rkVideoRecordStop(void)
 	if (rkvideo)
 		rkvideo->recordStop();
 }
+
+extern "C"
+int rkGetVideoRun(void)
+{
+	if (!rkvideo)	
+		return 0;
+	rkvideo->getCammerState();
+}

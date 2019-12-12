@@ -544,6 +544,8 @@ send_return:
 /* ---------------------------------------------------------------------------*/
 static int mqttConnectCallBack(void* context, char* topicName, int topicLen, void* payload)
 {
+	if (my_update->isUpdating(my_update))
+		return -1;
 	CjsonDec *dec = cjsonDecCreate((char*)payload);
 	if (NULL == dec) {
        printf("dealWithSubscription cjsonDecCreate fail!\n");

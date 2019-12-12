@@ -47,6 +47,7 @@
 extern void resetAutoSleepTimerLong(void);
 extern void resetAutoSleepTimerShort(void);
 extern int formCreateCaputure(int count);
+extern void topMsgCammerError(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -1041,6 +1042,10 @@ static void init(void)
 
 static void capture(int type,int count,char *nick_name,char *user_id)
 {
+	if (rkGetVideoRun() == 0) {
+		topMsgCammerError();
+		return;
+	}
 	st_data = (StmData *)stm->initPara(stm,
 			        sizeof(StmData));
 	st_data->cap_count = count;
@@ -1052,12 +1057,17 @@ static void capture(int type,int count,char *nick_name,char *user_id)
 	stm->msgPost(stm,EV_CAPTURE,st_data);
 }
 
-static void recordStart(int type)
+static int recordStart(int type)
 {
+	if (rkGetVideoRun() == 0) {
+		topMsgCammerError();
+		return 0;
+	}
 	st_data = (StmData *)stm->initPara(stm,
 			        sizeof(StmData));
 	st_data->cap_type = type;
     stm->msgPost(stm,EV_RECORD_START,st_data);
+	return 1;
 }
 
 static void recordStop(void)

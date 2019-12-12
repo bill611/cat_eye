@@ -231,3 +231,8 @@ void topMsgDoorbell(void)
 {
 	createFormTopmessage(0,"提示","有人在按门铃",NULL,NULL);
 }
+
+void topMsgCammerError(void)
+{
+	createFormTopmessage(0,"提示","摄像头异常",NULL,NULL);
+}

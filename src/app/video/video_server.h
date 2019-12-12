@@ -16,6 +16,7 @@ int rkVideoCapture(char *file_name);
 int rkVideoRecordStart(int w,int h,EncCallbackFunc encCallback);
 int rkVideoRecordSetStopFunc(RecordStopCallbackFunc recordCallback);
 int rkVideoRecordStop(void);
+int rkGetVideoRun(void);
 
 #endif
 

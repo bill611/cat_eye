@@ -41,7 +41,7 @@ extern "C" {
 
 		void (*capture)(int type,int count,char *nick_name,char *user_id);
 
-		void (*recordStart)(int type);
+		int (*recordStart)(int type); // 返回0启动失败 1启动成功
 		void (*recordWriteCallback)(char *data,int size);
 		void (*recordStop)(void);
 		
