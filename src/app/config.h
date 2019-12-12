@@ -32,7 +32,8 @@ extern "C" {
 #define QRCODE_IMIE "./imei.png"				// 机身码二维码路径
 #define QRCODE_APP "./app_url.png"				// app地址二维码路径
 
-#define CONFIG_FILENAME CONFIG_FILE_PATH"config.ini"			// 配置文件路径
+#define CONFIG_FILENAME CONFIG_FILE_PATH"config.ini"		// 配置文件，包括机身号等只配置一次的文件
+#define CONFIG_PARA_FILENAME CONFIG_FILE_PATH"config_para.ini"	// 配置文件，参数设置,可以删除后恢复
 
 #define CAP_PATH SDCARD_PATH"cap/"				// SD卡抓拍存储目录
 #define TALK_PATH SDCARD_PATH"talk/"			// SD卡通话抓拍记录
@@ -168,14 +169,19 @@ extern "C" {
 		int  pir_strength;   // PIR触发强度,0近，1中，2远
 		int  screensaver_time;   // 息屏时间
 		int  brightness;   // 屏幕亮度
+		int  record_time;  // 主界面录像倒计时时间
 
 		struct wifiLowPower wifi_lowpower; // 低功耗wifi参数
-		struct CapType cap;		// 抓拍或录像
+		struct CapType cap_doorbell;// 按门铃抓拍或录像
+		struct CapType cap_alarm;	// 报警时抓拍或录像
+		struct CapType cap_talk;	// 通话时抓拍或录像
 	} Config;
 
 	void configLoad(void);
 	void ConfigSavePrivate(void);
 	void ConfigSavePrivateCallback(configCallback func);
+	void ConfigSavePublic(void);
+	void ConfigSavePublicCallback(configCallback func);
 
 	void createSdcardDirs(void);
 	void configLoadEtcChar(dictionary *cfg_ini, EtcValueChar *etc_file,

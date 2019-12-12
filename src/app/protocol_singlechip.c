@@ -173,7 +173,7 @@ static void deal(IpcData *ipc_data)
 				if (pir_cycle_end == 1)
 					break;
 				pir_cycle_end = 1;
-				my_video->capture(CAP_TYPE_DOORBELL,g_config.cap.count,NULL,NULL);
+				my_video->capture(CAP_TYPE_DOORBELL,g_config.cap_doorbell.count,NULL,NULL);
 			}
 			break;
 		case IPC_UART_POWEROFF:
@@ -189,8 +189,8 @@ static void deal(IpcData *ipc_data)
 				break;
 			if (++pir_act_count == g_config.pir_active_times) {
 				pir_cycle_end = 1;
-				if (g_config.cap.type == 0)
-					my_video->capture(CAP_TYPE_ALARM,g_config.cap.count,NULL,NULL);
+				if (g_config.cap_alarm.type == 0)
+					my_video->capture(CAP_TYPE_ALARM,g_config.cap_alarm.count,NULL,NULL);
 				else {
 					// 录像	
 				}

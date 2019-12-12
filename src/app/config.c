@@ -17,21 +17,26 @@
 #define NELEMENTS(array)  (sizeof (array) / sizeof ((array) [0]))
 
 Config g_config;
+struct SaveType {
+	int cmd; // 0 private,  1public
+	configCallback func; // 回调函数
+};
 static dictionary* cfg_public_ini;
 static dictionary* cfg_private_ini;
 static pthread_mutex_t cfg_mutex ;
 
 static EtcValueInt etc_public_int[]={
-};
-static EtcValueChar etc_public_char[]={
-};
-
-static EtcValueInt etc_private_int[]={
-{"wireless",	"enable",		&g_config.net_config.enable,0},
 {"cloud",		"timestamp",	&g_config.timestamp,		0},
-{"cap",			"type",			&g_config.cap.type,			0},
-{"cap",			"count",		&g_config.cap.count,		1},
-{"cap",			"timer",		&g_config.cap.timer,		5},
+{"wireless",	"enable",		&g_config.net_config.enable,0},
+{"cap_doorbell","type",			&g_config.cap_doorbell.type,	0},
+{"cap_doorbell","count",		&g_config.cap_doorbell.count,	1},
+{"cap_doorbell","timer",		&g_config.cap_doorbell.timer,	5},
+{"cap_alarm",	"type",			&g_config.cap_alarm.type,	0},
+{"cap_alarm",	"count",		&g_config.cap_alarm.count,	1},
+{"cap_alarm",	"timer",		&g_config.cap_alarm.timer,	5},
+{"cap_talk",	"type",			&g_config.cap_talk.type,	0},
+{"cap_talk",	"count",		&g_config.cap_talk.count,	1},
+{"cap_talk",	"timer",		&g_config.cap_talk.timer,	10},
 {"rings",		"ring_num",		&g_config.ring_num,			0},
 {"rings",		"ring_volume",	&g_config.ring_volume,		80},
 {"rings",		"alarm_volume",	&g_config.alarm_volume,		80},
@@ -41,21 +46,40 @@ static EtcValueInt etc_private_int[]={
 {"others",		"pir_strength",	&g_config.pir_strength,		1},
 {"others",		"screensaver_time",	&g_config.screensaver_time,		11},
 {"others",		"brightness",	&g_config.brightness,		80},
+{"others",		"record_time",	&g_config.record_time,		30},
 };
-
-static EtcValueChar etc_private_char[]={
-{"device",		"imei",	    SIZE_CONFIG(g_config.imei),		"0"},
+static EtcValueChar etc_public_char[]={
 {"device",		"version",	SIZE_CONFIG(g_config.version),	DEVICE_SVERSION},
 {"device",		"s_version",SIZE_CONFIG(g_config.s_version),"0"},
 {"cloud",		"app_url",	SIZE_CONFIG(g_config.app_url),	"123"},
-
 {"wireless",	"ssid",	    SIZE_CONFIG(g_config.net_config.ssid),		"MINI"},
 {"wireless",	"mode",	    SIZE_CONFIG(g_config.net_config.mode),		"Infra"},
 {"wireless",	"security",	SIZE_CONFIG(g_config.net_config.security),	"WPA/WPA2 PSK"},
 {"wireless",	"password",	SIZE_CONFIG(g_config.net_config.password),	"12345678"},
 {"wireless",	"running",	SIZE_CONFIG(g_config.net_config.running),	"station"},
-{"face",		"license",	SIZE_CONFIG(g_config.f_license),			"0"},
+};
 
+static EtcValueChar etc_private_char[]={
+{"device",		"imei",	    SIZE_CONFIG(g_config.imei),		"0"},
+{"face",		"license",	SIZE_CONFIG(g_config.f_license),"0"},
+
+};
+static char *sec_private[] = {
+	"device",
+	"face",
+	NULL
+};
+
+static char *sec_public[] = {
+	"device",
+	"cloud",
+	"wireless",
+	"rings",
+	"cap_doorbell",
+	"cap_alarm",
+	"cap_talk",
+	"others",
+	NULL
 };
 
 void configSync(void)
@@ -187,11 +211,21 @@ static void dumpIniFile(dictionary *d,char *file_name)
 
 static void SavePrivate(void)
 {
-	configSaveEtcInt(cfg_private_ini,etc_private_int,NELEMENTS(etc_private_int));
 	configSaveEtcChar(cfg_private_ini,etc_private_char,NELEMENTS(etc_private_char));
 	dumpIniFile(cfg_private_ini,CONFIG_FILENAME);
 	if (etcFileCheck() == 1) {
 		backData(CONFIG_FILENAME);
+	}
+	DPRINT("[%s]end\n", __FUNCTION__);
+}
+
+static void SavePublic(void)
+{
+	configSaveEtcInt(cfg_public_ini,etc_public_int,NELEMENTS(etc_public_int));
+	configSaveEtcChar(cfg_public_ini,etc_public_char,NELEMENTS(etc_public_char));
+	dumpIniFile(cfg_public_ini,CONFIG_PARA_FILENAME);
+	if (etcFileCheck() == 1) {
+		backData(CONFIG_PARA_FILENAME);
 	}
 	DPRINT("[%s]end\n", __FUNCTION__);
 }
@@ -248,21 +282,24 @@ void createSdcardDirs(void)
 }
 void configLoad(void)
 {
-	char *sec_private[] = {"device","cloud","face","wireless","rings","cap","others",NULL};
-
-	int ret = loadIniFile(&cfg_private_ini,CONFIG_FILENAME,sec_private);
-	configLoadEtcInt(cfg_private_ini,etc_private_int,NELEMENTS(etc_private_int));
-	configLoadEtcChar(cfg_private_ini,etc_private_char,NELEMENTS(etc_private_char));
-	etcFileCheck();
-
 	pthread_mutexattr_t mutexattr;
 	pthread_mutexattr_init(&mutexattr);
     pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE_NP);
     pthread_mutex_init(&cfg_mutex, &mutexattr);
+    pthread_mutexattr_destroy(&mutexattr);
 
+	int ret = loadIniFile(&cfg_private_ini,CONFIG_FILENAME,sec_private);
+	configLoadEtcChar(cfg_private_ini,etc_private_char,NELEMENTS(etc_private_char));
+	etcFileCheck();
+	if (ret) 
+		SavePrivate();
+	ret = loadIniFile(&cfg_public_ini,CONFIG_PARA_FILENAME,sec_public);
+	configLoadEtcChar(cfg_public_ini,etc_public_char,NELEMENTS(etc_public_char));
+	configLoadEtcInt(cfg_public_ini,etc_public_int,NELEMENTS(etc_public_int));
+	
 	if (ret || strcmp(g_config.version,DEVICE_SVERSION) != 0) {
 		strcpy(g_config.version,DEVICE_SVERSION);
-		SavePrivate();
+		SavePublic();
 	}
 	getCpuId(g_config.hardcode);
 	printf("imei:%s,hard:%s\n", g_config.imei,g_config.hardcode);
@@ -278,29 +315,48 @@ void configLoad(void)
 
 static void* ConfigSaveTask(void* arg)
 {
-
 	prctl(PR_SET_NAME, __func__, 0, 0, 0);
     pthread_mutex_lock(&cfg_mutex);
+	struct SaveType *save_type = (struct SaveType *)arg;
 
-	SavePrivate();
+	if (save_type->cmd == 0)
+		SavePrivate();
+	else if (save_type->cmd == 1)
+		SavePublic();
 
 	configSync();
-	configCallback func = (configCallback)arg;
-	if(func)
-		func();
+	if(save_type->func)
+		save_type->func();
 
     pthread_mutex_unlock(&cfg_mutex);
 
     return NULL;
 }
 
+
 void ConfigSavePrivate(void)
 {
-    createThread(ConfigSaveTask, NULL);
+	static struct SaveType save_type = { 0,NULL };
+    createThread(ConfigSaveTask, &save_type);
 }
 
 void ConfigSavePrivateCallback(configCallback func)
 {
-    createThread(ConfigSaveTask, (void*)func);
+	static struct SaveType save_type = { 0, NULL };
+	save_type.func = func;
+    createThread(ConfigSaveTask, &save_type);
+}
+
+void ConfigSavePublic(void)
+{
+	static struct SaveType save_type = { 1,NULL };
+    createThread(ConfigSaveTask, &save_type);
+}
+
+void ConfigSavePublicCallback(configCallback func)
+{
+	static struct SaveType save_type = { 1, NULL };
+	save_type.func = func;
+    createThread(ConfigSaveTask, &save_type);
 }
 

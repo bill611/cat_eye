@@ -257,7 +257,7 @@ static void getPassword(char *account,char *password)
     }
     strcpy(g_config.net_config.password,password);
 	strcpy(g_config.net_config.security,"WPA/WPA2 PSK");
-    ConfigSavePrivateCallback(saveConfigConnectCallback);
+    ConfigSavePublicCallback(saveConfigConnectCallback);
 }
 
 /* ---------------------------------------------------------------------------*/
@@ -325,7 +325,7 @@ static void buttonTitleNotify(HWND hwnd, int id, int nc, DWORD add_data)
 	}
     else if (nc == MYTITLE_BUTTON_SWICH) {
         g_config.net_config.enable = add_data;
-		ConfigSavePrivateCallback(saveConfigCallback);
+		ConfigSavePublicCallback(saveConfigCallback);
     }
 }
 /* ---------------------------------------------------------------------------*/
@@ -430,7 +430,7 @@ static void scrollviewNotify(HWND hwnd, int id, int nc, DWORD add_data)
 			strcpy(select_ap.ssid,ap_info[idx].ssid);
 			strcpy(g_config.net_config.ssid,ap_info[idx].ssid);
 			strcpy(g_config.net_config.security,"NONE");
-			ConfigSavePrivateCallback(saveConfigConnectCallback);
+			ConfigSavePublicCallback(saveConfigConnectCallback);
 		}
         // printf("idx:%d,name:%s\n", idx,plist->text);
     }

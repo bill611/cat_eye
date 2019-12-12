@@ -152,7 +152,8 @@ typedef struct _StmDo {
 
 typedef struct _CapData {
 	uint64_t pic_id;
-	int count;
+	int count; // 抓拍照片数量
+	int video_count; // 录像数量,仅针对通话时多次录像
 	char file_date[32];
 	char file_name[32];
 	char nick_name[128];
@@ -824,6 +825,7 @@ static void recordStopCallbackFunc(void)
     if (avi) 
         avi->DestoryMPEG4(&avi);
     pthread_mutex_unlock(&mutex);
+	record_state = 0;
 	protocol_hardcloud->uploadPic(FAST_PIC_PATH,cap_data.pic_id);
 	protocol_hardcloud->reportCapture(cap_data.pic_id);
 }
@@ -835,6 +837,7 @@ static void recordStopCallbackFuncForTalk(void)
     if (avi) 
         avi->DestoryMPEG4(&avi);
     pthread_mutex_unlock(&mutex);
+	record_state = 0;
 	// protocol_hardcloud->uploadPic(FAST_PIC_PATH,cap_data.pic_id);
 	// protocol_hardcloud->reportCapture(cap_data.pic_id);
 }
@@ -893,19 +896,18 @@ static int stmDoRecordStart(void *data,MyVideo *arg)
 		return 0;
 	record_state = 1;
 	StmData *data_temp = (StmData *)data;
-	record_time = TIME_RECORD;
 	switch(data_temp->cap_type)
 	{
 		case CAP_TYPE_TALK :
 			{
 				w = 320; h = 240;
+				record_time = g_config.cap_talk.timer;
 				if (talk_data.picture_id == 0) {
 					memset(&cap_data,0,sizeof(CapData));
 					getFileName(cap_data.file_name,cap_data.file_date);
 					talk_data.picture_id = cap_data.pic_id = atoll(cap_data.file_name);
 				}
-                sqlInsertRecordCapNoBack(cap_data.file_date,cap_data.pic_id);
-				sprintf(jpg_name,"%s_%s.mp4",g_config.imei,cap_data.file_name);
+				sprintf(jpg_name,"%s_%s_%d.mp4",g_config.imei,cap_data.file_name,cap_data.video_count++);
 				sprintf(file_path,"%s%s",FAST_PIC_PATH,jpg_name);
                 if (avi == NULL) {
                     avi = Mpeg4_Create(w,h,file_path,WRITE_READ);
@@ -922,6 +924,7 @@ static int stmDoRecordStart(void *data,MyVideo *arg)
 		case CAP_TYPE_FORMMAIN :
 			{
 				w = 640; h = 480;
+				record_time = g_config.record_time;
 				memset(&cap_data,0,sizeof(CapData));
 				getFileName(cap_data.file_name,cap_data.file_date);
 				cap_data.pic_id = atoll(cap_data.file_name);

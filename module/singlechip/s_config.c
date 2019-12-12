@@ -18,24 +18,29 @@ do {                          \
 } while (0)
 
 
-
 #define SIZE_CONFIG(x)  x,sizeof(x) - 1
 
 #define NELEMENTS(array)  (sizeof (array) / sizeof ((array) [0]))
 
 static dictionary* cfg_private_ini = NULL;
+static dictionary* cfg_public_ini = NULL;
+
+static void configLoadEtcInt(dictionary *cfg_ini, EtcValueInt *etc_file,
+		unsigned int length);
 
 static struct CapType cap;		// 抓拍或录像
 static char imei[64 + 1];         // 太川设备机身码
-static EtcValueInt etc_private_int[]={
-{"cap",			"type",			&cap.type,		0},
-{"cap",			"count",		&cap.count,		1},
-{"cap",			"timer",		&cap.timer,		5},
+static EtcValueInt etc_public_int[]={
+{"cap_doorbell","type",		&cap.type,		0},
+{"cap_doorbell","count",	&cap.count,		1},
+{"cap_doorbell","timer",	&cap.timer,		5},
 };
 
 static EtcValueChar etc_private_char[]={
 {"device",		"imei",	    SIZE_CONFIG(imei),		"0"},
 };
+static char *sec_private[] = {"device",NULL};
+static char *sec_public[] = {"cap_doorbell",NULL};
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief configoadEtcInt 加载int型配置文件
@@ -123,12 +128,13 @@ static int loadIniFile(dictionary **d,char *file_path,char *sec[])
 
 void sconfigLoad(void)
 {
-	char *sec_private[] = {"cap","device",NULL};
-
 	loadIniFile(&cfg_private_ini,CONFIG_FILENAME,sec_private);
-	configLoadEtcInt(cfg_private_ini,etc_private_int,NELEMENTS(etc_private_int));
 	sconfigLoadEtcChar(cfg_private_ini,etc_private_char,NELEMENTS(etc_private_char));
 	iniparser_freedict(cfg_private_ini);
+
+	loadIniFile(&cfg_public_ini,CONFIG_PARA_FILENAME,sec_public);
+	configLoadEtcInt(cfg_public_ini,etc_public_int,NELEMENTS(etc_public_int));
+	iniparser_freedict(cfg_public_ini);
 }
 
 int getCapType(void)

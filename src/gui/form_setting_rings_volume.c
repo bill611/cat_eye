@@ -173,7 +173,7 @@ static void buttonLeftPress(HWND hwnd, int id, int nc, DWORD add_data)
 		g_config.ring_volume -= 10;
 		if (my_mixer)
 			my_mixer->SetVolumeEx(my_mixer,g_config.ring_volume);
-		ConfigSavePrivate();
+		ConfigSavePublic();
 	}
 	reloadRingsVolume();
 }
@@ -186,7 +186,7 @@ static void buttonRightPress(HWND hwnd, int id, int nc, DWORD add_data)
 		g_config.ring_volume += 10;
 		if (my_mixer)
 			my_mixer->SetVolumeEx(my_mixer,g_config.ring_volume);
-		ConfigSavePrivate();
+		ConfigSavePublic();
 	}
 	reloadRingsVolume();
 }

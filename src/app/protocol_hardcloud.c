@@ -386,7 +386,7 @@ static void ceGetIntercoms(CjsonDec *dec)
 
 	struct tm *tm_now = getTime();
 	g_config.timestamp = tm_now->tm_hour + tm_now->tm_mday * 24 + tm_now->tm_mon * 30 * 24;
-	ConfigSavePrivate();
+	ConfigSavePublic();
 	if (protocol_talk) {
 		protocol_talk->reload();
 		protocol_talk->reconnect();

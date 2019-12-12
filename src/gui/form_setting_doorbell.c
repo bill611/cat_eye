@@ -255,10 +255,10 @@ static void loadDoorbellData(void)
 		} else if (strcmp("门铃音量",plist->title) == 0) {
 			sprintf(plist->text,"%d%%",g_config.ring_volume);
 		} else if (strcmp("抓拍图像设置",plist->title) == 0) {
-			if (g_config.cap.type == 0) {
-				sprintf(plist->text,"拍照%d张",g_config.cap.count);
+			if (g_config.cap_doorbell.type == 0) {
+				sprintf(plist->text,"拍照%d张",g_config.cap_doorbell.count);
 			} else {
-				sprintf(plist->text,"录像%d秒",g_config.cap.timer);
+				sprintf(plist->text,"录像%d秒",g_config.cap_doorbell.timer);
 			}
 		}
 		SendMessage (hScrollView, SVM_ADDITEM, 0, (LPARAM)&svii);

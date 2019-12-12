@@ -170,7 +170,7 @@ static void buttonLeftPress(HWND hwnd, int id, int nc, DWORD add_data)
 	if (g_config.ring_num > 0) {
 		g_config.ring_num--;
 		myAudioPlayRingOnce();
-		ConfigSavePrivate();
+		ConfigSavePublic();
 	}
 	reloadRings();
 }
@@ -182,7 +182,7 @@ static void buttonRightPress(HWND hwnd, int id, int nc, DWORD add_data)
 	if (g_config.ring_num < (MAX_RINGS_NUM - 1)) {
 		g_config.ring_num++;
 		myAudioPlayRingOnce();
-		ConfigSavePrivate();
+		ConfigSavePublic();
 	}
 	reloadRings();
 }
