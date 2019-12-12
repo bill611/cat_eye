@@ -360,7 +360,7 @@ void ucsSendVideo(const unsigned char* frameData, const unsigned int dataLen)
 {
 	if (connect_state == 0)
 		return;
-	// DPRINT("send:%d\n", dataLen);
+	DPRINT("send:%d\n", dataLen);
 	UCS_PushExternalVideoStream(frameData,dataLen);
 }
 

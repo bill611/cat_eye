@@ -41,8 +41,8 @@ static MuxerQueue muxer_queue;
 static int mPCMBufferSize = 0;    //一帧PCM缓存大小
 static int mCountSize = 0;           //计算缓存大小
 
-static unsigned char* aacData ;
-static unsigned char* pcm_buffer ;
+static unsigned char* aacData = NULL ;
+static unsigned char* pcm_buffer = NULL ;
 static unsigned int pcm_data_buffer_leng ;
 static uint64_t video_start_tick = 0;
 static int video_frame_cnt = 0;
@@ -286,15 +286,18 @@ int mp4MuxerStop(void)
 {
 	if (aacData)
 		free(aacData);
+	aacData = NULL;
 	if (pcm_buffer)
 		free(pcm_buffer);
+	pcm_buffer = NULL;
 	if (faac_fd)
 		faacEncClose(faac_fd);
+	faac_fd = NULL;
 	if (mp4_fd)
 		MP4Close(mp4_fd, 0);
+	mp4_fd = NULL;
 	video = MP4_INVALID_TRACK_ID;
 	audio = MP4_INVALID_TRACK_ID;
-	mp4_fd = NULL;
 	muxerQueueUninit();
 
 	video_start_tick = 0;

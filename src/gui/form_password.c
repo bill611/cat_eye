@@ -225,9 +225,11 @@ static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data)
     if (nc == MYTITLE_BUTTON_EXIT)
         ShowWindow(GetParent(hwnd),SW_HIDE);
     else if (nc == MYTITLE_BUTTON_TEXT) {
-		char text[64];
+		char text[64] = {0};
 		int ret = SendMessage(GetDlgItem(GetParent(hwnd),IDC_EDIT_PASSWORD),
                 MSG_GETTEXT,64,(LPARAM)text);
+		if (ret == 0)
+			return;
         if (form_password_type == FOMR_TYPE_ACCOUNT) {
             form_password_type = FOMR_TYPE_PASSWORD;
             strcpy(g_account,text);

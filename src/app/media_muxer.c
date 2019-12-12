@@ -202,8 +202,6 @@ static uint8_t WriteVideo(struct _CMPEG4Head *This, void *pData,uint32_t dwSize)
 	if (dwSize == 0)
 		return 0;
 	pthread_mutex_lock(&This->mutex);
-	// StartTimer(This);
-	// AVI_write_frame(This->avi_lib,pData,dwSize,1);
 	mp4MuxerAppendVideo(pData,dwSize);
 	This->dwFrameCnt++;
 	pthread_mutex_unlock(&This->mutex);
@@ -214,7 +212,6 @@ static uint8_t WriteAudio(struct _CMPEG4Head *This, void *pData,uint32_t dwSize)
 	if (dwSize == 0)
 		return 0;
 	pthread_mutex_lock(&This->mutex);
-	// AVI_write_audio(This->avi_lib,pData,dwSize);
 	mp4MuxerAppendAudio(pData,dwSize);
 	pthread_mutex_unlock(&This->mutex);
 }
@@ -337,12 +334,9 @@ static int ReadAviData(struct _CMPEG4Head *This, void *pData,uint64_t *dwSize,in
 //---------------------------------------------------------------
 static void DestoryMPEG4Head(struct _CMPEG4Head **This)
 {
-	// StopTimer(*This);
-	// uint64_t diff_time = (*This)->dwEndTick - (*This)->dwStartTick;
-	// float dwFrameRate = (*This)->dwFrameCnt * 1000.0 / (float)diff_time;
+	pthread_mutex_lock(&(*This)->mutex);
 	mp4MuxerStop();
-	// AVI_set_video((*This)->avi_lib,(*This)->m_Width,(*This)->m_Height,dwFrameRate,"H264");
-	// AVI_close((*This)->avi_lib);
+	pthread_mutex_unlock(&(*This)->mutex);
 	if (*This)
 		free(*This);
 	(*This) = NULL;
@@ -370,35 +364,6 @@ MPEG4Head* Mpeg4_Create(int Width,int Height,const char *FileName, int ReadWrite
         pthread_mutex_init(&This->mutex, &mutexattr);
 		pthread_mutexattr_destroy(&mutexattr);
 	}
-	/*
-	if(access(FileName,F_OK) == -1) { //判断文件是否存在存在与否
-		fd = fopen(FileName,"wb+");	//创建文件
-		fclose(fd);
-	}
-	if(ReadWrite == READ_ONLY)
-		This->hFile = fopen(FileName,"rb");
-	else
-		This->hFile = fopen(FileName,"rb+");
-	if(This->hFile == INVALID_HANDLE_VALUE) {
-		//'文件创建失败
-		printf("[%s] fopen file %s fail!\n",__FUNCTION__,FileName);
-		printf("error %s\n",strerror(errno));
-		return NULL;
-	} else {
-		strcpy(This->filename,FileName);
-		This->dwStreamSize = 0;
-		This->dwFrameCnt = 0;
-		SetFilePointer(This->hFile,20+2048*2+256+1024+12,NULL,0);
-		This->dwStartTick = 0;
-		This->dwEndTick = 0;
-		This->bHaveAudio = 0;
-		This->bWriteAudio = 0;
-		This->InitVideoFrame = 0;
-		This->InitAudioFrame = 0;
-		This->ReadFirstFrame = 0;
-		This->m_ReadWrite = ReadWrite;
-	}
-	*/
 
 	This->InitAudio = InitAudioMpeg4;
 	This->WriteVideo = WriteVideo;
