@@ -164,7 +164,7 @@ extern "C" {
 		int  ring_volume;     // 门铃音量
 		int  alarm_volume;    // 报警音量
 		int  talk_volume;     // 对讲音量
-		int  pir_active_times;     // PIR触发报次数后报警
+		int  pir_active_timer;     // PIR触发多少秒后报警
 		int  pir_alarm;     // PIR触发是否发出报警音
 		int  pir_strength;   // PIR触发强度,0近，1中，2远
 		int  screensaver_time;   // 息屏时间

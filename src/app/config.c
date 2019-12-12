@@ -41,7 +41,7 @@ static EtcValueInt etc_public_int[]={
 {"rings",		"ring_volume",	&g_config.ring_volume,		80},
 {"rings",		"alarm_volume",	&g_config.alarm_volume,		80},
 {"rings",		"talk_volume",	&g_config.talk_volume,		80},
-{"others",		"pir_active_times",	&g_config.pir_active_times,		20},
+{"others",		"pir_active_times",	&g_config.pir_active_timer,		40},
 {"others",		"pir_alarm",	&g_config.pir_alarm,		0},
 {"others",		"pir_strength",	&g_config.pir_strength,		1},
 {"others",		"screensaver_time",	&g_config.screensaver_time,		11},

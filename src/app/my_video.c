@@ -1042,10 +1042,12 @@ static void init(void)
 
 static void capture(int type,int count,char *nick_name,char *user_id)
 {
+#ifdef USE_VIDEO
 	if (rkGetVideoRun() == 0) {
 		topMsgCammerError();
 		return;
 	}
+#endif
 	st_data = (StmData *)stm->initPara(stm,
 			        sizeof(StmData));
 	st_data->cap_count = count;
@@ -1059,10 +1061,12 @@ static void capture(int type,int count,char *nick_name,char *user_id)
 
 static int recordStart(int type)
 {
+#ifdef USE_VIDEO
 	if (rkGetVideoRun() == 0) {
 		topMsgCammerError();
 		return 0;
 	}
+#endif
 	st_data = (StmData *)stm->initPara(stm,
 			        sizeof(StmData));
 	st_data->cap_type = type;

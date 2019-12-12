@@ -187,7 +187,8 @@ static void deal(IpcData *ipc_data)
 				break;
 			if (pir_cycle_end == 1)
 				break;
-			if (++pir_act_count == g_config.pir_active_times) {
+			// PIR连续触发为2秒一次，比如触发10秒需要5次，所以需要除2
+			if (++pir_act_count == (g_config.pir_active_timer / 2)) {
 				pir_cycle_end = 1;
 				if (g_config.cap_alarm.type == 0)
 					my_video->capture(CAP_TYPE_ALARM,g_config.cap_alarm.count,NULL,NULL);
