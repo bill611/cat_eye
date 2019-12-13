@@ -87,7 +87,7 @@ static void myScrollCleanUp (void)
 /* ---------------------------------------------------------------------------*/
 static void paint(HWND hWnd,HDC hdc)
 {
-#if 0
+#if 1
 #define FILL_BMP_STRUCT(rc,img)  rc.left, rc.top,img->bmWidth,img->bmHeight,img
 
 	RECT rc_bmp,*rc_text;
@@ -100,57 +100,24 @@ static void paint(HWND hWnd,HDC hdc)
 	if (!pCtrl->dwAddData2)
 		return;
 
-	if (pInfo->flag & MYBUTTON_TYPE_ONE_STATE) {
-		SetTextColor(hdc,pInfo->color_nor);
-		FillBoxWithBitmap(hdc,FILL_BMP_STRUCT(rc_bmp,pInfo->image_normal));
-	} else if (pInfo->flag & MYBUTTON_TYPE_TWO_STATE) {
-		if(pInfo->state == BUT_NORMAL) {
-			SetTextColor(hdc,pInfo->color_nor);
-			if (pInfo->flag & MYBUTTON_TYPE_PRESS_COLOR) {
-				SetBrushColor (hdc,0x333333);
-				FillBox (hdc, rc_bmp.left,rc_bmp.top,RECTW(rc_bmp),RECTH(rc_bmp));
-			} else if (pInfo->flag & MYBUTTON_TYPE_PRESS_COLOR) {
-			} else{
-				FillBoxWithBitmap(hdc, FILL_BMP_STRUCT(rc_bmp,pInfo->image_normal));
-			}
-		} else {
-			SetTextColor(hdc,pInfo->color_press);
-			if (pInfo->flag & MYBUTTON_TYPE_PRESS_COLOR) {
-				SetBrushColor (hdc,0x10B7F5);
-				FillBox (hdc, rc_bmp.left,rc_bmp.top,RECTW(rc_bmp),RECTH(rc_bmp));
-			} else if (pInfo->flag & MYBUTTON_TYPE_PRESS_COLOR) {
-			} else{
-				FillBoxWithBitmap(hdc, FILL_BMP_STRUCT(rc_bmp,pInfo->image_press));
-			}
-		}
-	} else if (pInfo->flag & MYBUTTON_TYPE_CHECKBOX){
-		if(pInfo->check == MYBUTTON_STATE_UNCHECK) {
-			SetTextColor(hdc,pInfo->color_press);
-			FillBoxWithBitmap(hdc, FILL_BMP_STRUCT(rc_bmp,pInfo->image_normal));
-		} else {
-			SetTextColor(hdc,pInfo->color_nor);
-			FillBoxWithBitmap(hdc, FILL_BMP_STRUCT(rc_bmp,pInfo->image_press));
-		}
-	}
-	if (!pInfo->text || (pInfo->flag & MYBUTTON_TYPE_TEXT_NULL))
-		return;
-	// SetTextColor(hdc,COLOR_lightwhite);
 	SetBkMode(hdc,BM_TRANSPARENT);
+	SetTextColor(hdc,COLOR_lightwhite);
 	SelectFont (hdc, pInfo->font);
-	if (pInfo->flag & MYBUTTON_TYPE_TEXT_CENTER) {
-		if ((pInfo->flag & MYBUTTON_TYPE_PRESS_COLOR) == 0)
-			rc_text->bottom = rc_bmp.top + pInfo->image_normal->bmHeight;
-		DrawText (hdc,pInfo->text, -1, rc_text,
-				DT_CENTER | DT_VCENTER | DT_WORDBREAK  | DT_SINGLELINE);
-	} else {
-		if ((pInfo->flag & MYBUTTON_TYPE_PRESS_COLOR) == 0)
-			rc_text->top = rc_bmp.top + pInfo->image_normal->bmHeight;
-		DrawText (hdc,pInfo->text, -1, rc_text,
-				DT_CENTER | DT_BOTTOM| DT_VCENTER | DT_WORDBREAK  | DT_SINGLELINE);
-	}
+	printf("%d,%d,%d,%d,%s\n",
+			rc_text->left,
+			rc_text->top,
+			rc_text->right,
+			rc_text->bottom,
+			pInfo->text );
+	DrawText (hdc,pInfo->text, -1, rc_text,
+			DT_CENTER | DT_VCENTER | DT_WORDBREAK  | DT_SINGLELINE);
 #endif
 }
 
+static void* threadMoveInterval(void *arg)
+{
+
+}
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief myScrollControlProc 控件主回调函数
@@ -183,15 +150,9 @@ static int myScrollControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
 		if (pInfo == NULL)
 			return -1;
 		memset(pInfo,0,sizeof(MyScrollCtrlInfo));
-		pInfo->image_press = data->image_press;
-		pInfo->image_normal = data->image_normal;
-		pInfo->state = data->state;
 		pInfo->flag = data->flag;
-		pInfo->check = data->check;
 		pInfo->text = data->text;
 		pInfo->font = data->font;
-		pInfo->color_nor = data->color_nor;
-		pInfo->color_press = data->color_press;
 		pCtrl->dwAddData2 = (DWORD)pInfo;
 		return 0;
 	}
@@ -228,27 +189,11 @@ static int myScrollControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
 /* ---------------------------------------------------------------------------*/
 static void myScrollBmpsLoad(void *ctrls,char *path)
 {
-    int i;
-    char image_path[128] = {0};
-	MyCtrlScroll *controls = (MyCtrlScroll *)ctrls;
-    for (i=0; controls->idc != 0; i++) {
-		sprintf(image_path,"%sico_%s_nor.png",path,controls->img_name);
-		bmpLoad(&controls->image_normal, image_path);
-		sprintf(image_path,"%sico_%s_pre.png",path,controls->img_name);
-		bmpLoad(&controls->image_press, image_path);
-		controls++;
-    }
 }
 static void myScrollBmpsRelease(void *ctrls)
 {
-    int i;
-	MyCtrlScroll *controls = (MyCtrlScroll *)ctrls;
-    for (i=0; controls->idc != 0; i++) {
-		bmpRelease(&controls->image_normal);
-		bmpRelease(&controls->image_press);
-		controls++;
-    }
 }
+
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief createMyScroll 创建单个皮肤按钮
@@ -266,26 +211,13 @@ static void myScrollBmpsRelease(void *ctrls)
 HWND createMyScroll(HWND hWnd,MyCtrlScroll *ctrl)
 {
 	HWND hCtrl;
-    int ctrl_w = 0,ctrl_h = 0;
 	MyScrollCtrlInfo pInfo;
-	pInfo.image_normal = &ctrl->image_normal;
-	pInfo.image_press = &ctrl->image_press;
 	pInfo.flag = ctrl->flag;
-	pInfo.text = ctrl->img_name;
+	pInfo.text = ctrl->text;
     pInfo.font = ctrl->font;
-	pInfo.color_nor = COLOR_lightwhite;
-	pInfo.color_press = COLOR_lightwhite;
-	ctrl_w = ctrl->image_normal.bmWidth;
-	ctrl_h = ctrl->image_normal.bmHeight;
-	if (ctrl->font) {
-		ctrl_h += pInfo.font->size + 30;
-	}
 
     hCtrl = CreateWindowEx(CTRL_NAME,"",WS_VISIBLE|WS_CHILD,WS_EX_TRANSPARENT,
-            ctrl->idc,ctrl->x,ctrl->y,ctrl_w,ctrl_h, hWnd,(DWORD)&pInfo);
-	if(ctrl->notif_proc) {
-		SetNotificationCallback (hCtrl, ctrl->notif_proc);
-	}
+            ctrl->idc,ctrl->x,ctrl->y,ctrl->w,ctrl->h, hWnd,(DWORD)&pInfo);
     return hCtrl;
 }
 

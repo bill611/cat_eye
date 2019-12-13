@@ -529,6 +529,7 @@ int main(int argc, char *argv[])
 	createThread(threadIpcSendVideo,video_queue);
 	createThread(threadIpcSendMain,main_queue);
 	createThread(threadTimer,NULL);
+	debugInit();
 	pause();
 	return 0;
 }

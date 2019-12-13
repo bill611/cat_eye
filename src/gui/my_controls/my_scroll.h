@@ -38,6 +38,7 @@ extern "C" {
 		int flag;		// 类型
 		char *text; 	// 数字旁的中文后缀
 		int index_start,index_end; // 数字范围
+		int x,y,w,h;
         PLOGFONT   font;       // 字体
 	}MyCtrlScroll;
 

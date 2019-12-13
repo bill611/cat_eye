@@ -2,4 +2,5 @@
 add_subdirectory(video)
 add_subdirectory(singlechip)
 add_subdirectory(cap)
+add_subdirectory(stdioredirect)
 

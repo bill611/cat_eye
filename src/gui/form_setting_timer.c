@@ -99,11 +99,11 @@ static MyCtrlButton ctrls_button[] = {
 };
 
 static MyCtrlScroll ctrls_scroll[] = {
-	{IDC_MYSCROLL_YEAR,	0,"年",2019, 2050},
-	{IDC_MYSCROLL_MONTH,0,"月",1, 12},
-	{IDC_MYSCROLL_DATE,	0,"日",1, 31},
-	{IDC_MYSCROLL_HOUR,	0,"时",0, 23},
-	{IDC_MYSCROLL_MIN,	0,"分",0, 59},
+	{IDC_MYSCROLL_YEAR,	0,"年",2019, 2050,	153,105,180,360},
+	{IDC_MYSCROLL_MONTH,0,"月",1, 12,		423,105,180,360},
+	{IDC_MYSCROLL_DATE,	0,"日",1, 31,		692,105,180,360},
+	{IDC_MYSCROLL_HOUR,	0,"时",0, 23,		287,105,180,360},
+	{IDC_MYSCROLL_MIN,	0,"分",0, 59,		558,105,180,360},
 	{0},
 };
 static MY_DLGTEMPLATE DlgInitParam =

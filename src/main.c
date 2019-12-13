@@ -24,6 +24,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "debug.h"
 #include "my_gpio.h"
 #include "my_update.h"
 #include "protocol.h"
@@ -65,6 +66,7 @@
 int MiniGUIMain(int argc, const char* argv[])
 {
 	printf("stat--->%s,%s\n",DEVICE_SVERSION,DEVICE_KVERSION);
+	debugInit();
 	configLoad();
 	sqlInit();
 	gpioInit();
