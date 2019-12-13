@@ -800,8 +800,8 @@ static int stmDoCaptureNoUi(void *data,MyVideo *arg)
 static int stmDoCapture(void *data,MyVideo *arg)
 {
 	StmData *data_temp = (StmData *)data;
-	stmDoCaptureNoUi(data,arg);
-	formCreateCaputure(cap_data.count);
+	stmDoCaptureNoUi(data_temp,arg);
+	formCreateCaputure(data_temp->cap_count);
 }
 
 static void recordVideoCallbackFunc(void *data,int size,int fram_type)

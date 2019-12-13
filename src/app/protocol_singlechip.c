@@ -145,6 +145,7 @@ static void deal(IpcData *ipc_data)
 			Screen.ReturnMain();
 			break;
 		case IPC_UART_KEYHOME:
+			screensaverSet(1);
 			formVideoLayerScreenOn();
 			break;
 		case IPC_UART_CAPTURE:

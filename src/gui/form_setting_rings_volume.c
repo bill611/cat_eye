@@ -31,9 +31,6 @@
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
-extern int createFormSettingWifi(HWND hMainWnd,void (*callback)(void));
-extern int createFormSettingLocoal(HWND hMainWnd,void (*callback)(void));
-extern int createFormSettingDoorbell(HWND hMainWnd,void (*callback)(void));
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -44,12 +41,6 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 static void buttonExitPress(HWND hwnd, int id, int nc, DWORD add_data);
 static void buttonLeftPress(HWND hwnd, int id, int nc, DWORD add_data);
 static void buttonRightPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonDoorBellPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonTimerPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonMutePress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonAlarmPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonFactoryPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonLocalPress(HWND hwnd, int id, int nc, DWORD add_data);
 
 /* ---------------------------------------------------------------------------*
  *                        macro define

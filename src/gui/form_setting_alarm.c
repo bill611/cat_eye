@@ -32,6 +32,8 @@
  *----------------------------------------------------------------------------*/
 int createFormSettingRings(HWND hMainWnd,void (*callback)(void));
 int createFormSettingRingsVolume(HWND hMainWnd,void (*callback)(void));
+int createFormSettingPirStrength(HWND hMainWnd,void (*callback)(void));
+int createFormSettingPirTimer(HWND hMainWnd,void (*callback)(void));
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
  *----------------------------------------------------------------------------*/
@@ -57,16 +59,10 @@ enum {
 	IDC_STATIC_TEXT_WARNING,
 
 	IDC_SCROLLVIEW,
-	IDC_BUTTON_NETX,
-	IDC_BUTTON_PREV,
 
 	IDC_TITLE,
 };
 
-enum {
-	SCROLLVIEW_ITEM_TYPE_TITLE,
-	SCROLLVIEW_ITEM_TYPE_LIST,
-};
 struct ScrollviewItem {
 	char title[32]; // 左边标题
 	char text[32];  // 右边文字
@@ -74,26 +70,19 @@ struct ScrollviewItem {
 	int index;  // 元素位置
 };
 
-struct MemData {
-	char total[32];
-	char residue[32];
-	char used[32];
-};
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
 static HWND hScrollView;
 static int bmp_load_finished = 0;
 static int flag_timer_stop = 0;
-struct MemData mem_data;
-// static struct ScrollviewItem *locoal_list;
-// TEST
+
 static struct ScrollviewItem locoal_list[] = {
-	{"铃声设置",	"",createFormSettingRings},
-	{"报警音量",	"",createFormSettingRingsVolume},
+	// {"铃声设置",	"",createFormSettingRings},
+	// {"报警音量",	"",createFormSettingRingsVolume},
 	{"抓拍图像设置","",NULL},
-	{"人体检测触发时间","",NULL},
-	{"人体检测灵敏度","",NULL},
+	{"人体检测触发时间","",createFormSettingPirTimer},
+	{"人体检测灵敏度","",createFormSettingPirStrength},
 	{0},
 };
 
@@ -254,7 +243,7 @@ static void loadAlarmData(void)
 		svii.nItem = i;
 		if (strcmp("铃声设置",plist->title) == 0) {
 			sprintf(plist->text,"铃声%d",g_config.ring_num + 1);
-		} else if (strcmp("门铃音量",plist->title) == 0) {
+		} else if (strcmp("报警音量",plist->title) == 0) {
 			sprintf(plist->text,"%d%%",g_config.ring_volume);
 		} else if (strcmp("抓拍图像设置",plist->title) == 0) {
 			if (g_config.cap_alarm.type == 0) {

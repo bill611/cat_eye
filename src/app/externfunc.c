@@ -567,6 +567,20 @@ void wifiDisConnect(void)
 	excuteCmd("wifi/wifi_station.sh","stop",NULL);
 #endif
 }
+int screenSetBrightness(int brightness)
+{
+#define MIN_BRIGHTNESS 244
+#define MAX_BRIGHTNESS 0
+#ifndef X86
+	char buf[4] = {0};
+	// 当设置为100时，亮度设置为0，此时灭屏，最大设置99
+	if (brightness == 100)
+		brightness--;
+	int real_brightness = (100 - brightness)*(MIN_BRIGHTNESS - MAX_BRIGHTNESS) / 100;
+	sprintf(buf,"%d",real_brightness);
+	excuteCmd("echo",buf,">","/sys/class/backlight/rk28_bl/brightness ",NULL);
+#endif
+}
 int screensaverSet(int state)
 {
 #ifndef X86
@@ -574,11 +588,10 @@ int screensaverSet(int state)
 	if (state == state_old)
 		return 0;
 	state_old = state;
-	if (state) {
-		excuteCmd("echo","160",">","/sys/class/backlight/rk28_bl/brightness ",NULL);
-	} else {
-		excuteCmd("echo","0",">","/sys/class/backlight/rk28_bl/brightness ",NULL);
-	}
+	if (state)
+		screenSetBrightness(g_config.brightness);
+	else
+		screenSetBrightness(0);
 #endif
 	return 1;
 }

@@ -170,6 +170,7 @@ extern "C" {
 		int  screensaver_time;   // 息屏时间
 		int  brightness;   // 屏幕亮度
 		int  record_time;  // 主界面录像倒计时时间
+		int  mute;  // 是否免扰模式
 
 		struct wifiLowPower wifi_lowpower; // 低功耗wifi参数
 		struct CapType cap_doorbell;// 按门铃抓拍或录像

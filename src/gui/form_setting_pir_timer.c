@@ -1,9 +1,9 @@
 /*
  * =============================================================================
  *
- *       Filename:  form_setting_rings.c
+ *       Filename:  form_setting_pir_timer.c
  *
- *    Description:  铃声设置界面
+ *    Description:  PIR触发时间设置界面
  *
  *        Version:  1.0
  *        Created:  2018-03-01 23:32:41
@@ -20,7 +20,6 @@
 #include "externfunc.h"
 #include "screen.h"
 #include "config.h"
-#include "my_audio.h"
 
 #include "my_button.h"
 #include "my_title.h"
@@ -34,7 +33,7 @@
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
  *----------------------------------------------------------------------------*/
-static int formSettingRingsProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
+static int formSettingPirTimerProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 
 static void buttonExitPress(HWND hwnd, int id, int nc, DWORD add_data);
@@ -52,7 +51,7 @@ static void buttonRightPress(HWND hwnd, int id, int nc, DWORD add_data);
 
 #define BMP_LOCAL_PATH "setting/"
 enum {
-	IDC_TIMER_1S = IDC_FORM_SETTING_RINGS,
+	IDC_TIMER_1S = IDC_FORM_SETTING_PIR_TIMER,
 	IDC_BUTTON_EXIT,
 	IDC_BUTTON_LEFT,
 	IDC_BUTTON_RIGHT,
@@ -72,13 +71,13 @@ static int bmp_load_finished = 0;
 static int flag_timer_stop = 0;
 
 static BmpLocation bmp_load[] = {
-	{&bmp_bkg_setting,BMP_LOCAL_PATH"bell_icon.png"},
+	{&bmp_bkg_setting,BMP_LOCAL_PATH"time_icon.png"},
     {NULL},
 };
 
 static MY_CTRLDATA ChildCtrls [] = {
     STATIC_IMAGE(432,220,160,160,IDC_STATIC_IMAGE,(DWORD)&bmp_bkg_setting),
-    STATIC_LB(434,330,160,30,IDC_STATIC_TEXT,"铃声1",&font20,0xffffff),
+    STATIC_LB(434,330,160,30,IDC_STATIC_TEXT,"",&font20,0xffffff),
 };
 
 
@@ -96,17 +95,17 @@ static MY_DLGTEMPLATE DlgInitParam =
 };
 
 static FormBasePriv form_base_priv= {
-	.name = "FsetRings",
+	.name = "FsetPirTimer",
 	.idc_timer = IDC_TIMER_1S,
-	.dlgProc = formSettingRingsProc,
+	.dlgProc = formSettingPirTimerProc,
 	.dlgInitParam = &DlgInitParam,
 	.initPara =  initPara,
 	.auto_close_time_set = 30,
 };
 
 static MyCtrlButton ctrls_button[] = {
-	{IDC_BUTTON_LEFT,	 MYBUTTON_TYPE_TWO_STATE|MYBUTTON_TYPE_TEXT_NULL,"left",225, 249,buttonLeftPress},
-	{IDC_BUTTON_RIGHT,	 MYBUTTON_TYPE_TWO_STATE|MYBUTTON_TYPE_TEXT_NULL,"right",698,249,buttonRightPress},
+	{IDC_BUTTON_LEFT,	 MYBUTTON_TYPE_TWO_STATE|MYBUTTON_TYPE_TEXT_NULL,"minus",225, 249,buttonLeftPress},
+	{IDC_BUTTON_RIGHT,	 MYBUTTON_TYPE_TWO_STATE|MYBUTTON_TYPE_TEXT_NULL,"add",698,249,buttonRightPress},
 	{0},
 };
 static MyCtrlTitle ctrls_title[] = {
@@ -115,7 +114,7 @@ static MyCtrlTitle ctrls_title[] = {
         MYTITLE_LEFT_EXIT,
         MYTITLE_RIGHT_NULL,
         0,0,1024,40,
-        "铃声设置",
+        "人体检测触发时间",
         "",
         0xffffff, 0x333333FF,
         buttonExitPress,
@@ -130,14 +129,14 @@ static void enableAutoClose(void)
 	Screen.setCurrent(form_base_priv.name);
 	flag_timer_stop = 0;	
 }
-static void reloadRings(void)
+static void reloadPirTimer(void)
 {
 	char buf[16] = {0};
-	sprintf(buf,"铃声%d",g_config.ring_num + 1);
+	sprintf(buf,"%d秒",g_config.pir_active_timer);
 	SendMessage(GetDlgItem(form_base->hDlg,IDC_STATIC_TEXT),MSG_SETTEXT,0,(LPARAM)buf);
-	if (g_config.ring_num == 0) {
+	if (g_config.pir_active_timer == 10) {
 		SendMessage(GetDlgItem(form_base->hDlg,IDC_BUTTON_LEFT),MSG_ENABLE,0,0);
-	} else if (g_config.ring_num == (MAX_RINGS_NUM - 1)) {
+	} else if (g_config.pir_active_timer == 60) {
 		SendMessage(GetDlgItem(form_base->hDlg,IDC_BUTTON_RIGHT),MSG_ENABLE,0,0);
 	} else {
 		SendMessage(GetDlgItem(form_base->hDlg,IDC_BUTTON_LEFT),MSG_ENABLE,1,0);
@@ -158,24 +157,22 @@ static void buttonLeftPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
-	if (g_config.ring_num > 0) {
-		g_config.ring_num--;
-		myAudioPlayRingOnce();
+	if (g_config.pir_active_timer >= 20) {
+		g_config.pir_active_timer -= 10;
 		ConfigSavePublic();
 	}
-	reloadRings();
+	reloadPirTimer();
 }
 
 static void buttonRightPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
-	if (g_config.ring_num < (MAX_RINGS_NUM - 1)) {
-		g_config.ring_num++;
-		myAudioPlayRingOnce();
+	if (g_config.pir_active_timer <= 50) {
+		g_config.pir_active_timer += 10;
 		ConfigSavePublic();
 	}
-	reloadRings();
+	reloadPirTimer();
 }
 
 /* ----------------------------------------------------------------*/
@@ -190,11 +187,10 @@ static void buttonRightPress(HWND hwnd, int id, int nc, DWORD add_data)
 /* ----------------------------------------------------------------*/
 static void buttonExitPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
-	myAudioStopPlay();
 	ShowWindow(GetParent(hwnd),SW_HIDE);
 }
 
-void formSettingRingsLoadBmp(void)
+void formSettingPirTimerLoadBmp(void)
 {
     if (bmp_load_finished == 1)
         return;
@@ -226,12 +222,12 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
         ctrls_button[i].font = font22;
         createMyButton(hDlg,&ctrls_button[i]);
     }
-	reloadRings();
+	reloadPirTimer();
 }
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief formSettingRingsProc 窗口回调函数
+ * @brief formSettingPirTimerProc 窗口回调函数
  *
  * @param hDlg
  * @param message
@@ -241,7 +237,7 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
  * @return
  */
 /* ----------------------------------------------------------------*/
-static int formSettingRingsProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
+static int formSettingPirTimerProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 {
     switch(message) // 自定义消息
     {
@@ -265,7 +261,7 @@ static int formSettingRingsProc(HWND hDlg, int message, WPARAM wParam, LPARAM lP
     return DefaultDialogProc(hDlg, message, wParam, lParam);
 }
 
-int createFormSettingRings(HWND hMainWnd,void (*callback)(void))
+int createFormSettingPirTimer(HWND hMainWnd,void (*callback)(void))
 {
 	HWND Form = Screen.Find(form_base_priv.name);
 	if(Form) {

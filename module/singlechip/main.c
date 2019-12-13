@@ -47,6 +47,7 @@ extern int getCapType(void);
 extern int getCapCount(void);
 extern int getCapTimer(void);
 extern char * getCapImei(void);
+extern int getBrightness(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -128,13 +129,22 @@ static uint8_t id = 0;
 
 static int screensaverSet(int state)
 {
+#define MIN_BRIGHTNESS 244
+#define MAX_BRIGHTNESS 0
 #ifndef X86
 	static int state_old = 0;
 	if (state == state_old)
 		return 0;
 	state_old = state;
+	int brightness = getBrightness();
+	char buf[4] = {0};
+	// 当设置为100时，亮度设置为0，此时灭屏，最大设置99
+	if (brightness == 100)
+		brightness--;
+	int real_brightness = (100 - brightness)*(MIN_BRIGHTNESS - MAX_BRIGHTNESS) / 100;
+	sprintf(buf,"%d",real_brightness);
 	if (state) {
-		excuteCmd("echo","160",">","/sys/class/backlight/rk28_bl/brightness ",NULL);
+		excuteCmd("echo",buf,">","/sys/class/backlight/rk28_bl/brightness ",NULL);
 	} else {
 		excuteCmd("echo","0",">","/sys/class/backlight/rk28_bl/brightness ",NULL);
 	}
@@ -365,8 +375,6 @@ static void uartDeal(void)
 				main_queue->post(main_queue,&ipc_data);
             } 
 			if (data[0] & CHECK_KEY_HOM) {
-				if (access(IPC_MAIN,0) != 0)
-					screensaverSet(1);
 				ipc_data.cmd = IPC_UART_KEYHOME;
 				main_queue->post(main_queue,&ipc_data);
             } 

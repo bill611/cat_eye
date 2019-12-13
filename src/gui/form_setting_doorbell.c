@@ -63,10 +63,6 @@ enum {
 	IDC_TITLE,
 };
 
-enum {
-	SCROLLVIEW_ITEM_TYPE_TITLE,
-	SCROLLVIEW_ITEM_TYPE_LIST,
-};
 struct ScrollviewItem {
 	char title[32]; // 左边标题
 	char text[32];  // 右边文字
@@ -74,18 +70,13 @@ struct ScrollviewItem {
 	int index;  // 元素位置
 };
 
-struct MemData {
-	char total[32];
-	char residue[32];
-	char used[32];
-};
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
+static BITMAP bmp_enter; // 进入
 static HWND hScrollView;
 static int bmp_load_finished = 0;
 static int flag_timer_stop = 0;
-struct MemData mem_data;
 // static struct ScrollviewItem *locoal_list;
 // TEST
 static struct ScrollviewItem locoal_list[] = {
@@ -95,7 +86,6 @@ static struct ScrollviewItem locoal_list[] = {
 	{0},
 };
 
-static BITMAP bmp_enter; // 进入
 
 static BmpLocation bmp_load[] = {
     {&bmp_enter,	BMP_LOCAL_PATH"ico_返回_1.png"},

@@ -62,7 +62,7 @@ extern "C" {
 		void (*DestoryMPEG4)(struct _CMPEG4Head **This);
 	}MPEG4Head;
 
-MPEG4Head* Mpeg4_Create(int Width,int Height,const char *FileName, int ReadWrite);
+MPEG4Head* Mpeg4_Create(int Width,int Height,char *FileName, int ReadWrite);
 
 
 #ifdef __cplusplus

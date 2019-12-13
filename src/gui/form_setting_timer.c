@@ -1,9 +1,9 @@
 /*
  * =============================================================================
  *
- *       Filename:  form_setting_rings.c
+ *       Filename:  form_setting_timer.c
  *
- *    Description:  铃声设置界面
+ *    Description:  时间设置界面
  *
  *        Version:  1.0
  *        Created:  2018-03-01 23:32:41
@@ -23,6 +23,7 @@
 #include "my_audio.h"
 
 #include "my_button.h"
+#include "my_scroll.h"
 #include "my_title.h"
 
 #include "form_base.h"
@@ -34,12 +35,10 @@
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
  *----------------------------------------------------------------------------*/
-static int formSettingRingsProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
+static int formSettingTimerProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 
-static void buttonExitPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonLeftPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonRightPress(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonTitleNotify(HWND hwnd, int id, int nc, DWORD add_data);
 
 /* ---------------------------------------------------------------------------*
  *                        macro define
@@ -52,36 +51,61 @@ static void buttonRightPress(HWND hwnd, int id, int nc, DWORD add_data);
 
 #define BMP_LOCAL_PATH "setting/"
 enum {
-	IDC_TIMER_1S = IDC_FORM_SETTING_RINGS,
+	IDC_TIMER_1S = IDC_FORM_SETTING_TIEMR,
 	IDC_BUTTON_EXIT,
-	IDC_BUTTON_LEFT,
-	IDC_BUTTON_RIGHT,
-	IDC_STATIC_IMAGE,
-	IDC_STATIC_TEXT,
-
+	IDC_BUTTON_TITLE,
+	IDC_SCROLLVIEW,
+	IDC_MYSCROLL_YEAR,
+	IDC_MYSCROLL_MONTH,
+	IDC_MYSCROLL_DATE,
+	IDC_MYSCROLL_HOUR,
+	IDC_MYSCROLL_MIN,
 	IDC_TITLE,
 };
 
 
+struct ScrollviewItem {
+	char title[32]; // 左边标题
+	char text[32];  // 右边文字
+	int (*callback)(HWND,void (*callback)(void)); // 点击回调函数
+	int index;  // 元素位置
+};
+
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
-static BITMAP bmp_bkg_setting; // 背景
-
+static BITMAP bmp_enter; // 进入
+static HWND hScrollView;
 static int bmp_load_finished = 0;
 static int flag_timer_stop = 0;
 
+static struct ScrollviewItem locoal_list[] = {
+	{"设置日期","",NULL},
+	{"设置时间","",NULL},
+	{0},
+};
+
 static BmpLocation bmp_load[] = {
-	{&bmp_bkg_setting,BMP_LOCAL_PATH"bell_icon.png"},
+    {&bmp_enter,	BMP_LOCAL_PATH"ico_返回_1.png"},
     {NULL},
 };
 
 static MY_CTRLDATA ChildCtrls [] = {
-    STATIC_IMAGE(432,220,160,160,IDC_STATIC_IMAGE,(DWORD)&bmp_bkg_setting),
-    STATIC_LB(434,330,160,30,IDC_STATIC_TEXT,"铃声1",&font20,0xffffff),
+    SCROLLVIEW(0,40,1024,580,IDC_SCROLLVIEW),
 };
 
+static MyCtrlButton ctrls_button[] = {
+	{0},
+};
 
+static MyCtrlScroll ctrls_scroll[] = {
+	{IDC_MYSCROLL_YEAR,	0,"年",2019, 2050},
+	{IDC_MYSCROLL_MONTH,0,"月",1, 12},
+	{IDC_MYSCROLL_DATE,	0,"日",1, 31},
+	{IDC_MYSCROLL_HOUR,	0,"时",0, 23},
+	{IDC_MYSCROLL_MIN,	0,"分",0, 59},
+	{0},
+};
 static MY_DLGTEMPLATE DlgInitParam =
 {
     WS_NONE,
@@ -96,29 +120,24 @@ static MY_DLGTEMPLATE DlgInitParam =
 };
 
 static FormBasePriv form_base_priv= {
-	.name = "FsetRings",
+	.name = "FsetTimer",
 	.idc_timer = IDC_TIMER_1S,
-	.dlgProc = formSettingRingsProc,
+	.dlgProc = formSettingTimerProc,
 	.dlgInitParam = &DlgInitParam,
 	.initPara =  initPara,
 	.auto_close_time_set = 30,
 };
 
-static MyCtrlButton ctrls_button[] = {
-	{IDC_BUTTON_LEFT,	 MYBUTTON_TYPE_TWO_STATE|MYBUTTON_TYPE_TEXT_NULL,"left",225, 249,buttonLeftPress},
-	{IDC_BUTTON_RIGHT,	 MYBUTTON_TYPE_TWO_STATE|MYBUTTON_TYPE_TEXT_NULL,"right",698,249,buttonRightPress},
-	{0},
-};
 static MyCtrlTitle ctrls_title[] = {
 	{
         IDC_TITLE, 
         MYTITLE_LEFT_EXIT,
         MYTITLE_RIGHT_NULL,
         0,0,1024,40,
-        "铃声设置",
+        "时间设置",
         "",
         0xffffff, 0x333333FF,
-        buttonExitPress,
+        buttonTitleNotify,
     },
 	{0},
 };
@@ -130,23 +149,32 @@ static void enableAutoClose(void)
 	Screen.setCurrent(form_base_priv.name);
 	flag_timer_stop = 0;	
 }
-static void reloadRings(void)
+static void reloadTimer(void)
 {
-	char buf[16] = {0};
-	sprintf(buf,"铃声%d",g_config.ring_num + 1);
-	SendMessage(GetDlgItem(form_base->hDlg,IDC_STATIC_TEXT),MSG_SETTEXT,0,(LPARAM)buf);
-	if (g_config.ring_num == 0) {
-		SendMessage(GetDlgItem(form_base->hDlg,IDC_BUTTON_LEFT),MSG_ENABLE,0,0);
-	} else if (g_config.ring_num == (MAX_RINGS_NUM - 1)) {
-		SendMessage(GetDlgItem(form_base->hDlg,IDC_BUTTON_RIGHT),MSG_ENABLE,0,0);
-	} else {
-		SendMessage(GetDlgItem(form_base->hDlg,IDC_BUTTON_LEFT),MSG_ENABLE,1,0);
-		SendMessage(GetDlgItem(form_base->hDlg,IDC_BUTTON_RIGHT),MSG_ENABLE,1,0);
+	int i;
+	SVITEMINFO svii;
+	struct ScrollviewItem *plist = locoal_list;
+    SendMessage (hScrollView, SVM_RESETCONTENT, 0, 0);
+	struct tm *tm = getTime();
+	for (i=0; plist->title[0] != 0; i++) {
+		plist->index = i;
+		svii.nItemHeight = 60;
+		svii.addData = (DWORD)plist;
+		svii.nItem = i;
+		if (strcmp("设置日期",plist->title) == 0) {
+			sprintf(plist->text,"%d年%d月%d日",tm->tm_year+1900,tm->tm_mon+1,tm->tm_mday);
+		} else if (strcmp("设置时间",plist->title) == 0) {
+			sprintf(plist->text,"%d:%02d",tm->tm_hour,tm->tm_min);
+		}
+		SendMessage (hScrollView, SVM_ADDITEM, 0, (LPARAM)&svii);
+		SendMessage (hScrollView, SVM_SETITEMADDDATA, i, (DWORD)plist);
+		plist++;
 	}
 }
+
 /* ----------------------------------------------------------------*/
 /**
- * @brief buttonLeftPress wifi设置
+ * @brief buttonTitleNotify 标题按钮
  *
  * @param hwnd
  * @param id
@@ -154,57 +182,80 @@ static void reloadRings(void)
  * @param add_data
  */
 /* ----------------------------------------------------------------*/
-static void buttonLeftPress(HWND hwnd, int id, int nc, DWORD add_data)
+static void buttonTitleNotify(HWND hwnd, int id, int nc, DWORD add_data)
 {
-	if (nc != BN_CLICKED)
-		return;
-	if (g_config.ring_num > 0) {
-		g_config.ring_num--;
-		myAudioPlayRingOnce();
-		ConfigSavePublic();
-	}
-	reloadRings();
-}
-
-static void buttonRightPress(HWND hwnd, int id, int nc, DWORD add_data)
-{
-	if (nc != BN_CLICKED)
-		return;
-	if (g_config.ring_num < (MAX_RINGS_NUM - 1)) {
-		g_config.ring_num++;
-		myAudioPlayRingOnce();
-		ConfigSavePublic();
-	}
-	reloadRings();
-}
-
-/* ----------------------------------------------------------------*/
-/**
- * @brief buttonExitPress 退出按钮
- *
- * @param hwnd
- * @param id
- * @param nc
- * @param add_data
- */
-/* ----------------------------------------------------------------*/
-static void buttonExitPress(HWND hwnd, int id, int nc, DWORD add_data)
-{
-	myAudioStopPlay();
 	ShowWindow(GetParent(hwnd),SW_HIDE);
 }
 
-void formSettingRingsLoadBmp(void)
+void formSettingTimerLoadBmp(void)
 {
     if (bmp_load_finished == 1)
         return;
 
 	printf("[%s]\n", __FUNCTION__);
     bmpsLoad(bmp_load);
-    my_button->bmpsLoad(ctrls_button,BMP_LOCAL_PATH);	
     bmp_load_finished = 1;
 }
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief scrollviewNotify 
+ *
+ * @param hwnd
+ * @param id
+ * @param nc
+ * @param add_data
+ */
+/* ---------------------------------------------------------------------------*/
+static void scrollviewNotify(HWND hwnd, int id, int nc, DWORD add_data)
+{
+	if (nc == SVN_CLICKED) {
+		int idx = SendMessage (hScrollView, SVM_GETCURSEL, 0, 0);
+		struct ScrollviewItem *plist;
+		plist = (struct ScrollviewItem *)SendMessage (hScrollView, SVM_GETITEMADDDATA, idx, 0);
 
+		if (plist) {
+			if (plist->callback) {
+				flag_timer_stop = 1;
+				plist->callback(hwnd,enableAutoClose);
+			}
+		}
+	}
+}
+
+static void myDrawItem (HWND hWnd, HSVITEM hsvi, HDC hdc, RECT *rcDraw)
+{
+#define FILL_BMP_STRUCT(left,top,img)  \
+	FillBoxWithBitmap(hdc,left, top,img.bmWidth,img.bmHeight,&img)
+
+#define DRAW_TABLE(rc,offset,color)  \
+	do { \
+		SetPenColor (hdc, color); \
+		if (p_item->index) { \
+			MoveTo (hdc, rc->left + offset, rc->top); \
+			LineTo (hdc, rc->right,rc->top); \
+		} \
+		MoveTo (hdc, rc->left + offset, rc->bottom); \
+		LineTo (hdc, rc->right,rc->bottom); \
+	} while (0)
+
+	struct ScrollviewItem *p_item = (struct ScrollviewItem *)scrollview_get_item_adddata (hsvi);
+	SetBkMode (hdc, BM_TRANSPARENT);
+	SetTextColor (hdc, PIXEL_lightwhite);
+	SelectFont (hdc, font20);
+	if (p_item->callback)
+		FILL_BMP_STRUCT(rcDraw->left + 968,rcDraw->top + 15,bmp_enter);
+	// 绘制表格
+	DRAW_TABLE(rcDraw,0,0xCCCCCC);
+	// 输出文字
+	TextOut (hdc, rcDraw->left + 30, rcDraw->top + 15, p_item->title);
+	RECT rc;
+	memcpy(&rc,rcDraw,sizeof(RECT));
+	rc.left += 512;
+	rc.right -= 70;
+	SetTextColor (hdc, 0xCCCCCC);
+	DrawText (hdc,p_item->text, -1, &rc,
+			DT_VCENTER | DT_RIGHT | DT_WORDBREAK  | DT_SINGLELINE);
+}
 /* ----------------------------------------------------------------*/
 /**
  * @brief initPara 初始化参数
@@ -226,12 +277,18 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
         ctrls_button[i].font = font22;
         createMyButton(hDlg,&ctrls_button[i]);
     }
-	reloadRings();
+    for (i=0; ctrls_scroll[i].idc != 0; i++) {
+        ctrls_scroll[i].font = font22;
+        createMyScroll(hDlg,&ctrls_scroll[i]);
+    }
+	hScrollView = GetDlgItem (hDlg, IDC_SCROLLVIEW);
+	SendMessage (hScrollView, SVM_SETITEMDRAW, 0, (LPARAM)myDrawItem);
+	reloadTimer();
 }
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief formSettingRingsProc 窗口回调函数
+ * @brief formSettingTimerProc 窗口回调函数
  *
  * @param hDlg
  * @param message
@@ -241,7 +298,7 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
  * @return
  */
 /* ----------------------------------------------------------------*/
-static int formSettingRingsProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
+static int formSettingTimerProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 {
     switch(message) // 自定义消息
     {
@@ -251,6 +308,13 @@ static int formSettingRingsProc(HWND hDlg, int message, WPARAM wParam, LPARAM lP
 					return 0;
 			} break;
 
+		case MSG_COMMAND:
+			{
+				int id = LOWORD (wParam);
+				int code = HIWORD (wParam);
+				scrollviewNotify(hDlg,id,code,0);
+				break;
+			}
 		case MSG_ENABLE_WINDOW:
 			enableAutoClose();
 			break;
@@ -265,15 +329,15 @@ static int formSettingRingsProc(HWND hDlg, int message, WPARAM wParam, LPARAM lP
     return DefaultDialogProc(hDlg, message, wParam, lParam);
 }
 
-int createFormSettingRings(HWND hMainWnd,void (*callback)(void))
+int createFormSettingTimer(HWND hMainWnd,void (*callback)(void))
 {
 	HWND Form = Screen.Find(form_base_priv.name);
 	if(Form) {
 		Screen.setCurrent(form_base_priv.name);
+		reloadTimer();
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
         if (bmp_load_finished == 0) {
-            // topMessage(hMainWnd,TOPBOX_ICON_LOADING,NULL );
             return 0;
         }
 		form_base_priv.callBack = callback;

@@ -344,9 +344,8 @@ static void DestoryMPEG4Head(struct _CMPEG4Head **This)
 //---------------------------------------------------------------
 
 //bReadWrite 读写标志, =0写文件  =1读文件
-MPEG4Head* Mpeg4_Create(int Width,int Height,const char *FileName, int ReadWrite)
+MPEG4Head* Mpeg4_Create(int Width,int Height,char *FileName, int ReadWrite)
 {
-	FILE *fd;
 	struct _CMPEG4Head *This = (MPEG4Head*)calloc(1,sizeof(MPEG4Head));
 	if(ReadWrite == READ_ONLY) {
 	} else {

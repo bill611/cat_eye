@@ -9,6 +9,7 @@
 #include "externfunc.h"
 #include "thread_helper.h"
 #include "config.h"
+#include "protocol.h"
 #include "debug.h"
 
 
@@ -45,8 +46,9 @@ static EtcValueInt etc_public_int[]={
 {"others",		"pir_alarm",	&g_config.pir_alarm,		0},
 {"others",		"pir_strength",	&g_config.pir_strength,		1},
 {"others",		"screensaver_time",	&g_config.screensaver_time,		11},
-{"others",		"brightness",	&g_config.brightness,		80},
+{"others",		"brightness",	&g_config.brightness,		50},
 {"others",		"record_time",	&g_config.record_time,		30},
+{"others",		"mute",			&g_config.mute,		0},
 };
 static EtcValueChar etc_public_char[]={
 {"device",		"version",	SIZE_CONFIG(g_config.version),	DEVICE_SVERSION},
@@ -115,6 +117,33 @@ static void configLoadEtcInt(dictionary *cfg_ini, EtcValueInt *etc_file,
 		sprintf(buf,"%s:%s",etc_file->section,etc_file->key);
 		*etc_file->value = iniparser_getint(cfg_ini, buf, etc_file->default_int);
 		printf("[%s]%s,%d\n", __FUNCTION__,buf,*etc_file->value);
+		etc_file++;
+	}
+}
+
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief configResetEtcInt 恢复默认配置
+ *
+ * @param etc_file
+ * @param length
+ */
+/* ---------------------------------------------------------------------------*/
+static void configResetEtcInt(EtcValueInt *etc_file, unsigned int length)
+{
+	unsigned int i;
+	for (i=0; i<length; i++) {
+		*etc_file->value = etc_file->default_int;
+		etc_file++;
+	}
+}
+
+static void configResetEtcChar(EtcValueChar *etc_file,
+		unsigned int length)
+{
+	unsigned int i;
+	for (i=0; i<length; i++) {
+		strncpy(etc_file->value, etc_file->default_char, etc_file->leng);
 		etc_file++;
 	}
 }
@@ -360,3 +389,15 @@ void ConfigSavePublicCallback(configCallback func)
     createThread(ConfigSaveTask, &save_type);
 }
 
+static void configFactoryCallback(void)
+{
+	screenSetBrightness(g_config.brightness);
+	protocol_singlechip->cmdSetPirStrength(g_config.pir_strength);
+}
+
+void configFactory(void)
+{
+	configResetEtcInt(etc_public_int,NELEMENTS(etc_public_int));	
+	configResetEtcChar(etc_public_char,NELEMENTS(etc_public_char));
+	ConfigSavePublicCallback(configFactoryCallback);
+}

@@ -102,8 +102,8 @@ static FormBasePriv form_base_priv= {
 };
 
 static MyCtrlButton ctrls_button[] = {
-	{IDC_BUTTON_CANCEL,MYBUTTON_TYPE_TWO_STATE|MYBUTTON_TYPE_TEXT_CENTER,"取消",0,230,buttonCancel},
-	{IDC_BUTTON_COMFIRM,MYBUTTON_TYPE_TWO_STATE|MYBUTTON_TYPE_TEXT_CENTER,"确认",231,230,buttonConfirm},
+	{IDC_BUTTON_COMFIRM,MYBUTTON_TYPE_TWO_STATE|MYBUTTON_TYPE_TEXT_CENTER,"确认",0,230,buttonConfirm},
+	{IDC_BUTTON_CANCEL,MYBUTTON_TYPE_TWO_STATE|MYBUTTON_TYPE_TEXT_CENTER,"取消",231,230,buttonCancel},
 	{0},
 };
 
@@ -138,12 +138,18 @@ static void paint(HWND hWnd,HDC hdc)
 	rc_text.bottom = 63;
 	DrawText (hdc,txt_title, -1, &rc_text,
 			DT_CENTER | DT_VCENTER | DT_WORDBREAK  | DT_SINGLELINE);
-	rc_text.left = 0;
-	rc_text.right = 460;
-	rc_text.top = 63;
+	rc_text.left = 60;
+	rc_text.right = 400;
 	rc_text.bottom = 230;
-	DrawText (hdc,txt_content, -1, &rc_text,
-			DT_CENTER | DT_VCENTER | DT_WORDBREAK  | DT_SINGLELINE);
+	if (strlen(txt_content) > 17) {
+		rc_text.top = 111;
+		DrawText (hdc,txt_content, -1, &rc_text,
+				DT_CENTER | DT_VCENTER | DT_WORDBREAK );
+	} else {
+		rc_text.top = 63;
+		DrawText (hdc,txt_content, -1, &rc_text,
+				DT_CENTER | DT_VCENTER | DT_WORDBREAK  | DT_SINGLELINE);
+	}
 }
 
 static void formTopmessageLoadBmp(void)
@@ -235,4 +241,9 @@ void topMsgDoorbell(void)
 void topMsgCammerError(void)
 {
 	createFormTopmessage(0,"提示","摄像头异常",NULL,NULL);
+}
+
+void topMsgFactory(void (*fConfirm)(void))
+{
+	createFormTopmessage(0,"恢复出厂","恢复出厂将删除所有记录和文件，且不可恢复，是否确认？",fConfirm,NULL);
 }

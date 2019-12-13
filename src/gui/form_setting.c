@@ -32,6 +32,10 @@ extern int createFormSettingWifi(HWND hMainWnd,void (*callback)(void));
 extern int createFormSettingLocoal(HWND hMainWnd,void (*callback)(void));
 extern int createFormSettingDoorbell(HWND hMainWnd,void (*callback)(void));
 extern int createFormSettingAlarm(HWND hMainWnd,void (*callback)(void));
+extern int createFormSettingBrightness(HWND hMainWnd,void (*callback)(void));
+extern int createFormSettingTimer(HWND hMainWnd,void (*callback)(void));
+extern void topMsgFactory(void (*fConfirm)(void));
+extern void configFactory(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -172,6 +176,7 @@ static void buttonScreenPress(HWND hwnd, int id, int nc, DWORD add_data)
 	if (nc != BN_CLICKED)
 		return;
 	flag_timer_stop = 1;
+    createFormSettingBrightness(GetParent(hwnd),enableAutoClose);
 }
 static void buttonDoorBellPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
@@ -185,6 +190,7 @@ static void buttonTimerPress(HWND hwnd, int id, int nc, DWORD add_data)
 	if (nc != BN_CLICKED)
 		return;
 	flag_timer_stop = 1;
+    createFormSettingTimer(GetParent(hwnd),enableAutoClose);
 }
 static void buttonMutePress(HWND hwnd, int id, int nc, DWORD add_data)
 {
@@ -203,8 +209,9 @@ static void buttonFactoryPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
-	flag_timer_stop = 1;
+	topMsgFactory(configFactory);
 }
+
 static void buttonLocalPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)

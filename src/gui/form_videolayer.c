@@ -32,6 +32,7 @@
 #include "my_static.h"
 #include "my_title.h"
 #include "my_battery.h"
+#include "my_scroll.h"
 
 #include "my_video.h"
 #include "form_video.h"
@@ -58,6 +59,10 @@ extern void formSettingDoorbellLoadBmp(void);
 extern void formSettingRingsLoadBmp(void);
 extern void formSettingRingsVolumeLoadBmp(void);
 extern void formSettingAlarmLoadBmp(void);
+extern void formSettingPirStrengthLoadBmp(void);
+extern void formSettingPirTimerLoadBmp(void);
+extern void formSettingBrightnessLoadBmp(void);
+extern void formSettingTimerLoadBmp(void);
 
 extern void formVideoInitInterface(void);
 /* ---------------------------------------------------------------------------*
@@ -103,6 +108,7 @@ static MyCtrls ctrls[] = {
     {initMyStatic,&my_static},
     {initMyTitle, &my_title},
     {initMyBattery,&my_battery},
+    {initMyScroll,&my_scroll},
     {NULL},
 };
 static FontLocation font_load[] = {
@@ -127,6 +133,10 @@ static InitBmpFunc load_bmps_func[] = {
 	formSettingRingsLoadBmp,
 	formSettingRingsVolumeLoadBmp,
 	formSettingAlarmLoadBmp,
+	formSettingPirStrengthLoadBmp,
+	formSettingPirTimerLoadBmp,
+	formSettingBrightnessLoadBmp,
+	formSettingTimerLoadBmp,
 	NULL,
 };
 
