@@ -37,14 +37,28 @@
  *-----------------------------------------------------------------*/
 static int myScrollControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lParam);
 
+static void buttonTopPress(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonBottomPress(HWND hwnd, int id, int nc, DWORD add_data);
 /* ----------------------------------------------------------------*
  *                        macro define
  *-----------------------------------------------------------------*/
 #define CTRL_NAME CTRL_MYSCROLL
+#define BMP_LOCAL_PATH "setting/"
+enum {
+	IDC_BUTTON_TOP = 1,
+	IDC_BUTTON_BOTTOM,
+};
 /* ----------------------------------------------------------------*
  *                      variables define
  *-----------------------------------------------------------------*/
 MyControls *my_scroll;
+
+static MyCtrlButton ctrls_button[] = {
+	{IDC_BUTTON_TOP,	 MYBUTTON_TYPE_TWO_STATE|MYBUTTON_TYPE_TEXT_NULL,"top",0, 0,buttonTopPress},
+	{IDC_BUTTON_BOTTOM,	 MYBUTTON_TYPE_TWO_STATE|MYBUTTON_TYPE_TEXT_NULL,"bottom",0,200,buttonBottomPress},
+	{0},
+};
+
 
 /* ---------------------------------------------------------------------------*/
 /**
@@ -77,6 +91,16 @@ static void myScrollCleanUp (void)
     UnregisterWindowClass(CTRL_NAME);
 }
 
+static void buttonTopPress(HWND hwnd, int id, int nc, DWORD add_data)
+{
+	if (nc != BN_CLICKED)
+		return;
+}
+static void buttonBottomPress(HWND hwnd, int id, int nc, DWORD add_data)
+{
+	if (nc != BN_CLICKED)
+		return;
+}
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief paint 主要绘图函数
@@ -87,9 +111,6 @@ static void myScrollCleanUp (void)
 /* ---------------------------------------------------------------------------*/
 static void paint(HWND hWnd,HDC hdc)
 {
-#if 1
-#define FILL_BMP_STRUCT(rc,img)  rc.left, rc.top,img->bmWidth,img->bmHeight,img
-
 	RECT rc_bmp,*rc_text;
     PCONTROL    pCtrl;
     pCtrl = Control (hWnd);
@@ -103,21 +124,18 @@ static void paint(HWND hWnd,HDC hdc)
 	SetBkMode(hdc,BM_TRANSPARENT);
 	SetTextColor(hdc,COLOR_lightwhite);
 	SelectFont (hdc, pInfo->font);
-	printf("%d,%d,%d,%d,%s\n",
-			rc_text->left,
-			rc_text->top,
-			rc_text->right,
-			rc_text->bottom,
-			pInfo->text );
-	DrawText (hdc,pInfo->text, -1, rc_text,
-			DT_CENTER | DT_VCENTER | DT_WORDBREAK  | DT_SINGLELINE);
-#endif
+	SetPenColor (hdc, 0xCCCCCC);
+	int i;
+	for (i=0; i<MYSCROLL_MAX_LINES; i++) {
+		if (i != MYSCROLL_MAX_LINES - 1) {
+			MoveTo (hdc, pInfo->rc_text[i].rc.left, pInfo->rc_text[i].rc.bottom);
+			LineTo (hdc, pInfo->rc_text[i].rc.right, pInfo->rc_text[i].rc.bottom);
+		}
+		DrawText (hdc,pInfo->text, -1, &pInfo->rc_text[i].rc,
+				DT_CENTER | DT_VCENTER | DT_WORDBREAK  | DT_SINGLELINE);
+	}
 }
 
-static void* threadMoveInterval(void *arg)
-{
-
-}
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief myScrollControlProc 控件主回调函数
@@ -132,9 +150,11 @@ static void* threadMoveInterval(void *arg)
 /* ---------------------------------------------------------------------------*/
 static int myScrollControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lParam)
 {
+	int i;
     HDC         hdc;
     PCONTROL    pCtrl;
     DWORD       dwStyle;
+	RECT rc;
     MyScrollCtrlInfo* pInfo;
 
 	pCtrl = Control (hwnd);
@@ -153,7 +173,24 @@ static int myScrollControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
 		pInfo->flag = data->flag;
 		pInfo->text = data->text;
 		pInfo->font = data->font;
+		pInfo->index_start = data->index_start;
+		pInfo->index_end = data->index_end;
 		pCtrl->dwAddData2 = (DWORD)pInfo;
+		GetClientRect (hwnd, &rc);
+		int text_hight = RECTH(rc) - (ctrls_button[0].image_press.bmHeight * 2);
+
+		for (i=0; ctrls_button[i].idc != 0; i++) {
+			ctrls_button[i].font = font22;
+			ctrls_button[i].x = rc.left + (RECTW(rc) - ctrls_button[i].image_press.bmWidth) / 2; 
+			ctrls_button[i].y = rc.top + i*(ctrls_button[i].image_press.bmHeight + text_hight); 
+			createMyButton(hwnd,&ctrls_button[i]);
+		}
+		for (i=0; i<MYSCROLL_MAX_LINES; i++) {
+			pInfo->rc_text[i].rc.left = rc.left;
+			pInfo->rc_text[i].rc.right = rc.right;
+			pInfo->rc_text[i].rc.top = rc.top + i*text_hight/MYSCROLL_MAX_LINES + ctrls_button[0].image_press.bmHeight;
+			pInfo->rc_text[i].rc.bottom = pInfo->rc_text[i].rc.top + text_hight/MYSCROLL_MAX_LINES;
+		}
 		return 0;
 	}
 	case MSG_DESTROY:
@@ -165,7 +202,8 @@ static int myScrollControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
 		paint(hwnd,hdc);
         EndPaint (hwnd, hdc);
         return 0;
-
+	case MSG_SET_NUM:
+		break;
     case MSG_LBUTTONDOWN:
 		{
 
@@ -189,9 +227,11 @@ static int myScrollControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
 /* ---------------------------------------------------------------------------*/
 static void myScrollBmpsLoad(void *ctrls,char *path)
 {
+    my_button->bmpsLoad(ctrls_button,BMP_LOCAL_PATH);
 }
 static void myScrollBmpsRelease(void *ctrls)
 {
+    my_button->bmpsRelease(ctrls_button);
 }
 
 /* ---------------------------------------------------------------------------*/
@@ -215,6 +255,8 @@ HWND createMyScroll(HWND hWnd,MyCtrlScroll *ctrl)
 	pInfo.flag = ctrl->flag;
 	pInfo.text = ctrl->text;
     pInfo.font = ctrl->font;
+    pInfo.index_start = ctrl->index_start;
+    pInfo.index_end = ctrl->index_end;
 
     hCtrl = CreateWindowEx(CTRL_NAME,"",WS_VISIBLE|WS_CHILD,WS_EX_TRANSPARENT,
             ctrl->idc,ctrl->x,ctrl->y,ctrl->w,ctrl->h, hWnd,(DWORD)&pInfo);

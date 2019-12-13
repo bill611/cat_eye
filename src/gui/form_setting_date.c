@@ -1,9 +1,9 @@
 /*
  * =============================================================================
  *
- *       Filename:  form_setting_timer.c
+ *       Filename:  form_setting_Date.c
  *
- *    Description:  时间设置界面
+ *    Description:  日期设置界面
  *
  *        Version:  1.0
  *        Created:  2018-03-01 23:32:41
@@ -31,15 +31,16 @@
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
-extern int createFormSettingDate(HWND hMainWnd,void (*callback)(void));
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
  *----------------------------------------------------------------------------*/
-static int formSettingTimerProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
+static int formSettingDateProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 
-static void buttonTitleNotify(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonExitPress(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonTopPress(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonBottomPress(HWND hwnd, int id, int nc, DWORD add_data);
 
 /* ---------------------------------------------------------------------------*
  *                        macro define
@@ -55,7 +56,9 @@ enum {
 	IDC_TIMER_1S = IDC_FORM_SETTING_TIEMR,
 	IDC_BUTTON_EXIT,
 	IDC_BUTTON_TITLE,
-	IDC_SCROLLVIEW,
+	IDC_MYSCROLL_YEAR,
+	IDC_MYSCROLL_MONTH,
+	IDC_MYSCROLL_DATE,
 	IDC_TITLE,
 };
 
@@ -70,30 +73,26 @@ struct ScrollviewItem {
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
-static BITMAP bmp_enter; // 进入
-static HWND hScrollView;
 static int bmp_load_finished = 0;
-static int flag_timer_stop = 0;
-
-static struct ScrollviewItem locoal_list[] = {
-	{"设置日期","",createFormSettingDate},
-	{"设置时间","",NULL},
-	{0},
-};
+static int flag_Date_stop = 0;
 
 static BmpLocation bmp_load[] = {
-    {&bmp_enter,	BMP_LOCAL_PATH"ico_返回_1.png"},
     {NULL},
 };
 
 static MY_CTRLDATA ChildCtrls [] = {
-    SCROLLVIEW(0,40,1024,580,IDC_SCROLLVIEW),
 };
 
 static MyCtrlButton ctrls_button[] = {
 	{0},
 };
 
+static MyCtrlScroll ctrls_scroll[] = {
+	{IDC_MYSCROLL_YEAR,	0,"年",2019, 2050,	153,40,180,560},
+	{IDC_MYSCROLL_MONTH,0,"月",1, 12,		423,40,180,560},
+	{IDC_MYSCROLL_DATE,	0,"日",1, 31,		692,40,180,560},
+	{0},
+};
 static MY_DLGTEMPLATE DlgInitParam =
 {
     WS_NONE,
@@ -108,9 +107,9 @@ static MY_DLGTEMPLATE DlgInitParam =
 };
 
 static FormBasePriv form_base_priv= {
-	.name = "FsetTimer",
+	.name = "FsetDate",
 	.idc_timer = IDC_TIMER_1S,
-	.dlgProc = formSettingTimerProc,
+	.dlgProc = formSettingDateProc,
 	.dlgInitParam = &DlgInitParam,
 	.initPara =  initPara,
 	.auto_close_time_set = 30,
@@ -122,10 +121,10 @@ static MyCtrlTitle ctrls_title[] = {
         MYTITLE_LEFT_EXIT,
         MYTITLE_RIGHT_NULL,
         0,0,1024,40,
-        "时间设置",
+        "日期设置",
         "",
         0xffffff, 0x333333FF,
-        buttonTitleNotify,
+        buttonExitPress,
     },
 	{0},
 };
@@ -135,34 +134,11 @@ static FormBase* form_base = NULL;
 static void enableAutoClose(void)
 {
 	Screen.setCurrent(form_base_priv.name);
-	flag_timer_stop = 0;	
+	flag_Date_stop = 0;	
 }
-static void reloadTimer(void)
-{
-	int i;
-	SVITEMINFO svii;
-	struct ScrollviewItem *plist = locoal_list;
-    SendMessage (hScrollView, SVM_RESETCONTENT, 0, 0);
-	struct tm *tm = getTime();
-	for (i=0; plist->title[0] != 0; i++) {
-		plist->index = i;
-		svii.nItemHeight = 60;
-		svii.addData = (DWORD)plist;
-		svii.nItem = i;
-		if (strcmp("设置日期",plist->title) == 0) {
-			sprintf(plist->text,"%d年%d月%d日",tm->tm_year+1900,tm->tm_mon+1,tm->tm_mday);
-		} else if (strcmp("设置时间",plist->title) == 0) {
-			sprintf(plist->text,"%d:%02d",tm->tm_hour,tm->tm_min);
-		}
-		SendMessage (hScrollView, SVM_ADDITEM, 0, (LPARAM)&svii);
-		SendMessage (hScrollView, SVM_SETITEMADDDATA, i, (DWORD)plist);
-		plist++;
-	}
-}
-
 /* ----------------------------------------------------------------*/
 /**
- * @brief buttonTitleNotify 标题按钮
+ * @brief buttonTopPress wifi设置
  *
  * @param hwnd
  * @param id
@@ -170,80 +146,56 @@ static void reloadTimer(void)
  * @param add_data
  */
 /* ----------------------------------------------------------------*/
-static void buttonTitleNotify(HWND hwnd, int id, int nc, DWORD add_data)
+static void buttonTopPress(HWND hwnd, int id, int nc, DWORD add_data)
+{
+	if (nc != BN_CLICKED)
+		return;
+	// if (g_config.ring_num > 0) {
+		// g_config.ring_num--;
+		// myAudioPlayRingOnce();
+		// ConfigSavePublic();
+	// }
+}
+
+static void buttonBottomPress(HWND hwnd, int id, int nc, DWORD add_data)
+{
+	if (nc != BN_CLICKED)
+		return;
+	// if (g_config.ring_num < (MAX_RINGS_NUM - 1)) {
+		// g_config.ring_num++;
+	// }
+}
+
+static void reloadDate(void)
+{
+}
+
+/* ----------------------------------------------------------------*/
+/**
+ * @brief buttonExitPress 退出按钮
+ *
+ * @param hwnd
+ * @param id
+ * @param nc
+ * @param add_data
+ */
+/* ----------------------------------------------------------------*/
+static void buttonExitPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	ShowWindow(GetParent(hwnd),SW_HIDE);
 }
 
-void formSettingTimerLoadBmp(void)
+void formSettingDateLoadBmp(void)
 {
     if (bmp_load_finished == 1)
         return;
 
 	printf("[%s]\n", __FUNCTION__);
     bmpsLoad(bmp_load);
+	my_scroll->bmpsLoad(ctrls_scroll,BMP_LOCAL_PATH);
     bmp_load_finished = 1;
 }
-/* ---------------------------------------------------------------------------*/
-/**
- * @brief scrollviewNotify 
- *
- * @param hwnd
- * @param id
- * @param nc
- * @param add_data
- */
-/* ---------------------------------------------------------------------------*/
-static void scrollviewNotify(HWND hwnd, int id, int nc, DWORD add_data)
-{
-	if (nc == SVN_CLICKED) {
-		int idx = SendMessage (hScrollView, SVM_GETCURSEL, 0, 0);
-		struct ScrollviewItem *plist;
-		plist = (struct ScrollviewItem *)SendMessage (hScrollView, SVM_GETITEMADDDATA, idx, 0);
 
-		if (plist) {
-			if (plist->callback) {
-				flag_timer_stop = 1;
-				plist->callback(hwnd,enableAutoClose);
-			}
-		}
-	}
-}
-
-static void myDrawItem (HWND hWnd, HSVITEM hsvi, HDC hdc, RECT *rcDraw)
-{
-#define FILL_BMP_STRUCT(left,top,img)  \
-	FillBoxWithBitmap(hdc,left, top,img.bmWidth,img.bmHeight,&img)
-
-#define DRAW_TABLE(rc,offset,color)  \
-	do { \
-		SetPenColor (hdc, color); \
-		if (p_item->index) { \
-			MoveTo (hdc, rc->left + offset, rc->top); \
-			LineTo (hdc, rc->right,rc->top); \
-		} \
-		MoveTo (hdc, rc->left + offset, rc->bottom); \
-		LineTo (hdc, rc->right,rc->bottom); \
-	} while (0)
-
-	struct ScrollviewItem *p_item = (struct ScrollviewItem *)scrollview_get_item_adddata (hsvi);
-	SetBkMode (hdc, BM_TRANSPARENT);
-	SetTextColor (hdc, PIXEL_lightwhite);
-	SelectFont (hdc, font20);
-	if (p_item->callback)
-		FILL_BMP_STRUCT(rcDraw->left + 968,rcDraw->top + 15,bmp_enter);
-	// 绘制表格
-	DRAW_TABLE(rcDraw,0,0xCCCCCC);
-	// 输出文字
-	TextOut (hdc, rcDraw->left + 30, rcDraw->top + 15, p_item->title);
-	RECT rc;
-	memcpy(&rc,rcDraw,sizeof(RECT));
-	rc.left += 512;
-	rc.right -= 70;
-	SetTextColor (hdc, 0xCCCCCC);
-	DrawText (hdc,p_item->text, -1, &rc,
-			DT_VCENTER | DT_RIGHT | DT_WORDBREAK  | DT_SINGLELINE);
-}
 /* ----------------------------------------------------------------*/
 /**
  * @brief initPara 初始化参数
@@ -265,14 +217,16 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
         ctrls_button[i].font = font22;
         createMyButton(hDlg,&ctrls_button[i]);
     }
-	hScrollView = GetDlgItem (hDlg, IDC_SCROLLVIEW);
-	SendMessage (hScrollView, SVM_SETITEMDRAW, 0, (LPARAM)myDrawItem);
-	reloadTimer();
+    for (i=0; ctrls_scroll[i].idc != 0; i++) {
+        ctrls_scroll[i].font = font22;
+        createMyScroll(hDlg,&ctrls_scroll[i]);
+    }
+	reloadDate();
 }
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief formSettingTimerProc 窗口回调函数
+ * @brief formSettingDateProc 窗口回调函数
  *
  * @param hDlg
  * @param message
@@ -282,28 +236,21 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
  * @return
  */
 /* ----------------------------------------------------------------*/
-static int formSettingTimerProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
+static int formSettingDateProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 {
     switch(message) // 自定义消息
     {
 		case MSG_TIMER:
 			{
-				if (flag_timer_stop)
+				if (flag_Date_stop)
 					return 0;
 			} break;
 
-		case MSG_COMMAND:
-			{
-				int id = LOWORD (wParam);
-				int code = HIWORD (wParam);
-				scrollviewNotify(hDlg,id,code,0);
-				break;
-			}
 		case MSG_ENABLE_WINDOW:
 			enableAutoClose();
 			break;
 		case MSG_DISABLE_WINDOW:
-			flag_timer_stop = 1;
+			flag_Date_stop = 1;
 			break;
         default:
             break;
@@ -313,17 +260,17 @@ static int formSettingTimerProc(HWND hDlg, int message, WPARAM wParam, LPARAM lP
     return DefaultDialogProc(hDlg, message, wParam, lParam);
 }
 
-int createFormSettingTimer(HWND hMainWnd,void (*callback)(void))
+int createFormSettingDate(HWND hMainWnd,void (*callback)(void))
 {
 	HWND Form = Screen.Find(form_base_priv.name);
 	if(Form) {
 		Screen.setCurrent(form_base_priv.name);
-		reloadTimer();
+		reloadDate();
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
-        if (bmp_load_finished == 0) {
-            return 0;
-        }
+		if (bmp_load_finished == 0) {
+			return 0;
+		}
 		form_base_priv.callBack = callback;
 		form_base = formBaseCreate(&form_base_priv);
 		return CreateMyWindowIndirectParam(form_base->priv->dlgInitParam,

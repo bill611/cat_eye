@@ -23,14 +23,25 @@ extern "C" {
 
 #include "my_controls.h"
 #include "commongdi.h"
+#include "my_button.h"
 #define CTRL_MYSCROLL         ("myscroll")
 
+#define MYSCROLL_MAX_LINES 3
 
+	enum {
+        MSG_SET_NUM = MSG_USER + 1,
+    };
+
+	struct ScrollText {
+		RECT rc;   // N行文字坐标
+		int num;
+	};
 	typedef struct {
-        const char *text;      // 文字
-		int flag;		// 类型
-        PLOGFONT   font;       // 字体
+        const char *text;      	// 文字
+		int flag;				// 类型
+        PLOGFONT   font;       	// 字体
 		int index_start,index_end; // 数字范围
+		struct ScrollText rc_text[MYSCROLL_MAX_LINES];   // N行文字坐标
 	}MyScrollCtrlInfo;
 
 	typedef struct _MyCtrlScroll{
