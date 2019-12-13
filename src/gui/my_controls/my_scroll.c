@@ -95,11 +95,25 @@ static void buttonTopPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
+    PCONTROL    pCtrl = Control (GetParent(hwnd));
+	MyScrollCtrlInfo* pInfo = (MyScrollCtrlInfo*)(pCtrl->dwAddData2);
+    int num = pInfo->rc_text[pInfo->index_center].num;
+    if (num >= pInfo->index_end)
+        SendMessage(GetParent(hwnd),MSG_SET_NUM,pInfo->index_start,0);
+    else
+        SendMessage(GetParent(hwnd),MSG_SET_NUM,++num,0);
 }
 static void buttonBottomPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
+    PCONTROL    pCtrl = Control (GetParent(hwnd));
+	MyScrollCtrlInfo* pInfo = (MyScrollCtrlInfo*)(pCtrl->dwAddData2);
+    int num = pInfo->rc_text[pInfo->index_center].num;
+    if (num <= pInfo->index_start)
+        SendMessage(GetParent(hwnd),MSG_SET_NUM,pInfo->index_end,0);
+    else
+        SendMessage(GetParent(hwnd),MSG_SET_NUM,--num,0);
 }
 /* ---------------------------------------------------------------------------*/
 /**
@@ -126,13 +140,19 @@ static void paint(HWND hWnd,HDC hdc)
 	SelectFont (hdc, pInfo->font);
 	SetPenColor (hdc, 0xCCCCCC);
 	int i;
+    char buf[6] = {0};
 	for (i=0; i<MYSCROLL_MAX_LINES; i++) {
 		if (i != MYSCROLL_MAX_LINES - 1) {
 			MoveTo (hdc, pInfo->rc_text[i].rc.left, pInfo->rc_text[i].rc.bottom);
 			LineTo (hdc, pInfo->rc_text[i].rc.right, pInfo->rc_text[i].rc.bottom);
 		}
-		DrawText (hdc,pInfo->text, -1, &pInfo->rc_text[i].rc,
-				DT_CENTER | DT_VCENTER | DT_WORDBREAK  | DT_SINGLELINE);
+        sprintf(buf,"%d",pInfo->rc_text[i].num);
+        DrawText (hdc,buf, -1, &pInfo->rc_text[i].rc,
+                DT_CENTER | DT_VCENTER | DT_WORDBREAK  | DT_SINGLELINE);
+        if (i == pInfo->index_center) {
+            DrawText (hdc,pInfo->text, -1, &pInfo->rc_text[i].rc,
+                    DT_RIGHT | DT_VCENTER | DT_WORDBREAK  | DT_SINGLELINE);
+        }
 	}
 }
 
@@ -175,14 +195,14 @@ static int myScrollControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
 		pInfo->font = data->font;
 		pInfo->index_start = data->index_start;
 		pInfo->index_end = data->index_end;
-		pCtrl->dwAddData2 = (DWORD)pInfo;
+        pInfo->index_center = MYSCROLL_MAX_LINES/2;
 		GetClientRect (hwnd, &rc);
 		int text_hight = RECTH(rc) - (ctrls_button[0].image_press.bmHeight * 2);
 
 		for (i=0; ctrls_button[i].idc != 0; i++) {
 			ctrls_button[i].font = font22;
-			ctrls_button[i].x = rc.left + (RECTW(rc) - ctrls_button[i].image_press.bmWidth) / 2; 
-			ctrls_button[i].y = rc.top + i*(ctrls_button[i].image_press.bmHeight + text_hight); 
+			ctrls_button[i].x = rc.left + (RECTW(rc) - ctrls_button[i].image_press.bmWidth) / 2;
+			ctrls_button[i].y = rc.top + i*(ctrls_button[i].image_press.bmHeight + text_hight);
 			createMyButton(hwnd,&ctrls_button[i]);
 		}
 		for (i=0; i<MYSCROLL_MAX_LINES; i++) {
@@ -191,6 +211,7 @@ static int myScrollControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
 			pInfo->rc_text[i].rc.top = rc.top + i*text_hight/MYSCROLL_MAX_LINES + ctrls_button[0].image_press.bmHeight;
 			pInfo->rc_text[i].rc.bottom = pInfo->rc_text[i].rc.top + text_hight/MYSCROLL_MAX_LINES;
 		}
+		pCtrl->dwAddData2 = (DWORD)pInfo;
 		return 0;
 	}
 	case MSG_DESTROY:
@@ -203,14 +224,31 @@ static int myScrollControlProc (HWND hwnd, int message, WPARAM wParam, LPARAM lP
         EndPaint (hwnd, hdc);
         return 0;
 	case MSG_SET_NUM:
-		break;
-    case MSG_LBUTTONDOWN:
-		{
-
-		} break;
-	case MSG_LBUTTONUP:
-		{
-		} break;
+        {
+            int i;
+            pInfo->rc_text[pInfo->index_center].num = wParam;
+            if (pInfo->index_center < 1)
+                break;
+            for (i=pInfo->index_center-1; i>=0; i--) {
+                pInfo->rc_text[i].num = wParam - 1;
+                if (pInfo->rc_text[i].num < pInfo->index_start) {
+                    pInfo->rc_text[i].num =
+                        pInfo->index_end - (pInfo->index_start - pInfo->rc_text[i].num) + 1;
+                }
+            }
+            for (i=pInfo->index_center+1; i<MYSCROLL_MAX_LINES; i++) {
+                pInfo->rc_text[i].num = wParam + 1;
+                if (pInfo->index_end < pInfo->rc_text[i].num) {
+                    pInfo->rc_text[i].num =
+                        pInfo->index_start + (pInfo->rc_text[i].num - pInfo->index_end) - 1;
+                }
+            }
+            InvalidateRect (hwnd, NULL, TRUE);
+        } break;
+	case MSG_GET_NUM:
+        {
+            return pInfo->rc_text[pInfo->index_center].num;
+        } break;
 	default:
 		break;
 	}

@@ -26,10 +26,12 @@ extern "C" {
 #include "my_button.h"
 #define CTRL_MYSCROLL         ("myscroll")
 
+// 定义总共多少行，只能为奇数
 #define MYSCROLL_MAX_LINES 3
 
 	enum {
         MSG_SET_NUM = MSG_USER + 1,
+        MSG_GET_NUM,
     };
 
 	struct ScrollText {
@@ -40,7 +42,7 @@ extern "C" {
         const char *text;      	// 文字
 		int flag;				// 类型
         PLOGFONT   font;       	// 字体
-		int index_start,index_end; // 数字范围
+		int index_start,index_end,index_center; // 数字范围
 		struct ScrollText rc_text[MYSCROLL_MAX_LINES];   // N行文字坐标
 	}MyScrollCtrlInfo;
 

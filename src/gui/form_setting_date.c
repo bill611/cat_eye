@@ -88,9 +88,9 @@ static MyCtrlButton ctrls_button[] = {
 };
 
 static MyCtrlScroll ctrls_scroll[] = {
-	{IDC_MYSCROLL_YEAR,	0,"年",2019, 2050,	153,40,180,560},
-	{IDC_MYSCROLL_MONTH,0,"月",1, 12,		423,40,180,560},
-	{IDC_MYSCROLL_DATE,	0,"日",1, 31,		692,40,180,560},
+	{IDC_MYSCROLL_YEAR,	0,"年",2019, 2050,	153,100,180,500},
+	{IDC_MYSCROLL_MONTH,0,"月",1, 12,		423,100,180,500},
+	{IDC_MYSCROLL_DATE,	0,"日",1, 31,		692,100,180,500},
 	{0},
 };
 static MY_DLGTEMPLATE DlgInitParam =
@@ -136,38 +136,13 @@ static void enableAutoClose(void)
 	Screen.setCurrent(form_base_priv.name);
 	flag_Date_stop = 0;	
 }
-/* ----------------------------------------------------------------*/
-/**
- * @brief buttonTopPress wifi设置
- *
- * @param hwnd
- * @param id
- * @param nc
- * @param add_data
- */
-/* ----------------------------------------------------------------*/
-static void buttonTopPress(HWND hwnd, int id, int nc, DWORD add_data)
-{
-	if (nc != BN_CLICKED)
-		return;
-	// if (g_config.ring_num > 0) {
-		// g_config.ring_num--;
-		// myAudioPlayRingOnce();
-		// ConfigSavePublic();
-	// }
-}
-
-static void buttonBottomPress(HWND hwnd, int id, int nc, DWORD add_data)
-{
-	if (nc != BN_CLICKED)
-		return;
-	// if (g_config.ring_num < (MAX_RINGS_NUM - 1)) {
-		// g_config.ring_num++;
-	// }
-}
 
 static void reloadDate(void)
 {
+	struct tm *tm = getTime();
+    SendMessage(GetDlgItem(form_base->hDlg,IDC_MYSCROLL_YEAR),MSG_SET_NUM,tm->tm_year+1900,0);
+    SendMessage(GetDlgItem(form_base->hDlg,IDC_MYSCROLL_MONTH),MSG_SET_NUM,tm->tm_mon+1,0);
+    SendMessage(GetDlgItem(form_base->hDlg,IDC_MYSCROLL_DATE),MSG_SET_NUM,tm->tm_mday,0);
 }
 
 /* ----------------------------------------------------------------*/
@@ -182,6 +157,11 @@ static void reloadDate(void)
 /* ----------------------------------------------------------------*/
 static void buttonExitPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
+	struct tm *tm = getTime();
+    int year = SendMessage(GetDlgItem(form_base->hDlg,IDC_MYSCROLL_YEAR),MSG_GET_NUM,0,0);
+    int mon = SendMessage(GetDlgItem(form_base->hDlg,IDC_MYSCROLL_MONTH),MSG_GET_NUM,0,0);
+    int day = SendMessage(GetDlgItem(form_base->hDlg,IDC_MYSCROLL_DATE),MSG_GET_NUM,0,0);
+    adjustdate(year,mon,day,tm->tm_hour,tm->tm_min,tm->tm_sec);
 	ShowWindow(GetParent(hwnd),SW_HIDE);
 }
 

@@ -1241,14 +1241,14 @@ void registHardCloud(void)
 	tcpClientInit();
 	http = myHttpCreate();
 	mqtt = myMqttCreate();
-	createThread(initThread,NULL);
-	createThread(tcpHeartThread,NULL);
-	createThread(getIntercomsThread,NULL);
-	createThread(threadUpload,NULL);
-	createThread(threadReportCapture,NULL);
-	createThread(threadReportAlarm,NULL);
-	createThread(threadReportFace,NULL);
-	createThread(threadReportTalk,NULL);
+	// createThread(initThread,NULL);
+	// createThread(tcpHeartThread,NULL);
+	// createThread(getIntercomsThread,NULL);
+	// createThread(threadUpload,NULL);
+	// createThread(threadReportCapture,NULL);
+	// createThread(threadReportAlarm,NULL);
+	// createThread(threadReportFace,NULL);
+	// createThread(threadReportTalk,NULL);
 
 }
 
