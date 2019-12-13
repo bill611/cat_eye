@@ -136,7 +136,7 @@ typedef struct _StmData {
 	char ip[16];
 	int port;
 	char file_path[512];
-	enum HangupType hangup_type; 
+	enum HangupType hangup_type;
 }StmData;
 
 typedef struct _TalkPeerDev {
@@ -299,7 +299,7 @@ static StateTable state_table[] =
 	{EV_CAPTURE,	ST_TALK_CALLOUT,	ST_TALK_CALLOUT,	DO_CAPTURE_NO_UI},
 	{EV_CAPTURE,	ST_TALK_CALLOUTALL,	ST_TALK_CALLOUTALL,	DO_CAPTURE_NO_UI},
 	{EV_CAPTURE,	ST_TALK_CALLIN,		ST_TALK_CALLIN,		DO_CAPTURE_NO_UI},
-	
+
 	{EV_DELAY_SLEEP,ST_IDLE,	ST_IDLE,	DO_DELAY_SLEEP},
 	{EV_DELAY_SLEEP,ST_FACE,	ST_FACE,	DO_DELAY_SLEEP},
 
@@ -323,7 +323,7 @@ static int stmDoFail(void *data,MyVideo *arg)
 }
 static int stmDoNothing(void *data,MyVideo *arg)
 {
-	
+
 }
 
 static int stmDoFaceOn(void *data,MyVideo *arg)
@@ -440,7 +440,7 @@ static int stmDoTalkCallout(void *data,MyVideo *arg)
 	protocol_talk->dial(data_temp->usr_id,dialCallBack);
 	if (talk_peer_dev.type == DEV_TYPE_ENTRANCEMACHINE
 			|| talk_peer_dev.type == DEV_TYPE_HOUSEENTRANCEMACHINE)
-		my_video->showPeerVideo();	
+		my_video->showPeerVideo();
 	// 保存通话记录到内存
 	strcpy(talk_data.nick_name,data_temp->nick_name);
 	getDate(talk_data.date,sizeof(talk_data.date));
@@ -535,7 +535,7 @@ static int stmDoTalkCallin(void *data,MyVideo *arg)
 		my_video->videoAnswer(CALL_DIR_OUT,data_temp->type);
 	} else {
 		myAudioPlayRing();
-		my_video->showPeerVideo();	
+		my_video->showPeerVideo();
 	}
 	return 0;
 }
@@ -723,7 +723,7 @@ static void* threadFace(void *arg)
 	char jpg_name[64] = {0};
 	char url[256] = {0};
 	static ReportFaceData face_data;
-	
+
 	strcpy(face_data.date,cap_data_temp.file_date);
 	strcpy(face_data.nick_name,cap_data_temp.nick_name);
 	strcpy(face_data.user_id,cap_data_temp.usr_id);
@@ -823,7 +823,7 @@ static void recordStopCallbackFunc(void)
 {
 	printf("[%s]\n", __func__);
     pthread_mutex_lock(&mutex);
-    if (avi) 
+    if (avi)
         avi->DestoryMPEG4(&avi);
     pthread_mutex_unlock(&mutex);
 	record_state = 0;
@@ -835,7 +835,7 @@ static void recordStopCallbackFuncForTalk(void)
 {
 	printf("[%s]\n", __func__);
     pthread_mutex_lock(&mutex);
-    if (avi) 
+    if (avi)
         avi->DestoryMPEG4(&avi);
     pthread_mutex_unlock(&mutex);
 	record_state = 0;
@@ -885,7 +885,7 @@ static void* threadAviReadAudio(void *arg)
 		if (audio_fp > 0)
 			my_mixer->DeInitPlay(my_mixer,&audio_fp);
 	}
-    return NULL; 
+    return NULL;
 }
 static int stmDoRecordStart(void *data,MyVideo *arg)
 {
@@ -982,7 +982,7 @@ static int stmDoDelaySleepTime(void *data,MyVideo *arg)
 	} else {
 		resetAutoSleepTimerShort();
 	}
-	
+
 }
 
 static int stmDoUpdate(void *data,MyVideo *arg)
@@ -1076,9 +1076,11 @@ static void recordStop(void)
 }
 static void recordWriteCallback(char *data,int size)
 {
-	if (avi && avi->FirstFrame == 0) {
-        avi->WriteAudio(avi,data,size);
-	}
+	if (!avi)
+		return;
+	if (avi->FirstFrame == 0)
+		avi->WriteAudio(avi,data,size);
+
 }
 
 static void videoCallOut(char *user_id)
@@ -1187,8 +1189,8 @@ static int faceRecognizer( unsigned char *image_buff,int w,int h,int *age,int *s
     face_data.h = h;
 	int ret = stm->msgPostSync(stm,EV_FACE_RECOGNIZER,&face_data);
 	if (ret == 0) {
-		*age = face_data.age;	
-		*sex = face_data.sex;	
+		*age = face_data.age;
+		*sex = face_data.sex;
 	}
     return ret;
 }
@@ -1215,7 +1217,7 @@ static int isVideoOn(void)
 	if (stm->getCurrentstate(stm) == ST_TALK_CALLOUT
 			|| stm->getCurrentstate(stm) == ST_TALK_CALLOUTALL
 			|| stm->getCurrentstate(stm) == ST_TALK_CALLIN
-			|| stm->getCurrentstate(stm) == ST_TALK_TALKING)	
+			|| stm->getCurrentstate(stm) == ST_TALK_TALKING)
 		return 1;
 	else
 		return 0;
@@ -1223,7 +1225,7 @@ static int isVideoOn(void)
 
 static int isTalking(void)
 {
-	if (stm->getCurrentstate(stm) == ST_TALK_TALKING)	
+	if (stm->getCurrentstate(stm) == ST_TALK_TALKING)
 		return 1;
 	else
 		return 0;
@@ -1245,9 +1247,11 @@ static void* threadVideoTimer(void *arg)
 				stm->msgPost(stm,EV_TALK_HANGUP,st_data);
 			}
 		}
-		if (record_time) {
-			if (--record_time == 0) {
-				stm->msgPost(stm,EV_RECORD_STOP,NULL);
+		if (avi && record_time) {
+			if (avi->FirstFrame == 0) {
+				if (--record_time == 0) {
+					stm->msgPost(stm,EV_RECORD_STOP,NULL);
+				}
 			}
 		}
 		sleep(1);
