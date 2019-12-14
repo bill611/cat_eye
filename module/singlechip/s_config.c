@@ -180,9 +180,9 @@ int sIsNeedToPlay(void)
 			return 1;
 	} else {
 		if (time_now <= mute.end_time)	
-			return 1;
+			return 0;
 		if (time_now >= mute.start_time)
-			return 1;
-		return 0;
+			return 0;
+		return 1;
 	}
 }
