@@ -48,6 +48,7 @@ extern int getCapCount(void);
 extern int getCapTimer(void);
 extern char * getCapImei(void);
 extern int getBrightness(void);
+extern int sIsNeedToPlay(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -392,8 +393,10 @@ static void uartDeal(void)
 						ipc_data_tmp.cmd = IPC_UART_CAPTURE;
 						video_queue->post(video_queue,&ipc_data_tmp);
 						main_queue->post(main_queue,&ipc_data_tmp);
-						excuteCmd("busybox","killall","aplay",NULL);
-						playVoice("/data/dingdong.wav");
+						if (sIsNeedToPlay()) {
+							excuteCmd("busybox","killall","aplay",NULL);
+							playVoice("/data/dingdong.wav");
+						}
 						ipc_data.need_ring = 0;
 					}
 

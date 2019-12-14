@@ -31,18 +31,22 @@ static void configLoadEtcInt(dictionary *cfg_ini, EtcValueInt *etc_file,
 static int brightness = 0;
 static struct CapType cap;		// 抓拍或录像
 static char imei[64 + 1];         // 太川设备机身码
+static struct Mute mute;
 static EtcValueInt etc_public_int[]={
 {"cap_doorbell","type",		&cap.type,		0},
 {"cap_doorbell","count",	&cap.count,		1},
 {"cap_doorbell","timer",	&cap.timer,		5},
 {"others",		"brightness",	&brightness,		80},
+{"rings",		"mute_state",		&mute.state,		0},
+{"rings",		"mute_start_time",	&mute.start_time,	0},
+{"rings",		"mute_end_time",	&mute.end_time,	1439},
 };
 
 static EtcValueChar etc_private_char[]={
 {"device",		"imei",	    SIZE_CONFIG(imei),		"0"},
 };
 static char *sec_private[] = {"device",NULL};
-static char *sec_public[] = {"cap_doorbell","others",NULL};
+static char *sec_public[] = {"cap_doorbell","others","rings",NULL};
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief configoadEtcInt 加载int型配置文件
@@ -160,4 +164,25 @@ char * getCapImei(void)
 int getBrightness(void)
 {
 	return brightness;
+}
+int sIsNeedToPlay(void)
+{
+	if (mute.state == 0)		
+		return 1;
+	time_t timer;
+	timer = time(&timer);
+	struct tm *tm = localtime(&timer);
+	int time_now = tm->tm_hour * 60 + tm->tm_min;
+	if (mute.start_time <= mute.end_time) {
+		if (time_now >= mute.start_time && time_now <= mute.end_time)
+			return 0;
+		else 
+			return 1;
+	} else {
+		if (time_now <= mute.end_time)	
+			return 1;
+		if (time_now >= mute.start_time)
+			return 1;
+		return 0;
+	}
 }

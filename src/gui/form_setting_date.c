@@ -39,8 +39,6 @@ static int formSettingDateProc(HWND hDlg, int message, WPARAM wParam, LPARAM lPa
 static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 
 static void buttonExitPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonTopPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonBottomPress(HWND hwnd, int id, int nc, DWORD add_data);
 
 /* ---------------------------------------------------------------------------*
  *                        macro define
@@ -53,7 +51,7 @@ static void buttonBottomPress(HWND hwnd, int id, int nc, DWORD add_data);
 
 #define BMP_LOCAL_PATH "setting/"
 enum {
-	IDC_TIMER_1S = IDC_FORM_SETTING_TIEMR,
+	IDC_TIMER_1S = IDC_FORM_SETTING_DATE,
 	IDC_BUTTON_EXIT,
 	IDC_BUTTON_TITLE,
 	IDC_MYSCROLL_YEAR,
@@ -88,9 +86,9 @@ static MyCtrlButton ctrls_button[] = {
 };
 
 static MyCtrlScroll ctrls_scroll[] = {
-	{IDC_MYSCROLL_YEAR,	0,"年",2019, 2050,	153,100,180,500},
-	{IDC_MYSCROLL_MONTH,0,"月",1, 12,		423,100,180,500},
-	{IDC_MYSCROLL_DATE,	0,"日",1, 31,		692,100,180,500},
+	{IDC_MYSCROLL_YEAR,	0,"年",2019, 2037,	153,100,180,400},
+	{IDC_MYSCROLL_MONTH,0,"月",1, 12,		423,100,180,400},
+	{IDC_MYSCROLL_DATE,	0,"日",1, 31,		692,100,180,400},
 	{0},
 };
 static MY_DLGTEMPLATE DlgInitParam =

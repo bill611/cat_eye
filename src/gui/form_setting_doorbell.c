@@ -81,7 +81,7 @@ static int flag_timer_stop = 0;
 // TEST
 static struct ScrollviewItem locoal_list[] = {
 	{"铃声设置",	"",createFormSettingRings},
-	{"门铃音量",	"",createFormSettingRingsVolume},
+	{"铃声音量",	"",createFormSettingRingsVolume},
 	{"抓拍图像设置","",NULL},
 	{0},
 };
@@ -127,7 +127,7 @@ static MyCtrlTitle ctrls_title[] = {
         MYTITLE_LEFT_EXIT,
         MYTITLE_RIGHT_NULL,
         0,0,1024,40,
-        "门铃设置",
+        "呼叫设置",
         "",
         0xffffff, 0x333333FF,
         buttonNotify,
@@ -242,7 +242,7 @@ static void loadDoorbellData(void)
 		svii.nItem = i;
 		if (strcmp("铃声设置",plist->title) == 0) {
 			sprintf(plist->text,"铃声%d",g_config.ring_num + 1);
-		} else if (strcmp("门铃音量",plist->title) == 0) {
+		} else if (strcmp("铃声音量",plist->title) == 0) {
 			sprintf(plist->text,"%d%%",g_config.ring_volume);
 		} else if (strcmp("抓拍图像设置",plist->title) == 0) {
 			if (g_config.cap_doorbell.type == 0) {

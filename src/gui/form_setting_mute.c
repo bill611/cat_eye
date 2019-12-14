@@ -1,9 +1,9 @@
 /*
  * =============================================================================
  *
- *       Filename:  form_setting_timer.c
+ *       Filename:  form_setting_Mute.c
  *
- *    Description:  时间设置界面
+ *    Description:  免扰设置界面
  *
  *        Version:  1.0
  *        Created:  2018-03-01 23:32:41
@@ -17,32 +17,35 @@
 /* ---------------------------------------------------------------------------*
  *                      include head files
  *----------------------------------------------------------------------------*/
-#include "externfunc.h"
+#include <string.h>
 #include "screen.h"
-#include "config.h"
-#include "my_ntp.h"
 
+#include "iwlib.h"
 #include "my_button.h"
-#include "my_scroll.h"
 #include "my_title.h"
+#include "config.h"
+#include "externfunc.h"
+#include "thread_helper.h"
 
 #include "form_base.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
-extern int createFormSettingDate(HWND hMainWnd,void (*callback)(void));
-extern int createFormSettingTimeReal(HWND hMainWnd,void (*callback)(void));
+extern int createFormSettingTimeStart(HWND hMainWnd,void (*callback)(void),int time_buf,void (*saveCallback)(int ));
+extern int createFormSettingTimeEnd(HWND hMainWnd,void (*callback)(void),int time_buf,void (*saveCallback)(int ));
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
  *----------------------------------------------------------------------------*/
-static int formSettingTimerProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
+static int formSettingMuteProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
+static void MuteLoadData(void *ap_info,int ap_cnt);
 
 static void buttonTitleNotify(HWND hwnd, int id, int nc, DWORD add_data);
-static int buttonSwitchNotify(HWND hwnd,void (*callback)(void));
-static void reloadTimer(void);
+static void reloadTimer(HWND hwnd);
+static void saveStartTime(int time_buf);
+static void saveEndTime(int time_buf);
 
 /* ---------------------------------------------------------------------------*
  *                        macro define
@@ -55,60 +58,69 @@ static void reloadTimer(void);
 
 #define BMP_LOCAL_PATH "setting/"
 enum {
-	IDC_TIMER_1S = IDC_FORM_SETTING_TIEMR,
-	IDC_BUTTON_SWITCH,
+	IDC_TIMER_1S = IDC_FORM_SETTING_MUTE,
+	IDC_STATIC_IMG_WARNING,
+	IDC_STATIC_TEXT_WARNING,
+
 	IDC_SCROLLVIEW,
+
 	IDC_TITLE,
 };
 
+enum {
+	SCROLLVIEW_ITEM_TYPE_TITLE,
+	SCROLLVIEW_ITEM_TYPE_LIST,
+};
 
 struct ScrollviewItem {
 	char title[32]; // 左边标题
 	char text[32];  // 右边文字
-	int (*callback)(HWND,void (*callback)(void)); // 点击回调函数
+	int (*callback)(HWND,void (*)(void),int,void (*)(int) ); // 点击回调函数
+	void (*saveCallback)(int ); // 设置返回保存回调函数
 	int index;  // 元素位置
-	int item_type; // 0标准 1开关
-	int switch_state; // 当item_type为1时，此变量有效,0关闭，1开启
-	int text_color_type; // 文字颜色,0暗，1亮
+	int time_buf;  // 当前设定时间
 };
+
+// 控件滑动相关操作
+#define FILL_BMP_STRUCT(left,top,img)  \
+	FillBoxWithBitmap(hdc,left, top,img.bmWidth,img.bmHeight,&img)
 
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
-static BITMAP bmp_enter; // 进入
-static BITMAP image_swich_off;// 关闭状态图片
-static BITMAP image_swich_on;	// 打开状态图片
 static HWND hScrollView;
 static int bmp_load_finished = 0;
 static int flag_timer_stop = 0;
 
+static BITMAP bmp_warning; // 警告
+static BITMAP bmp_security; // 加密
+static BITMAP bmp_select; // 选中
+static BITMAP bmp_enter; // 进入
+
 static struct ScrollviewItem locoal_list[] = {
-	{"自动获取","",buttonSwitchNotify},
-	{"设置日期","",createFormSettingDate},
-	{"设置时间","",createFormSettingTimeReal},
+	{"开始时间","",createFormSettingTimeStart,saveStartTime},
+	{"结束时间","",createFormSettingTimeEnd,saveEndTime},
 	{0},
 };
 
 static BmpLocation bmp_load[] = {
+    {&bmp_warning,	BMP_LOCAL_PATH"ico_警告.png"},
+    {&bmp_security,	BMP_LOCAL_PATH"ico_lock.png"},
+    {&bmp_select,	BMP_LOCAL_PATH"ico_对.png"},
     {&bmp_enter,	BMP_LOCAL_PATH"ico_返回_1.png"},
-	{&image_swich_off,BMP_LOCAL_PATH"Switch Off_小.png"},
-	{&image_swich_on, BMP_LOCAL_PATH"Switch On_小.png"},
     {NULL},
 };
 
 static MY_CTRLDATA ChildCtrls [] = {
-    SCROLLVIEW(0,40,1024,580,IDC_SCROLLVIEW),
-};
-
-static MyCtrlButton ctrls_button[] = {
-	{0},
+    STATIC_IMAGE(452,216,120,120,IDC_STATIC_IMG_WARNING,(DWORD)&bmp_warning),
+    STATIC_LB(0,358,1024,25,IDC_STATIC_TEXT_WARNING,"免扰已关闭，请点击开关开启",&font20,0xffffff),
+    SCROLLVIEW(0,40,1024,390,IDC_SCROLLVIEW),
 };
 
 static MY_DLGTEMPLATE DlgInitParam =
 {
     WS_NONE,
-    // WS_EX_AUTOSECONDARYDC,
-	WS_EX_NONE,
+	WS_EX_NONE ,//| WS_EX_AUTOSECONDARYDC,
     0,0,SCR_WIDTH,SCR_HEIGHT,
     "",
     0, 0,       //menu and icon is null
@@ -118,21 +130,21 @@ static MY_DLGTEMPLATE DlgInitParam =
 };
 
 static FormBasePriv form_base_priv= {
-	.name = "FsetTimer",
+	.name = "FsetMute",
 	.idc_timer = IDC_TIMER_1S,
-	.dlgProc = formSettingTimerProc,
+	.dlgProc = formSettingMuteProc,
 	.dlgInitParam = &DlgInitParam,
 	.initPara =  initPara,
-	.auto_close_time_set = 30,
+	.auto_close_time_set = 10,
 };
 
 static MyCtrlTitle ctrls_title[] = {
 	{
-        IDC_TITLE, 
+        IDC_TITLE,
         MYTITLE_LEFT_EXIT,
-        MYTITLE_RIGHT_NULL,
+        MYTITLE_RIGHT_SWICH,
         0,0,1024,40,
-        "日期时间",
+        "免扰设置",
         "",
         0xffffff, 0x333333FF,
         buttonTitleNotify,
@@ -140,47 +152,80 @@ static MyCtrlTitle ctrls_title[] = {
 	{0},
 };
 
+static MyCtrlButton ctrls_button[] = {
+	{0},
+};
 static FormBase* form_base = NULL;
 
 static void enableAutoClose(void)
 {
-	reloadTimer();
+	reloadTimer(form_base->hDlg);
 	Screen.setCurrent(form_base_priv.name);
-	flag_timer_stop = 0;	
+	flag_timer_stop = 0;
 }
-static void reloadTimer(void)
+static void saveStartTime(int time_buf)
 {
-	int i;
-	SVITEMINFO svii;
-	struct ScrollviewItem *plist = locoal_list;
-    SendMessage (hScrollView, SVM_RESETCONTENT, 0, 0);
-	struct tm *tm = getTime();
-	for (i=0; plist->title[0] != 0; i++) {
-		plist->index = i;
-		plist->item_type = 0;
-		plist->text_color_type = 1;
-		svii.nItemHeight = 60;
-		svii.addData = (DWORD)plist;
-		svii.nItem = i;
-		if (strcmp("设置日期",plist->title) == 0) {
-			sprintf(plist->text,"%d年%d月%d日",tm->tm_year+1900,tm->tm_mon+1,tm->tm_mday);
-			if (g_config.auto_sync_time)
-				plist->text_color_type = 0;
-		} else if (strcmp("设置时间",plist->title) == 0) {
-			sprintf(plist->text,"%d:%02d",tm->tm_hour,tm->tm_min);
-			if (g_config.auto_sync_time)
-				plist->text_color_type = 0;
-		} else if (strcmp("自动获取",plist->title) == 0) {
-			plist->item_type = 1;
-			plist->switch_state = g_config.auto_sync_time;
-		}
-		SendMessage (hScrollView, SVM_ADDITEM, 0, (LPARAM)&svii);
-		SendMessage (hScrollView, SVM_SETITEMADDDATA, i, (DWORD)plist);
-		plist++;
-	}
+	g_config.mute.start_time = time_buf;	
+	ConfigSavePublic();
+}
+static void saveEndTime(int time_buf)
+{
+	g_config.mute.end_time = time_buf;	
+	ConfigSavePublic();
 }
 
-/* ----------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief reloadTimer 切换是否连接Mute
+ *
+ * @param hwnd
+ * @param on_off
+ */
+/* ---------------------------------------------------------------------------*/
+static void reloadTimer(HWND hwnd)
+{
+    if (g_config.mute.state) {
+		int i;
+		SVITEMINFO svii;
+		struct ScrollviewItem *plist = locoal_list;
+		SendMessage (hScrollView, SVM_RESETCONTENT, 0, 0);
+		for (i=0; plist->title[0] != 0; i++) {
+			plist->index = i;
+			svii.nItemHeight = 60;
+			svii.addData = (DWORD)plist;
+			svii.nItem = i;
+			if (strcmp("开始时间",plist->title) == 0) {
+				plist->time_buf = g_config.mute.start_time;
+				sprintf(plist->text,"%d:%02d",plist->time_buf / 60,plist->time_buf % 60);
+			} else if (strcmp("结束时间",plist->title) == 0) {
+				plist->time_buf = g_config.mute.end_time;
+				sprintf(plist->text,"%d:%02d",plist->time_buf / 60,plist->time_buf % 60);
+			}
+			SendMessage (hScrollView, SVM_ADDITEM, 0, (LPARAM)&svii);
+			SendMessage (hScrollView, SVM_SETITEMADDDATA, i, (DWORD)plist);
+			plist++;
+		}
+        ShowWindow(GetDlgItem(hwnd,IDC_STATIC_IMG_WARNING),SW_HIDE);
+        ShowWindow(GetDlgItem(hwnd,IDC_STATIC_TEXT_WARNING),SW_HIDE);
+        ShowWindow(GetDlgItem(hwnd,IDC_SCROLLVIEW),SW_SHOWNORMAL);
+    } else {
+        ShowWindow(GetDlgItem(hwnd,IDC_STATIC_IMG_WARNING),SW_SHOWNORMAL);
+        ShowWindow(GetDlgItem(hwnd,IDC_STATIC_TEXT_WARNING),SW_SHOWNORMAL);
+        ShowWindow(GetDlgItem(hwnd,IDC_SCROLLVIEW),SW_HIDE);
+    }
+}
+
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief saveConfigCallback 切换Mute开关，保存配置后回调函数
+ */
+/* ---------------------------------------------------------------------------*/
+static void saveConfigCallback(void)
+{
+	reloadTimer(form_base->hDlg);
+}
+
+/* ---------------------------------------------------------------------------*/
 /**
  * @brief buttonTitleNotify 标题按钮
  *
@@ -189,32 +234,20 @@ static void reloadTimer(void)
  * @param nc
  * @param add_data
  */
-/* ----------------------------------------------------------------*/
+/* ---------------------------------------------------------------------------*/
 static void buttonTitleNotify(HWND hwnd, int id, int nc, DWORD add_data)
 {
-	ShowWindow(GetParent(hwnd),SW_HIDE);
-}
-
-static int buttonSwitchNotify(HWND hwnd,void (*callback)(void))
-{
-	g_config.auto_sync_time = hwnd;	
-	ntpEnable(g_config.auto_sync_time);
-	ConfigSavePublic();
-	reloadTimer();
-}
-
-void formSettingTimerLoadBmp(void)
-{
-    if (bmp_load_finished == 1)
-        return;
-
-	printf("[%s]\n", __FUNCTION__);
-    bmpsLoad(bmp_load);
-    bmp_load_finished = 1;
+	if (nc == MYTITLE_BUTTON_EXIT) {
+		ShowWindow(GetParent(hwnd),SW_HIDE);
+	}
+    else if (nc == MYTITLE_BUTTON_SWICH) {
+        g_config.mute.state = add_data;
+		ConfigSavePublicCallback(saveConfigCallback);
+    }
 }
 /* ---------------------------------------------------------------------------*/
 /**
- * @brief scrollviewNotify 
+ * @brief scrollviewNotify
  *
  * @param hwnd
  * @param id
@@ -234,16 +267,30 @@ static void scrollviewNotify(HWND hwnd, int id, int nc, DWORD add_data)
 		return;
 	if (!plist->callback)
 		return;
-	if (plist->item_type == 0 && g_config.auto_sync_time == 0) {
-		flag_timer_stop = 1;
-		plist->callback(hwnd,enableAutoClose);
-	} else if (plist->item_type == 1){
-		plist->switch_state ^= 1;
-		plist->callback(plist->switch_state,NULL);
-		InvalidateRect (hwnd, NULL, TRUE);
-	}
+	flag_timer_stop = 1;
+	plist->callback(hwnd,enableAutoClose,plist->time_buf,plist->saveCallback);
 }
 
+void formSettingMuteLoadBmp(void)
+{
+    if (bmp_load_finished == 1)
+        return;
+
+	printf("[%s]\n", __FUNCTION__);
+    bmpsLoad(bmp_load);
+    bmp_load_finished = 1;
+}
+
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief myDrawItem 列表自定义绘图函数
+ *
+ * @param hWnd
+ * @param hsvi
+ * @param hdc
+ * @param rcDraw
+ */
+/* ---------------------------------------------------------------------------*/
 static void myDrawItem (HWND hWnd, HSVITEM hsvi, HDC hdc, RECT *rcDraw)
 {
 #define FILL_BMP_STRUCT(left,top,img)  \
@@ -264,28 +311,31 @@ static void myDrawItem (HWND hWnd, HSVITEM hsvi, HDC hdc, RECT *rcDraw)
 	SetBkMode (hdc, BM_TRANSPARENT);
 	SetTextColor (hdc, PIXEL_lightwhite);
 	SelectFont (hdc, font20);
-	if (p_item->callback && p_item->item_type == 0)
+	if (p_item->callback)
 		FILL_BMP_STRUCT(rcDraw->left + 968,rcDraw->top + 15,bmp_enter);
-	if (p_item->item_type == 1) {
-		if (p_item->switch_state)
-			FILL_BMP_STRUCT(rcDraw->left + 968,rcDraw->top + 15,image_swich_on);
-		else
-			FILL_BMP_STRUCT(rcDraw->left + 968,rcDraw->top + 15,image_swich_off);
-	}
 	// 绘制表格
 	DRAW_TABLE(rcDraw,0,0xCCCCCC);
-	if (p_item->text_color_type)
-		SetTextColor (hdc, RGBA2Pixel (hdc, 0xCC, 0xCC, 0xCC, 0xFF));
-	else
-		SetTextColor (hdc, RGBA2Pixel (hdc, 0x99, 0x99, 0x99, 0xFF));
 	// 输出文字
 	TextOut (hdc, rcDraw->left + 30, rcDraw->top + 15, p_item->title);
 	RECT rc;
 	memcpy(&rc,rcDraw,sizeof(RECT));
 	rc.left += 512;
 	rc.right -= 70;
+	SetTextColor (hdc, 0xCCCCCC);
 	DrawText (hdc,p_item->text, -1, &rc,
 			DT_VCENTER | DT_RIGHT | DT_WORDBREAK  | DT_SINGLELINE);
+}
+
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief MuteLoadData 重新加载Mute列表
+ *
+ * @param aps
+ * @param ap_cnt
+ */
+/* ---------------------------------------------------------------------------*/
+static void MuteLoadData(void *aps,int ap_cnt)
+{
 }
 /* ----------------------------------------------------------------*/
 /**
@@ -310,12 +360,14 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
     }
 	hScrollView = GetDlgItem (hDlg, IDC_SCROLLVIEW);
 	SendMessage (hScrollView, SVM_SETITEMDRAW, 0, (LPARAM)myDrawItem);
-	reloadTimer();
+	SendMessage(GetDlgItem(hDlg,IDC_TITLE),
+            MSG_MYTITLE_SET_SWICH, (WPARAM)g_config.mute.state, 0);
+    reloadTimer(form_base->hDlg);
 }
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief formSettingTimerProc 窗口回调函数
+ * @brief formSettingMuteProc 窗口回调函数
  *
  * @param hDlg
  * @param message
@@ -325,8 +377,9 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
  * @return
  */
 /* ----------------------------------------------------------------*/
-static int formSettingTimerProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
+static int formSettingMuteProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 {
+    HDC         hdc;
     switch(message) // 自定义消息
     {
 		case MSG_TIMER:
@@ -356,12 +409,12 @@ static int formSettingTimerProc(HWND hDlg, int message, WPARAM wParam, LPARAM lP
     return DefaultDialogProc(hDlg, message, wParam, lParam);
 }
 
-int createFormSettingTimer(HWND hMainWnd,void (*callback)(void))
+int createFormSettingMute(HWND hMainWnd,void (*callback)(void))
 {
 	HWND Form = Screen.Find(form_base_priv.name);
 	if(Form) {
 		Screen.setCurrent(form_base_priv.name);
-		reloadTimer();
+        reloadTimer(form_base->hDlg);
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
         if (bmp_load_finished == 0) {

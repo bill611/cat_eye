@@ -1,9 +1,9 @@
 /*
  * =============================================================================
  *
- *       Filename:  form_setting.c
+ *       Filename:  form_setting_Time.c
  *
- *    Description:  设置界面
+ *    Description:  时间设置界面
  *
  *        Version:  1.0
  *        Created:  2018-03-01 23:32:41
@@ -19,8 +19,11 @@
  *----------------------------------------------------------------------------*/
 #include "externfunc.h"
 #include "screen.h"
+#include "config.h"
+#include "my_audio.h"
 
 #include "my_button.h"
+#include "my_scroll.h"
 #include "my_title.h"
 
 #include "form_base.h"
@@ -28,31 +31,14 @@
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
-extern int createFormSettingWifi(HWND hMainWnd,void (*callback)(void));
-extern int createFormSettingLocoal(HWND hMainWnd,void (*callback)(void));
-extern int createFormSettingDoorbell(HWND hMainWnd,void (*callback)(void));
-extern int createFormSettingAlarm(HWND hMainWnd,void (*callback)(void));
-extern int createFormSettingBrightness(HWND hMainWnd,void (*callback)(void));
-extern int createFormSettingTimer(HWND hMainWnd,void (*callback)(void));
-extern int createFormSettingMute(HWND hMainWnd,void (*callback)(void));
-extern void topMsgFactory(void (*fConfirm)(void));
-extern void configFactory(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
  *----------------------------------------------------------------------------*/
-static int formSettingProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
+static int formSettingTimeProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 
 static void buttonExitPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonWifiPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonScreenPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonDoorBellPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonTimerPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonMutePress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonAlarmPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonFactoryPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonLocalPress(HWND hwnd, int id, int nc, DWORD add_data);
 
 /* ---------------------------------------------------------------------------*
  *                        macro define
@@ -65,17 +51,11 @@ static void buttonLocalPress(HWND hwnd, int id, int nc, DWORD add_data);
 
 #define BMP_LOCAL_PATH "setting/"
 enum {
-	IDC_TIMER_1S = IDC_FORM_SETTING_START,
+	IDC_TIMER_1S = IDC_FORM_SETTING_TIME,
 	IDC_BUTTON_EXIT,
-	IDC_BUTTON_WIFI,
-	IDC_BUTTON_SCREEN,
-	IDC_BUTTON_DOORBELL,
-	IDC_BUTTON_TIMER,
-	IDC_BUTTON_MUTE,
-	IDC_BUTTON_ALARM,
-	IDC_BUTTON_FACTORY,
-	IDC_BUTTON_LOCAL,
-
+	IDC_BUTTON_TITLE,
+	IDC_MYSCROLL_HOUR,
+	IDC_MYSCROLL_MIN,
 	IDC_TITLE,
 };
 
@@ -83,20 +63,27 @@ enum {
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
-static BITMAP bmp_bkg_setting; // 背景
-
 static int bmp_load_finished = 0;
-static int flag_timer_stop = 0;
+static int flag_Time_stop = 0;
+static int time_now = 0;
+static void (*timeSaveCallback)(int );
 
 static BmpLocation bmp_load[] = {
-    // {&bmp_bkg_setting,BMP_LOCAL_PATH"bkg_setting.png"},
     {NULL},
 };
 
 static MY_CTRLDATA ChildCtrls [] = {
 };
 
+static MyCtrlButton ctrls_button[] = {
+	{0},
+};
 
+static MyCtrlScroll ctrls_scroll[] = {
+	{IDC_MYSCROLL_HOUR,	0,"时",0, 23,	287,100,180,400},
+	{IDC_MYSCROLL_MIN,	0,"分",0, 59,	558,100,180,400},
+	{0},
+};
 static MY_DLGTEMPLATE DlgInitParam =
 {
     WS_NONE,
@@ -111,31 +98,21 @@ static MY_DLGTEMPLATE DlgInitParam =
 };
 
 static FormBasePriv form_base_priv= {
-	.name = "Fset",
+	.name = "FsetTime",
 	.idc_timer = IDC_TIMER_1S,
-	.dlgProc = formSettingProc,
+	.dlgProc = formSettingTimeProc,
 	.dlgInitParam = &DlgInitParam,
 	.initPara =  initPara,
+	.auto_close_time_set = 30,
 };
 
-static MyCtrlButton ctrls_button[] = {
-	{IDC_BUTTON_WIFI,	 MYBUTTON_TYPE_TWO_STATE,"wifi设置",99,	129,buttonWifiPress},
-	{IDC_BUTTON_SCREEN,	 MYBUTTON_TYPE_TWO_STATE,"屏幕设置",338,129,buttonScreenPress},
-	{IDC_BUTTON_DOORBELL,MYBUTTON_TYPE_TWO_STATE,"门铃设置",577,129,buttonDoorBellPress},
-	{IDC_BUTTON_TIMER,	 MYBUTTON_TYPE_TWO_STATE,"时间设置",817,129,buttonTimerPress},
-	{IDC_BUTTON_MUTE,	 MYBUTTON_TYPE_TWO_STATE,"免扰设置",99,	366,buttonMutePress},
-	{IDC_BUTTON_ALARM,	 MYBUTTON_TYPE_TWO_STATE,"报警设置",338,366,buttonAlarmPress},
-	{IDC_BUTTON_FACTORY, MYBUTTON_TYPE_TWO_STATE,"恢复出厂",577,366,buttonFactoryPress},
-	{IDC_BUTTON_LOCAL,	 MYBUTTON_TYPE_TWO_STATE,"本机设置",817,366,buttonLocalPress},
-	{0},
-};
 static MyCtrlTitle ctrls_title[] = {
 	{
         IDC_TITLE, 
         MYTITLE_LEFT_EXIT,
         MYTITLE_RIGHT_NULL,
         0,0,1024,40,
-        "设置",
+        "时间设置",
         "",
         0xffffff, 0x333333FF,
         buttonExitPress,
@@ -148,73 +125,13 @@ static FormBase* form_base = NULL;
 static void enableAutoClose(void)
 {
 	Screen.setCurrent(form_base_priv.name);
-	flag_timer_stop = 0;	
-}
-/* ----------------------------------------------------------------*/
-/**
- * @brief buttonWifiPress wifi设置
- *
- * @param hwnd
- * @param id
- * @param nc
- * @param add_data
- */
-/* ----------------------------------------------------------------*/
-static void buttonWifiPress(HWND hwnd, int id, int nc, DWORD add_data)
-{
-	if (nc != BN_CLICKED)
-		return;
-	flag_timer_stop = 1;
-    createFormSettingWifi(GetParent(hwnd),enableAutoClose);
-}
-static void buttonScreenPress(HWND hwnd, int id, int nc, DWORD add_data)
-{
-	if (nc != BN_CLICKED)
-		return;
-	flag_timer_stop = 1;
-    createFormSettingBrightness(GetParent(hwnd),enableAutoClose);
-}
-static void buttonDoorBellPress(HWND hwnd, int id, int nc, DWORD add_data)
-{
-	if (nc != BN_CLICKED)
-		return;
-	flag_timer_stop = 1;
-    createFormSettingDoorbell(GetParent(hwnd),enableAutoClose);
-}
-static void buttonTimerPress(HWND hwnd, int id, int nc, DWORD add_data)
-{
-	if (nc != BN_CLICKED)
-		return;
-	flag_timer_stop = 1;
-    createFormSettingTimer(GetParent(hwnd),enableAutoClose);
-}
-static void buttonMutePress(HWND hwnd, int id, int nc, DWORD add_data)
-{
-	if (nc != BN_CLICKED)
-		return;
-	flag_timer_stop = 1;
-    createFormSettingMute(GetParent(hwnd),enableAutoClose);
-}
-static void buttonAlarmPress(HWND hwnd, int id, int nc, DWORD add_data)
-{
-	if (nc != BN_CLICKED)
-		return;
-	flag_timer_stop = 1;
-    createFormSettingAlarm(GetParent(hwnd),enableAutoClose);
-}
-static void buttonFactoryPress(HWND hwnd, int id, int nc, DWORD add_data)
-{
-	if (nc != BN_CLICKED)
-		return;
-	topMsgFactory(configFactory);
+	flag_Time_stop = 0;	
 }
 
-static void buttonLocalPress(HWND hwnd, int id, int nc, DWORD add_data)
+static void reloadTime(void)
 {
-	if (nc != BN_CLICKED)
-		return;
-	flag_timer_stop = 1;
-    createFormSettingLocoal(GetParent(hwnd),enableAutoClose);
+    SendMessage(GetDlgItem(form_base->hDlg,IDC_MYSCROLL_HOUR),MSG_SET_NUM,time_now / 60,0);
+    SendMessage(GetDlgItem(form_base->hDlg,IDC_MYSCROLL_MIN),MSG_SET_NUM,time_now % 60,0);
 }
 
 /* ----------------------------------------------------------------*/
@@ -229,17 +146,25 @@ static void buttonLocalPress(HWND hwnd, int id, int nc, DWORD add_data)
 /* ----------------------------------------------------------------*/
 static void buttonExitPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
+	struct tm *tm = getTime();
+    int hour = SendMessage(GetDlgItem(form_base->hDlg,IDC_MYSCROLL_HOUR),MSG_GET_NUM,0,0);
+    int min = SendMessage(GetDlgItem(form_base->hDlg,IDC_MYSCROLL_MIN),MSG_GET_NUM,0,0);
+	if (timeSaveCallback) {
+		time_now = hour * 60 + min;			
+	} else {
+		adjustdate(tm->tm_year+1900,tm->tm_mon+1,tm->tm_mday,hour,min,0);
+	}
 	ShowWindow(GetParent(hwnd),SW_HIDE);
 }
 
-void formSettingLoadBmp(void)
+void formSettingTimeLoadBmp(void)
 {
     if (bmp_load_finished == 1)
         return;
 
 	printf("[%s]\n", __FUNCTION__);
     bmpsLoad(bmp_load);
-    my_button->bmpsLoad(ctrls_button,BMP_LOCAL_PATH);	
+	my_scroll->bmpsLoad(ctrls_scroll,BMP_LOCAL_PATH);
     bmp_load_finished = 1;
 }
 
@@ -264,11 +189,15 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
         ctrls_button[i].font = font22;
         createMyButton(hDlg,&ctrls_button[i]);
     }
+    for (i=0; ctrls_scroll[i].idc != 0; i++) {
+        ctrls_scroll[i].font = font22;
+        createMyScroll(hDlg,&ctrls_scroll[i]);
+    }
 }
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief formSettingProc 窗口回调函数
+ * @brief formSettingTimeProc 窗口回调函数
  *
  * @param hDlg
  * @param message
@@ -278,21 +207,32 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
  * @return
  */
 /* ----------------------------------------------------------------*/
-static int formSettingProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
+static int formSettingTimeProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 {
     switch(message) // 自定义消息
     {
 		case MSG_TIMER:
 			{
-				if (flag_timer_stop)
+				if (flag_Time_stop)
 					return 0;
 			} break;
 
+		case MSG_FORM_SETTING_TIME_SET_TIME:
+			time_now = wParam;
+			reloadTime();
+			break;
+		case MSG_SHOWWINDOW:
+			{
+				if (wParam == SW_HIDE) {
+					if (timeSaveCallback)				
+						timeSaveCallback(time_now);
+				}
+			}break;
 		case MSG_ENABLE_WINDOW:
 			enableAutoClose();
 			break;
 		case MSG_DISABLE_WINDOW:
-			flag_timer_stop = 1;
+			flag_Time_stop = 1;
 			break;
         default:
             break;
@@ -302,17 +242,16 @@ static int formSettingProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
     return DefaultDialogProc(hDlg, message, wParam, lParam);
 }
 
-int createFormSetting(HWND hMainWnd,void (*callback)(void))
+int createFormSettingTime(HWND hMainWnd,void (*callback)(void))
 {
 	HWND Form = Screen.Find(form_base_priv.name);
 	if(Form) {
 		Screen.setCurrent(form_base_priv.name);
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
-        if (bmp_load_finished == 0) {
-            // topMessage(hMainWnd,TOPBOX_ICON_LOADING,NULL );
-            return 0;
-        }
+		if (bmp_load_finished == 0) {
+			return 0;
+		}
 		form_base_priv.callBack = callback;
 		form_base = formBaseCreate(&form_base_priv);
 		return CreateMyWindowIndirectParam(form_base->priv->dlgInitParam,
@@ -322,3 +261,29 @@ int createFormSetting(HWND hMainWnd,void (*callback)(void))
 	return 0;
 }
 
+int createFormSettingTimeReal(HWND hMainWnd,void (*callback)(void))
+{
+	struct tm *tm = getTime();
+	timeSaveCallback = NULL;
+	createFormSettingTime(hMainWnd,callback);
+	SendMessage(GetDlgItem(form_base->hDlg,IDC_TITLE),
+			MSG_MYTITLE_SET_TITLE,(WPARAM)"时间设置",0);
+	SendMessage(form_base->hDlg, MSG_FORM_SETTING_TIME_SET_TIME,
+			tm->tm_hour * 60 + tm->tm_min,0);
+}
+int createFormSettingTimeStart(HWND hMainWnd,void (*callback)(void),int time_buf,void (*saveCallback)(int ))
+{
+	timeSaveCallback = saveCallback;
+	createFormSettingTime(hMainWnd,callback);
+	SendMessage(GetDlgItem(form_base->hDlg,IDC_TITLE),
+			MSG_MYTITLE_SET_TITLE,(WPARAM)"开始时间",0);
+	SendMessage(form_base->hDlg, MSG_FORM_SETTING_TIME_SET_TIME, time_buf,0);
+}
+int createFormSettingTimeEnd(HWND hMainWnd,void (*callback)(void),int time_buf,void (*saveCallback)(int ))
+{
+	timeSaveCallback = saveCallback;
+	createFormSettingTime(hMainWnd,callback);
+	SendMessage(GetDlgItem(form_base->hDlg,IDC_TITLE),
+			MSG_MYTITLE_SET_TITLE,(WPARAM)"结束时间",0);
+	SendMessage(form_base->hDlg, MSG_FORM_SETTING_TIME_SET_TIME, time_buf,0);
+}

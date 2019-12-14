@@ -224,16 +224,12 @@ static void enableAutoClose(void)
 static void updateTime(void)
 {
 	// 更新时间 
-	static struct tm *tm_old = NULL;
+	static struct tm tm_old;
     char buf[16] = {0};
 	struct tm *tm = getTime();
-	if ((tm_old == NULL) || (tm_old->tm_hour != tm->tm_hour) || (tm_old->tm_min != tm->tm_min)) {
-		tm_old = tm; 
-		if (tm->tm_hour > 12) {
-			sprintf(buf,"%d:%02d PM",tm->tm_hour-12,tm->tm_min);
-		} else {
-			sprintf(buf,"%d:%02d AM",tm->tm_hour,tm->tm_min);
-		}
+	if ((tm_old.tm_hour != tm->tm_hour) || (tm_old.tm_min != tm->tm_min)) {
+		memcpy(&tm_old,tm,sizeof(struct tm));
+		sprintf(buf,"%d:%02d",tm->tm_hour,tm->tm_min);
 		SendMessage(GetDlgItem (form_base->hDlg, IDC_MYSTATIC_DATE),
 				MSG_MYSTATIC_SET_TITLE,(WPARAM)buf,0);
 	}

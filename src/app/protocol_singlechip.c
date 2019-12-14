@@ -166,8 +166,10 @@ static void deal(IpcData *ipc_data)
 				if (my_video->isTalking())
 					topMsgDoorbell();
 				else if (ipc_data->need_ring){
-					excuteCmd("busybox","killall","aplay",NULL);
-					excuteCmd("/data/play.sh","/data/dingdong.wav",NULL);
+					if (isNeedToPlay()) {
+						excuteCmd("busybox","killall","aplay",NULL);
+						excuteCmd("/data/play.sh","/data/dingdong.wav",NULL);
+					}
 				}
 				formVideoLayerScreenOn();
 				my_video->videoCallOutAll();

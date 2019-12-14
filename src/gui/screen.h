@@ -23,8 +23,12 @@ extern "C" {
 
 #include "commongdi.h"
 
-#define MSG_ENABLE_WINDOW MSG_USER + 100
-#define MSG_DISABLE_WINDOW MSG_USER + 101
+	enum {
+		MSG_ENABLE_WINDOW  = MSG_USER + 100,
+		MSG_DISABLE_WINDOW,
+		MSG_FORM_SETTING_TIME_SET_TIME,
+		MSG_FORM_SETTING_TIME_GET_TIME,
+	};
 
 	typedef struct _Formclass {
 		HWND hWnd;

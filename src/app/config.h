@@ -151,6 +151,11 @@ extern "C" {
 		int count; // 抓拍图片数量
 		int timer; // 录像时间长短
 	};
+	struct Mute {
+		int state;      // 0关闭免扰 1打开免扰
+		int start_time; // 免扰开始时间
+		int end_time;   // 免扰结束时间
+	};
 	typedef struct _Config {
         char imei[64 + 1];         // 设备机身码
         char hardcode[64 + 1];     // 设备硬件码
@@ -170,7 +175,8 @@ extern "C" {
 		int  screensaver_time;   // 息屏时间
 		int  brightness;   // 屏幕亮度
 		int  record_time;  // 主界面录像倒计时时间
-		int  mute;  // 是否免扰模式
+		struct Mute  mute;  // 免扰模式参数
+		int  auto_sync_time;  // 是否自动同步时间
 
 		struct wifiLowPower wifi_lowpower; // 低功耗wifi参数
 		struct CapType cap_doorbell;// 按门铃抓拍或录像

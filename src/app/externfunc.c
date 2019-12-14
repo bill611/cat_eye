@@ -168,7 +168,7 @@ int adjustdate(int year,int mon,int mday,int hour,int min,int sec)
 			return -1;
 		}
 	}
-	if (ioctl( rtc, RTC_SET_TIME, &nowtime ) < 0 ) {
+	if (ioctl(rtc, RTC_SET_TIME, &nowtime ) < 0 ) {
 		printf("Could not set the RTC time\n");
 		close(rtc);
 		return -1;

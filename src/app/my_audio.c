@@ -44,6 +44,32 @@
 static int loop_start = 0;
 static int loop_end = 1;
 
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief isNeedToPlay 判断是否在免扰时候可以播放音频
+ *
+ * @returns 0 不播放 1播放
+ */
+/* ---------------------------------------------------------------------------*/
+int isNeedToPlay(void)
+{
+	if (g_config.mute.state == 0)		
+		return 1;
+	struct tm *tm = getTime();
+	int time_now = tm->tm_hour * 60 + tm->tm_min;
+	if (g_config.mute.start_time <= g_config.mute.end_time) {
+		if (time_now >= g_config.mute.start_time && time_now <= g_config.mute.end_time)
+			return 0;
+		else 
+			return 1;
+	} else {
+		if (time_now <= g_config.mute.end_time)	
+			return 1;
+		if (time_now >= g_config.mute.start_time)
+			return 1;
+		return 0;
+	}
+}
 void myAudioStopPlay(void)
 {
 	loop_start = 0;
@@ -52,6 +78,8 @@ void myAudioStopPlay(void)
 
 void myAudioPlayRecognizer(char *usr_name)
 {
+	if (isNeedToPlay() == 0)
+		return;
 	char path[64];
 	sprintf(path,"%s%s.wav",AUDIO_PATH,usr_name);	
 	playwavfile(path);		
@@ -74,6 +102,8 @@ static void* loopPlay(void *arg)
 }
 void myAudioPlayRing(void)
 {
+	if (isNeedToPlay() == 0)
+		return;
 	if (loop_start == 1)
 		return;
 	while (loop_end == 0) {
@@ -97,6 +127,8 @@ static void* oncePlay(void *arg)
 }
 void myAudioPlayRingOnce(void)
 {
+	if (isNeedToPlay() == 0)
+		return;
 	char *path = (char *) calloc(1,64);
 	myAudioStopPlay();
 	sprintf(path,"%sring%d.wav",AUDIO_PATH,g_config.ring_num);	

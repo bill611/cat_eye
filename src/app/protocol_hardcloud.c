@@ -111,7 +111,7 @@ struct QueueList {
 ProtocolHardcloud *protocol_hardcloud;
 static MyHttp *http = NULL;
 static MyMqtt *mqtt = NULL;
-static int mqtt_connect_state,ntp_connect_state;
+static int mqtt_connect_state;
 static int heart_start = 0;
 static int heart_end = 0;
 static struct DebugInfo dbg_info[] = {
@@ -226,7 +226,7 @@ static void mqttConnectSuccess(void* context)
 		if (subTopic[i][0] != '\0')
 			mqtt->subcribe(subTopic[i], mqttSubcribeSuccess, mqttSubcribeFailure);
 	}
-	ntp_connect_state = 1;
+	mqtt_connect_state = 1;
 }
 static void mqttConnectFailure(void* context)
 {
@@ -637,7 +637,7 @@ static void getIntercoms(void)
 
 static void ntpGetTimeCallback(void)
 {
-	mqtt_connect_state = 1;
+	printf("sync net time\n");
 }
 
 static void waitConnectService(void)
@@ -906,7 +906,7 @@ static void* getIntercomsThread(void *arg)
 {
 	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	while (1) {
-		if (mqtt_connect_state && ntp_connect_state) {
+		if (mqtt_connect_state) {
 			getIntercoms();
 			break;
 		}
@@ -1237,18 +1237,17 @@ void registHardCloud(void)
 	protocol_hardcloud->enableSleepMpde = enableSleepMpde;
 
 	mqtt_connect_state = 0;
-	ntp_connect_state = 0;
 	tcpClientInit();
 	http = myHttpCreate();
 	mqtt = myMqttCreate();
-	// createThread(initThread,NULL);
-	// createThread(tcpHeartThread,NULL);
-	// createThread(getIntercomsThread,NULL);
-	// createThread(threadUpload,NULL);
-	// createThread(threadReportCapture,NULL);
-	// createThread(threadReportAlarm,NULL);
-	// createThread(threadReportFace,NULL);
-	// createThread(threadReportTalk,NULL);
-
+	createThread(initThread,NULL);
+	createThread(tcpHeartThread,NULL);
+	createThread(getIntercomsThread,NULL);
+	createThread(threadUpload,NULL);
+	createThread(threadReportCapture,NULL);
+	createThread(threadReportAlarm,NULL);
+	createThread(threadReportFace,NULL);
+	createThread(threadReportTalk,NULL);
+	ntpEnable(g_config.auto_sync_time);
 }
 

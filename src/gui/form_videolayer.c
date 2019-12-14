@@ -64,6 +64,8 @@ extern void formSettingPirTimerLoadBmp(void);
 extern void formSettingBrightnessLoadBmp(void);
 extern void formSettingTimerLoadBmp(void);
 extern void formSettingDateLoadBmp(void);
+extern void formSettingTimeLoadBmp(void);
+extern void formSettingMuteLoadBmp(void);
 
 extern void formVideoInitInterface(void);
 /* ---------------------------------------------------------------------------*
@@ -139,6 +141,8 @@ static InitBmpFunc load_bmps_func[] = {
 	formSettingBrightnessLoadBmp,
 	formSettingTimerLoadBmp,
 	formSettingDateLoadBmp,
+	formSettingTimeLoadBmp,
+	formSettingMuteLoadBmp,
 	NULL,
 };
 

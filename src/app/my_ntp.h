@@ -22,6 +22,7 @@ extern "C" {
 #endif  /* __cplusplus */
 
 	void ntpTime(char *server_ip,void (*callBack)(void));
+	void ntpEnable(int enable);
 
 #ifdef __cplusplus
 }

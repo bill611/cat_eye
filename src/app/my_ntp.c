@@ -94,7 +94,9 @@ typedef struct
  *                      variables define
  *----------------------------------------------------------------------------*/
 static void (*getTimeCallBcak)(void);
-// extern ntpServer[32];
+static int need_update = 0; // 是否需要同步网络时间
+static long update_period = 0; // 更新周期，减为0时立即更新
+static pthread_mutex_t mutex ;
 static void ntpSendPacket(int fd)
 {
     unsigned int data[12];
@@ -250,9 +252,22 @@ static void *ntpTimeThread(void *arg)
 		goto end_thread;
     }
 
-    ntpSendPacket(sock);
-
-    while (1) {
+	do {
+		if (!need_update) {
+			sleep(1);
+			continue;
+		}
+		if (update_period) {
+			pthread_mutex_lock(&mutex);
+			update_period--;
+			pthread_mutex_unlock(&mutex);
+			if (update_period > 0) {
+				sleep(1);
+				continue;
+			}
+		}
+		//发送 ntp 包
+		ntpSendPacket(sock);
         fd_set fds_read;
         FD_ZERO(&fds_read);
         FD_SET(sock, &fds_read);
@@ -263,23 +278,22 @@ static void *ntpTimeThread(void *arg)
         ret = select(sock + 1, &fds_read, NULL, NULL, &timeout);
         if (ret == -1) {
             PDEBUG("select函数出错，被迫终止 !\n");
-			goto end_thread;
+			break;
         }
         if (ret == 0) {
             PDEBUG("等待服务器响应超时，重发请求 !\n");
-            //向服务器发送数据
-            ntpSendPacket(sock);
+            sleep(1);
             continue;
         }
         if (FD_ISSET(sock, &fds_read)) {
             if (1 == ntpGetServerTime(sock, &newtime))
                 continue;
             ntpModLocalTime(newtime);
-            sleep(60*60*24);
-            //发送 ntp 包
-            ntpSendPacket(sock);
+			pthread_mutex_lock(&mutex);
+			update_period = 60*60*24;
+			pthread_mutex_unlock(&mutex);
         }
-    }
+	} while (1);
 
 end_thread:
     close(sock);
@@ -289,6 +303,22 @@ end_thread:
 void ntpTime(char *server_ip,void (*callBack)(void))
 {
 	getTimeCallBcak = callBack;
+
+	pthread_mutexattr_t mutexattr;
+	pthread_mutexattr_init(&mutexattr);
+    pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE_NP);
+    pthread_mutex_init(&mutex, &mutexattr);
+    pthread_mutexattr_destroy(&mutexattr);
+
 	if (server_ip)
 		createThread(ntpTimeThread,server_ip);
+}
+
+void ntpEnable(int enable)
+{
+	need_update = enable;
+    pthread_mutex_lock(&mutex);
+	update_period = 0;
+    pthread_mutex_unlock(&mutex);
+
 }
