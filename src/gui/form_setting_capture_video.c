@@ -1,9 +1,9 @@
 /*
  * =============================================================================
  *
- *       Filename:  form_setting_Doorbell.c
+ *       Filename:  form_setting_CaptureVideo.c
  *
- *    Description:  Doorbell设置界面
+ *    Description:  CaptureVideo设置界面
  *
  *        Version:  1.0
  *        Created:  2019-12-05 23:32:41
@@ -31,17 +31,17 @@
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
-extern int createFormSettingCaptureVideo(HWND hMainWnd,void (*callback)(void));
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
  *----------------------------------------------------------------------------*/
-static int formSettingDoorbellProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
+static int formSettingCaptureVideoProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
-static void loadDoorbellData(void);
+static void loadCaptureVideoData(void);
 
 static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data);
-static int buttonSwitchNotify(HWND hwnd,void (*callback)(void));
+static int buttonSwitchCaptureNotify(HWND hwnd,void (*callback)(void));
+static int buttonSwitchVideoNotify(HWND hwnd,void (*callback)(void));
 
 /* ---------------------------------------------------------------------------*
  *                        macro define
@@ -87,16 +87,18 @@ static int flag_timer_stop = 0;
 // static struct ScrollviewItem *locoal_list;
 // TEST
 static struct ScrollviewItem locoal_list[] = {
-	{"抓拍图像设置","",createFormSettingCaptureVideo},
-	{"人脸识别设置","",buttonSwitchNotify},
+	{"拍照","",buttonSwitchCaptureNotify},
+	{"录像","",buttonSwitchVideoNotify},
+	{"  ","",NULL},
+	{"拍照设置","",NULL},
 	{0},
 };
 
 
 static BmpLocation bmp_load[] = {
     {&bmp_enter,	BMP_LOCAL_PATH"ico_返回_1.png"},
-	{&image_swich_off,BMP_LOCAL_PATH"Switch Off_小.png"},
-	{&image_swich_on, BMP_LOCAL_PATH"Switch On_小.png"},
+	{&image_swich_off,BMP_LOCAL_PATH"ico_check_nor.png"},
+	{&image_swich_on, BMP_LOCAL_PATH"ico_check_pre.png"},
     {NULL},
 };
 
@@ -118,9 +120,9 @@ static MY_DLGTEMPLATE DlgInitParam =
 };
 
 static FormBasePriv form_base_priv= {
-	.name = "FsetDoorbell",
+	.name = "FsetCaptureVideo",
 	.idc_timer = IDC_TIMER_1S,
-	.dlgProc = formSettingDoorbellProc,
+	.dlgProc = formSettingCaptureVideoProc,
 	.dlgInitParam = &DlgInitParam,
 	.initPara =  initPara,
 };
@@ -135,7 +137,7 @@ static MyCtrlTitle ctrls_title[] = {
         MYTITLE_LEFT_EXIT,
         MYTITLE_RIGHT_NULL,
         0,0,1024,40,
-        "门铃设置",
+        "拍照录像设置",
         "",
         0xffffff, 0x333333FF,
         buttonNotify,
@@ -149,7 +151,7 @@ static void enableAutoClose(void)
 {
 	Screen.setCurrent(form_base_priv.name);
 	flag_timer_stop = 0;	
-	loadDoorbellData();
+	loadCaptureVideoData();
 }
 
 /* ----------------------------------------------------------------*/
@@ -167,17 +169,14 @@ static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data)
 	if (nc == MYTITLE_BUTTON_EXIT)
         ShowWindow(GetParent(hwnd),SW_HIDE);
 }
-static int buttonSwitchNotify(HWND hwnd,void (*callback)(void))
+static int buttonSwitchCaptureNotify(HWND hwnd,void (*callback)(void))
 {
-	if (g_config.face_enable == 0 && hwnd == 1)
-		locoal_list[1].changed = 1;
-	g_config.face_enable = hwnd;	
-	if (g_config.face_enable == 0) {
-		if (my_face)    
-			my_face->uninit();
-	}
 	ConfigSavePublic();
-	loadDoorbellData();
+	loadCaptureVideoData();
+}
+static int buttonSwitchVideoNotify(HWND hwnd,void (*callback)(void))
+{
+	
 }
 /* ---------------------------------------------------------------------------*/
 /**
@@ -211,7 +210,7 @@ static void scrollviewNotify(HWND hwnd, int id, int nc, DWORD add_data)
 	}
 }
 
-void formSettingDoorbellLoadBmp(void)
+void formSettingCaptureVideoLoadBmp(void)
 {
     if (bmp_load_finished == 1)
         return;
@@ -274,7 +273,7 @@ static void myDrawItem (HWND hWnd, HSVITEM hsvi, HDC hdc, RECT *rcDraw)
 	}
 }
 
-static void loadDoorbellData(void)
+static void loadCaptureVideoData(void)
 {
 	int i;
 	SVITEMINFO svii;
@@ -286,15 +285,12 @@ static void loadDoorbellData(void)
 		svii.nItemHeight = 60;
 		svii.addData = (DWORD)plist;
 		svii.nItem = i;
-		if (strcmp("抓拍图像设置",plist->title) == 0) {
+		if (strcmp("设置",plist->title) == 0) {
 			if (g_config.cap_doorbell.type == 0) {
 				sprintf(plist->text,"拍照%d张",g_config.cap_doorbell.count);
 			} else {
 				sprintf(plist->text,"录像%d秒",g_config.cap_doorbell.timer);
 			}
-		} else if (strcmp("人脸识别设置",plist->title) == 0) {
-			plist->item_type = 1;
-			plist->switch_state = g_config.face_enable;
 		}
 		SendMessage (hScrollView, SVM_ADDITEM, 0, (LPARAM)&svii);
 		SendMessage (hScrollView, SVM_SETITEMADDDATA, i, (DWORD)plist);
@@ -324,12 +320,12 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
     }
 	hScrollView = GetDlgItem (hDlg, IDC_SCROLLVIEW);
 	SendMessage (hScrollView, SVM_SETITEMDRAW, 0, (LPARAM)myDrawItem);
-	loadDoorbellData();
+	loadCaptureVideoData();
 }
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief formSettingDoorbellProc 窗口回调函数
+ * @brief formSettingCaptureVideoProc 窗口回调函数
  *
  * @param hDlg
  * @param message
@@ -339,7 +335,7 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
  * @return
  */
 /* ----------------------------------------------------------------*/
-static int formSettingDoorbellProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
+static int formSettingCaptureVideoProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 {
     switch(message) // 自定义消息
     {
@@ -370,12 +366,12 @@ static int formSettingDoorbellProc(HWND hDlg, int message, WPARAM wParam, LPARAM
     return DefaultDialogProc(hDlg, message, wParam, lParam);
 }
 
-int createFormSettingDoorbell(HWND hMainWnd,void (*callback)(void))
+int createFormSettingCaptureVideo(HWND hMainWnd,void (*callback)(void))
 {
 	HWND Form = Screen.Find(form_base_priv.name);
 	if(Form) {
 		Screen.setCurrent(form_base_priv.name);
-		loadDoorbellData();
+		loadCaptureVideoData();
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
         if (bmp_load_finished == 0) {

@@ -53,6 +53,10 @@ if [ $? == 0 ]; then
 			$RV1108_CROOS_PATH/bin/arm-linux-strip $cmake_dir/singlechip
 			cp $cmake_dir/singlechip ../burn/userdata
 			cp $cmake_dir/singlechip $RV1108_SDK_PATH/common/userdata/
+
+			$RV1108_CROOS_PATH/bin/arm-linux-strip $cmake_dir/red
+			cp $cmake_dir/red ../burn/root_usr/
+			cp $cmake_dir/red $RV1108_SDK_PATH/common/overlay/usr/
 		fi
 		cp $cmake_dir/cat_eye ~/arm_share/cat_eye/
 		cp $cmake_dir/singlechip ~/arm_share/cat_eye/
