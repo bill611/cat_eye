@@ -74,6 +74,7 @@ enum {
 	TP_LOCALDEVID,      //获取本机唯一编号
 	TP_ADVERTISEMENT,    //中控机接收远程广告发布， 为了向U9中控机兼容，才更改值
 	TP_LOCALHARDCODE = 0x520,   //获取本机硬件码
+	TP_GET_FACELICENSE = 0x530,   //获取人脸识别license
 };
 
 enum
@@ -186,10 +187,13 @@ typedef struct _ProtocolPriv {
  *----------------------------------------------------------------------------*/
 Protocol *protocol;
 static unsigned int packet_id;
-static int get_imie_end = 1;
+static int get_imei_end = 1;
+static int get_face_end = 1;
 static Timer *timer_protocol_1s = NULL; // 协议1s定时器
 static Timer *timer_getimei_5s = NULL; // 获取机身码5s定时器
+static Timer *timer_getface_5s = NULL; // 获取人脸license 5s定时器
 static void (*getImeiCallback)(int result); // 机身码获取回调函数
+static void (*getFaceCallback)(int result); // 人脸license获取回调函数
 IpcServer* ipc_main = NULL;
 
 static unsigned long long htonll(unsigned long long val)
@@ -213,7 +217,7 @@ static void udpLocalGetIMEI(SocketHandle *ABinding,SocketPacket *AData)
 	}
 	TResDeviceInf *GetPacket = (TResDeviceInf*)AData->Data;
 	if(GetPacket->Cmd == RESPONSESERVERINF && GetPacket->ReqType==TYPE_DEVID_SRV) {
-		get_imie_end = 1;
+		get_imei_end = 1;
 		printf("[%s]imei:%llX\n",__func__,htonll(GetPacket->DevID));
 		sprintf(g_config.imei,"%llX",htonll(GetPacket->DevID));
 
@@ -227,7 +231,7 @@ static void udpLocalGetHardCode(SocketHandle *ABinding,SocketPacket *AData)
 	}
 	TResDeviceInf *GetPacket = (TResDeviceInf*)AData->Data;
 	if(GetPacket->Cmd == RESPONSESERVERINF && GetPacket->ReqType==TYPE_DEVHARDCODE_SRV) {
-		get_imie_end = 1;
+		get_imei_end = 1;
 		printf("[%s]hardcode:%llx\n",__func__,GetPacket->DevID);
 		sprintf(g_config.hardcode,"%llx",GetPacket->DevID);
 	}
@@ -272,10 +276,10 @@ static void udpLocalgetMsg(SocketHandle *ABinding,SocketPacket *AData)
 			return;
 		}
 		//获取设备唯一编号
-		// if(get_imie_end == 1) {
+		// if(get_imei_end == 1) {
 			// return;
 		// }
-		// get_imie_end = 1;
+		// get_imei_end = 1;
 		TResDeviceInf Packet;
 		memset(&Packet,0,sizeof(TResDeviceInf));
 		Packet.ID = packet_id++;
@@ -303,7 +307,22 @@ static void udpUpdateProc(SocketHandle *ABinding,SocketPacket *AData)
 	if (cBuf)
 		free(cBuf);
 }
-static void getIMEI(void)
+
+static void udpGetFaceLicense(SocketHandle *ABinding,SocketPacket *AData)
+{
+	if(AData->Size != sizeof(TResDeviceInf)) {
+		return;
+	}
+	TResDeviceInf *GetPacket = (TResDeviceInf*)AData->Data;
+	if(GetPacket->Cmd == RESPONSESERVERINF && GetPacket->ReqType==TYPE_DEVID_SRV) {
+		get_face_end = 1;
+		printf("[%s]face_license:%s\n",__func__,"1234");
+		strcpy(g_config.f_license,"1234");
+
+	}
+}
+
+static void getIMEIFromTools(void)
 {
 	if (strlen(g_config.hardcode) < 2)
 		return;
@@ -312,6 +331,22 @@ static void getIMEI(void)
 	Packet.ID = packet_id++;
 	Packet.Size = sizeof(TGetDeviceBodyCode);
 	Packet.Type = TP_LOCALDEVID;
+	Packet.Cmd = CMD_GETSTATUS;
+	Packet.HardCode = htonll((unsigned long long)strtoull(g_config.hardcode, NULL, 16));
+	printf("%s(),hardcode:%s\n",__func__,g_config.hardcode);
+	if(udp_server)
+		udp_server->AddTask(udp_server,
+				"255.255.255.255",
+				7801, &Packet, Packet.Size, 5,NULL,NULL);
+}
+
+static void getFaceLicenseFromTools(void)
+{
+	TGetDeviceBodyCode Packet;
+	memset(&Packet,0,sizeof(TGetDeviceBodyCode));
+	Packet.ID = packet_id++;
+	Packet.Size = sizeof(TGetDeviceBodyCode);
+	Packet.Type = TP_GET_FACELICENSE;
 	Packet.Cmd = CMD_GETSTATUS;
 	Packet.HardCode = htonll((unsigned long long)strtoull(g_config.hardcode, NULL, 16));
 	printf("%s(),hardcode:%s\n",__func__,g_config.hardcode);
@@ -338,20 +373,22 @@ static void timerImei5sThread(void *arg)
 {
 	int *get_type = (int *)arg;
 	timer_getimei_5s->stop(timer_getimei_5s);
-	if (get_imie_end == 0) {
-		getImeiCallback(0);
+	if (get_imei_end == 0) {
+		if (getImeiCallback)
+			getImeiCallback(0);
 		return;
 	}
-	get_imie_end = 0;
+	get_imei_end = 0;
 	if (*get_type == 0) {
 		*get_type = 1;
-		getIMEI();
+		getIMEIFromTools();
 		timer_getimei_5s->start(timer_getimei_5s);
 	} else {
 		char buf[128] = {0};
 		sprintf(buf,"%s/%s",g_config.imei,g_config.hardcode);
 		qrcodeString(buf,QRCODE_IMIE);
-		getImeiCallback(1);
+		if (getImeiCallback)
+			getImeiCallback(1);
 		ConfigSavePrivate();
 	}
 }
@@ -372,11 +409,40 @@ static void getImei(void (*callBack)(int result))
 		getHardCode();// 获取硬件码
 	} else {
 		get_type = 1;
-		getIMEI();// 获取机身码
+		getIMEIFromTools();// 获取机身码
 	}
 
 	timer_getimei_5s->start(timer_getimei_5s);
-	get_imie_end = 0;
+	get_imei_end = 0;
+}
+
+static void timerFace5sThread(void *arg)
+{
+	timer_getface_5s->stop(timer_getface_5s);
+	if (get_face_end == 0) {
+		if (getFaceCallback)
+			getFaceCallback(0);
+		return;
+	}
+	get_face_end = 0;
+	if (getFaceCallback)
+		getFaceCallback(1);
+	ConfigSavePrivate();
+}
+
+static void getFaceLicense(void (*callBack)(int result))
+{
+	if (timer_getface_5s == NULL)
+		timer_getface_5s = timerCreate(TIMER_1S * 5,timerFace5sThread,NULL);
+	if (timer_getface_5s->isStop(timer_getface_5s) == 0) {
+		printf("wait for getting end\n");
+		return;
+	}
+	getFaceCallback = callBack;
+	getFaceLicenseFromTools();
+
+	timer_getface_5s->start(timer_getface_5s);
+	get_face_end = 0;
 }
 
 static int isNeedToUpdate(char *version,char *content)
@@ -465,6 +531,7 @@ static UdpCmdRead udp_cmd_handle[] = {
 	{TP_LOCALDEVID,     udpLocalGetIMEI},
 	{TP_LOCALHARDCODE,  udpLocalGetHardCode},
 	{TP_RETUPDATEMSG,  	udpUpdateProc},
+	{TP_GET_FACELICENSE,udpGetFaceLicense},
 	{0,NULL},
 };
 
@@ -502,6 +569,7 @@ void protocolInit(void)
 	protocol = (Protocol *) calloc(1,sizeof(Protocol));
 	protocol->priv = (ProtocolPriv *) calloc(1,sizeof(ProtocolPriv));
 	protocol->getImei = getImei;
+	protocol->getFaceLicense = getFaceLicense;
 	protocol->isNeedToUpdate = isNeedToUpdate;
 
 	ipc_main = ipcCreate(IPC_MAIN,ipcCallback);

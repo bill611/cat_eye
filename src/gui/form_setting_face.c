@@ -1,12 +1,12 @@
 /*
  * =============================================================================
  *
- *       Filename:  form_setting_Alarm.c
+ *       Filename:  form_setting_Face.c
  *
- *    Description:  Alarm设置界面
+ *    Description:  Face设置界面
  *
  *        Version:  1.0
- *        Created:  2019-12-05 23:32:41
+ *        Created:  2018-03-01 23:32:41
  *       Revision:  none
  *
  *         Author:  xubin
@@ -23,26 +23,24 @@
 
 #include "my_button.h"
 #include "my_title.h"
+#include "my_face.h"
 #include "config.h"
+#include "sql_handle.h"
+#include "protocol.h"
 
 #include "form_base.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
-int createFormSettingRings(HWND hMainWnd,void (*callback)(void));
-int createFormSettingRingsVolume(HWND hMainWnd,void (*callback)(void));
-int createFormSettingPirStrength(HWND hMainWnd,void (*callback)(void));
-int createFormSettingPirTimer(HWND hMainWnd,void (*callback)(void));
+static int getFaceLicense(HWND hMainWnd,void (*callback)(void));
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
  *----------------------------------------------------------------------------*/
-static int formSettingAlarmProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
+static int formSettingFaceProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
-static void loadAlarmData(void);
 
 static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data);
-static int buttonSwitchNotify(HWND hwnd,void (*callback)(void));
 
 /* ---------------------------------------------------------------------------*
  *                        macro define
@@ -57,51 +55,56 @@ static int buttonSwitchNotify(HWND hwnd,void (*callback)(void));
 enum {
 	IDC_TIMER_1S = IDC_FORM_LOCAL_STATR,
 	IDC_STATIC_IMG_WARNING,
-	IDC_STATIC_TEXT_WARNING,
+	IDC_STATIC_TEXT_GETFACE_LICENSE,
 
 	IDC_SCROLLVIEW,
+	IDC_BUTTON_NETX,
+	IDC_BUTTON_PREV,
 
 	IDC_TITLE,
 };
 
+enum {
+	SCROLLVIEW_ITEM_TYPE_TITLE,
+	SCROLLVIEW_ITEM_TYPE_LIST,
+};
 struct ScrollviewItem {
 	char title[32]; // 左边标题
-	char text[32];  // 右边文字
+	char text[128];  // 右边文字
 	int (*callback)(HWND,void (*callback)(void)); // 点击回调函数
 	int index;  // 元素位置
-	int item_type; // 0标准 1开关
-	int switch_state; // 当item_type为1时，此变量有效,0关闭，1开启
 };
 
+struct MemData {
+	char total[32];
+	char residue[32];
+	char used[32];
+};
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
-static BITMAP bmp_enter; // 进入
-static BITMAP image_swich_off;// 关闭状态图片
-static BITMAP image_swich_on;	// 打开状态图片
 static HWND hScrollView;
 static int bmp_load_finished = 0;
 static int flag_timer_stop = 0;
-
+struct MemData mem_data;
+// static struct ScrollviewItem *locoal_list;
+// TEST
 static struct ScrollviewItem locoal_list[] = {
-	// {"铃声设置",	"",createFormSettingRings},
-	// {"报警音量",	"",createFormSettingRingsVolume},
-	{"播放报警声","",buttonSwitchNotify},
-	{"抓拍图像设置","",NULL},
-	{"人体检测触发时间","",createFormSettingPirTimer},
-	{"人体检测灵敏度","",createFormSettingPirStrength},
+	{"算法版本","",NULL},
+	{"当前记录数","",NULL},
+	{"获取授权","",NULL},
 	{0},
 };
+static BITMAP bmp_enter; // 进入
 
 
 static BmpLocation bmp_load[] = {
     {&bmp_enter,	BMP_LOCAL_PATH"ico_返回_1.png"},
-	{&image_swich_off,BMP_LOCAL_PATH"Switch Off_小.png"},
-	{&image_swich_on, BMP_LOCAL_PATH"Switch On_小.png"},
     {NULL},
 };
 
 static MY_CTRLDATA ChildCtrls [] = {
+    STATIC_LB(0,497,1024,40,IDC_STATIC_TEXT_GETFACE_LICENSE,"",&font20,0xffffff),
     SCROLLVIEW(0,40,1024,580,IDC_SCROLLVIEW),
 };
 
@@ -119,9 +122,9 @@ static MY_DLGTEMPLATE DlgInitParam =
 };
 
 static FormBasePriv form_base_priv= {
-	.name = "FsetAlarm",
+	.name = "FsetFace",
 	.idc_timer = IDC_TIMER_1S,
-	.dlgProc = formSettingAlarmProc,
+	.dlgProc = formSettingFaceProc,
 	.dlgInitParam = &DlgInitParam,
 	.initPara =  initPara,
 };
@@ -136,7 +139,7 @@ static MyCtrlTitle ctrls_title[] = {
         MYTITLE_LEFT_EXIT,
         MYTITLE_RIGHT_NULL,
         0,0,1024,40,
-        "报警设置",
+        "人脸识别信息",
         "",
         0xffffff, 0x333333FF,
         buttonNotify,
@@ -150,7 +153,6 @@ static void enableAutoClose(void)
 {
 	Screen.setCurrent(form_base_priv.name);
 	flag_timer_stop = 0;	
-	loadAlarmData();
 }
 
 /* ----------------------------------------------------------------*/
@@ -169,11 +171,22 @@ static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data)
         ShowWindow(GetParent(hwnd),SW_HIDE);
 }
 
-static int buttonSwitchNotify(HWND hwnd,void (*callback)(void))
+static void getFaceLicenseCallback(int result)
 {
-	g_config.pir_alarm = hwnd;	
-	ConfigSavePublic();
-	loadAlarmData();
+	if (result) {
+		SendMessage(GetDlgItem(form_base->hDlg,IDC_STATIC_TEXT_GETFACE_LICENSE),
+				MSG_SETTEXT,0,(LPARAM)"人脸识别授权获取成功!");
+		InvalidateRect (hScrollView, NULL, TRUE);
+	} else {
+		SendMessage(GetDlgItem(form_base->hDlg,IDC_STATIC_TEXT_GETFACE_LICENSE),
+				MSG_SETTEXT,0,(LPARAM)"人脸识别授权获取失败!");
+	}
+}
+static int getFaceLicense(HWND hMainWnd,void (*callback)(void))
+{
+	protocol->getFaceLicense(getFaceLicenseCallback);
+	SendMessage(GetDlgItem(form_base->hDlg,IDC_STATIC_TEXT_GETFACE_LICENSE),
+			MSG_SETTEXT,0,(LPARAM)"正在获取人脸识别license，请稍后...");
 }
 /* ---------------------------------------------------------------------------*/
 /**
@@ -195,19 +208,12 @@ static void scrollviewNotify(HWND hwnd, int id, int nc, DWORD add_data)
 
 	if (!plist)
 		return;
-	if (!plist->callback)
-		return;
-	if (plist->item_type == 0) {
-		flag_timer_stop = 1;
+	if (plist->callback) {
 		plist->callback(hwnd,enableAutoClose);
-	} else if (plist->item_type == 1){
-		plist->switch_state ^= 1;
-		plist->callback(plist->switch_state,NULL);
-		InvalidateRect (hwnd, NULL, TRUE);
 	}
 }
 
-void formSettingAlarmLoadBmp(void)
+void formSettingFaceLoadBmp(void)
 {
     if (bmp_load_finished == 1)
         return;
@@ -236,7 +242,7 @@ static void myDrawItem (HWND hWnd, HSVITEM hsvi, HDC hdc, RECT *rcDraw)
 	SetBkMode (hdc, BM_TRANSPARENT);
 	SetTextColor (hdc, PIXEL_lightwhite);
 	SelectFont (hdc, font20);
-	if (p_item->callback && p_item->item_type == 0)
+	if (p_item->callback)
 		FILL_BMP_STRUCT(rcDraw->left + 968,rcDraw->top + 15,bmp_enter);
 	// 绘制表格
 	DRAW_TABLE(rcDraw,0,0xCCCCCC);
@@ -249,20 +255,9 @@ static void myDrawItem (HWND hWnd, HSVITEM hsvi, HDC hdc, RECT *rcDraw)
 	SetTextColor (hdc, 0xCCCCCC);
 	DrawText (hdc,p_item->text, -1, &rc,
 			DT_VCENTER | DT_RIGHT | DT_WORDBREAK  | DT_SINGLELINE);
-	if (p_item->item_type == 1) {
-		if (p_item->switch_state) {
-			DrawText (hdc,"打开", -1, &rc,
-					DT_VCENTER | DT_RIGHT | DT_WORDBREAK  | DT_SINGLELINE);
-			FILL_BMP_STRUCT(rcDraw->left + 968,rcDraw->top + 20,image_swich_on);
-		} else {
-			DrawText (hdc,"关闭", -1, &rc,
-					DT_VCENTER | DT_RIGHT | DT_WORDBREAK  | DT_SINGLELINE);
-			FILL_BMP_STRUCT(rcDraw->left + 968,rcDraw->top + 20,image_swich_off);
-		}
-	}
 }
 
-static void loadAlarmData(void)
+static void loadFaceData(void)
 {
 	int i;
 	SVITEMINFO svii;
@@ -273,23 +268,18 @@ static void loadAlarmData(void)
 		svii.nItemHeight = 60;
 		svii.addData = (DWORD)plist;
 		svii.nItem = i;
-		if (strcmp("铃声设置",plist->title) == 0) {
-			sprintf(plist->text,"铃声%d",g_config.ring_num + 1);
-		} else if (strcmp("报警音量",plist->title) == 0) {
-			sprintf(plist->text,"%d%%",g_config.ring_volume);
-		} else if (strcmp("抓拍图像设置",plist->title) == 0) {
-			if (g_config.cap_alarm.type == 0) {
-				sprintf(plist->text,"拍照%d张",g_config.cap_alarm.count);
+		if (strcmp("算法版本",plist->title) == 0) {
+			sprintf(plist->text,"%s",my_face->getVersion());
+		} else if (strcmp("当前记录数",plist->title) == 0) {
+			sprintf(plist->text,"%d个",sqlGetFaceCount());
+		} else if (strcmp("获取授权",plist->title) == 0) {
+			if (atoi(g_config.f_license)) {
+				sprintf(plist->text,"已授权");
+				plist->callback = NULL;
 			} else {
-				sprintf(plist->text,"录像%d秒",g_config.cap_alarm.timer);
+				sprintf(plist->text,"请点击授权");
+				plist->callback = getFaceLicense;
 			}
-		} else if (strcmp("人体检测触发时间",plist->title) == 0) {
-			sprintf(plist->text,"%d秒",g_config.pir_active_timer);
-		} else if (strcmp("人体检测灵敏度",plist->title) == 0) {
-			sprintf(plist->text,"%d级",g_config.pir_strength + 1);
-		} else if (strcmp("播放报警声",plist->title) == 0) {
-			plist->item_type = 1;
-			plist->switch_state = g_config.pir_alarm;
 		}
 		SendMessage (hScrollView, SVM_ADDITEM, 0, (LPARAM)&svii);
 		SendMessage (hScrollView, SVM_SETITEMADDDATA, i, (DWORD)plist);
@@ -319,12 +309,12 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
     }
 	hScrollView = GetDlgItem (hDlg, IDC_SCROLLVIEW);
 	SendMessage (hScrollView, SVM_SETITEMDRAW, 0, (LPARAM)myDrawItem);
-	loadAlarmData();
+	loadFaceData();
 }
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief formSettingAlarmProc 窗口回调函数
+ * @brief formSettingFaceProc 窗口回调函数
  *
  * @param hDlg
  * @param message
@@ -334,7 +324,7 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
  * @return
  */
 /* ----------------------------------------------------------------*/
-static int formSettingAlarmProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
+static int formSettingFaceProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 {
     switch(message) // 自定义消息
     {
@@ -365,12 +355,14 @@ static int formSettingAlarmProc(HWND hDlg, int message, WPARAM wParam, LPARAM lP
     return DefaultDialogProc(hDlg, message, wParam, lParam);
 }
 
-int createFormSettingAlarm(HWND hMainWnd,void (*callback)(void))
+int createFormSettingFace(HWND hMainWnd,void (*callback)(void))
 {
 	HWND Form = Screen.Find(form_base_priv.name);
 	if(Form) {
 		Screen.setCurrent(form_base_priv.name);
-		loadAlarmData();
+		SendMessage(GetDlgItem(form_base->hDlg,IDC_STATIC_TEXT_GETFACE_LICENSE),
+				MSG_SETTEXT,0,(LPARAM)"");
+		loadFaceData();
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
         if (bmp_load_finished == 0) {
