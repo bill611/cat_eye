@@ -270,7 +270,7 @@ static void loadLocoalData(void)
 		}else if (strcmp("软件版本",plist->title) == 0) {
 			sprintf(plist->text,"%s/%s/%s",DEVICE_SVERSION,DEVICE_KVERSION,g_config.s_version);
 		}else if (strcmp("人脸识别",plist->title) == 0) {
-			if (strcmp(g_config.f_license,"0")) {
+			if (strcmp(g_config.f_license,"0") == 0) {
 				sprintf(plist->text,"未授权");
 			} else {
 				sprintf(plist->text,"已授权");

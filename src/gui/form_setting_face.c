@@ -273,7 +273,7 @@ static void loadFaceData(void)
 		} else if (strcmp("当前记录数",plist->title) == 0) {
 			sprintf(plist->text,"%d个",sqlGetFaceCount());
 		} else if (strcmp("获取授权",plist->title) == 0) {
-			if (atoi(g_config.f_license)) {
+			if (strcmp(g_config.f_license,"0")) {
 				sprintf(plist->text,"已授权");
 				plist->callback = NULL;
 			} else {
