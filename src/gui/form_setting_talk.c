@@ -1,9 +1,9 @@
 /*
  * =============================================================================
  *
- *       Filename:  form_setting_Doorbell.c
+ *       Filename:  form_setting_Talk.c
  *
- *    Description:  Doorbell设置界面
+ *    Description:  Talk设置界面
  *
  *        Version:  1.0
  *        Created:  2019-12-05 23:32:41
@@ -24,23 +24,22 @@
 #include "my_button.h"
 #include "my_title.h"
 #include "config.h"
-#include "my_face.h"
 
 #include "form_base.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
-
+int createFormSettingRings(HWND hMainWnd,void (*callback)(void));
+int createFormSettingRingsVolume(HWND hMainWnd,void (*callback)(void));
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
  *----------------------------------------------------------------------------*/
-static int formSettingDoorbellProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
+static int formSettingTalkProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
-static void loadDoorbellData(void);
+static void loadTalkData(void);
 
 static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data);
-static int buttonSwitchNotify(HWND hwnd,void (*callback)(void));
 
 /* ---------------------------------------------------------------------------*
  *                        macro define
@@ -69,33 +68,26 @@ struct ScrollviewItem {
 	char text[32];  // 右边文字
 	int (*callback)(HWND,void (*callback)(void)); // 点击回调函数
 	int index;  // 元素位置
-	int item_type; // 0标准 1开关
-	int switch_state; // 当item_type为1时，此变量有效,0关闭，1开启
-	int changed; // 当开关变化后为1，否则为0
 };
 
 /* ---------------------------------------------------------------------------*
  *                      variables define
  *----------------------------------------------------------------------------*/
 static BITMAP bmp_enter; // 进入
-static BITMAP image_swich_off;// 关闭状态图片
-static BITMAP image_swich_on;	// 打开状态图片
 static HWND hScrollView;
 static int bmp_load_finished = 0;
 static int flag_timer_stop = 0;
 // static struct ScrollviewItem *locoal_list;
 // TEST
 static struct ScrollviewItem locoal_list[] = {
-	{"抓拍图像设置","",NULL},
-	{"人脸识别设置","",buttonSwitchNotify},
+	{"铃声设置",	"",createFormSettingRings},
+	{"铃声音量",	"",createFormSettingRingsVolume},
 	{0},
 };
 
 
 static BmpLocation bmp_load[] = {
     {&bmp_enter,	BMP_LOCAL_PATH"ico_返回_1.png"},
-	{&image_swich_off,BMP_LOCAL_PATH"Switch Off_小.png"},
-	{&image_swich_on, BMP_LOCAL_PATH"Switch On_小.png"},
     {NULL},
 };
 
@@ -117,9 +109,9 @@ static MY_DLGTEMPLATE DlgInitParam =
 };
 
 static FormBasePriv form_base_priv= {
-	.name = "FsetDoorbell",
+	.name = "FsetTalk",
 	.idc_timer = IDC_TIMER_1S,
-	.dlgProc = formSettingDoorbellProc,
+	.dlgProc = formSettingTalkProc,
 	.dlgInitParam = &DlgInitParam,
 	.initPara =  initPara,
 };
@@ -134,7 +126,7 @@ static MyCtrlTitle ctrls_title[] = {
         MYTITLE_LEFT_EXIT,
         MYTITLE_RIGHT_NULL,
         0,0,1024,40,
-        "门铃设置",
+        "对讲设置",
         "",
         0xffffff, 0x333333FF,
         buttonNotify,
@@ -148,7 +140,7 @@ static void enableAutoClose(void)
 {
 	Screen.setCurrent(form_base_priv.name);
 	flag_timer_stop = 0;	
-	loadDoorbellData();
+	loadTalkData();
 }
 
 /* ----------------------------------------------------------------*/
@@ -166,18 +158,6 @@ static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data)
 	if (nc == MYTITLE_BUTTON_EXIT)
         ShowWindow(GetParent(hwnd),SW_HIDE);
 }
-static int buttonSwitchNotify(HWND hwnd,void (*callback)(void))
-{
-	if (g_config.face_enable == 0 && hwnd == 1)
-		locoal_list[1].changed = 1;
-	g_config.face_enable = hwnd;	
-	if (g_config.face_enable == 0) {
-		if (my_face)    
-			my_face->uninit();
-	}
-	ConfigSavePublic();
-	loadDoorbellData();
-}
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief scrollviewNotify 
@@ -190,27 +170,21 @@ static int buttonSwitchNotify(HWND hwnd,void (*callback)(void))
 /* ---------------------------------------------------------------------------*/
 static void scrollviewNotify(HWND hwnd, int id, int nc, DWORD add_data)
 {
-	if (nc != SVN_CLICKED)
-		return;
-	int idx = SendMessage (hScrollView, SVM_GETCURSEL, 0, 0);
-	struct ScrollviewItem *plist;
-	plist = (struct ScrollviewItem *)SendMessage (hScrollView, SVM_GETITEMADDDATA, idx, 0);
+	if (nc == SVN_CLICKED) {
+		int idx = SendMessage (hScrollView, SVM_GETCURSEL, 0, 0);
+		struct ScrollviewItem *plist;
+		plist = (struct ScrollviewItem *)SendMessage (hScrollView, SVM_GETITEMADDDATA, idx, 0);
 
-	if (!plist)
-		return;
-	if (!plist->callback)
-		return;
-	if (plist->item_type == 0) {
-		flag_timer_stop = 1;
-		plist->callback(hwnd,enableAutoClose);
-	} else if (plist->item_type == 1){
-		plist->switch_state ^= 1;
-		plist->callback(plist->switch_state,NULL);
-		InvalidateRect (hwnd, NULL, TRUE);
+		if (plist) {
+			if (plist->callback) {
+				flag_timer_stop = 1;
+				plist->callback(hwnd,enableAutoClose);
+			}
+		}
 	}
 }
 
-void formSettingDoorbellLoadBmp(void)
+void formSettingTalkLoadBmp(void)
 {
     if (bmp_load_finished == 1)
         return;
@@ -239,7 +213,7 @@ static void myDrawItem (HWND hWnd, HSVITEM hsvi, HDC hdc, RECT *rcDraw)
 	SetBkMode (hdc, BM_TRANSPARENT);
 	SetTextColor (hdc, PIXEL_lightwhite);
 	SelectFont (hdc, font20);
-	if (p_item->callback && p_item->item_type == 0)
+	if (p_item->callback)
 		FILL_BMP_STRUCT(rcDraw->left + 968,rcDraw->top + 15,bmp_enter);
 	// 绘制表格
 	DRAW_TABLE(rcDraw,0,0xCCCCCC);
@@ -252,28 +226,9 @@ static void myDrawItem (HWND hWnd, HSVITEM hsvi, HDC hdc, RECT *rcDraw)
 	SetTextColor (hdc, 0xCCCCCC);
 	DrawText (hdc,p_item->text, -1, &rc,
 			DT_VCENTER | DT_RIGHT | DT_WORDBREAK  | DT_SINGLELINE);
-	if (p_item->item_type == 1) {
-		rc.left += 512;
-		rc.right -= 70;
-		if (p_item->switch_state) {
-			if (p_item->changed) {
-				rc.left -= 252;
-				rc.right += 412;
-				DrawText (hdc,"打开(需等待重启生效)", -1, &rc,
-						DT_VCENTER | DT_LEFT | DT_WORDBREAK  | DT_SINGLELINE);
-			} else
-				DrawText (hdc,"打开", -1, &rc,
-						DT_VCENTER | DT_LEFT | DT_WORDBREAK  | DT_SINGLELINE);
-			FILL_BMP_STRUCT(rcDraw->left + 968,rcDraw->top + 20,image_swich_on);
-		} else {
-			DrawText (hdc,"关闭", -1, &rc,
-					DT_VCENTER | DT_LEFT | DT_WORDBREAK  | DT_SINGLELINE);
-			FILL_BMP_STRUCT(rcDraw->left + 968,rcDraw->top + 20,image_swich_off);
-		}
-	}
 }
 
-static void loadDoorbellData(void)
+static void loadTalkData(void)
 {
 	int i;
 	SVITEMINFO svii;
@@ -281,19 +236,13 @@ static void loadDoorbellData(void)
     SendMessage (hScrollView, SVM_RESETCONTENT, 0, 0);
 	for (i=0; plist->title[0] != 0; i++) {
 		plist->index = i;
-		plist->item_type = 0;
 		svii.nItemHeight = 60;
 		svii.addData = (DWORD)plist;
 		svii.nItem = i;
-		if (strcmp("抓拍图像设置",plist->title) == 0) {
-			if (g_config.cap_doorbell.type == 0) {
-				sprintf(plist->text,"拍照%d张",g_config.cap_doorbell.count);
-			} else {
-				sprintf(plist->text,"录像%d秒",g_config.cap_doorbell.timer);
-			}
-		} else if (strcmp("人脸识别设置",plist->title) == 0) {
-			plist->item_type = 1;
-			plist->switch_state = g_config.face_enable;
+		if (strcmp("铃声设置",plist->title) == 0) {
+			sprintf(plist->text,"铃声%d",g_config.ring_num + 1);
+		} else if (strcmp("铃声音量",plist->title) == 0) {
+			sprintf(plist->text,"%d%%",g_config.ring_volume);
 		}
 		SendMessage (hScrollView, SVM_ADDITEM, 0, (LPARAM)&svii);
 		SendMessage (hScrollView, SVM_SETITEMADDDATA, i, (DWORD)plist);
@@ -323,12 +272,12 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
     }
 	hScrollView = GetDlgItem (hDlg, IDC_SCROLLVIEW);
 	SendMessage (hScrollView, SVM_SETITEMDRAW, 0, (LPARAM)myDrawItem);
-	loadDoorbellData();
+	loadTalkData();
 }
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief formSettingDoorbellProc 窗口回调函数
+ * @brief formSettingTalkProc 窗口回调函数
  *
  * @param hDlg
  * @param message
@@ -338,7 +287,7 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
  * @return
  */
 /* ----------------------------------------------------------------*/
-static int formSettingDoorbellProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
+static int formSettingTalkProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 {
     switch(message) // 自定义消息
     {
@@ -369,12 +318,12 @@ static int formSettingDoorbellProc(HWND hDlg, int message, WPARAM wParam, LPARAM
     return DefaultDialogProc(hDlg, message, wParam, lParam);
 }
 
-int createFormSettingDoorbell(HWND hMainWnd,void (*callback)(void))
+int createFormSettingTalk(HWND hMainWnd,void (*callback)(void))
 {
 	HWND Form = Screen.Find(form_base_priv.name);
 	if(Form) {
 		Screen.setCurrent(form_base_priv.name);
-		loadDoorbellData();
+		loadTalkData();
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
         if (bmp_load_finished == 0) {

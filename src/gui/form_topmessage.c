@@ -31,6 +31,7 @@
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
+extern void configFactory(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -243,7 +244,7 @@ void topMsgCammerError(void)
 	createFormTopmessage(0,"提示","摄像头异常",NULL,NULL);
 }
 
-void topMsgFactory(void (*fConfirm)(void))
+int topMsgFactory(HWND hMainWnd,void (*callback)(void))
 {
-	createFormTopmessage(0,"恢复出厂","恢复出厂将删除所有记录和文件，且不可恢复，是否确认？",fConfirm,NULL);
+	createFormTopmessage(0,"恢复出厂","恢复出厂将删除所有记录和文件，且不可恢复，是否确认？",configFactory,NULL);
 }

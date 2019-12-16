@@ -177,6 +177,7 @@ extern "C" {
 		int  record_time;  // 主界面录像倒计时时间
 		struct Mute  mute;  // 免扰模式参数
 		int  auto_sync_time;  // 是否自动同步时间
+		int  face_enable;	// 是否开启人脸识别功能0关闭，1开启
 
 		struct wifiLowPower wifi_lowpower; // 低功耗wifi参数
 		struct CapType cap_doorbell;// 按门铃抓拍或录像

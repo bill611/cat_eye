@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include "rdface/rd_face.h"
 #include "my_face.h"
+#include "config.h"
 #include "debug.h"
 #include "sql_handle.h"
 #include "thread_helper.h"
@@ -49,36 +50,14 @@ MyFace *my_face;
 static pthread_mutex_t mutex; // 初始化过程线程锁,初始化过程不可被打断
 static int face_init_finished = 0; // 初始化是否结束，未结束时不处理其他功能
 
-/* ---------------------------------------------------------------------------*/
-/**
- * @brief threadInit 人脸识别初始化会阻塞，所以在线程执行
- *
- * @param arg
- *
- * @returns
- */
-/* ---------------------------------------------------------------------------*/
-static void* threadInit(void *arg)
-{
-	prctl(PR_SET_NAME, __func__, 0, 0, 0);
-#ifdef USE_FACE
-	pthread_mutex_lock(&mutex);
-	face_init_finished = 0;
-	if(rdfaceInit() < 0) {
-		rdfaceUninit();
-		DPRINT("rdfaceInit error!");
-		pthread_mutex_unlock(&mutex);
-		return NULL;
-	}
-	face_init_finished = 1;
-	pthread_mutex_unlock(&mutex);
-#endif
-    return NULL;
-}
 static int init(void)
 {
+	if (g_config.face_enable == 0)
+		return 0;
+	// 不重复初始化
+	if (face_init_finished == 1)
+		return 0;
 #ifdef USE_FACE
-    // createThread(threadInit,NULL);
 	pthread_mutex_lock(&mutex);
 	face_init_finished = 0;
 	if(rdfaceInit() < 0) {
@@ -96,6 +75,8 @@ static int init(void)
 
 static int regist(MyFaceRegistData *data)
 {
+	if (g_config.face_enable == 0)
+		return -1;
 #ifdef USE_FACE
 	if (face_init_finished == 0)
         goto regist_end;
@@ -119,6 +100,8 @@ regist_end:
 
 static int recognizerOnce(MyFaceRecognizer *data)
 {
+	if (g_config.face_enable == 0)
+		return -1;
 #ifdef USE_FACE
 	if (face_init_finished == 0)
         return -1;
@@ -180,13 +163,15 @@ static int featureCompareCallback(float *feature,
 #endif
 }
 
-static void recognizer(char *image_buff,int w,int h)
+static int recognizer(char *image_buff,int w,int h)
 {
+	if (g_config.face_enable == 0)
+		return 0;
 #ifdef USE_FACE
 	if (face_init_finished == 0)
-        return;
+        return 0;
 	if (pthread_mutex_trylock(&mutex) != 0)
-		return ;
+		return 1;
     MyFaceData face_data;
 	int ret = rdfaceRecognizer(image_buff,w,h,featureCompareCallback,&face_data);
 	if (ret == 0) {
@@ -201,10 +186,13 @@ static void recognizer(char *image_buff,int w,int h)
 	}
 	pthread_mutex_unlock(&mutex);
 #endif
+	return 1;
 }
 
 static void uninit(void)
 {
+	if (face_init_finished == 0)
+		return;
 #ifdef USE_FACE
 	pthread_mutex_lock(&mutex);
 	face_init_finished = 0;
@@ -224,6 +212,7 @@ void myFaceInit(void)
 	my_face->uninit = uninit;
 	my_face->init = init;
 
+	face_init_finished = 0;
 	pthread_mutexattr_t mutexattr;
 	pthread_mutexattr_init(&mutexattr);
     pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE_NP);

@@ -30,9 +30,10 @@
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
-int createFormSettingStore(HWND hMainWnd,void (*callback)(void));
-int createFormSettingQrcode(HWND hMainWnd,void (*callback)(void));
-int createFormSettingUpdate(HWND hMainWnd,void (*callback)(void));
+extern int createFormSettingStore(HWND hMainWnd,void (*callback)(void));
+extern int createFormSettingQrcode(HWND hMainWnd,void (*callback)(void));
+extern int createFormSettingUpdate(HWND hMainWnd,void (*callback)(void));
+extern int topMsgFactory(HWND hMainWnd,void (*callback)(void));
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
  *----------------------------------------------------------------------------*/
@@ -93,6 +94,7 @@ static struct ScrollviewItem locoal_list[] = {
 	{"软件版本",DEVICE_SVERSION"/"DEVICE_KVERSION,createFormSettingUpdate},
 	{"二维码",  "扫描添加设备",createFormSettingQrcode},
 	{"本地存储","",NULL},
+	{"恢复出厂设置","",topMsgFactory},
 	{0},
 };
 static BITMAP bmp_warning; // 警告

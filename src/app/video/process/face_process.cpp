@@ -63,17 +63,21 @@ static void* faceProcessThread(void *arg)
 {
 	prctl(PR_SET_NAME, __func__, 0, 0, 0);
 	FaceProcess *process = (FaceProcess *)arg;
+	int ret = 0;
 	while (process->start_enc() == true) {
 		if (camm_info.get_data_end == 0) {
 			usleep(10000);
 			continue;
 		}
 		if (my_face){
-			my_face->recognizer(camm_info.data,camm_info.w,camm_info.h);
+			ret = my_face->recognizer(camm_info.data,camm_info.w,camm_info.h);
 		}
 		pthread_mutex_lock(&mutex);
 		camm_info.get_data_end = 0;
 		pthread_mutex_unlock(&mutex);
+		if (ret == 0) {
+			sleep(1);
+		}
 	}
 	return NULL;	
 }

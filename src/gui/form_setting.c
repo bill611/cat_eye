@@ -35,8 +35,7 @@ extern int createFormSettingAlarm(HWND hMainWnd,void (*callback)(void));
 extern int createFormSettingBrightness(HWND hMainWnd,void (*callback)(void));
 extern int createFormSettingTimer(HWND hMainWnd,void (*callback)(void));
 extern int createFormSettingMute(HWND hMainWnd,void (*callback)(void));
-extern void topMsgFactory(void (*fConfirm)(void));
-extern void configFactory(void);
+extern int createFormSettingTalk(HWND hMainWnd,void (*callback)(void));
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -51,7 +50,7 @@ static void buttonDoorBellPress(HWND hwnd, int id, int nc, DWORD add_data);
 static void buttonTimerPress(HWND hwnd, int id, int nc, DWORD add_data);
 static void buttonMutePress(HWND hwnd, int id, int nc, DWORD add_data);
 static void buttonAlarmPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonFactoryPress(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonTalkPress(HWND hwnd, int id, int nc, DWORD add_data);
 static void buttonLocalPress(HWND hwnd, int id, int nc, DWORD add_data);
 
 /* ---------------------------------------------------------------------------*
@@ -125,7 +124,7 @@ static MyCtrlButton ctrls_button[] = {
 	{IDC_BUTTON_TIMER,	 MYBUTTON_TYPE_TWO_STATE,"时间设置",817,129,buttonTimerPress},
 	{IDC_BUTTON_MUTE,	 MYBUTTON_TYPE_TWO_STATE,"免扰设置",99,	366,buttonMutePress},
 	{IDC_BUTTON_ALARM,	 MYBUTTON_TYPE_TWO_STATE,"报警设置",338,366,buttonAlarmPress},
-	{IDC_BUTTON_FACTORY, MYBUTTON_TYPE_TWO_STATE,"恢复出厂",577,366,buttonFactoryPress},
+	{IDC_BUTTON_FACTORY, MYBUTTON_TYPE_TWO_STATE,"对讲设置",577,366,buttonTalkPress},
 	{IDC_BUTTON_LOCAL,	 MYBUTTON_TYPE_TWO_STATE,"本机设置",817,366,buttonLocalPress},
 	{0},
 };
@@ -202,11 +201,12 @@ static void buttonAlarmPress(HWND hwnd, int id, int nc, DWORD add_data)
 	flag_timer_stop = 1;
     createFormSettingAlarm(GetParent(hwnd),enableAutoClose);
 }
-static void buttonFactoryPress(HWND hwnd, int id, int nc, DWORD add_data)
+static void buttonTalkPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
-	topMsgFactory(configFactory);
+	flag_timer_stop = 1;
+    createFormSettingTalk(GetParent(hwnd),enableAutoClose);
 }
 
 static void buttonLocalPress(HWND hwnd, int id, int nc, DWORD add_data)

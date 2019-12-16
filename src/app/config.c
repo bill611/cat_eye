@@ -52,6 +52,7 @@ static EtcValueInt etc_public_int[]={
 {"others",		"brightness",		&g_config.brightness,		50},
 {"others",		"record_time",		&g_config.record_time,		30},
 {"others",		"auto_sync_time",	&g_config.auto_sync_time,	1},
+{"others",		"face_enable",		&g_config.face_enable,		1},
 };
 static EtcValueChar etc_public_char[]={
 {"device",		"version",	SIZE_CONFIG(g_config.version),	DEVICE_SVERSION},
