@@ -33,6 +33,7 @@
 extern int createFormSettingStore(HWND hMainWnd,void (*callback)(void));
 extern int createFormSettingQrcode(HWND hMainWnd,void (*callback)(void));
 extern int createFormSettingUpdate(HWND hMainWnd,void (*callback)(void));
+extern int createFormSettingFace(HWND hMainWnd,void (*callback)(void));
 extern int topMsgFactory(HWND hMainWnd,void (*callback)(void));
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -93,7 +94,8 @@ static struct ScrollviewItem locoal_list[] = {
 	{"设备型号",DEVICE_TYPE,NULL},
 	{"软件版本",DEVICE_SVERSION"/"DEVICE_KVERSION,createFormSettingUpdate},
 	{"二维码",  "扫描添加设备",createFormSettingQrcode},
-	{"本地存储","",NULL},
+	// {"本地存储","",NULL},
+	{"人脸识别","",createFormSettingFace},
 	{"恢复出厂设置","",topMsgFactory},
 	{0},
 };
@@ -267,6 +269,12 @@ static void loadLocoalData(void)
 			}
 		}else if (strcmp("软件版本",plist->title) == 0) {
 			sprintf(plist->text,"%s/%s/%s",DEVICE_SVERSION,DEVICE_KVERSION,g_config.s_version);
+		}else if (strcmp("人脸识别",plist->title) == 0) {
+			if (strcmp(g_config.f_license,"0")) {
+				sprintf(plist->text,"未授权");
+			} else {
+				sprintf(plist->text,"已授权");
+			}
 		}
 		SendMessage (hScrollView, SVM_ADDITEM, 0, (LPARAM)&svii);
 		SendMessage (hScrollView, SVM_SETITEMADDDATA, i, (DWORD)plist);

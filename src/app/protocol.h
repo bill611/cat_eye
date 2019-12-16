@@ -152,6 +152,7 @@ extern "C" {
 	typedef struct _Protocol {
 		struct _ProtocolPriv *priv;
 		void (*getImei)(void (*callBack)(int result));
+		void (*getFaceLicense)(void (*callBack)(int result));
 		int (*isNeedToUpdate)(char *version,char *content);
 	}Protocol;
 	extern Protocol *protocol;

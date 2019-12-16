@@ -202,6 +202,15 @@ static void uninit(void)
 	printf("face uninited\n");
 }
 
+static char *getVersion(void)
+{
+#ifdef USE_FACE
+	return rdfaceGetFaceVersion();	
+#else
+	return "未检测到人脸识别算法";	
+#endif
+}
+
 void myFaceInit(void)
 {
 	my_face = (MyFace *) calloc(1,sizeof(MyFace));
@@ -211,6 +220,7 @@ void myFaceInit(void)
 	my_face->recognizer = recognizer;
 	my_face->uninit = uninit;
 	my_face->init = init;
+	my_face->getVersion = getVersion;
 
 	face_init_finished = 0;
 	pthread_mutexattr_t mutexattr;
