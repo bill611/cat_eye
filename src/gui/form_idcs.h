@@ -44,6 +44,8 @@ extern "C" {
 #define IDC_FORM_SETTING_DATE 510
 #define IDC_FORM_SETTING_TIME 520
 #define IDC_FORM_SETTING_MUTE 530
+#define IDC_FORM_SETTING_SLEEPTIME 540
+#define IDC_FORM_SETTING_SCREEN 550
 
 #ifdef __cplusplus
 }

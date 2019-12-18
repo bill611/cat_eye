@@ -33,6 +33,7 @@
 #include "protocol.h"
 #include "qrenc.h"
 #include "my_video.h"
+#include "my_face.h"
 #include "config.h"
 #include "timer.h"
 
@@ -74,7 +75,9 @@ enum {
 	TP_LOCALDEVID,      //获取本机唯一编号
 	TP_ADVERTISEMENT,    //中控机接收远程广告发布， 为了向U9中控机兼容，才更改值
 	TP_LOCALHARDCODE = 0x520,   //获取本机硬件码
-	TP_GET_FACELICENSE = 0x530,   //获取人脸识别license
+	TP_REQ_AUTHENTICATION = 0x600,   //获取人脸识别license
+	TP_RETURN_AUTHENTICATION = 0x601,   //回复人脸识别license
+	TP_CONFIRM_AUTHENTICATION = 0x602,  // 应答回复人脸识别license
 };
 
 enum
@@ -167,6 +170,19 @@ typedef struct
 	char Addition[20];      //附加信息
 } TGetDeviceBodyCode;   //获取设备机身码使用
 #pragma pack ()
+
+typedef struct
+{
+	unsigned int ID;		//包头ID号
+	unsigned int Size;		//包大小
+	unsigned int Type;		//包类型
+	unsigned int Cmd;		//命令	主动请求=0, 被动响应=1
+	unsigned int DevType;	//设备类型, TYPE_DEVID_SRV=0x100,
+	unsigned int CheckSum;	//校验码 = StrHardCode + StrKey
+	char StrHardCode[256];	//硬件码
+	char StrKey[512];		//Key
+} TRSCertification;
+
 
 typedef struct _PacketsID {
     char IP[16];
@@ -308,18 +324,64 @@ static void udpUpdateProc(SocketHandle *ABinding,SocketPacket *AData)
 		free(cBuf);
 }
 
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief getFaceLicenseRespones 人脸识别获取成功后回复
+ *
+ * @param ABinding
+ */
+/* ---------------------------------------------------------------------------*/
+static void getFaceLicenseRespones(SocketHandle *ABinding)
+{
+	TRSCertification Packet;
+	memset(&Packet,0,sizeof(TRSCertification));
+	Packet.ID = packet_id++;
+	Packet.Size = sizeof(TRSCertification);
+	Packet.Type = TP_CONFIRM_AUTHENTICATION;
+	Packet.Cmd = 0;
+	Packet.DevType = TYPE_DEVID_SRV;
+	strcpy(Packet.StrHardCode,g_config.hardcode);
+	strcpy(Packet.StrKey,"Certification is OK");
+	unsigned long i;
+	for (i=0; i<strlen(Packet.StrHardCode); i++)
+		Packet.CheckSum += Packet.StrHardCode[i];
+	for (i=0; i<strlen(Packet.StrKey); i++)
+		Packet.CheckSum += Packet.StrKey[i];
+	if(udp_server)
+		udp_server->AddTask(udp_server,
+				ABinding->IP, 7800, &Packet, Packet.Size, 5,NULL,NULL);
+}
+
 static void udpGetFaceLicense(SocketHandle *ABinding,SocketPacket *AData)
 {
-	if(AData->Size != sizeof(TResDeviceInf)) {
+	if(AData->Size != sizeof(TRSCertification))
 		return;
+	TRSCertification *GetPacket = (TRSCertification*)AData->Data;
+	if (GetPacket->Cmd != 1)
+		return;
+	if(strcmp(GetPacket->StrHardCode,g_config.hardcode))
+		return;
+	unsigned long i;
+	unsigned int checksum = 0;
+	for (i=0; i<strlen(GetPacket->StrHardCode); i++)
+		checksum += GetPacket->StrHardCode[i];
+	for (i=0; i<strlen(GetPacket->StrKey); i++)
+		checksum += GetPacket->StrKey[i];
+	if (checksum != GetPacket->CheckSum)
+		return;
+	if (my_face) {
+		// 获取人脸识别后初始化人脸，看是否成功
+		strcpy(g_config.f_license,GetPacket->StrKey);
+		g_config.face_enable = 1;
+		if (my_face->init() == -1) {
+			strcpy(g_config.f_license,"0");
+		} else {
+			getFaceLicenseRespones(ABinding);
+			get_face_end = 1;
+			ConfigSavePrivate();
+		}
 	}
-	TResDeviceInf *GetPacket = (TResDeviceInf*)AData->Data;
-	if(GetPacket->Cmd == RESPONSESERVERINF && GetPacket->ReqType==TYPE_DEVID_SRV) {
-		get_face_end = 1;
-		printf("[%s]face_license:%s\n",__func__,"1234");
-		strcpy(g_config.f_license,"1234");
-
-	}
+	printf("[%s]face_license:%s\n",__func__,g_config.f_license);
 }
 
 static void getIMEIFromTools(void)
@@ -336,24 +398,29 @@ static void getIMEIFromTools(void)
 	printf("%s(),hardcode:%s\n",__func__,g_config.hardcode);
 	if(udp_server)
 		udp_server->AddTask(udp_server,
-				"255.255.255.255",
-				7801, &Packet, Packet.Size, 5,NULL,NULL);
+				"255.255.255.255", 7801, &Packet, Packet.Size, 5,NULL,NULL);
 }
 
 static void getFaceLicenseFromTools(void)
 {
-	TGetDeviceBodyCode Packet;
-	memset(&Packet,0,sizeof(TGetDeviceBodyCode));
+	TRSCertification Packet;
+	memset(&Packet,0,sizeof(TRSCertification));
 	Packet.ID = packet_id++;
-	Packet.Size = sizeof(TGetDeviceBodyCode);
-	Packet.Type = TP_GET_FACELICENSE;
-	Packet.Cmd = CMD_GETSTATUS;
-	Packet.HardCode = htonll((unsigned long long)strtoull(g_config.hardcode, NULL, 16));
-	printf("%s(),hardcode:%s\n",__func__,g_config.hardcode);
+	Packet.Size = sizeof(TRSCertification);
+	Packet.Type = TP_REQ_AUTHENTICATION;
+	Packet.Cmd = 0;
+	Packet.DevType = TYPE_DEVID_SRV;
+	strcpy(Packet.StrHardCode,g_config.hardcode);
+	strcpy(Packet.StrKey,my_face->getDeviceKey());
+	unsigned long i;
+	for (i=0; i<strlen(Packet.StrHardCode); i++)
+		Packet.CheckSum += Packet.StrHardCode[i];
+	for (i=0; i<strlen(Packet.StrKey); i++)
+		Packet.CheckSum += Packet.StrKey[i];
 	if(udp_server)
 		udp_server->AddTask(udp_server,
 				"255.255.255.255",
-				7801, &Packet, Packet.Size, 5,NULL,NULL);
+				7800, &Packet, Packet.Size, 5,NULL,NULL);
 }
 static void getHardCode(void)
 {
@@ -419,6 +486,13 @@ static void getImei(void (*callBack)(int result))
 static void timerFace5sThread(void *arg)
 {
 	timer_getface_5s->stop(timer_getface_5s);
+#if 0
+	strcpy(g_config.f_license,"045c1ccdafda01ebddd775e620d5635a8294af6ce2435297cff5f019f81442e48b006dfa531cab9a57915eacbacfd1ea5242e58037897259c4fb0367a9a4b1bf");
+	if (my_face->init() == -1)
+		strcpy(g_config.f_license,"0");
+	else
+		get_face_end = 1;
+#endif
 	if (get_face_end == 0) {
 		if (getFaceCallback)
 			getFaceCallback(0);
@@ -531,7 +605,7 @@ static UdpCmdRead udp_cmd_handle[] = {
 	{TP_LOCALDEVID,     udpLocalGetIMEI},
 	{TP_LOCALHARDCODE,  udpLocalGetHardCode},
 	{TP_RETUPDATEMSG,  	udpUpdateProc},
-	{TP_GET_FACELICENSE,udpGetFaceLicense},
+	{TP_RETURN_AUTHENTICATION,udpGetFaceLicense},
 	{0,NULL},
 };
 

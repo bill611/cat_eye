@@ -49,15 +49,16 @@
  *                        macro define
  *----------------------------------------------------------------------------*/
 enum {
-	MSG_TYPE_CALL = 1,
-	MSG_TYPE_UNLOCK,
-	MSG_TYPE_SLEEP,
-	MSG_TYPE_MIC_CLOSE,
-	MSG_TYPE_MIC_OPEN,
-	MSG_TYPE_CAPTURE,
-	MSG_TYPE_RECORD_START,
-	MSG_TYPE_RECORD_STOP,
-	MSG_TYPE_NEED_CALL_APP,
+	MSG_TYPE_CALL = 1,		// 呼叫
+	MSG_TYPE_UNLOCK,		// 开锁
+	MSG_TYPE_SLEEP,			// 睡眠
+	MSG_TYPE_MIC_CLOSE,		// 禁麦
+	MSG_TYPE_MIC_OPEN,		// 开麦
+	MSG_TYPE_CAPTURE,		// 抓拍
+	MSG_TYPE_RECORD_START,	// 开始录视频
+	MSG_TYPE_RECORD_STOP,	// 停止录视频
+	MSG_TYPE_ELECTRIC,		// 电量
+	MSG_TYPE_NEED_CALL_APP,	// 挂机需要转呼APP
 };
 enum {
 	DEV_TYPE_APP = 0,

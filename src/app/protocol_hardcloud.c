@@ -39,6 +39,7 @@
 #include "jpeg_enc_dec.h"
 #include "debug.h"
 #include "queue.h"
+#include "sensor_detector.h"
 #include "protocol.h"
 
 /* ---------------------------------------------------------------------------*
@@ -104,6 +105,8 @@ struct QueueList {
 	Queue *report_alarm; // 上报报警队列
 	Queue *report_face; // 上报人脸记录队列
 	Queue *report_talk; // 上报通话记录队列
+	Queue *report_factory; // 上报恢复出厂设置队列
+	Queue *report_electric; // 上报电量队列
 };
 /* ---------------------------------------------------------------------------*
  *                      variables define
@@ -353,8 +356,8 @@ static void ceGetIntercoms(CjsonDec *dec)
 	dec->getValueChar(dec,"loginToken",&login_token);
 	dec->getValueChar(dec,"nickName",&nick_name);
 	scope = dec->getValueInt(dec,"scope");
-	sqlClearDevice();
-	sqlInsertUserInfo(user_id,login_token,nick_name,USER_TYPE_CATEYE,scope);
+	sqlClearDeviceNoBack();
+	sqlInsertUserInfoNoBack(user_id,login_token,nick_name,USER_TYPE_CATEYE,scope);
 	if (user_id)
 		free(user_id);
 	if (login_token)
@@ -365,6 +368,7 @@ static void ceGetIntercoms(CjsonDec *dec)
 	dec->changeObjFront(dec); // 返回上一层
 	if(dec->changeCurrentObj(dec,"targets")) {
 		printf("targets self fail\n");
+		sqlCheckBack();
 		return;
 	}
 	int size = dec->getArraySize(dec);
@@ -643,7 +647,7 @@ static void ntpGetTimeCallback(void)
 static void waitConnectService(void)
 {
 	while (1) {
-		if (opts.service_host[0] == 0) {
+		if (opts.service_host[0] == 0 && heart_start) {
 			sleep(1);
 			continue;
 		}
@@ -839,14 +843,12 @@ static void enableSleepMpde(void)
 static void* tcpHeartThread(void *arg)
 {
 	prctl(PR_SET_NAME, __func__, 0, 0, 0);
-	char ip[16];
+	char ip[16] = {0};
 	int connect_flag = 0;
 	char imei[32];
 	char imei_len[8];
 	char gateway[16];
 	int send_interval = 0;
-	heart_start = 1;
-	memset(ip,0,sizeof(ip));
 	// 等待连接上服务器
 	waitConnectService();
 	dnsGetIp(opts.service_host,ip);
@@ -888,6 +890,7 @@ loop_heart:
 			g_config.wifi_lowpower.dst_port,
 			"1","0","1024","1062046","2130463","1",imei_len, imei,
 			NULL);
+	sleep(1);
 #else
 	excuteCmd("dhd_priv","wl","tcpka_conn_add","1",
 			"6C:4B:90:0C:C9:9B",
@@ -898,7 +901,10 @@ loop_heart:
 			"1","0","1024","1062046","2130463","1","14","CE191023000139",NULL);
 #endif
 	excuteCmd("dhd_priv","wl","tcpka_conn_enable","1","1","10","10","10",NULL);
+	sleep(1);
 	excuteCmd("dhd_priv","setsuspendmode","1",NULL);
+	sleep(1);
+	protocol_singlechip->cmdSleep();
 	return NULL;
 }
 
@@ -1221,6 +1227,83 @@ static void reportTalk(ReportTalkData *data)
 		queue_list.report_talk = queueCreate("re_talk",QUEUE_BLOCK,sizeof(ReportTalkData));
 	queue_list.report_talk->post(queue_list.report_talk,data);
 }
+
+static void* threadReportFactory(void *arg)
+{
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
+	ReportFactory factory_data;
+	int i;
+	char *send_buff;
+	waitConnectService();
+	while (1) {
+		if (queue_list.report_factory) {
+			queue_list.report_factory->get(queue_list.report_factory,&factory_data);
+		} else {
+			sleep(1);
+			continue;
+		}
+
+		// 封装jcson信息
+		cJSON *root = packData(CE_Report,MODE_SEND_NONEED_REPLY,++g_id);
+		cJSON *obj_body = cJSON_CreateObject();
+		cJSON_AddStringToObject(obj_body,"dataType","factoryReset");
+		cJSON *obj_data = cJSON_CreateObject();
+		cJSON_AddStringToObject(obj_data,"date",factory_data.date);
+
+		cJSON_AddItemToObject(obj_body,"data",obj_data);
+		cJSON_AddItemToObject(root,"body",obj_body);
+		send_buff = cJSON_PrintUnformatted(root);
+		cJSON_Delete(root);
+		mqtt->send(opts.pubTopic,strlen(send_buff),send_buff);
+		free(send_buff);
+	}
+	return NULL;
+}
+static void reportFactory(ReportFactory *data)
+{
+	if (!queue_list.report_factory)
+		queue_list.report_factory = queueCreate("re_factory",QUEUE_BLOCK,sizeof(ReportFactory));
+	queue_list.report_factory->post(queue_list.report_factory,data);
+}
+
+static void* threadReportElectric(void *arg)
+{
+	prctl(PR_SET_NAME, __func__, 0, 0, 0);
+	ReportElectric electric_data;
+	int i;
+	char *send_buff;
+	waitConnectService();
+	while (1) {
+		if (queue_list.report_electric) {
+			queue_list.report_electric->get(queue_list.report_electric,&electric_data);
+		} else {
+			sleep(1);
+			continue;
+		}
+
+		// 封装jcson信息
+		cJSON *root = packData(CE_Report,MODE_SEND_NONEED_REPLY,++g_id);
+		cJSON *obj_body = cJSON_CreateObject();
+		cJSON_AddStringToObject(obj_body,"dataType","battery");
+		cJSON *obj_data = cJSON_CreateObject();
+		cJSON_AddStringToObject(obj_data,"date",electric_data.date);
+		cJSON_AddStringToObject(obj_data,"electric",electric_data.data);
+
+		cJSON_AddItemToObject(obj_body,"data",obj_data);
+		cJSON_AddItemToObject(root,"body",obj_body);
+		send_buff = cJSON_PrintUnformatted(root);
+		cJSON_Delete(root);
+		mqtt->send(opts.pubTopic,strlen(send_buff),send_buff);
+		free(send_buff);
+	}
+	return NULL;
+}
+static void reportElectric(ReportElectric *data)
+{
+	if (!queue_list.report_electric)
+		queue_list.report_electric = queueCreate("re_factory",QUEUE_BLOCK,sizeof(ReportElectric));
+	queue_list.report_electric->post(queue_list.report_electric,data);
+}
 /* ---------------------------------------------------------------------------*/
 /**
  * @brief registHardCloud 注册硬件云
@@ -1228,18 +1311,22 @@ static void reportTalk(ReportTalkData *data)
 /* ---------------------------------------------------------------------------*/
 void registHardCloud(void)
 {
+	ReportElectric electric_data;
 	protocol_hardcloud = (ProtocolHardcloud *) calloc(1,sizeof(ProtocolHardcloud));
 	protocol_hardcloud->uploadPic = uploadPic;
 	protocol_hardcloud->reportCapture = reportCapture;
 	protocol_hardcloud->reportAlarm = reportAlarm;
 	protocol_hardcloud->reportFace= reportFace;
 	protocol_hardcloud->reportTalk= reportTalk;
+	protocol_hardcloud->reportFactory= reportFactory;
+	protocol_hardcloud->reportElectric= reportElectric;
 	protocol_hardcloud->enableSleepMpde = enableSleepMpde;
 
 	mqtt_connect_state = 0;
 	tcpClientInit();
 	http = myHttpCreate();
 	mqtt = myMqttCreate();
+	heart_start = 1;
 	createThread(initThread,NULL);
 	createThread(tcpHeartThread,NULL);
 	createThread(getIntercomsThread,NULL);
@@ -1248,6 +1335,12 @@ void registHardCloud(void)
 	createThread(threadReportAlarm,NULL);
 	createThread(threadReportFace,NULL);
 	createThread(threadReportTalk,NULL);
+	createThread(threadReportFactory,NULL);
+	createThread(threadReportElectric,NULL);
 	ntpEnable(g_config.auto_sync_time);
+	getDate(electric_data.date,sizeof(electric_data.date));
+	sprintf(electric_data.data,"%d%%",sensor->getElePower());
+	protocol_hardcloud->reportElectric(&electric_data);
+
 }
 

@@ -51,7 +51,6 @@ extern "C" {
 #define UPDATE_URL	"http://img.cateye.taichuan.com/update.ini" // 七牛云存储升级包配置文件地址
 #define UPDATE_INI	UPDATE_INI_PATH"update.ini" // 七牛云存储升级配置文件地址
 
-#define SLEEP_TIMER 20
 #define SLEEP_LONG_TIMER 50
 #define POWEROFF_TIMER 2
 
@@ -178,6 +177,7 @@ extern "C" {
 		struct Mute  mute;  // 免扰模式参数
 		int  auto_sync_time;  // 是否自动同步时间
 		int  face_enable;	// 是否开启人脸识别功能0关闭，1开启
+		int  sleep_time;	// 休眠时间
 
 		struct wifiLowPower wifi_lowpower; // 低功耗wifi参数
 		struct CapType cap_doorbell;// 按门铃抓拍或录像

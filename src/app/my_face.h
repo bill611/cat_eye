@@ -49,6 +49,13 @@ extern "C" {
     }MyFaceRecognizer;
 
 	typedef struct _MyFace{
+		/* ---------------------------------------------------------------------------*/
+		/**
+		 * @brief int 返回0为开启人脸识别，返回1初始化成功，-1初始化失败
+		 *
+		 * @param 
+		 */
+		/* ---------------------------------------------------------------------------*/
 		int (*init)(void);
 		int (*deleteOne)(char *id);
 		int (*regist)(MyFaceRegistData *data);
@@ -56,6 +63,7 @@ extern "C" {
 		int (*recognizerOnce)(MyFaceRecognizer *data);
 		void (*uninit)(void);
 		char * (*getVersion)(void);
+		char * (*getDeviceKey)(void);
 	}MyFace;
 
 	extern MyFace *my_face;

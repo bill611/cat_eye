@@ -57,7 +57,6 @@ extern "C" {
 			char *user_id,
 			char *nick_name,
 			int *scope);
-	extern void sqlClearDevice(void);
 	extern void sqlGetUserInfoEnd(void);
 	extern void sqlInsertFace(char *user_id,
 			char *nick_name,
@@ -115,6 +114,16 @@ extern "C" {
 			int talk_time,
 			uint64_t picture_id);
 	extern void sqlDeleteDeviceUseTypeNoBack(int type);
+
+	extern void sqlClearFaceNoBack(void);
+	extern void sqlClearDeviceNoBack(void);
+	extern void sqlClearRecordCaptureNoBack(void);
+	extern void sqlClearRecordTalkNoBack(void);
+	extern void sqlClearRecordFaceNoBack(void);
+	extern void sqlClearRecordAlarmNoBack(void);
+	extern void sqlClearPicUrlNoBack(void);
+	extern void sqlClearRecordUrlNoBack(void);
+	extern void sqlClearAll(void);
 
 #ifdef __cplusplus
 }

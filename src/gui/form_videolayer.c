@@ -51,7 +51,7 @@ extern void formSettingLoadBmp(void);
 extern void formMonitorLoadBmp(void);
 extern void formSettingWifiLoadBmp(void);
 extern void formPasswordLoadBmp(void);
-extern void formSettingLocoalLoadBmp(void);
+extern void formSettingLocalLoadBmp(void);
 extern void formSettingStoreLoadBmp(void);
 extern void formSettingQrcodeLoadBmp(void);
 extern void formSettingUpdateLoadBmp(void);
@@ -69,6 +69,8 @@ extern void formSettingMuteLoadBmp(void);
 extern void formSettingTalkLoadBmp(void);
 extern void formSettingCaptureVideoLoadBmp(void);
 extern void formSettingFaceLoadBmp(void);
+extern void formSettingScreenLoadBmp(void);
+extern void formSettingSleepTimeLoadBmp(void);
 
 extern void formVideoInitInterface(void);
 /* ---------------------------------------------------------------------------*
@@ -131,7 +133,7 @@ static InitBmpFunc load_bmps_func[] = {
 	formMonitorLoadBmp,
     formSettingWifiLoadBmp,
 	formPasswordLoadBmp,
-	formSettingLocoalLoadBmp,
+	formSettingLocalLoadBmp,
 	formSettingStoreLoadBmp,
 	formSettingQrcodeLoadBmp,
 	formSettingUpdateLoadBmp,
@@ -149,6 +151,8 @@ static InitBmpFunc load_bmps_func[] = {
 	formSettingTalkLoadBmp,
 	formSettingCaptureVideoLoadBmp,
 	formSettingFaceLoadBmp,
+	formSettingScreenLoadBmp,
+	formSettingSleepTimeLoadBmp,
 	NULL,
 };
 
@@ -182,7 +186,7 @@ void resetAutoSleepTimerLong(void)
 
 void resetAutoSleepTimerShort(void)
 {
-	sleep_timer = SLEEP_TIMER;
+	sleep_timer = g_config.sleep_time;
 }
 
 static void enableAutoClose(void)
@@ -266,8 +270,8 @@ static void formVideoLayerTimerProc1s(HWND hwnd)
 		// printf("auto_close_ld:%d\n",auto_close_lcd );
 		if (--auto_close_lcd == 0) {
 			screensaverSet(0);
-			if(sleep_timer < SLEEP_TIMER)
-				sleep_timer = SLEEP_TIMER;
+			if(sleep_timer < g_config.sleep_time)
+				sleep_timer = g_config.sleep_time;
 		}
 	}
 
@@ -278,7 +282,7 @@ static void formVideoLayerTimerProc1s(HWND hwnd)
 	} else if (sleep_timer && auto_close_lcd == 0 && (sensor->getEleState() == 0)) {
 		printf("sleep:%d\n", sleep_timer);
 		if (--sleep_timer == 0)
-			protocol_singlechip->cmdSleep();
+			protocol_hardcloud->enableSleepMpde();
 	}
 }
 

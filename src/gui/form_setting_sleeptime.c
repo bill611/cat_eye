@@ -1,9 +1,9 @@
 /*
  * =============================================================================
  *
- *       Filename:  form_setting.c
+ *       Filename:  form_setting_SleepTime.c
  *
- *    Description:  设置界面
+ *    Description:  睡眠时间设置界面
  *
  *        Version:  1.0
  *        Created:  2018-03-01 23:32:41
@@ -19,6 +19,7 @@
  *----------------------------------------------------------------------------*/
 #include "externfunc.h"
 #include "screen.h"
+#include "config.h"
 
 #include "my_button.h"
 #include "my_title.h"
@@ -28,30 +29,16 @@
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
-extern int createFormSettingWifi(HWND hMainWnd,void (*callback)(void));
-extern int createFormSettingLocal(HWND hMainWnd,void (*callback)(void));
-extern int createFormSettingDoorbell(HWND hMainWnd,void (*callback)(void));
-extern int createFormSettingAlarm(HWND hMainWnd,void (*callback)(void));
-extern int createFormSettingScreen(HWND hMainWnd,void (*callback)(void));
-extern int createFormSettingTimer(HWND hMainWnd,void (*callback)(void));
-extern int createFormSettingMute(HWND hMainWnd,void (*callback)(void));
-extern int createFormSettingTalk(HWND hMainWnd,void (*callback)(void));
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
  *----------------------------------------------------------------------------*/
-static int formSettingProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
+static int formSettingSleepTimeProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 
 static void buttonExitPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonWifiPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonScreenPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonDoorBellPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonTimerPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonMutePress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonAlarmPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonTalkPress(HWND hwnd, int id, int nc, DWORD add_data);
-static void buttonLocalPress(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonLeftPress(HWND hwnd, int id, int nc, DWORD add_data);
+static void buttonRightPress(HWND hwnd, int id, int nc, DWORD add_data);
 
 /* ---------------------------------------------------------------------------*
  *                        macro define
@@ -64,16 +51,12 @@ static void buttonLocalPress(HWND hwnd, int id, int nc, DWORD add_data);
 
 #define BMP_LOCAL_PATH "setting/"
 enum {
-	IDC_TIMER_1S = IDC_FORM_SETTING_START,
+	IDC_TIMER_1S = IDC_FORM_SETTING_SLEEPTIME,
 	IDC_BUTTON_EXIT,
-	IDC_BUTTON_WIFI,
-	IDC_BUTTON_SCREEN,
-	IDC_BUTTON_DOORBELL,
-	IDC_BUTTON_TIMER,
-	IDC_BUTTON_MUTE,
-	IDC_BUTTON_ALARM,
-	IDC_BUTTON_FACTORY,
-	IDC_BUTTON_LOCAL,
+	IDC_BUTTON_LEFT,
+	IDC_BUTTON_RIGHT,
+	IDC_STATIC_IMAGE,
+	IDC_STATIC_TEXT,
 
 	IDC_TITLE,
 };
@@ -88,11 +71,13 @@ static int bmp_load_finished = 0;
 static int flag_timer_stop = 0;
 
 static BmpLocation bmp_load[] = {
-    // {&bmp_bkg_setting,BMP_LOCAL_PATH"bkg_setting.png"},
+	{&bmp_bkg_setting,BMP_LOCAL_PATH"time_icon.png"},
     {NULL},
 };
 
 static MY_CTRLDATA ChildCtrls [] = {
+    STATIC_IMAGE(432,220,160,160,IDC_STATIC_IMAGE,(DWORD)&bmp_bkg_setting),
+    STATIC_LB(434,330,160,30,IDC_STATIC_TEXT,"",&font20,0xffffff),
 };
 
 
@@ -110,22 +95,17 @@ static MY_DLGTEMPLATE DlgInitParam =
 };
 
 static FormBasePriv form_base_priv= {
-	.name = "Fset",
+	.name = "FsetSleepTime",
 	.idc_timer = IDC_TIMER_1S,
-	.dlgProc = formSettingProc,
+	.dlgProc = formSettingSleepTimeProc,
 	.dlgInitParam = &DlgInitParam,
 	.initPara =  initPara,
+	.auto_close_time_set = 30,
 };
 
 static MyCtrlButton ctrls_button[] = {
-	{IDC_BUTTON_WIFI,	 MYBUTTON_TYPE_TWO_STATE,"wifi设置",99,	129,buttonWifiPress},
-	{IDC_BUTTON_SCREEN,	 MYBUTTON_TYPE_TWO_STATE,"屏幕设置",338,129,buttonScreenPress},
-	{IDC_BUTTON_DOORBELL,MYBUTTON_TYPE_TWO_STATE,"门铃设置",577,129,buttonDoorBellPress},
-	{IDC_BUTTON_TIMER,	 MYBUTTON_TYPE_TWO_STATE,"时间设置",817,129,buttonTimerPress},
-	{IDC_BUTTON_MUTE,	 MYBUTTON_TYPE_TWO_STATE,"免扰设置",99,	366,buttonMutePress},
-	{IDC_BUTTON_ALARM,	 MYBUTTON_TYPE_TWO_STATE,"报警设置",338,366,buttonAlarmPress},
-	{IDC_BUTTON_FACTORY, MYBUTTON_TYPE_TWO_STATE,"对讲设置",577,366,buttonTalkPress},
-	{IDC_BUTTON_LOCAL,	 MYBUTTON_TYPE_TWO_STATE,"本机设置",817,366,buttonLocalPress},
+	{IDC_BUTTON_LEFT,	 MYBUTTON_TYPE_TWO_STATE|MYBUTTON_TYPE_TEXT_NULL,"minus",225, 249,buttonLeftPress},
+	{IDC_BUTTON_RIGHT,	 MYBUTTON_TYPE_TWO_STATE|MYBUTTON_TYPE_TEXT_NULL,"add",698,249,buttonRightPress},
 	{0},
 };
 static MyCtrlTitle ctrls_title[] = {
@@ -134,7 +114,7 @@ static MyCtrlTitle ctrls_title[] = {
         MYTITLE_LEFT_EXIT,
         MYTITLE_RIGHT_NULL,
         0,0,1024,40,
-        "设置",
+        "休眠时间",
         "",
         0xffffff, 0x333333FF,
         buttonExitPress,
@@ -149,9 +129,23 @@ static void enableAutoClose(void)
 	Screen.setCurrent(form_base_priv.name);
 	flag_timer_stop = 0;	
 }
+static void reloadSleepTime(void)
+{
+	char buf[16] = {0};
+	sprintf(buf,"%d秒",g_config.sleep_time);
+	SendMessage(GetDlgItem(form_base->hDlg,IDC_STATIC_TEXT),MSG_SETTEXT,0,(LPARAM)buf);
+	if (g_config.sleep_time == 5) {
+		SendMessage(GetDlgItem(form_base->hDlg,IDC_BUTTON_LEFT),MSG_ENABLE,0,0);
+	} else if (g_config.sleep_time == 30) {
+		SendMessage(GetDlgItem(form_base->hDlg,IDC_BUTTON_RIGHT),MSG_ENABLE,0,0);
+	} else {
+		SendMessage(GetDlgItem(form_base->hDlg,IDC_BUTTON_LEFT),MSG_ENABLE,1,0);
+		SendMessage(GetDlgItem(form_base->hDlg,IDC_BUTTON_RIGHT),MSG_ENABLE,1,0);
+	}
+}
 /* ----------------------------------------------------------------*/
 /**
- * @brief buttonWifiPress wifi设置
+ * @brief buttonLeftPress wifi设置
  *
  * @param hwnd
  * @param id
@@ -159,62 +153,26 @@ static void enableAutoClose(void)
  * @param add_data
  */
 /* ----------------------------------------------------------------*/
-static void buttonWifiPress(HWND hwnd, int id, int nc, DWORD add_data)
+static void buttonLeftPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
-	flag_timer_stop = 1;
-    createFormSettingWifi(GetParent(hwnd),enableAutoClose);
-}
-static void buttonScreenPress(HWND hwnd, int id, int nc, DWORD add_data)
-{
-	if (nc != BN_CLICKED)
-		return;
-	flag_timer_stop = 1;
-    createFormSettingScreen(GetParent(hwnd),enableAutoClose);
-}
-static void buttonDoorBellPress(HWND hwnd, int id, int nc, DWORD add_data)
-{
-	if (nc != BN_CLICKED)
-		return;
-	flag_timer_stop = 1;
-    createFormSettingDoorbell(GetParent(hwnd),enableAutoClose);
-}
-static void buttonTimerPress(HWND hwnd, int id, int nc, DWORD add_data)
-{
-	if (nc != BN_CLICKED)
-		return;
-	flag_timer_stop = 1;
-    createFormSettingTimer(GetParent(hwnd),enableAutoClose);
-}
-static void buttonMutePress(HWND hwnd, int id, int nc, DWORD add_data)
-{
-	if (nc != BN_CLICKED)
-		return;
-	flag_timer_stop = 1;
-    createFormSettingMute(GetParent(hwnd),enableAutoClose);
-}
-static void buttonAlarmPress(HWND hwnd, int id, int nc, DWORD add_data)
-{
-	if (nc != BN_CLICKED)
-		return;
-	flag_timer_stop = 1;
-    createFormSettingAlarm(GetParent(hwnd),enableAutoClose);
-}
-static void buttonTalkPress(HWND hwnd, int id, int nc, DWORD add_data)
-{
-	if (nc != BN_CLICKED)
-		return;
-	flag_timer_stop = 1;
-    createFormSettingTalk(GetParent(hwnd),enableAutoClose);
+	if (g_config.sleep_time >= 10) {
+		g_config.sleep_time -= 5;
+		ConfigSavePublic();
+	}
+	reloadSleepTime();
 }
 
-static void buttonLocalPress(HWND hwnd, int id, int nc, DWORD add_data)
+static void buttonRightPress(HWND hwnd, int id, int nc, DWORD add_data)
 {
 	if (nc != BN_CLICKED)
 		return;
-	flag_timer_stop = 1;
-    createFormSettingLocal(GetParent(hwnd),enableAutoClose);
+	if (g_config.sleep_time <= 30) {
+		g_config.sleep_time += 5;
+		ConfigSavePublic();
+	}
+	reloadSleepTime();
 }
 
 /* ----------------------------------------------------------------*/
@@ -232,7 +190,7 @@ static void buttonExitPress(HWND hwnd, int id, int nc, DWORD add_data)
 	ShowWindow(GetParent(hwnd),SW_HIDE);
 }
 
-void formSettingLoadBmp(void)
+void formSettingSleepTimeLoadBmp(void)
 {
     if (bmp_load_finished == 1)
         return;
@@ -264,11 +222,12 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
         ctrls_button[i].font = font22;
         createMyButton(hDlg,&ctrls_button[i]);
     }
+	reloadSleepTime();
 }
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief formSettingProc 窗口回调函数
+ * @brief formSettingSleepTimeProc 窗口回调函数
  *
  * @param hDlg
  * @param message
@@ -278,7 +237,7 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
  * @return
  */
 /* ----------------------------------------------------------------*/
-static int formSettingProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
+static int formSettingSleepTimeProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 {
     switch(message) // 自定义消息
     {
@@ -302,7 +261,7 @@ static int formSettingProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
     return DefaultDialogProc(hDlg, message, wParam, lParam);
 }
 
-int createFormSetting(HWND hMainWnd,void (*callback)(void))
+int createFormSettingSleepTime(HWND hMainWnd,void (*callback)(void))
 {
 	HWND Form = Screen.Find(form_base_priv.name);
 	if(Form) {

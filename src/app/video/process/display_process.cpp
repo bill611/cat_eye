@@ -112,8 +112,10 @@ void DisplayProcess::setVideoBlack()
     int out_device = rk_fb_get_out_device(&screen_width, &screen_height);
 
 	int screen_size = screen_width*screen_height;
-	memset(video_win->buffer,0,screen_size);
-	memset(video_win->buffer + screen_size,0x80,screen_size/2);
+	if (video_win->buffer) {
+		memset(video_win->buffer,0,screen_size);
+		memset(video_win->buffer + screen_size,0x80,screen_size/2);
+	}
 
     if (rk_fb_video_disp(video_win) < -1){
 		printf("rk_fb_video_disp failed\n");
@@ -164,17 +166,21 @@ static void* threadH264Dec(void *arg)
 				// 居中显示，图像起点
 				int disp_start_x = (screen_width - disp_width) / 2;
 				int data_index = 0;
-				for (i = 0; i < screen_height; ++i) {
-					memset(video_win->buffer + i*screen_width,0,disp_start_x);
-					memcpy(video_win->buffer + i*screen_width + disp_start_x,&nv12_scale_data[disp_width * data_index++],disp_width);
-					memset(video_win->buffer + i*screen_width + disp_start_x + disp_width,0,disp_start_x);
+				if (video_win->buffer) {
+					for (i = 0; i < screen_height; ++i) {
+						memset(video_win->buffer + i*screen_width,0,disp_start_x);
+						memcpy(video_win->buffer + i*screen_width + disp_start_x,&nv12_scale_data[disp_width * data_index++],disp_width);
+						memset(video_win->buffer + i*screen_width + disp_start_x + disp_width,0,disp_start_x);
+					}
 				}
 				// uv
 				int k ;
-				for (k = 0; k < screen_height / 2; ++k,++i) {
-					memset(video_win->buffer + i*screen_width,0x80,disp_start_x);
-					memcpy(video_win->buffer + i*screen_width + disp_start_x,&nv12_scale_data[disp_width * data_index++],disp_width);
-					memset(video_win->buffer + i*screen_width + disp_start_x + disp_width,0x80,disp_start_x);
+				if (video_win->buffer) {
+					for (k = 0; k < screen_height / 2; ++k,++i) {
+						memset(video_win->buffer + i*screen_width,0x80,disp_start_x);
+						memcpy(video_win->buffer + i*screen_width + disp_start_x,&nv12_scale_data[disp_width * data_index++],disp_width);
+						memset(video_win->buffer + i*screen_width + disp_start_x + disp_width,0x80,disp_start_x);
+					}
 				}
 
 				writePicture(nv12_scale_data,disp_width,screen_height);

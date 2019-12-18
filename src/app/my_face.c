@@ -33,6 +33,8 @@
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
+extern char *rdfaceGetFaceVersion(void);
+extern char *rdfaceGetDeviceKey(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -56,7 +58,7 @@ static int init(void)
 		return 0;
 	// 不重复初始化
 	if (face_init_finished == 1)
-		return 0;
+		return 1;
 #ifdef USE_FACE
 	pthread_mutex_lock(&mutex);
 	face_init_finished = 0;
@@ -64,13 +66,12 @@ static int init(void)
 		rdfaceUninit();
 		DPRINT("rdfaceInit error!");
 		pthread_mutex_unlock(&mutex);
-		return 0;
-		// return NULL;
+		return -1;
 	}
 	face_init_finished = 1;
 	pthread_mutex_unlock(&mutex);
 #endif
-	return 0;
+	return 1;
 }
 
 static int regist(MyFaceRegistData *data)
@@ -210,6 +211,14 @@ static char *getVersion(void)
 	return "未检测到人脸识别算法";	
 #endif
 }
+static char *getDeviceKey(void)
+{
+#ifdef USE_FACE
+	return rdfaceGetDeviceKey();	
+#else
+	return "未检测到人脸识别算法";	
+#endif
+}
 
 void myFaceInit(void)
 {
@@ -221,6 +230,7 @@ void myFaceInit(void)
 	my_face->uninit = uninit;
 	my_face->init = init;
 	my_face->getVersion = getVersion;
+	my_face->getDeviceKey = getDeviceKey;
 
 	face_init_finished = 0;
 	pthread_mutexattr_t mutexattr;

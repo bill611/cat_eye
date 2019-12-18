@@ -329,16 +329,6 @@ void sqlDeleteDeviceUseTypeNoBack(int type)
 	pthread_mutex_unlock(&mutex);
 }
 
-void sqlClearDevice(void)
-{
-	char buf[128];
-	pthread_mutex_lock(&mutex);
-	sprintf(buf, "Delete From UserInfo");
-	DPRINT("%s\n",buf);
-	LocalQueryExec(dbase.sql,buf);
-	dbase.checkFunc(dbase.sql);
-	pthread_mutex_unlock(&mutex);
-}
 int sqlGetDeviceId(uint16_t addr,char *id)
 {
 	char buf[128];
@@ -451,7 +441,6 @@ void sqlDeleteFace(char *id)
 	dbase.checkFunc(dbase.sql);
 	pthread_mutex_unlock(&mutex);
 }
-
 void sqlInsertPicUrlNoBack(
 		uint64_t picture_id,
 		char *url)
@@ -569,11 +558,6 @@ int sqlGetCapInfo(
 	pthread_mutex_unlock(&mutex);
 	return ret;
 }
-void sqlCheckBack(void)
-{
-	dbase.checkFunc(dbase.sql);
-}
-
 int sqlGetPicInfoStart(uint64_t picture_id)
 {
 	char buf[128];
@@ -638,6 +622,112 @@ int sqlGetAlarmInfoUseDateType(
 	return ret;
 }
 
+void sqlClearFaceNoBack(void)
+{
+	char buf[128];
+	pthread_mutex_lock(&mutex);
+	sprintf(buf, "Delete From FaceInfo");
+	DPRINT("%s\n",buf);
+	LocalQueryExec(dbase.sql,buf);
+	LocalQueryExec(dbase.sql,                                      
+			"update sqlite_sequence set seq=0 where name='FaceInfo'");
+	pthread_mutex_unlock(&mutex);
+}
+
+void sqlClearDeviceNoBack(void)
+{
+	char buf[128];
+	pthread_mutex_lock(&mutex);
+	sprintf(buf, "Delete From UserInfo");
+	DPRINT("%s\n",buf);
+	LocalQueryExec(dbase.sql,buf);
+	LocalQueryExec(dbase.sql,                                      
+			"update sqlite_sequence set seq=0 where name='UserInfo'");
+	pthread_mutex_unlock(&mutex);
+}
+void sqlClearRecordCaptureNoBack(void)
+{
+	char buf[128];
+	pthread_mutex_lock(&mutex);
+	sprintf(buf, "Delete From RecordCapture");
+	DPRINT("%s\n",buf);
+	LocalQueryExec(dbase.sql,buf);
+	LocalQueryExec(dbase.sql,                                      
+			"update sqlite_sequence set seq=0 where name='RecordCapture'");
+	pthread_mutex_unlock(&mutex);
+}
+void sqlClearRecordTalkNoBack(void)
+{
+	char buf[128];
+	pthread_mutex_lock(&mutex);
+	sprintf(buf, "Delete From RecordTalk");
+	DPRINT("%s\n",buf);
+	LocalQueryExec(dbase.sql,buf);
+	LocalQueryExec(dbase.sql,                                      
+			"update sqlite_sequence set seq=0 where name='RecordTalk'");
+	pthread_mutex_unlock(&mutex);
+}
+void sqlClearRecordFaceNoBack(void)
+{
+	char buf[128];
+	pthread_mutex_lock(&mutex);
+	sprintf(buf, "Delete From RecordFace");
+	DPRINT("%s\n",buf);
+	LocalQueryExec(dbase.sql,buf);
+	LocalQueryExec(dbase.sql,                                      
+			"update sqlite_sequence set seq=0 where name='RecordFace'");
+	pthread_mutex_unlock(&mutex);
+}
+void sqlClearRecordAlarmNoBack(void)
+{
+	char buf[128];
+	pthread_mutex_lock(&mutex);
+	sprintf(buf, "Delete From RecordAlarm");
+	DPRINT("%s\n",buf);
+	LocalQueryExec(dbase.sql,buf);
+	LocalQueryExec(dbase.sql,                                      
+			"update sqlite_sequence set seq=0 where name='RecordAlarm'");
+	pthread_mutex_unlock(&mutex);
+}
+void sqlClearPicUrlNoBack(void)
+{
+	char buf[128];
+	pthread_mutex_lock(&mutex);
+	sprintf(buf, "Delete From PicUrl");
+	DPRINT("%s\n",buf);
+	LocalQueryExec(dbase.sql,buf);
+	LocalQueryExec(dbase.sql,                                      
+			"update sqlite_sequence set seq=0 where name='PicUrl'");
+	pthread_mutex_unlock(&mutex);
+}
+void sqlClearRecordUrlNoBack(void)
+{
+	char buf[128];
+	pthread_mutex_lock(&mutex);
+	sprintf(buf, "Delete From RecordUrl");
+	DPRINT("%s\n",buf);
+	LocalQueryExec(dbase.sql,buf);
+	LocalQueryExec(dbase.sql,                                      
+			"update sqlite_sequence set seq=0 where name='RecordUrl'");
+	pthread_mutex_unlock(&mutex);
+}
+void sqlCheckBack(void)
+{
+	dbase.checkFunc(dbase.sql);
+}
+
+void sqlClearAll(void)
+{
+	sqlClearFaceNoBack();
+	sqlClearDeviceNoBack();
+	sqlClearRecordCaptureNoBack();
+	sqlClearRecordTalkNoBack();
+	sqlClearRecordFaceNoBack();
+	sqlClearRecordAlarmNoBack();
+	sqlClearPicUrlNoBack();
+	sqlClearRecordUrlNoBack();
+	sqlCheckBack();
+}
 static void* threadSqlUpload(void *arg)
 {
 

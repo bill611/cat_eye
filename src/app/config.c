@@ -9,6 +9,7 @@
 #include "externfunc.h"
 #include "thread_helper.h"
 #include "config.h"
+#include "sql_handle.h"
 #include "protocol.h"
 #include "debug.h"
 
@@ -53,6 +54,7 @@ static EtcValueInt etc_public_int[]={
 {"others",		"record_time",		&g_config.record_time,		30},
 {"others",		"auto_sync_time",	&g_config.auto_sync_time,	1},
 {"others",		"face_enable",		&g_config.face_enable,		1},
+{"others",		"sleep_time",		&g_config.sleep_time,		20},
 };
 static EtcValueChar etc_public_char[]={
 {"device",		"version",	SIZE_CONFIG(g_config.version),	DEVICE_SVERSION},
@@ -397,11 +399,17 @@ static void configFactoryCallback(void)
 {
 	screenSetBrightness(g_config.brightness);
 	protocol_singlechip->cmdSetPirStrength(g_config.pir_strength);
+	sqlClearAll();
 }
 
 void configFactory(void)
 {
+	ReportFactory factory_data;
 	configResetEtcInt(etc_public_int,NELEMENTS(etc_public_int));	
 	configResetEtcChar(etc_public_char,NELEMENTS(etc_public_char));
+
+	getDate(factory_data.date,sizeof(factory_data.date));
+	protocol_hardcloud->reportFactory(&factory_data);
+
 	ConfigSavePublicCallback(configFactoryCallback);
 }

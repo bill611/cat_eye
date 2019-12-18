@@ -1,9 +1,9 @@
 /*
  * =============================================================================
  *
- *       Filename:  form_setting_Locoal.c
+ *       Filename:  form_setting_Local.c
  *
- *    Description:  Locoal设置界面
+ *    Description:  Local设置界面
  *
  *        Version:  1.0
  *        Created:  2018-03-01 23:32:41
@@ -38,10 +38,11 @@ extern int topMsgFactory(HWND hMainWnd,void (*callback)(void));
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
  *----------------------------------------------------------------------------*/
-static int formSettingLocoalProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
+static int formSettingLocalProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 
 static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data);
+static void loadLocalData(void);
 
 /* ---------------------------------------------------------------------------*
  *                        macro define
@@ -128,9 +129,9 @@ static MY_DLGTEMPLATE DlgInitParam =
 };
 
 static FormBasePriv form_base_priv= {
-	.name = "FsetLocoal",
+	.name = "FsetLocal",
 	.idc_timer = IDC_TIMER_1S,
-	.dlgProc = formSettingLocoalProc,
+	.dlgProc = formSettingLocalProc,
 	.dlgInitParam = &DlgInitParam,
 	.initPara =  initPara,
 };
@@ -157,6 +158,7 @@ static FormBase* form_base = NULL;
 
 static void enableAutoClose(void)
 {
+	loadLocalData();
 	Screen.setCurrent(form_base_priv.name);
 	flag_timer_stop = 0;	
 }
@@ -202,7 +204,7 @@ static void scrollviewNotify(HWND hwnd, int id, int nc, DWORD add_data)
 	}
 }
 
-void formSettingLocoalLoadBmp(void)
+void formSettingLocalLoadBmp(void)
 {
     if (bmp_load_finished == 1)
         return;
@@ -246,7 +248,7 @@ static void myDrawItem (HWND hWnd, HSVITEM hsvi, HDC hdc, RECT *rcDraw)
 			DT_VCENTER | DT_RIGHT | DT_WORDBREAK  | DT_SINGLELINE);
 }
 
-static void loadLocoalData(void)
+static void loadLocalData(void)
 {
 	int i;
 	SVITEMINFO svii;
@@ -304,12 +306,12 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
     }
 	hScrollView = GetDlgItem (hDlg, IDC_SCROLLVIEW);
 	SendMessage (hScrollView, SVM_SETITEMDRAW, 0, (LPARAM)myDrawItem);
-	loadLocoalData();
+	loadLocalData();
 }
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief formSettingLocoalProc 窗口回调函数
+ * @brief formSettingLocalProc 窗口回调函数
  *
  * @param hDlg
  * @param message
@@ -319,7 +321,7 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
  * @return
  */
 /* ----------------------------------------------------------------*/
-static int formSettingLocoalProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
+static int formSettingLocalProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 {
     switch(message) // 自定义消息
     {
@@ -350,12 +352,12 @@ static int formSettingLocoalProc(HWND hDlg, int message, WPARAM wParam, LPARAM l
     return DefaultDialogProc(hDlg, message, wParam, lParam);
 }
 
-int createFormSettingLocoal(HWND hMainWnd,void (*callback)(void))
+int createFormSettingLocal(HWND hMainWnd,void (*callback)(void))
 {
 	HWND Form = Screen.Find(form_base_priv.name);
 	if(Form) {
 		Screen.setCurrent(form_base_priv.name);
-		loadLocoalData();
+		loadLocalData();
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
         if (bmp_load_finished == 0) {

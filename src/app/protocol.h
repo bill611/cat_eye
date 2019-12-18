@@ -115,6 +115,15 @@ extern "C" {
 		char nick_name[32];		// 通话人
 	}ReportTalkData;
 
+	typedef struct _ReportFactory{
+		char date[32];		// 日期
+	}ReportFactory;
+
+	typedef struct _ReportElectric{
+		char date[32];		// 日期
+		char data[32];		// 电量百分比
+	}ReportElectric;
+
 	typedef struct _UpLoadData{
 		char file_path[64];	// 图片本地路径
 		uint64_t picture_id;// 徘徊报警时，抓拍图片
@@ -193,6 +202,8 @@ extern "C" {
 		void (*reportAlarm)(ReportAlarmData *data);
 		void (*reportFace)(ReportFaceData *data);
 		void (*reportTalk)(ReportTalkData *data);
+		void (*reportFactory)(ReportFactory *data);
+		void (*reportElectric)(ReportElectric *data);
 		void (*enableSleepMpde)(void);
 	}ProtocolHardcloud;
 	extern ProtocolHardcloud *protocol_hardcloud;

@@ -73,8 +73,8 @@ int MiniGUIMain(int argc, const char* argv[])
 	myMixerInit();
 	myVideoInit();
 	myUpdateInit();
-	protocolInit();
 	sensorDetectorInit();
+	protocolInit();
 	formVideoLayerCreate();
 	return 0;
 }

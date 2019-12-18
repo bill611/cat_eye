@@ -68,7 +68,6 @@ static void cmdSleep(void)
 {
 #ifdef AUTO_SLEEP
 	IpcData ipc_data;
-	protocol_hardcloud->enableSleepMpde();
 	ipc_data.dev_type = IPC_DEV_TYPE_MAIN;
 	ipc_data.cmd = IPC_UART_SLEEP;
 	if (ipc_main)

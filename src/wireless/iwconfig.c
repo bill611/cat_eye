@@ -40,7 +40,6 @@ static int	errarg;
 static int	errmax;
 
 static int g_qual = 0;
-static int g_connect = -1;
 
 /************************* DISPLAY ROUTINES **************************/
 
@@ -260,11 +259,8 @@ display_info(struct wireless_info *	info,
 	  else
 		  IWCONFIG_INFO("Access Point:");
 	  if (iw_sawap_ntop(&info->ap_addr, buffer)) {
-		  g_connect = 0;
 		  IWCONFIG_INFO(" %s   ", buffer); 
 	  }
-	  else
-		  g_connect = -1;
 	}
 
   /* Display the currently used/set bit-rate */
@@ -433,7 +429,6 @@ display_info(struct wireless_info *	info,
 	  /* Disabled ? */
 	  if(info->power.disabled) {
 		  IWCONFIG_INFO(":off");
-		  g_connect = -1;
 	  }
 	  else
 	  {
@@ -1922,18 +1917,17 @@ iw_usage(void)
 /*
  * The main !
  */
-int
+void
 iwconfig(int	argc,
      char **	argv,int *qual)
 {
   int skfd;		/* generic raw socket desc.	*/
   int goterr = 0;
-  // g_connect = -1;
   /* Create a channel to the NET kernel. */
   if((skfd = iw_sockets_open()) < 0)
     {
       perror("socket");
-	  return -1;
+	  return ;
     }
 
   /* No argument : show the list of all device + info */
@@ -1970,5 +1964,4 @@ iwconfig_end:
   /* Close the socket. */
   iw_sockets_close(skfd);
 
-  return g_connect;
 }

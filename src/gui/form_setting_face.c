@@ -39,6 +39,7 @@ static int getFaceLicense(HWND hMainWnd,void (*callback)(void));
  *----------------------------------------------------------------------------*/
 static int formSettingFaceProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
+static void loadFaceData(void);
 
 static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data);
 
@@ -127,6 +128,7 @@ static FormBasePriv form_base_priv= {
 	.dlgProc = formSettingFaceProc,
 	.dlgInitParam = &DlgInitParam,
 	.initPara =  initPara,
+	.auto_close_time_set = 30,
 };
 
 static MyCtrlButton ctrls_button[] = {
@@ -174,6 +176,7 @@ static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data)
 static void getFaceLicenseCallback(int result)
 {
 	if (result) {
+		loadFaceData();
 		SendMessage(GetDlgItem(form_base->hDlg,IDC_STATIC_TEXT_GETFACE_LICENSE),
 				MSG_SETTEXT,0,(LPARAM)"人脸识别授权获取成功!");
 		InvalidateRect (hScrollView, NULL, TRUE);

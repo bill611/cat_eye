@@ -278,7 +278,7 @@ char * excuteCmd(char *Cmd,...)
 		strcat(commond,argv);
 	}
 	va_end(argp);
-	DPRINT("cmd :%s\n",commond);
+	// DPRINT("cmd :%s\n",commond);
 	if ((fp = popen(commond, "r") ) == 0) {
 		perror("popen");
 		return NULL;
@@ -545,7 +545,13 @@ int getWifiConfig(int *qual)
 	return 0;
 #else
 	char *cmd[] = { "cat_eye", "wlan0" };
-	return iwconfig(2,cmd,qual);
+	iwconfig(2,cmd,qual);
+
+	char *state = excuteCmd("wpa_cli","-iwlan0","status","|","grep","wpa_state",NULL);
+	if (strncmp(state,"wpa_state=COMPLETED",strlen("wpa_state=COMPLETED")))
+		return 1;
+	else
+		return 0;
 #endif
 }
 void wifiConnectStart(void)
