@@ -622,6 +622,10 @@ void powerOff(void)
 {
 	excuteCmd("poweroff",NULL);
 }
+void reboot(void)
+{
+	excuteCmd("reboot",NULL);
+}
 int checkSD(void)
 {
 	int file = -1;
@@ -662,4 +666,24 @@ void setSysVolume(int volume)
 	sprintf(buf, "amixer cset numid=4 %d",volume);
 	system(buf);
 #endif
+}
+
+/* ---------------------------------------------------------------------------*/
+/**
+ * @brief getKernelVersion 读取内核版本
+ *
+ * @param version
+ * @param leng
+ */
+/* ---------------------------------------------------------------------------*/
+void getKernelVersion(char *version,int leng)
+{
+	int fd = open("/sys/devices/platform/taichuan/taichuanDev", O_RDONLY);
+	if (fd < 0) {
+		printf("get kernel version fail\n");
+		return;
+	}
+	if (read(fd,version,leng) <= 0)
+		printf("read kernel version fail\n");
+	close(fd);	
 }

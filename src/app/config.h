@@ -13,8 +13,7 @@ extern "C" {
 
 
 #define DEVICE_TYPE	"TC-U9MY-A"
-#define DEVICE_SVERSION	"1.0.5"
-#define DEVICE_KVERSION	"1.0.0"
+#define DEVICE_SVERSION	"1.0.6"
 
 #if (defined X86)
 #define SDCARD_PATH "./"
@@ -159,6 +158,7 @@ extern "C" {
         char imei[64 + 1];         // 设备机身码
         char hardcode[64 + 1];     // 设备硬件码
         char version[16 + 1];      // 软件版本
+        char k_version[16 + 1];    // 内核版本
         char s_version[2 + 1];    // 单片机版本
         char app_url[128 + 1];     // app地址 
 		int  timestamp;        // 启动时间戳

@@ -24,6 +24,7 @@
 #include "config.h"
 #include "my_mixer.h"
 #include "externfunc.h"
+#include "my_gpio.h"
 #include "thread_helper.h"
 
 /* ---------------------------------------------------------------------------*
@@ -82,6 +83,7 @@ void myAudioPlayRecognizer(char *usr_name)
 	if (isNeedToPlay() == 0)
 		return;
 	char path[64];
+	gpioTalkDirIn();
 	sprintf(path,"%s%s.wav",AUDIO_PATH,usr_name);
 	playwavfile(path);
 }
@@ -111,6 +113,7 @@ void myAudioPlayRing(void)
 		usleep(1000);
 	}
 	loop_start = 1;
+	gpioTalkDirIn();
 	char *path = (char *) calloc(1,64);
 	sprintf(path,"%sring%d.wav",AUDIO_PATH,g_config.ring_num);
 	createThread(loopPlay,path);
@@ -132,6 +135,7 @@ void myAudioPlayRingOnce(void)
 		return;
 	char *path = (char *) calloc(1,64);
 	myAudioStopPlay();
+	gpioTalkDirIn();
 	sprintf(path,"%sring%d.wav",AUDIO_PATH,g_config.ring_num);
 	createThread(oncePlay,path);
 }
@@ -140,6 +144,13 @@ void myAudioPlayAlarm(void)
 	if (my_mixer)
 		my_mixer->SetVolumeEx(my_mixer,g_config.alarm_volume);
 	char path[64];
+	gpioTalkDirOut();
 	sprintf(path,"%salarm.wav",AUDIO_PATH);
 	playwavfile(path);
+}
+void myAudioPlayDindong(void)
+{
+	gpioTalkDirIn();
+	excuteCmd("busybox","killall","aplay",NULL);
+	excuteCmd("/data/play.sh","/data/dingdong.wav",NULL);
 }

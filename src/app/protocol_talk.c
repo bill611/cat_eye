@@ -28,7 +28,6 @@
 #include "protocol.h"
 #include "my_video.h"
 #include "my_mixer.h"
-#include "my_gpio.h"
 #include "my_audio.h"
 #include "my_echo.h"
 #include "ucpaas/ucpaas.h"
@@ -222,6 +221,7 @@ static void cbHangup(void *arg)
 			|| type == 0)
 		return;
 
+	printf("[%s,%d]type:%d\n", __func__,__LINE__,type);
 	if (my_video) {
 		if (type == 2)
 			my_video->videoHangup(HANGUP_TYPE_PEER);
@@ -318,7 +318,6 @@ static void cbInitAudio(unsigned int rate,unsigned int bytes_per_sample,unsigned
 	if (protocol_talk->type == PROTOCOL_TALK_LAN)
 		return;
 
-	gpio->SetValue(gpio,ENUM_GPIO_MICKEY,IO_ACTIVE);
 	mic_open = 1;
 	if (my_mixer)
 		my_mixer->InitPlayAndRec(my_mixer,&audio_fp,rate,channle);
@@ -432,6 +431,7 @@ static void videoSendMessageStatus(VideoTrans *This,VideoUiStatus status)
 		case VIDEOTRANS_UI_ANSWER_EX: 		// 分机接听
 			break;
 		case VIDEOTRANS_UI_OVER:				// 挂机
+			printf("[%s,%d]\n", __func__,__LINE__);
 			if (my_video)
 				my_video->videoHangup(1);
 			break;
@@ -459,7 +459,6 @@ static void udpReceiveAudio(Rtp *This,void *data,int size)
 }
 static void udpStart(Rtp *This)
 {
-	gpio->SetValue(gpio,ENUM_GPIO_MICKEY,IO_ACTIVE);
 	printf("[%s]\n", __func__);
 	if (my_mixer) {
 		my_mixer->SetVolumeEx(my_mixer,g_config.talk_volume);

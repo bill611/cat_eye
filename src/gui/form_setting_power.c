@@ -1,9 +1,9 @@
 /*
  * =============================================================================
  *
- *       Filename:  form_setting_Local.c
+ *       Filename:  form_setting_Power.c
  *
- *    Description:  Local设置界面
+ *    Description:  Power设置界面
  *
  *        Version:  1.0
  *        Created:  2018-03-01 23:32:41
@@ -30,20 +30,17 @@
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
-extern int createFormSettingStore(HWND hMainWnd,void (*callback)(void));
-extern int createFormSettingQrcode(HWND hMainWnd,void (*callback)(void));
-extern int createFormSettingUpdate(HWND hMainWnd,void (*callback)(void));
-extern int createFormSettingFace(HWND hMainWnd,void (*callback)(void));
-extern int createFormSettingPower(HWND hMainWnd,void (*callback)(void));
-extern int topMsgFactory(HWND hMainWnd,void (*callback)(void));
+extern int topMsgSleep(HWND hMainWnd,void (*callback)(void));
+extern int topMsgReboot(HWND hMainWnd,void (*callback)(void));
+extern int topMsgShutdown(HWND hMainWnd,void (*callback)(void));
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
  *----------------------------------------------------------------------------*/
-static int formSettingLocalProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
+static int formSettingPowerProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam);
 
 static void buttonNotify(HWND hwnd, int id, int nc, DWORD add_data);
-static void loadLocalData(void);
+static void loadPowerData(void);
 
 /* ---------------------------------------------------------------------------*
  *                        macro define
@@ -93,13 +90,9 @@ struct MemData mem_data;
 // static struct ScrollviewItem *locoal_list;
 // TEST
 static struct ScrollviewItem locoal_list[] = {
-	{"设备型号",DEVICE_TYPE,NULL},
-	{"软件版本","",createFormSettingUpdate},
-	{"二维码",  "扫描添加设备",createFormSettingQrcode},
-	// {"本地存储","",NULL},
-	{"人脸识别","",createFormSettingFace},
-	{"恢复出厂设置","",topMsgFactory},
-	{"电源管理","",createFormSettingPower},
+	{"睡眠","",topMsgSleep},
+	{"重启","",topMsgReboot},
+	{"关机","",topMsgShutdown},
 	{0},
 };
 static BITMAP bmp_warning; // 警告
@@ -131,9 +124,9 @@ static MY_DLGTEMPLATE DlgInitParam =
 };
 
 static FormBasePriv form_base_priv= {
-	.name = "FsetLocal",
+	.name = "FsetPower",
 	.idc_timer = IDC_TIMER_1S,
-	.dlgProc = formSettingLocalProc,
+	.dlgProc = formSettingPowerProc,
 	.dlgInitParam = &DlgInitParam,
 	.initPara =  initPara,
 };
@@ -160,7 +153,7 @@ static FormBase* form_base = NULL;
 
 static void enableAutoClose(void)
 {
-	loadLocalData();
+	loadPowerData();
 	Screen.setCurrent(form_base_priv.name);
 	flag_timer_stop = 0;	
 }
@@ -206,7 +199,7 @@ static void scrollviewNotify(HWND hwnd, int id, int nc, DWORD add_data)
 	}
 }
 
-void formSettingLocalLoadBmp(void)
+void formSettingPowerLoadBmp(void)
 {
     if (bmp_load_finished == 1)
         return;
@@ -250,7 +243,7 @@ static void myDrawItem (HWND hWnd, HSVITEM hsvi, HDC hdc, RECT *rcDraw)
 			DT_VCENTER | DT_RIGHT | DT_WORDBREAK  | DT_SINGLELINE);
 }
 
-static void loadLocalData(void)
+static void loadPowerData(void)
 {
 	int i;
 	SVITEMINFO svii;
@@ -261,25 +254,6 @@ static void loadLocalData(void)
 		svii.nItemHeight = 60;
 		svii.addData = (DWORD)plist;
 		svii.nItem = i;
-		if (strcmp("本地存储",plist->title) == 0) {
-			if (checkSD() == -1) {
-				strcpy(plist->text,"未检测到SD卡");
-				plist->callback = NULL;
-			} else {
-				memset(&mem_data,0,sizeof(mem_data));
-				getSdMem(mem_data.total,mem_data.residue,mem_data.used);
-				sprintf(plist->text,"剩余:%s",mem_data.residue);
-				plist->callback = createFormSettingStore;
-			}
-		}else if (strcmp("软件版本",plist->title) == 0) {
-			sprintf(plist->text,"%s/%s/%s",DEVICE_SVERSION,g_config.k_version,g_config.s_version);
-		}else if (strcmp("人脸识别",plist->title) == 0) {
-			if (strcmp(g_config.f_license,"0") == 0) {
-				sprintf(plist->text,"未授权");
-			} else {
-				sprintf(plist->text,"已授权");
-			}
-		}
 		SendMessage (hScrollView, SVM_ADDITEM, 0, (LPARAM)&svii);
 		SendMessage (hScrollView, SVM_SETITEMADDDATA, i, (DWORD)plist);
 		plist++;
@@ -308,12 +282,12 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
     }
 	hScrollView = GetDlgItem (hDlg, IDC_SCROLLVIEW);
 	SendMessage (hScrollView, SVM_SETITEMDRAW, 0, (LPARAM)myDrawItem);
-	loadLocalData();
+	loadPowerData();
 }
 
 /* ----------------------------------------------------------------*/
 /**
- * @brief formSettingLocalProc 窗口回调函数
+ * @brief formSettingPowerProc 窗口回调函数
  *
  * @param hDlg
  * @param message
@@ -323,7 +297,7 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
  * @return
  */
 /* ----------------------------------------------------------------*/
-static int formSettingLocalProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
+static int formSettingPowerProc(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 {
     switch(message) // 自定义消息
     {
@@ -354,12 +328,12 @@ static int formSettingLocalProc(HWND hDlg, int message, WPARAM wParam, LPARAM lP
     return DefaultDialogProc(hDlg, message, wParam, lParam);
 }
 
-int createFormSettingLocal(HWND hMainWnd,void (*callback)(void))
+int createFormSettingPower(HWND hMainWnd,void (*callback)(void))
 {
 	HWND Form = Screen.Find(form_base_priv.name);
 	if(Form) {
 		Screen.setCurrent(form_base_priv.name);
-		loadLocalData();
+		loadPowerData();
 		ShowWindow(Form,SW_SHOWNORMAL);
 	} else {
         if (bmp_load_finished == 0) {

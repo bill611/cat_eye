@@ -84,6 +84,8 @@ extern "C" {
 	void gpioInit(void);
 	extern MyGpio* gpio;
 	extern void gpioInit(void);
+	extern void gpioTalkDirOut(void);
+	extern void gpioTalkDirIn(void);
 
 #ifdef __cplusplus
 }

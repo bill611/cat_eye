@@ -32,6 +32,9 @@
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
 extern void configFactory(void);
+extern void formVideoLayerGotoPoweroff(void);
+extern int createFormPowerOffSleep(void);
+extern int createFormPowerOffReboot(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -247,4 +250,37 @@ void topMsgCammerError(void)
 int topMsgFactory(HWND hMainWnd,void (*callback)(void))
 {
 	createFormTopmessage(0,"恢复出厂","恢复出厂将删除所有记录和文件，且不可恢复，是否确认？",configFactory,NULL);
+}
+
+static void sleepCallback(void)
+{
+	createFormPowerOffSleep();
+	protocol_hardcloud->enableSleepMpde();
+}
+
+
+int topMsgSleep(HWND hMainWnd,void (*callback)(void))
+{
+	createFormTopmessage(0,"休眠","是否确认休眠设备？",sleepCallback,NULL);
+}
+
+static void rebootCallback(void)
+{
+	createFormPowerOffReboot();
+	reboot();
+}
+
+int topMsgReboot(HWND hMainWnd,void (*callback)(void))
+{
+	createFormTopmessage(0,"重启","是否确认重启设备？",rebootCallback,NULL);
+}
+
+static void powerOffCallback(void)
+{
+	protocol_singlechip->cmdPowerOff();
+	formVideoLayerGotoPoweroff();
+}
+int topMsgShutdown(HWND hMainWnd,void (*callback)(void))
+{
+	createFormTopmessage(0,"关机","是否确认关机设备？请确认未在充电状态后关机",powerOffCallback,NULL);
 }

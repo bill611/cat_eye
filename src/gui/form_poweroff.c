@@ -137,3 +137,15 @@ int createFormPowerOffCammerErrorSleep(void)
 	createFormPowerOff(0);
 	SendMessage(GetDlgItem(form_base->hDlg,IDC_CONTTENT),MSG_SETTEXT,0,(LPARAM)"镜头接线异常，请断开电源并长按关机键关机，接好镜头后再重新开机...");
 }
+
+int createFormPowerOffSleep(void)
+{
+	createFormPowerOff(0);
+	SendMessage(GetDlgItem(form_base->hDlg,IDC_CONTTENT),MSG_SETTEXT,0,(LPARAM)"系统即将进入睡眠...");
+}
+
+int createFormPowerOffReboot(void)
+{
+	createFormPowerOff(0);
+	SendMessage(GetDlgItem(form_base->hDlg,IDC_CONTTENT),MSG_SETTEXT,0,(LPARAM)"系统即将重启...");
+}

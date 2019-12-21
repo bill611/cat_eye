@@ -36,6 +36,7 @@
 #include "my_video.h"
 #include "my_mixer.h"
 #include "my_audio.h"
+#include "my_gpio.h"
 #include "video/video_server.h"
 #include "share_memory.h"
 #include "my_update.h"
@@ -427,6 +428,7 @@ static int stmDoTalkCallout(void *data,MyVideo *arg)
 		st_data = (StmData *)stm->initPara(stm,
 				sizeof(StmData));
 		st_data->hangup_type = HANGUP_TYPE_BUTTON;
+		printf("[%s,%d]%d\n", __func__,__LINE__,st_data->hangup_type);
 		stm->msgPost(stm,EV_TALK_HANGUP,st_data);
 		return -1;
 	}
@@ -439,8 +441,12 @@ static int stmDoTalkCallout(void *data,MyVideo *arg)
 	talk_peer_dev.call_time = TIME_CALLING;
 	protocol_talk->dial(data_temp->usr_id,dialCallBack);
 	if (talk_peer_dev.type == DEV_TYPE_ENTRANCEMACHINE
-			|| talk_peer_dev.type == DEV_TYPE_HOUSEENTRANCEMACHINE)
+			|| talk_peer_dev.type == DEV_TYPE_HOUSEENTRANCEMACHINE) {
 		my_video->showPeerVideo();
+		gpioTalkDirIn();
+	} else {
+		gpioTalkDirOut();
+	}
 	// 保存通话记录到内存
 	strcpy(talk_data.nick_name,data_temp->nick_name);
 	getDate(talk_data.date,sizeof(talk_data.date));
@@ -533,7 +539,9 @@ static int stmDoTalkCallin(void *data,MyVideo *arg)
 	talk_peer_dev.call_time = TIME_CALLING;
 	if (data_temp->type == DEV_TYPE_HOUSEHOLDAPP) {
 		my_video->videoAnswer(CALL_DIR_OUT,data_temp->type);
+		gpioTalkDirOut();
 	} else {
+		gpioTalkDirIn();
 		myAudioPlayRing();
 		my_video->showPeerVideo();
 	}
@@ -927,6 +935,7 @@ static int stmDoRecordStart(void *data,MyVideo *arg)
 				w = 640; h = 480;
 				record_time = g_config.record_time;
 				memset(&cap_data,0,sizeof(CapData));
+				gpioTalkDirOut();
 				getFileName(cap_data.file_name,cap_data.file_date);
 				cap_data.pic_id = atoll(cap_data.file_name);
                 sqlInsertRecordCapNoBack(cap_data.file_date,cap_data.pic_id);

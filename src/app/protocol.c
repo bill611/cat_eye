@@ -278,7 +278,7 @@ static void udpLocalgetMsg(SocketHandle *ABinding,SocketPacket *AData)
 
 			strcpy(RetDevMsg.dType,"cat eye");		//类型
 			sprintf(RetDevMsg.IMEI,"%s",g_config.imei);		//设备唯一编号
-			sprintf(RetDevMsg.Addition,"%s-%s",DEVICE_SVERSION,DEVICE_KVERSION);
+			sprintf(RetDevMsg.Addition,"%s-%s-%s",DEVICE_SVERSION,g_config.k_version,g_config.s_version);
 
 			udp_server->SendBuffer(udp_server,"255.255.255.255",ABinding->Port, 		//返回信息
 					(char *)&RetDevMsg,sizeof(TRetDeviceInfo));

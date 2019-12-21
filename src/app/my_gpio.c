@@ -486,6 +486,20 @@ void gpioInit(void)
 	DPRINT("gpio init\n");
 	gpio = myGpioPrivCreate(gpio_normal_tbl,
 			sizeof(gpio_normal_tbl) / sizeof(MyGpioTable));
-
 }
 
+void gpioTalkDirOut(void)
+{
+	gpio->SetValue(gpio,ENUM_GPIO_MICKEY,IO_INACTIVE);
+	gpio->SetValue(gpio,ENUM_GPIO_SPKL,IO_INACTIVE);
+	gpio->SetValue(gpio,ENUM_GPIO_SPKR,IO_ACTIVE);
+	gpio->SetValue(gpio,ENUM_GPIO_ASNKEY,IO_INACTIVE);
+}
+
+void gpioTalkDirIn(void)
+{
+	gpio->SetValue(gpio,ENUM_GPIO_MICKEY,IO_ACTIVE);
+	gpio->SetValue(gpio,ENUM_GPIO_SPKL,IO_ACTIVE);
+	gpio->SetValue(gpio,ENUM_GPIO_SPKR,IO_INACTIVE);
+	gpio->SetValue(gpio,ENUM_GPIO_ASNKEY,IO_ACTIVE);
+}

@@ -26,6 +26,7 @@ extern "C" {
 	void myAudioPlayRingOnce(void);
 	void myAudioStopPlay(void);
 	void myAudioPlayAlarm(void);
+	void myAudioPlayDindong(void);
 	int isNeedToPlay(void);
 
 #ifdef __cplusplus
