@@ -38,7 +38,7 @@ typedef struct _TRTPObject
 	char ViceDeviceIP[16];
 	char cServerIP[16];
 //	int ServerPort;
-	unsigned int dwPeerIP;
+	int dwPeerIP;
 	unsigned int dwMasterDevIP;
 	unsigned int dwWEBSrvIP;
 	uint8_t bRecvLocalPacket;			//是否接收到直传的包

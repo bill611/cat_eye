@@ -512,11 +512,11 @@ int rdfaceRecognizerOnce(unsigned char *image_buff,int w,int h,int *age,int *sex
 	return 0;
 }
 
-char *rdfaceGetFaceVersion(void)
+const char *rdfaceGetFaceVersion(void)
 {
 	return readsense_face_sdk_get_version_number();
 }
-char *rdfaceGetDeviceKey(void)
+const char *rdfaceGetDeviceKey(void)
 {
 	return readsense_face_sdk_get_device_key();	
 }

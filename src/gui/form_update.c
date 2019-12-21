@@ -111,6 +111,11 @@ static void interfaceUiUpdateSuccess(void)
 	SendMessage(GetDlgItem(form_base->hDlg,IDC_CONTTENT),MSG_SETTEXT,0,(LPARAM)"更新成功,系统即将重启,请勿关闭电源...");
 }
 
+static void interfaceUiUpdateSdcard(void)
+{
+	SendMessage(GetDlgItem(form_base->hDlg,IDC_CONTTENT),MSG_SETTEXT,0,(LPARAM)"即将进行SD卡升级,请勿关闭电源...");
+}
+
 static void interfaceUiUpdateDowloadSuccess(void)
 {
 	SendMessage(GetDlgItem(form_base->hDlg,IDC_CONTTENT),MSG_SETTEXT,0,(LPARAM)"下载完成,正在检测升级包...");
@@ -139,6 +144,7 @@ static void initPara(HWND hDlg, int message, WPARAM wParam, LPARAM lParam)
 	if (my_update) {
 		my_update->interface->uiUpdateStart = interfaceUiUpdateStart;
 		my_update->interface->uiUpdateSuccess = interfaceUiUpdateSuccess;
+		my_update->interface->uiUpdateSdCard = interfaceUiUpdateSdcard;
 		my_update->interface->uiUpdateDownloadSuccess = interfaceUiUpdateDowloadSuccess;
 		my_update->interface->uiUpdateFail = interfaceUiUpdateFail;
 		my_update->interface->uiUpdatePos = interfaceUiUpdatePos;

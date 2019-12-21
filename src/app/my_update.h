@@ -39,6 +39,7 @@ extern "C" {
 		void (*uiUpdateStart)(void);
 		void (*uiUpdateDownloadSuccess)(void);
 		void (*uiUpdateSuccess)(void);
+		void (*uiUpdateSdCard)(void);
 		void (*uiUpdateFail)(void);
 		void (*uiUpdatePos)(int pos);
 		void (*uiUpdateStop)(void);

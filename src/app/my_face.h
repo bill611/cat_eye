@@ -62,8 +62,8 @@ extern "C" {
 		int (*recognizer)(char *image_buff,int w,int h); // 0未开启人脸识别 1开启人脸识别
 		int (*recognizerOnce)(MyFaceRecognizer *data);
 		void (*uninit)(void);
-		char * (*getVersion)(void);
-		char * (*getDeviceKey)(void);
+		const char * (*getVersion)(void);
+		const char * (*getDeviceKey)(void);
 	}MyFace;
 
 	extern MyFace *my_face;

@@ -33,8 +33,8 @@
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
  *----------------------------------------------------------------------------*/
-extern char *rdfaceGetFaceVersion(void);
-extern char *rdfaceGetDeviceKey(void);
+extern const char *rdfaceGetFaceVersion(void);
+extern const char *rdfaceGetDeviceKey(void);
 
 /* ---------------------------------------------------------------------------*
  *                  internal functions declare
@@ -203,7 +203,7 @@ static void uninit(void)
 	printf("face uninited\n");
 }
 
-static char *getVersion(void)
+static const char *getVersion(void)
 {
 #ifdef USE_FACE
 	return rdfaceGetFaceVersion();	
@@ -211,7 +211,7 @@ static char *getVersion(void)
 	return "未检测到人脸识别算法";	
 #endif
 }
-static char *getDeviceKey(void)
+static const char *getDeviceKey(void)
 {
 #ifdef USE_FACE
 	return rdfaceGetDeviceKey();	

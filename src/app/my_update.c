@@ -99,18 +99,27 @@ static EtcValueChar etc_update_char[]={
  * 退出程序重启
  */
 /* ---------------------------------------------------------------------------*/
-static void tarUpdateFiles(void)
+static void tarUpdateFiles(int type,char *path)
 {
 	char update_buf[64] = {0};
-	sprintf(update_buf,"tar xzf %supdate.tar.gz -C %s",UPDATE_INI_PATH,UPDATE_INI_PATH);
+    char update_go_buf[64] = {0};
+	sprintf(update_buf,"tar xzf %supdate.tar.gz -C %s",path,path);
 	int ret = system(update_buf);
-	if (ret == 0 && fileexists(UPDATE_INI_PATH"update/go.sh")) {
-		system(UPDATE_INI_PATH"update/go.sh");
-		if (my_update->interface->uiUpdateSuccess)	
-			my_update->interface->uiUpdateSuccess();
-		sync();
-		sleep(1);
-		exit(0);
+    sprintf(update_go_buf,"%supdate/go.sh",path);
+	if (ret == 0 && fileexists(update_go_buf)) {
+        if (type == UPDATE_TYPE_SDCARD){
+            if (my_update->interface->uiUpdateSdCard)	
+                my_update->interface->uiUpdateSdCard();
+            sleep(1);
+            exit(1);
+        } else {
+            system(update_go_buf);
+            if (my_update->interface->uiUpdateSuccess)	
+                my_update->interface->uiUpdateSuccess();
+            sync();
+            sleep(1);
+            exit(0);
+        }
 	} else {
 		if (my_update->interface->uiUpdateFail)
 			my_update->interface->uiUpdateFail();
@@ -135,14 +144,15 @@ static int download(struct _MyUpdate *This)
 	if (This->priv->type == UPDATE_TYPE_CENTER) {
 		This->priv->remote->Download(This->priv->remote,
 				0,This->priv->file_path,UPDATE_INI_PATH"update.tar.gz",FALSE,This->priv->callbackFunc);
-		tarUpdateFiles();
+		tarUpdateFiles(This->priv->type,UPDATE_INI_PATH);
 		
 	} else if (This->priv->type == UPDATE_TYPE_SDCARD) {
+        tarUpdateFiles(This->priv->type,SDCARD_PATH);
 	} else if (This->priv->type == UPDATE_TYPE_SERVER) {
 		int leng = 0;
 		if (update_info.url[0]) {
 			leng = http->download(update_info.url,NULL,UPDATE_INI_PATH"update.tar.gz",This->priv->callbackFunc);
-			tarUpdateFiles();
+			tarUpdateFiles(This->priv->type,UPDATE_INI_PATH);
 		}
 	}
 	return 0;
@@ -241,7 +251,10 @@ static void* threadCheckUpdatInfo(void *arg)
 static int needUpdate(struct _MyUpdate *This,char *version,char *content)
 {
 	This->priv->check_update = 1;	
-	if (update_info.need_update == 0)
+    if (fileexists(UPDATE_SD)) {
+        return UPDATE_TYPE_SDCARD;
+    }
+	if (update_info.need_update == UPDATE_TYPE_NONE)
 		goto need_update_out;
 
 	if (version) {

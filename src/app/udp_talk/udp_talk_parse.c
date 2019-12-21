@@ -4,6 +4,10 @@
 #include <string.h>
 #include <netdb.h>
 #include <errno.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 
 #include "udp_talk_parse.h"
 #include "udp_client.h"
@@ -18,7 +22,7 @@ unsigned int GetIPBySockAddr(const void *Data)
 	struct sockaddr_in * addr = (struct sockaddr_in*)Data;
 	return addr->sin_addr.s_addr;
 }
-unsigned int my_inet_addr(const char *IP)
+int my_inet_addr(const char *IP)
 {
 	return inet_addr(IP);
 }

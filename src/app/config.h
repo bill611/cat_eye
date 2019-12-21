@@ -49,6 +49,7 @@ extern "C" {
 #define UPDATE_FILE	"/tmp/Update.cab"	// LAN升级时，升级包存放位置
 #define UPDATE_URL	"http://img.cateye.taichuan.com/update.ini" // 七牛云存储升级包配置文件地址
 #define UPDATE_INI	UPDATE_INI_PATH"update.ini" // 七牛云存储升级配置文件地址
+#define UPDATE_SD	SDCARD_PATH"tc_u9my_update.tgz" // SD卡升级包存储位置
 
 #define SLEEP_LONG_TIMER 50
 #define POWEROFF_TIMER 2
