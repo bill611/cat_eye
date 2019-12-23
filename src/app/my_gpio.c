@@ -83,7 +83,7 @@ static MyGpioTable gpio_normal_tbl[]={
 	{ENUM_GPIO_IRLEDEN,"irleden",1,IO_ACTIVE},
 	{ENUM_GPIO_ASNKEY, "asnkey",0,IO_ACTIVE},
 	{ENUM_GPIO_MICEN,  "micen", 0,IO_ACTIVE},
-	{ENUM_GPIO_SDCTRL, "sdctrl",0,IO_ACTIVE},
+	{ENUM_GPIO_SDCTRL, "sdctrl",1,IO_ACTIVE},
 	{ENUM_GPIO_ICRAIN, "icrain",0,IO_ACTIVE},
 	{ENUM_GPIO_ICBAIN, "icrbin",1,IO_ACTIVE},
 };
@@ -490,6 +490,8 @@ void gpioInit(void)
 
 void gpioTalkDirOut(void)
 {
+	if (!gpio)
+		return;
 	gpio->SetValue(gpio,ENUM_GPIO_MICKEY,IO_INACTIVE);
 	gpio->SetValue(gpio,ENUM_GPIO_SPKL,IO_INACTIVE);
 	gpio->SetValue(gpio,ENUM_GPIO_SPKR,IO_ACTIVE);
@@ -498,8 +500,37 @@ void gpioTalkDirOut(void)
 
 void gpioTalkDirIn(void)
 {
+	if (!gpio)
+		return;
 	gpio->SetValue(gpio,ENUM_GPIO_MICKEY,IO_ACTIVE);
 	gpio->SetValue(gpio,ENUM_GPIO_SPKL,IO_ACTIVE);
 	gpio->SetValue(gpio,ENUM_GPIO_SPKR,IO_INACTIVE);
 	gpio->SetValue(gpio,ENUM_GPIO_ASNKEY,IO_ACTIVE);
+}
+
+void gpioChargeState(int state)
+{
+	if (!gpio)
+		return;
+	if (state) {
+		gpio->FlashStop(gpio,ENUM_GPIO_KEYLED_RED);
+		gpio->SetValue(gpio,ENUM_GPIO_KEYLED_BLUE,IO_ACTIVE);
+		gpio->SetValue(gpio,ENUM_GPIO_KEYLED_RED,IO_INACTIVE);
+	} else {
+		gpio->SetValue(gpio,ENUM_GPIO_KEYLED_BLUE,IO_INACTIVE);
+	}
+	
+}
+
+void gpioLowPowerState(int state)
+{
+	if (!gpio)
+		return;
+	if (state) {
+		gpio->FlashStart(gpio,ENUM_GPIO_KEYLED_RED,FLASH_SLOW,FLASH_FOREVER);
+	} else {
+		gpio->FlashStop(gpio,ENUM_GPIO_KEYLED_RED);
+		gpio->SetValue(gpio,ENUM_GPIO_KEYLED_RED,IO_INACTIVE);
+	}
+	
 }

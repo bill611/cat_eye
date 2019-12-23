@@ -17,15 +17,15 @@
 #define BOOT_URL         SERVER_HTTP_ADDRESS"sec-rootfs.img"
 #define BOOT_MD5_URL     SERVER_HTTP_ADDRESS"sec-rootfs.md5"
 
-#define DOWNLOAD_PATH           "/mnt/sdcard/"
-#define LOCAL_FIREWARM_PATH     DOWNLOAD_PATH"Firmware.img"
-#define LOCAL_FIREWARM_MD5_PATH DOWNLOAD_PATH"Firmware.md5"
-#define LOCAL_KERNEL_PATH       DOWNLOAD_PATH"kernel.img"
-#define LOCAL_KERNEL_MD5_PATH   DOWNLOAD_PATH"kernel.md5"
-#define LOCAL_DTB_PATH          DOWNLOAD_PATH"dtb"
-#define LOCAL_DTB_MD5_PATH      DOWNLOAD_PATH"dtb.md5"
-#define LOCAL_USERDATA_PATH     DOWNLOAD_PATH"userdata.img"
-#define LOCAL_USERDATA_MD5_PATH DOWNLOAD_PATH"userdata.md5"
+#define DOWNLOAD_PATH           "/temp/"
+#define LOCAL_FIREWARM_PATH     "Firmware.img"
+#define LOCAL_FIREWARM_MD5_PATH "Firmware.md5"
+#define LOCAL_KERNEL_PATH       "kernel.img"
+#define LOCAL_KERNEL_MD5_PATH   "kernel.md5"
+#define LOCAL_DTB_PATH          "dtb"
+#define LOCAL_DTB_MD5_PATH      "dtb.md5"
+#define LOCAL_USERDATA_PATH     "userdata.img"
+#define LOCAL_USERDATA_MD5_PATH "userdata.md5"
 
 int Updater::showTip(char *tipcap)
 {
@@ -98,7 +98,7 @@ int Updater::download(int url_type)
     return 0;
 }
 
-int Updater::checkEnvironment(int url_type)
+int Updater::checkEnvironment(char *path,int url_type)
 {
     char md5path[80];
     char imagepath[80];
@@ -108,30 +108,30 @@ int Updater::checkEnvironment(int url_type)
 
     switch (url_type) {
     case URL_TYPE_FIRMWARE:
-        strcpy(imagepath, (char *)LOCAL_FIREWARM_PATH);
-        strcpy(md5path, (char *)LOCAL_FIREWARM_MD5_PATH);
+        sprintf(imagepath,"%s%s" ,path,(char *)LOCAL_FIREWARM_PATH);
+        // strcpy(md5path, (char *)LOCAL_FIREWARM_MD5_PATH);
         break;
     case URL_TYPE_KERNEL:
-        strcpy(imagepath, (char *)LOCAL_KERNEL_PATH);
-        strcpy(md5path, (char *)LOCAL_KERNEL_MD5_PATH);
+        sprintf(imagepath,"%s%s" ,path,(char *)LOCAL_KERNEL_PATH);
+        // strcpy(md5path, (char *)LOCAL_KERNEL_MD5_PATH);
         break;
     case URL_TYPE_DTB:
-        strcpy(imagepath, (char *)LOCAL_DTB_PATH);
-        strcpy(md5path, (char *)LOCAL_DTB_MD5_PATH);
+        sprintf(imagepath,"%s%s" ,path,(char *)LOCAL_DTB_PATH);
+        // strcpy(md5path, (char *)LOCAL_DTB_MD5_PATH);
         break;
     case URL_TYPE_USERDATA:
-        strcpy(imagepath, (char *)LOCAL_USERDATA_PATH);
-        strcpy(md5path, (char *)LOCAL_USERDATA_MD5_PATH);
+        sprintf(imagepath,"%s%s" ,path,(char *)LOCAL_USERDATA_PATH);
+        // strcpy(md5path, (char *)LOCAL_USERDATA_MD5_PATH);
     default:
         break;
     }
 
-    RKMD5::md5sum(imagepath, verifymd5sum);
-    RKMD5::readmd5sum(md5path, filemd5sum);
-    if (strcmp(filemd5sum, verifymd5sum) != 0) {
-        printf("verify md5sum failed\n");
-        return -1;
-    }
+    // RKMD5::md5sum(imagepath, verifymd5sum);
+    // RKMD5::readmd5sum(md5path, filemd5sum);
+    // if (strcmp(filemd5sum, verifymd5sum) != 0) {
+        // printf("verify md5sum failed\n");
+        // return -1;
+    // }
 
     mpart->setImagePath(imagepath);
     mpart->setImageType(url_type);
@@ -287,6 +287,7 @@ int main(int argc, char* argv[])
     int opt;
     int url_type = URL_TYPE_FIRMWARE;
     int update_type = UPDATE_ALL;
+	char *path = NULL;
 
     while (1) {
         static struct option opts[] = {
@@ -302,33 +303,30 @@ int main(int argc, char* argv[])
 
         switch (opt) {
         case 'i':
-            if (!strcmp(optarg, "all"))
+			if (!strcmp(optarg, "all")) {
                 url_type = URL_TYPE_FIRMWARE;
-            else if (!strcmp(optarg, "kernel"))
+                update_type = UPDATE_ALL;
+			} else if (!strcmp(optarg, "kernel")) {
                 url_type = URL_TYPE_KERNEL;
-            else if (!strcmp(optarg, "dtb"))
+                update_type = UPDATE_KERNEL;
+			} else if (!strcmp(optarg, "dtb")) {
                 url_type = URL_TYPE_DTB;
-            else if (!strcmp(optarg, "user"))
+                update_type = UPDATE_DTB;
+			} else if (!strcmp(optarg, "user")) {
                 url_type = URL_TYPE_USERDATA;
-            else if (!strcmp(optarg, "boot"))
+                update_type = UPDATE_USERDATA;
+			} else if (!strcmp(optarg, "boot")) {
                 url_type = URL_TYPE_BOOT;
+                update_type = UPDATE_BOOT;
+			}
             break;
         case 'p':
-            if (!strcmp(optarg, "all"))
-                update_type = UPDATE_ALL;
-            else if (!strcmp(optarg, "kernel"))
-                update_type = UPDATE_KERNEL;
-            else if (!strcmp(optarg, "dtb"))
-                update_type = UPDATE_DTB;
-            else if (!strcmp(optarg, "user"))
-                update_type = UPDATE_USERDATA;
-            else if (!strcmp(optarg, "boot"))
-                update_type = UPDATE_BOOT;
+			path = optarg;
             break;
         case 'h':
-            printf("updater -i [all/kernel/dtb/user/boot] -p [all/kernel/dtb/user/boot]\n");
+            printf("updater -i [all/kernel/dtb/user/boot] -p imate_path\n");
             printf("\t-i image type, default all\n");
-            printf("\t-p update part, default all\n");
+            printf("\t-p imate_path\n");
             return 0;
         }
     }
@@ -353,7 +351,7 @@ int main(int argc, char* argv[])
     // }
 
     updater->showTip((char *)"check image...");
-    if (updater->checkEnvironment(url_type) != 0) {
+    if (updater->checkEnvironment(path,url_type) != 0) {
         printf("updater checkEnvironment failed\n");
         return -1;
     }

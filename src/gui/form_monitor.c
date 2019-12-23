@@ -266,7 +266,7 @@ static void loadIconviewData(void)
 		iconviewAddItem(i,item_data[i].nick_name,item_data[i].user_id);
 	}
 	sqlGetUserInfoEnd();
-	user_num = sqlGetUserInfoUseScopeStart(DEV_TYPE_HOUSEENTRANCEMACHINE);
+	user_num += sqlGetUserInfoUseScopeStart(DEV_TYPE_HOUSEENTRANCEMACHINE);
 	for (; i<user_num && i<16; i++) {
 		sqlGetUserInfosUseScope(item_data[i].user_id,item_data[i].nick_name);
 		iconviewAddItem(i,item_data[i].nick_name,item_data[i].user_id);

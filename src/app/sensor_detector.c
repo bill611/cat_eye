@@ -80,11 +80,9 @@ static void* theadEle(void *arg)
 		if (power_state_old != power_state) {
 			power_state_old = power_state;
 			if (power_state) {
-				gpio->FlashStop(gpio,ENUM_GPIO_KEYLED_RED);
-				gpio->SetValue(gpio,ENUM_GPIO_KEYLED_BLUE,IO_ACTIVE);
-				gpio->SetValue(gpio,ENUM_GPIO_KEYLED_RED,IO_INACTIVE);
+				gpioChargeState(1);
 			} else {
-				gpio->SetValue(gpio,ENUM_GPIO_KEYLED_BLUE,IO_INACTIVE);
+				gpioChargeState(0);
 				report_low_power = 0;
 			}
 			if (sensor->interface->uiUpadteEleState)
@@ -113,12 +111,11 @@ static void* theadEle(void *arg)
 				getDate(alarm_data.date,sizeof(alarm_data.date));
 				sqlInsertRecordAlarm(alarm_data.date,alarm_data.type,0,0,0,0);
 				protocol_hardcloud->reportAlarm(&alarm_data);
-				gpio->FlashStart(gpio,ENUM_GPIO_KEYLED_RED,FLASH_SLOW,FLASH_FOREVER);
+				gpioLowPowerState(1);
 			}
 		} else {
 			report_low_power = 0;
-			gpio->FlashStop(gpio,ENUM_GPIO_KEYLED_RED);
-			gpio->SetValue(gpio,ENUM_GPIO_KEYLED_RED,IO_INACTIVE);
+			gpioLowPowerState(0);
 		}
 		sleep(1);
 	}

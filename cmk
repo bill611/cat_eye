@@ -40,7 +40,7 @@ if [ $? == 0 ]; then
 			$RV1108_CROOS_PATH/bin/arm-linux-strip $cmake_dir/cat_eye
 			cp $cmake_dir/cat_eye ../burn/root_usr/
 			cp $cmake_dir/cat_eye $RV1108_SDK_PATH/common/overlay/usr/
-			cp $cmake_dir/cat_eye update/root/usr
+			cp $cmake_dir/cat_eye update/app/update/root/usr
 
 			$RV1108_CROOS_PATH/bin/arm-linux-strip $cmake_dir/cammer_video
 			cp $cmake_dir/cammer_video ../burn/userdata
@@ -61,9 +61,16 @@ if [ $? == 0 ]; then
 		cp $cmake_dir/cat_eye ~/arm_share/cat_eye/
 		cp $cmake_dir/singlechip ~/arm_share/cat_eye/
 		cp $cmake_dir/cammer_video ~/arm_share/cat_eye/
+		cp $cmake_dir/updater ~/arm_share/cat_eye/
+		cp $cmake_dir/updater update/img/update
+		cd update/app
 		tar czf Update.tar.gz update/
-		cp Update.tar.gz $cmake_dir/update.cab
-		mv Update.tar.gz $cmake_dir/update_cateye_v.tgz
+		cp Update.tar.gz ../../$cmake_dir/update.cab
+		mv Update.tar.gz ../../$cmake_dir/update_cateye_v.tgz
+		cd ../img
+		tar czf update_img.tar.gz update/
+		mv update_img.tar.gz ../../$cmake_dir/
+		cd ../../
 	fi
 fi
 

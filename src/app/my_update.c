@@ -99,27 +99,27 @@ static EtcValueChar etc_update_char[]={
  * 退出程序重启
  */
 /* ---------------------------------------------------------------------------*/
-static void tarUpdateFiles(int type,char *path)
+static void tarUpdateFiles(int type,char *s_path,char *d_path,char *update_file_name)
 {
 	char update_buf[64] = {0};
     char update_go_buf[64] = {0};
-	sprintf(update_buf,"tar xzf %supdate.tar.gz -C %s",path,path);
+	// SD卡升级，必须退出主程序，否则内存不足
+	if (type == UPDATE_TYPE_SDCARD){
+		if (my_update->interface->uiUpdateSdCard)	
+			my_update->interface->uiUpdateSdCard();
+		sleep(1);
+		exit(1);
+	}
+	sprintf(update_buf,"tar xzf %s%s -C %s",s_path,update_file_name,d_path);
 	int ret = system(update_buf);
-    sprintf(update_go_buf,"%supdate/go.sh",path);
+    sprintf(update_go_buf,"%supdate/go.sh",d_path);
 	if (ret == 0 && fileexists(update_go_buf)) {
-        if (type == UPDATE_TYPE_SDCARD){
-            if (my_update->interface->uiUpdateSdCard)	
-                my_update->interface->uiUpdateSdCard();
-            sleep(1);
-            exit(1);
-        } else {
-            system(update_go_buf);
-            if (my_update->interface->uiUpdateSuccess)	
-                my_update->interface->uiUpdateSuccess();
-            sync();
-            sleep(1);
-            exit(0);
-        }
+		system(update_go_buf);
+		if (my_update->interface->uiUpdateSuccess)	
+			my_update->interface->uiUpdateSuccess();
+		sync();
+		sleep(1);
+		exit(0);
 	} else {
 		if (my_update->interface->uiUpdateFail)
 			my_update->interface->uiUpdateFail();
@@ -143,16 +143,16 @@ static int download(struct _MyUpdate *This)
 {
 	if (This->priv->type == UPDATE_TYPE_CENTER) {
 		This->priv->remote->Download(This->priv->remote,
-				0,This->priv->file_path,UPDATE_INI_PATH"update.tar.gz",FALSE,This->priv->callbackFunc);
-		tarUpdateFiles(This->priv->type,UPDATE_INI_PATH);
+				0,This->priv->file_path,UPDATE_INI_PATH UPDATE_APP,FALSE,This->priv->callbackFunc);
+		tarUpdateFiles(This->priv->type,UPDATE_INI_PATH,UPDATE_INI_PATH,UPDATE_APP);
 		
 	} else if (This->priv->type == UPDATE_TYPE_SDCARD) {
-        tarUpdateFiles(This->priv->type,SDCARD_PATH);
+        tarUpdateFiles(This->priv->type,SDCARD_PATH,UPDATE_INI_PATH,UPDATE_IMG);
 	} else if (This->priv->type == UPDATE_TYPE_SERVER) {
 		int leng = 0;
 		if (update_info.url[0]) {
-			leng = http->download(update_info.url,NULL,UPDATE_INI_PATH"update.tar.gz",This->priv->callbackFunc);
-			tarUpdateFiles(This->priv->type,UPDATE_INI_PATH);
+			leng = http->download(update_info.url,NULL,UPDATE_INI_PATH UPDATE_APP,This->priv->callbackFunc);
+			tarUpdateFiles(This->priv->type,UPDATE_INI_PATH,UPDATE_INI_PATH,UPDATE_APP);
 		}
 	}
 	return 0;
@@ -251,7 +251,11 @@ static void* threadCheckUpdatInfo(void *arg)
 static int needUpdate(struct _MyUpdate *This,char *version,char *content)
 {
 	This->priv->check_update = 1;	
-    if (fileexists(UPDATE_SD)) {
+    if (fileexists(SDCARD_PATH UPDATE_IMG)) {
+		if (version)
+			sprintf(version,"固件升级");
+		if (content)
+			sprintf(content,"请保证电池电量>20%%,并点击\"本地升级\"");
         return UPDATE_TYPE_SDCARD;
     }
 	if (update_info.need_update == UPDATE_TYPE_NONE)

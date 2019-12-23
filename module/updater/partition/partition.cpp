@@ -627,7 +627,7 @@ RKPartition::RKPartition(      RKDisplay *disp)
     : RKdisp(disp)
 {
     if (RKdisp != NULL) {
-        box_rect.x = 100;
+        box_rect.x = 372;
         box_rect.y = 270;
         box_rect.w = 280;
         box_rect.h = 60;

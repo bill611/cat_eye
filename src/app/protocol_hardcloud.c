@@ -1287,7 +1287,7 @@ static void* threadReportElectric(void *arg)
 		cJSON_AddStringToObject(obj_body,"dataType","battery");
 		cJSON *obj_data = cJSON_CreateObject();
 		cJSON_AddStringToObject(obj_data,"date",electric_data.date);
-		cJSON_AddStringToObject(obj_data,"electric",electric_data.data);
+		cJSON_AddNumberToObject(obj_data,"electric",electric_data.value);
 
 		cJSON_AddItemToObject(obj_body,"data",obj_data);
 		cJSON_AddItemToObject(root,"body",obj_body);
@@ -1339,7 +1339,7 @@ void registHardCloud(void)
 	createThread(threadReportElectric,NULL);
 	ntpEnable(g_config.auto_sync_time);
 	getDate(electric_data.date,sizeof(electric_data.date));
-	sprintf(electric_data.data,"%d%%",sensor->getElePower());
+	electric_data.value = sensor->getElePower();
 	protocol_hardcloud->reportElectric(&electric_data);
 
 }

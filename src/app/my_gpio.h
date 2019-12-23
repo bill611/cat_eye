@@ -86,6 +86,8 @@ extern "C" {
 	extern void gpioInit(void);
 	extern void gpioTalkDirOut(void);
 	extern void gpioTalkDirIn(void);
+	extern void gpioChargeState(int state);
+	extern void gpioLowPowerState(int state);
 
 #ifdef __cplusplus
 }

@@ -20,7 +20,7 @@ public:
     int prepare();
     int download(char* url);
     int download(int url_type);
-    int checkEnvironment(int url_type);
+    int checkEnvironment(char *path,int url_type);
     int runCmd(char* cmd);
     int waitAppEixt(char *app_name);
     int doUpdate(int type);

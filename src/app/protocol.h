@@ -121,7 +121,7 @@ extern "C" {
 
 	typedef struct _ReportElectric{
 		char date[32];		// 日期
-		char data[32];		// 电量百分比
+		int value;		// 电量百分比
 	}ReportElectric;
 
 	typedef struct _UpLoadData{
