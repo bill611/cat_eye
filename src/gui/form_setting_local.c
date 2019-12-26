@@ -279,6 +279,13 @@ static void loadLocalData(void)
 			} else {
 				sprintf(plist->text,"已授权");
 			}
+		}else if (strcmp("恢复出厂设置",plist->title) == 0) {
+            char ip[16],gateway[16];
+            getLocalIP(ip,gateway);
+			sprintf(plist->text,"%s",ip);
+
+		}else if (strcmp("电源管理",plist->title) == 0) {
+			sprintf(plist->text,"%d",halBatteryGetCurrent());
 		}
 		SendMessage (hScrollView, SVM_ADDITEM, 0, (LPARAM)&svii);
 		SendMessage (hScrollView, SVM_SETITEMADDDATA, i, (DWORD)plist);

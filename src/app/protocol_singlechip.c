@@ -73,6 +73,7 @@ static void cmdSleep(void)
 	if (ipc_main)
 		ipc_main->sendData(ipc_main,IPC_UART,&ipc_data,sizeof(ipc_data));
 #endif
+    saveLog("sleep off ele:%d\n",sensor->getElePower() );
 }
 
 static void cmdPowerOff(void)
@@ -82,6 +83,7 @@ static void cmdPowerOff(void)
 	ipc_data.cmd = IPC_UART_POWEROFF;
 	if (ipc_main)
 		ipc_main->sendData(ipc_main,IPC_UART,&ipc_data,sizeof(ipc_data));
+    saveLog("power off ele:%d\n",sensor->getElePower() );
 }
 
 static void cmdWifiReset(void)

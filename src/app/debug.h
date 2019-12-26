@@ -36,6 +36,7 @@ do {                                                     \
 #define DBG_STR(x)  DPRINT("flag------->[%s]\n",x)
 
 void debugInit(void);
+void saveLog(char *fmt, ...);
 
 #ifdef __cplusplus
 }

@@ -20,9 +20,12 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <string.h> 
+#include <string.h>
+#include <stdarg.h>
+#include <sys/stat.h>
 
 #include "thread_helper.h"
+#include "externfunc.h"
 #include "debug.h"
 
 /* ---------------------------------------------------------------------------*
@@ -48,7 +51,7 @@ static int stdio_redirect(void)
 	char tty[32] = {0};
 	int fd=open(CONSOLE_PATH, O_RDWR);
 
-	if (fd >= 0) 
+	if (fd >= 0)
 	{
 		//获取要切换到的tty的名称
 		read(fd, tty, sizeof(tty));
@@ -83,7 +86,7 @@ static void * threadredirect(void *arg)
 		}
 		sleep(2);
 	}
-	return 0; 
+	return 0;
 }
 /* ---------------------------------------------------------------------------*/
 /**
@@ -95,4 +98,29 @@ static void * threadredirect(void *arg)
 void debugInit(void)
 {
 	createThread(threadredirect,NULL);
+}
+
+void saveLog(char *fmt, ...)
+{
+    FILE *log_fd = NULL;
+    struct stat stat_buf;
+    stat("log.txt", &stat_buf) ;
+    printf("log.txt size:%ld\n", stat_buf.st_size);
+
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(stdout,fmt,args);
+    if (stat_buf.st_size > 3 * 1024 *1024)
+        log_fd = fopen("log.txt","w");
+    else
+        log_fd = fopen("log.txt","ab+");
+    if (log_fd) {
+           char time_now[50];
+           getDate(time_now,sizeof(time_now));
+           fprintf(log_fd,"[%s]",time_now);
+           vfprintf(log_fd,fmt,args);
+           fflush(log_fd);
+           fclose(log_fd);
+        }
+    va_end(args);
 }

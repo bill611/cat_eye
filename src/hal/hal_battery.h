@@ -28,6 +28,7 @@ extern "C" {
 
 	int halBatteryGetEle(void);
 	int halBatteryGetState(void);
+    int halBatteryGetCurrent(void);
 
 #ifdef __cplusplus
 }

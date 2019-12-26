@@ -29,6 +29,7 @@
 #include "protocol.h"
 #include "my_video.h"
 #include "my_gpio.h"
+#include "debug.h"
 
 /* ---------------------------------------------------------------------------*
  *                  extern variables declare
@@ -139,4 +140,5 @@ void sensorDetectorInit(void)
 	sensor->getEleState = getEleState;
 	createThread(theadProximity,NULL);
 	createThread(theadEle,NULL);
+    saveLog("power on ele:%d\n",getElePower() );
 }

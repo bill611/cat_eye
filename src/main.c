@@ -65,9 +65,9 @@
 /* ---------------------------------------------------------------------------*/
 int MiniGUIMain(int argc, const char* argv[])
 {
-	printf("stat--->%s,%s\n",DEVICE_SVERSION,g_config.k_version);
 	debugInit();
 	configLoad();
+	saveLog("stat--->%s,%s\n",DEVICE_SVERSION,g_config.k_version);
 	sqlInit();
 	gpioInit();
 	myMixerInit();

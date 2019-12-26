@@ -84,3 +84,18 @@ int halBatteryGetState(void)
 	}
 #endif
 }
+
+int halBatteryGetCurrent(void)
+{
+#ifdef X86
+	return 0;	
+#else
+	char data[16] = {0};
+	int fd = open("/sys/class/power_supply/battery/current_now",O_RDONLY);
+	if (fd != -1) {
+		read(fd,data,sizeof(data));	
+		close(fd);
+	}
+    return atoi(data);
+#endif
+}

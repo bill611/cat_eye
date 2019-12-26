@@ -233,7 +233,7 @@ static void mqttConnectSuccess(void* context)
 }
 static void mqttConnectFailure(void* context)
 {
-	printf("[%s]\n", __func__);
+	saveLog("[%s]\n", __func__);
 }
 
 static void sysTestData(int api,int id,CjsonDec *dec)
@@ -942,7 +942,7 @@ static void* threadUpload(void *arg)
 		sprintf(file_name,"%s_%lld",g_config.imei,up_data.picture_id);
 		int file_len = strlen(file_name);
 		if((dir=opendir(up_data.file_path)) == NULL) {
-			printf("Open File %s Error %s\n",up_data.file_path,strerror(errno));
+			saveLog("Open File %s Error %s\n",up_data.file_path,strerror(errno));
 			return 0;
 		}
 		while((dirp=readdir(dir)) != NULL) {
@@ -953,9 +953,9 @@ static void* threadUpload(void *arg)
 			}
 			char buf[64];
 			sprintf(buf,"%s%s",up_data.file_path,dirp->d_name);
-			printf("[%s]%s\n",__func__,buf);
+			saveLog("[%s]%s\n",__func__,buf);
 			if (GetFileSize(buf) == 0) {
-				printf("[%s]file size == 0\n",__func__);
+				saveLog("[%s]file size == 0\n",__func__);
 				continue;
 			}
 			http->qiniuUpload("http://upload-z2.qiniup.com",
@@ -964,13 +964,13 @@ static void* threadUpload(void *arg)
 					dirp->d_name,
 					&qiniu_upload);
 			if (qiniu_upload) {
-				printf("%s\n",qiniu_upload);
+				saveLog("%s\n",qiniu_upload);
 				free(qiniu_upload);
 			}
 			if (remove(buf) < 0) {
-				printf("remove error:%s\n",strerror(errno));
+				saveLog("remove error:%s\n",strerror(errno));
 			} else {
-				printf("remove:%s\n",buf);
+				saveLog("remove:%s\n",buf);
 			}
 		}
 		sqlCheckBack();
@@ -980,7 +980,7 @@ static void* threadUpload(void *arg)
 }
 static void uploadPic(char *path,uint64_t pic_id)
 {
-	printf("[%s]pic_id:%lld\n", __func__,pic_id);
+	saveLog("[%s]pic_id:%lld\n", __func__,pic_id);
 	if (pic_id == 0)
 		return;
 	UpLoadData up_data;
