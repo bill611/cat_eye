@@ -1,4 +1,6 @@
 #include <list>
+#include <stdarg.h>
+#include <sys/stat.h>
 
 #include "md_camerahal.h"
 #include "md_camerabuf.h"
@@ -51,6 +53,7 @@ class RKVideo {
 
 static RKVideo* rkvideo = NULL;
 static int init_ok = 0;
+static int is_capture = 0;
 
 RKVideo::RKVideo()
 {
@@ -247,6 +250,45 @@ static void callbackCapture(void)
 	main_queue->post(main_queue,&ipc_cap);
 }
 
+static char * getDate(char *cBuf,int Size)
+{
+	time_t timer;
+    struct tm *tm1;
+	if(Size<20) {
+		if(cBuf) cBuf[0]=0;
+		return cBuf;
+	}
+	timer = time(&timer);
+	tm1 = localtime(&timer);
+	sprintf(cBuf,
+			"%04d-%02d-%02d %02d:%02d:%02d",
+			tm1->tm_year+1900,
+			tm1->tm_mon+1,
+			tm1->tm_mday,
+			tm1->tm_hour,
+			tm1->tm_min,
+			tm1->tm_sec);
+	return cBuf;
+}
+
+static void saveLog(char *fmt, ...)
+{
+    FILE *log_fd = NULL;
+
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(stdout,fmt,args);
+    log_fd = fopen("/data/log.txt","ab+");
+    if (log_fd) {
+           char time_now[50];
+           getDate(time_now,sizeof(time_now));
+           fprintf(log_fd,"[%s]",time_now);
+           vfprintf(log_fd,fmt,args);
+           fflush(log_fd);
+           fclose(log_fd);
+        }
+    va_end(args);
+}
 static void callbackIpc(char *data,int size )
 {
 	IpcData ipc_data;
@@ -260,12 +302,15 @@ static void callbackIpc(char *data,int size )
 			rkH264EncOff();
 			break;
 		case IPC_UART_CAPTURE:
+            is_capture = 1;
 			for (int i = 0; i < ipc_data.count; ++i) {
 				char path[128];
 				sprintf(path,"%s%s_%d.jpg",FAST_PIC_PATH,ipc_data.data.file.path,i);
+                saveLog("[%s,%s]%s\n",__func__,__FILE__,path);
 				rkVideoCapture(path);
 				usleep(500000);
 			}
+            is_capture = 0;
 			break;
 		case IPC_VIDEO_RECORD_START:
 			break;
@@ -300,7 +345,7 @@ int main(int argc, char *argv[])
 	main_queue = queueCreate("main_queue",QUEUE_BLOCK,sizeof(IpcData));
 	createThread(threadIpcSendMain,main_queue);
 	ipc_video = ipcCreate(IPC_CAMMER,callbackIpc);
-	while (access(IPC_MAIN,0) != 0) {
+	while (access(IPC_MAIN,0) != 0 || is_capture == 1) {
 		usleep(10000);	
 	}
 	delete rkvideo;

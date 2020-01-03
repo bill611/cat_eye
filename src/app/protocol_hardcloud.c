@@ -949,6 +949,7 @@ static void* threadUpload(void *arg)
 			if (		(strcmp(".",dirp->d_name) == 0) 
 					|| 	(strcmp("..",dirp->d_name) == 0)
 					|| 	strncmp(file_name,dirp->d_name,file_len)) {
+                saveLog("[%s]dirs:%s\n",__func__,dirp->d_name);
 				continue;
 			}
 			char buf[64];

@@ -628,6 +628,7 @@ static void* threadCapture(void *arg)
 
 #ifdef USE_VIDEO
 		rkVideoCapture(file_path);
+        saveLog("[%s,%s]%s\n",__func__,__FILE__,file_path);
 #ifdef X86
 		FILE *fp = fopen(file_path,"wb");
 		if (fp)
