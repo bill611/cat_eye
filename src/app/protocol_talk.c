@@ -58,6 +58,7 @@ enum {
 	MSG_TYPE_RECORD_STOP,	// 停止录视频
 	MSG_TYPE_ELECTRIC,		// 电量
 	MSG_TYPE_NEED_CALL_APP,	// 挂机需要转呼APP
+	MSG_TYPE_RESET_TALK_TIME,	// 重置剩余通话时间（只针对苹果手机）
 };
 enum {
 	DEV_TYPE_APP = 0,
@@ -304,6 +305,16 @@ static void cbReceivedCmd(const char *user_id,void *arg)
 			break;
 		case MSG_TYPE_RECORD_STOP:
 			my_video->recordStop();
+			break;
+		case MSG_TYPE_RESET_TALK_TIME:
+			{
+				if(dec->changeCurrentObj(dec,"data")) {
+					printf("change talk_time fail\n");
+					break;
+				}
+				int talk_time = dec->getValueInt(dec, "talk_time");
+				my_video->resetCallTime(talk_time);
+			}
 			break;
 		default:
 			break;

@@ -58,6 +58,7 @@ extern "C" {
 
 		int (*isVideoOn)(void); // 是否在对讲过程，包括呼叫过程，对讲过程
 		int (*isTalking)(void); // 是否正在通话
+		void (*resetCallTime)(int); // 重置剩余通话时间
 	}MyVideo;
 	extern MyVideo *my_video;
 	void myVideoInit(void);
