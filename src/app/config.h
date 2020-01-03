@@ -13,7 +13,7 @@ extern "C" {
 
 
 #define DEVICE_TYPE	"TC-U9MY-A"
-#define DEVICE_SVERSION	"1.0.7"
+#define DEVICE_SVERSION	"1.0.8"
 
 #if (defined X86)
 #define SDCARD_PATH "./"
