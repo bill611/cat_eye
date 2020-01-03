@@ -192,7 +192,8 @@ int sqlGetUserInfoUseScopeStart(int scope)
 {
 	char buf[128];
 	sprintf(buf,"select userId,nickName from UserInfo where scope = %d",scope );
-	pthread_mutex_lock(&mutex);
+	if (pthread_mutex_trylock(&mutex) != 0)
+		return -1;
 	LocalQueryOpen(dbase.sql,buf);
 	return dbase.sql->RecordCount(dbase.sql);
 }

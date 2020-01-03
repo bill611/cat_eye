@@ -41,6 +41,7 @@ if [ $? == 0 ]; then
 			cp $cmake_dir/cat_eye ../burn/root_usr/
 			cp $cmake_dir/cat_eye $RV1108_SDK_PATH/common/overlay/usr/
 			cp $cmake_dir/cat_eye update/app/update/root/usr
+			cp $cmake_dir/cat_eye update/img/update
 
 			$RV1108_CROOS_PATH/bin/arm-linux-strip $cmake_dir/cammer_video
 			cp $cmake_dir/cammer_video ../burn/userdata

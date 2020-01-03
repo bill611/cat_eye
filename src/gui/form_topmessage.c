@@ -284,3 +284,5 @@ int topMsgShutdown(HWND hMainWnd,void (*callback)(void))
 {
 	createFormTopmessage(0,"关机","是否确认关机设备？请确认未在充电状态后关机",powerOffCallback,NULL);
 }
+
+

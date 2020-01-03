@@ -58,8 +58,6 @@ static EtcValueInt etc_public_int[]={
 };
 static EtcValueChar etc_public_char[]={
 {"device",		"version",	SIZE_CONFIG(g_config.version),	DEVICE_SVERSION},
-{"device",		"k_version",SIZE_CONFIG(g_config.k_version),"0"},
-{"device",		"s_version",SIZE_CONFIG(g_config.s_version),"0"},
 {"cloud",		"app_url",	SIZE_CONFIG(g_config.app_url),	"123"},
 {"wireless",	"ssid",	    SIZE_CONFIG(g_config.net_config.ssid),		"MINI"},
 {"wireless",	"mode",	    SIZE_CONFIG(g_config.net_config.mode),		"Infra"},

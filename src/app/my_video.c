@@ -475,9 +475,12 @@ static void *threadCallOutAll(void *arg)
 		}
 #endif
 		sqlGetUserInfosUseScopeIndex(user_id,DEV_TYPE_HOUSEHOLDAPP,index++);
+#ifdef USE_UCPAAS
+		ucsHangup();
+#endif
 		my_video->videoCallOut(user_id);
 		printf("[%s]id:%s,name:%s\n", __func__,user_id,talk_peer_dev.peer_nick_name);
-		int wait_times = 300;
+		int wait_times = 3000;
 		while (wait_times) {
 			if (talk_peer_dev.call_out_result == CALL_RESULT_NO) {
 				usleep(10000);
@@ -1243,6 +1246,10 @@ static int isTalking(void)
 	else
 		return 0;
 }
+static void resetCallTime(int call_time)
+{
+	talk_peer_dev.call_time = call_time;
+}
 static void* threadVideoTimer(void *arg)
 {
 	prctl(PR_SET_NAME, __func__, 0, 0, 0);
@@ -1296,6 +1303,7 @@ void myVideoInit(void)
     my_video->update = update;
     my_video->isVideoOn = isVideoOn;
     my_video->isTalking = isTalking;
+    my_video->resetCallTime = resetCallTime;
 
 	memset(&talk_data,0,sizeof(talk_data));
     pthread_mutexattr_t mutexattr;

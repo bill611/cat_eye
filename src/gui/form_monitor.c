@@ -56,6 +56,7 @@ enum {
 	IDC_TIMER_1S = IDC_FORM_MONITOR_STATR,
 	IDC_BUTTON_EXIT,
 	IDC_ICONVIEW,
+	IDC_LB_REMINDER,
 
 	IDC_TITLE,
 };
@@ -83,6 +84,7 @@ static BmpLocation bmp_load[] = {
 
 static MY_CTRLDATA ChildCtrls [] = {
     ICONVIEW(192,200,640,304,IDC_ICONVIEW),
+    STATIC_LB(192,350,640,100,IDC_LB_REMINDER,"正在获取数据...",&font22,0x0),
 };
 
 
@@ -210,16 +212,6 @@ static void myDrawItem (HWND hWnd, GHANDLE hsvi, HDC hdc, RECT *rcDraw)
 
 		DrawText (hdc, label, -1, &rcTxt,  DT_CENTER | DT_VCENTER);
 	}
-	// SetPenColor (hdc, 0xCCCCCC);
-	// MoveTo (hdc, rcDraw->left ,rcDraw->top);
-	// LineTo (hdc, rcDraw->right,rcDraw->top);
-	// MoveTo (hdc, rcDraw->left ,rcDraw->top);
-	// LineTo (hdc, rcDraw->left,rcDraw->bottom);
-
-	// MoveTo (hdc, rcDraw->left ,rcDraw->bottom);
-	// LineTo (hdc, rcDraw->right,rcDraw->bottom);
-	// MoveTo (hdc, rcDraw->right ,rcDraw->top);
-	// LineTo (hdc, rcDraw->bottom,rcDraw->top);
 }
 
 static void iconviewNotify(HWND hwnd, int id, int nc, DWORD add_data)
@@ -261,6 +253,11 @@ static void loadIconviewData(void)
 	memset(item_data,0,sizeof(struct IconviewItem));
 	int user_num = sqlGetUserInfoUseScopeStart(DEV_TYPE_ENTRANCEMACHINE);
 	SendMessage (hIconView, IVM_RESETCONTENT, 0, 0);
+	if (user_num == -1) {
+		ShowWindow(GetDlgItem(form_base->hDlg,IDC_LB_REMINDER),SW_SHOWNORMAL);
+		return;
+	}
+	ShowWindow(GetDlgItem(form_base->hDlg,IDC_LB_REMINDER),SW_HIDE);
 	for (i=0; i<user_num && i<16; i++) {
 		sqlGetUserInfosUseScope(item_data[i].user_id,item_data[i].nick_name);
 		iconviewAddItem(i,item_data[i].nick_name,item_data[i].user_id);

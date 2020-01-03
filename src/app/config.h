@@ -13,7 +13,7 @@ extern "C" {
 
 
 #define DEVICE_TYPE	"TC-U9MY-A"
-#define DEVICE_SVERSION	"1.0.7"
+#define DEVICE_SVERSION	"1.0.8"
 
 #if (defined X86)
 #define SDCARD_PATH "./"
@@ -160,9 +160,9 @@ extern "C" {
         char imei[64 + 1];         // 设备机身码
         char hardcode[64 + 1];     // 设备硬件码
         char version[16 + 1];      // 软件版本
-        char k_version[16 + 1];    // 内核版本
-        char s_version[2 + 1];    // 单片机版本
-        char app_url[128 + 1];     // app地址 
+        char k_version[16 + 1];    // 内核版本,不写入配置文件中
+        char s_version[2 + 1];    // 单片机版本,不写入配置文件中
+        char app_url[128 + 1];     // app地址,暂时不用
 		int  timestamp;        // 启动时间戳
         TcWifiConfig net_config;  // 网络设置
         char f_license[128 + 1];     // 阅面人脸

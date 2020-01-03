@@ -306,8 +306,6 @@ static void buttonAccessPress(HWND hwnd, int id, int nc, DWORD add_data)
 	if (nc != BN_CLICKED)
 		return;
 	flag_timer_stop = 1;
-	// TEST
-	// my_video->videoCallOut("192.168.1.10");
 	createFormMonitor(GetParent(hwnd),enableAutoClose);
 }
 static void buttonVideoPress(HWND hwnd, int id, int nc, DWORD add_data)

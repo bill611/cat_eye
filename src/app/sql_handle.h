@@ -45,6 +45,15 @@ extern "C" {
 			char *nick_name,
 			int *scope);
 	extern int sqlGetUserInfoStart(int type);
+	/* ---------------------------------------------------------------------------*/
+	/**
+	 * @brief sqlGetUserInfoUseScopeStart 根据类型开始获取用户数量
+	 *
+	 * @param scope
+	 *
+	 * @returns -1时获取失败，正在有其他线程操作数据库
+	 */
+	/* ---------------------------------------------------------------------------*/
 	extern int sqlGetUserInfoUseScopeStart(int scope);
 	extern void sqlGetUserInfosUseScope(
 			char *user_id,
